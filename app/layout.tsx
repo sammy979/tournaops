@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "TournaOps — PUBG Mobile Tournament Management Platform",
   description: "Run professional PUBG Mobile tournaments in minutes. Live leaderboards, OBS overlays, PMGC scoring, squad management, and social media card generation. Free to start.",
-  keywords: "PUBG Mobile tournament, BGMI tournament, esports tournament management, PMGC scoring, tournament leaderboard, OBS overlay, tournament organizer tool",
+  keywords: "PUBG Mobile tournament, BGMI tournament, esports tournament management, PMGC scoring, tournament leaderboard, OBS overlay, tournament organizer tool, BGMI tournament app",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -23,10 +23,7 @@ export const metadata: Metadata = {
     title: "TournaOps — PUBG Mobile Tournament Platform",
     description: "Professional tournament management for PUBG Mobile organizers. Free to start.",
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
@@ -40,9 +37,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="icon" href="/icon-192.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/icon-192.svg" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
       </head>
       <body className="bg-[#0a0a0f] text-white antialiased">
         {children}

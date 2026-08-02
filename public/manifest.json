@@ -1,7 +1,7 @@
 {
   "name": "TournaOps",
   "short_name": "TournaOps",
-  "description": "PUBG Mobile Tournament Platform",
+  "description": "PUBG Mobile Tournament Management Platform",
   "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#0a0a0f",
@@ -9,29 +9,22 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/icon-192.svg",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/icon-512.svg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     }
   ],
   "categories": ["sports", "games", "utilities"],
   "shortcuts": [
-    {
-      "name": "Dashboard",
-      "url": "/dashboard",
-      "description": "Go to dashboard"
-    },
-    {
-      "name": "New Tournament",
-      "url": "/dashboard/tournaments/create",
-      "description": "Create a new tournament"
-    }
+    { "name": "Dashboard", "url": "/dashboard", "description": "Go to dashboard" },
+    { "name": "New Tournament", "url": "/dashboard/tournaments/create", "description": "Create tournament" },
+    { "name": "Analytics", "url": "/dashboard/analytics", "description": "View analytics" }
   ]
 }
