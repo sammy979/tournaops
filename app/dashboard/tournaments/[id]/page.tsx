@@ -4,9 +4,11 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
   ChevronLeft, Trophy, Users, Zap, GitBranch, ListChecks, BarChart3,
-  Trash2, Share2, Copy, Check, Play, RotateCcw, Sparkles
+  Trash2, Share2, Copy, Check, Sparkles
 } from "lucide-react";
-import { getTournamentById, updateMatchWinner, deleteTournament, saveTournament } from "@/lib/storage/tournaments";
+import { getTournamentById, updateMatchWinner, deleteTournament } from "@/lib/storage/tournaments";
+import FullLeaderboard from "@/components/tournament/FullLeaderboard";
+import MatchResultEntry from "@/components/tournament/MatchResultEntry";
 import type { Tournament, Match, Team } from "@/types/tournament";
 
 type Tab = "bracket" | "matches" | "teams" | "standings";
@@ -15,16 +17,18 @@ export default function TournamentDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [tournament, setTournament] = useState<Tournament | null>(null);
-  const [activeTab, setActiveTab] = useState<Tab>("bracket");
+  const [activeTab, setActiveTab] = useState<Tab>("standings");
   const [copied, setCopied] = useState(false);
+  const [editingMatch, setEditingMatch] = useState<Match | null>(null);
 
   useEffect(() => {
     const t = getTournamentById(params.id as string);
-    if (!t) {
-      router.push("/dashboard/tournaments");
-      return;
-    }
+    if (!t) { router.push("/dashboard/tournaments"); return; }
     setTournament(t);
+    // Default to bracket for elim formats
+    if (t.format === "single_elim" || t.format === "double_elim") {
+      setActiveTab("bracket");
+    }
   }, [params.id, router]);
 
   if (!tournament) {
@@ -47,29 +51,23 @@ export default function TournamentDetailPage() {
   };
 
   const copyShareLink = () => {
-    const url = `${window.location.origin}/tournaments/${tournament.slug}`;
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(`${window.location.origin}/tournaments/${tournament.slug}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const isBracket = tournament.format === "single_elim" || tournament.format === "double_elim";
-  const completedMatches = tournament.matches.filter(m => m.status === "completed").length;
-  const totalMatches = tournament.matches.length;
-  
-  // Sort teams by points for standings
-  const standings = [...tournament.teams].sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    if (b.wins !== a.wins) return b.wins - a.wins;
-    return a.losses - b.losses;
-  });
+  const completed = tournament.matches.filter(m => m.status === "completed").length;
+  const total = tournament.matches.length;
+  const standings = [...tournament.teams].sort((a, b) => b.points - a.points || b.wins - a.wins);
 
-  const tabs = [
+  const allTabs = [
     { id: "bracket" as Tab, name: "Bracket", icon: GitBranch, show: isBracket },
-    { id: "standings" as Tab, name: "Standings", icon: BarChart3, show: !isBracket || completedMatches > 0 },
-    { id: "matches" as Tab, name: "All Matches", icon: ListChecks, show: true },
+    { id: "standings" as Tab, name: "Standings", icon: BarChart3, show: true },
+    { id: "matches" as Tab, name: "Matches", icon: ListChecks, show: true },
     { id: "teams" as Tab, name: "Teams", icon: Users, show: true },
-  ].filter(t => t.show);
+  ];
+  const tabs = allTabs.filter(t => t.show);
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -79,28 +77,25 @@ export default function TournamentDetailPage() {
 
       {/* Header */}
       <div className="glass-heavy rounded-2xl p-6 mb-6 relative overflow-hidden">
-        <div className={`absolute inset-0 opacity-30 bg-gradient-to-r ${tournament.bannerColor || "from-indigo-500 to-purple-500"}`}></div>
+        <div className={`absolute inset-0 opacity-20 bg-gradient-to-r ${tournament.bannerColor || "from-indigo-500 to-purple-500"}`} />
         <div className="relative flex items-start justify-between flex-wrap gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="px-2 py-0.5 rounded-full bg-black/50 text-[10px] font-bold uppercase backdrop-blur-md">
-                {tournament.status}
-              </span>
+              <span className="px-2 py-0.5 rounded-full bg-black/50 text-[10px] font-bold uppercase">{tournament.status}</span>
               <span className="text-xs text-white/60">{tournament.game}</span>
+              <span className="text-xs text-white/60">{tournament.format.replace("_", " ")}</span>
             </div>
-            <h1 className="font-display font-black text-2xl md:text-4xl mb-1">{tournament.name}</h1>
-            <p className="text-white/70 text-sm">{tournament.description}</p>
-            <div className="flex items-center gap-4 mt-3 text-xs text-white/60">
+            <h1 className="font-display font-black text-2xl md:text-3xl mb-1">{tournament.name}</h1>
+            <div className="flex items-center gap-4 text-xs text-white/60">
               <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {tournament.teams.length} teams</span>
-              <span className="flex items-center gap-1"><Zap className="w-3.5 h-3.5" /> {completedMatches}/{totalMatches} matches</span>
-              <span className="flex items-center gap-1"><Trophy className="w-3.5 h-3.5" /> {tournament.format.replace("_", " ")}</span>
+              <span className="flex items-center gap-1"><Zap className="w-3.5 h-3.5" /> {completed}/{total} matches</span>
             </div>
           </div>
           <div className="flex gap-2">
             <button onClick={copyShareLink} className="btn-ghost text-xs py-2 px-3">
-              {copied ? <><Check className="w-3.5 h-3.5 mr-1" /> Copied</> : <><Share2 className="w-3.5 h-3.5 mr-1" /> Share</>}
+              {copied ? <Check className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
             </button>
-            <button onClick={handleDelete} className="btn-ghost text-xs py-2 px-3 border-red-500/30 text-red-400 hover:bg-red-500/10">
+            <button onClick={handleDelete} className="btn-ghost text-xs py-2 px-3 border-red-500/30 text-red-400">
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -113,7 +108,7 @@ export default function TournamentDetailPage() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-5 py-3 font-semibold text-sm whitespace-nowrap transition relative ${
+            className={`px-5 py-3 text-sm font-semibold whitespace-nowrap transition relative ${
               activeTab === tab.id ? "text-cyan-400" : "text-white/60 hover:text-white"
             }`}
           >
@@ -122,212 +117,182 @@ export default function TournamentDetailPage() {
               {tab.name}
             </span>
             {activeTab === tab.id && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-cyan-500 to-purple-500"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-cyan-500 to-purple-500" />
             )}
           </button>
         ))}
       </div>
 
-      {/* Content */}
-      {activeTab === "bracket" && isBracket && <BracketView matches={tournament.matches} onSetWinner={handleSetWinner} />}
-      {activeTab === "matches" && <MatchesGrid matches={tournament.matches} onSetWinner={handleSetWinner} />}
-      {activeTab === "teams" && <TeamsGrid teams={tournament.teams} />}
-      {activeTab === "standings" && <StandingsTable standings={standings} />}
-    </div>
-  );
-}
+      {/* Bracket Tab */}
+      {activeTab === "bracket" && isBracket && (
+        <BracketView matches={tournament.matches} onSetWinner={handleSetWinner} />
+      )}
 
-// ═══════════════════════════════════════════════════════════════
-// BRACKET VIEW
-// ═══════════════════════════════════════════════════════════════
-function BracketView({ matches, onSetWinner }: { matches: Match[]; onSetWinner: (matchId: string, teamId: string) => void }) {
-  const rounds: Record<number, Match[]> = {};
-  matches.forEach(m => {
-    if (!rounds[m.round]) rounds[m.round] = [];
-    rounds[m.round].push(m);
-  });
-  const roundKeys = Object.keys(rounds).map(Number).sort((a, b) => a - b);
+      {/* Standings Tab */}
+      {activeTab === "standings" && (
+        <FullLeaderboard tournament={tournament} />
+      )}
 
-  return (
-    <div className="overflow-x-auto pb-4">
-      <div className="flex gap-6 min-w-max p-2">
-        {roundKeys.map(r => (
-          <div key={r} className="flex flex-col">
-            <div className="text-center mb-4">
-              <div className="inline-block px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30">
-                <span className="text-xs font-black uppercase tracking-widest text-indigo-300">
-                  {r === roundKeys[roundKeys.length - 1] ? "🏆 Final" : `Round ${r}`}
+      {/* Matches Tab */}
+      {activeTab === "matches" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {tournament.matches.map(m => (
+            <div key={m.id} className={`match-card rounded-xl p-4 ${m.status === "completed" ? "winner" : ""}`}>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Match {m.matchNumber}</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  m.status === "completed" ? "bg-green-500/20 text-green-400" : "bg-white/10 text-white/50"
+                }`}>
+                  {m.status}
                 </span>
               </div>
+
+              {/* For bracket matches */}
+              {m.team1 && m.team2 && (
+                <>
+                  <div
+                    onClick={() => m.status !== "completed" && handleSetWinner(m.id, m.team1!.id)}
+                    className={`flex justify-between p-2.5 rounded-lg mb-1 transition ${
+                      m.winner?.id === m.team1?.id ? "bg-green-500/20 border border-green-500/50" :
+                      m.status !== "completed" ? "bg-white/5 hover:bg-white/10 cursor-pointer" : "bg-white/5"
+                    }`}
+                  >
+                    <span className="text-sm font-semibold">{m.team1.name}</span>
+                    <span className="font-black">{m.score1}</span>
+                  </div>
+                  <div
+                    onClick={() => m.status !== "completed" && handleSetWinner(m.id, m.team2!.id)}
+                    className={`flex justify-between p-2.5 rounded-lg transition ${
+                      m.winner?.id === m.team2?.id ? "bg-green-500/20 border border-green-500/50" :
+                      m.status !== "completed" ? "bg-white/5 hover:bg-white/10 cursor-pointer" : "bg-white/5"
+                    }`}
+                  >
+                    <span className="text-sm font-semibold">{m.team2.name}</span>
+                    <span className="font-black">{m.score2}</span>
+                  </div>
+                </>
+              )}
+
+              {/* For BR matches */}
+              {tournament.format === "battle_royale" && (
+                <div>
+                  {m.status === "completed" && m.results ? (
+                    <div className="text-xs text-white/60">
+                      {m.results.length} teams scored | Winner: {m.results.find(r => r.placement === 1)?.teamName}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-white/50">Click below to enter results</div>
+                  )}
+                </div>
+              )}
+
+              {/* Enter Results button */}
+              <button
+                onClick={() => setEditingMatch(m)}
+                className="w-full mt-3 py-2 text-xs font-bold rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 transition"
+              >
+                <Sparkles className="w-3.5 h-3.5 inline mr-1" />
+                {m.status === "completed" ? "Edit Results" : "Enter Results"}
+              </button>
             </div>
-            <div className="flex flex-col gap-4 justify-around flex-1" style={{minHeight: `${Math.pow(2, roundKeys.indexOf(r)) * 80}px`}}>
-              {rounds[r].sort((a, b) => a.matchNumber - b.matchNumber).map(m => (
-                <MatchCard key={m.id} match={m} onSetWinner={onSetWinner} />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// MATCH CARD
-// ═══════════════════════════════════════════════════════════════
-function MatchCard({ match, onSetWinner }: { match: Match; onSetWinner: (matchId: string, teamId: string) => void }) {
-  const isWinner1 = match.winner?.id === match.team1?.id;
-  const isWinner2 = match.winner?.id === match.team2?.id;
-  const isComplete = match.status === "completed";
-  const canPlay = match.team1 && match.team2 && !isComplete;
-
-  return (
-    <div className={`match-card rounded-xl p-3 min-w-[240px] ${isComplete ? "winner" : ""}`}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">
-          Match {match.matchNumber}
-        </span>
-        <span className="text-[10px] font-bold text-white/50 bg-white/5 px-2 py-0.5 rounded-full">
-          BO{match.bestOf}
-        </span>
-      </div>
-
-      {/* Team 1 */}
-      <div
-        onClick={() => canPlay && match.team1 && onSetWinner(match.id, match.team1.id)}
-        className={`flex items-center justify-between p-2.5 rounded-lg mb-1 transition ${
-          isWinner1 
-            ? "bg-green-500/20 border border-green-500/50" 
-            : canPlay ? "bg-white/5 hover:bg-white/10 cursor-pointer" : "bg-white/5"
-        }`}
-      >
-        <span className={`text-sm font-semibold truncate ${!match.team1 ? "text-white/30 italic" : ""}`}>
-          {match.team1?.name || "TBD"}
-        </span>
-        <span className={`text-lg font-black ${isWinner1 ? "text-green-400" : "text-white/40"}`}>
-          {match.score1}
-        </span>
-      </div>
-
-      {/* Team 2 */}
-      <div
-        onClick={() => canPlay && match.team2 && onSetWinner(match.id, match.team2.id)}
-        className={`flex items-center justify-between p-2.5 rounded-lg transition ${
-          isWinner2 
-            ? "bg-green-500/20 border border-green-500/50" 
-            : canPlay ? "bg-white/5 hover:bg-white/10 cursor-pointer" : "bg-white/5"
-        }`}
-      >
-        <span className={`text-sm font-semibold truncate ${!match.team2 ? "text-white/30 italic" : ""}`}>
-          {match.team2?.name || "TBD"}
-        </span>
-        <span className={`text-lg font-black ${isWinner2 ? "text-green-400" : "text-white/40"}`}>
-          {match.score2}
-        </span>
-      </div>
-
-      {canPlay && (
-        <div className="mt-2 text-[10px] text-center text-cyan-400/60">
-          Click a team to set winner
+          ))}
         </div>
+      )}
+
+      {/* Teams Tab */}
+      {activeTab === "teams" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {tournament.teams.map(team => (
+            <div key={team.id} className="glass rounded-xl p-5 border border-white/5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center font-black">
+                  {team.seed}
+                </div>
+                <div>
+                  <div className="font-display font-bold">{team.name}</div>
+                  <div className="text-xs text-white/50">{team.players?.length || 0} players</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-4 gap-2 text-center text-xs mb-3">
+                <div><div className="text-green-400 font-black text-lg">{team.wins}</div><div className="text-white/50">W</div></div>
+                <div><div className="text-red-400 font-black text-lg">{team.losses}</div><div className="text-white/50">L</div></div>
+                <div><div className="text-red-400 font-black text-lg">{team.totalKills}</div><div className="text-white/50">K</div></div>
+                <div><div className="text-cyan-400 font-black text-lg">{team.points}</div><div className="text-white/50">Pts</div></div>
+              </div>
+              {/* Player list */}
+              {team.players && team.players.length > 0 && (
+                <div className="space-y-1 border-t border-white/5 pt-3">
+                  {team.players.map(p => (
+                    <div key={p.id} className="flex justify-between text-xs">
+                      <span className="text-white/70">{p.ign}</span>
+                      <span className="text-white/40">{p.role}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Match Result Entry Modal */}
+      {editingMatch && (
+        <MatchResultEntry
+          tournament={tournament}
+          match={editingMatch}
+          onSubmit={(updated) => { setTournament(updated); setEditingMatch(null); }}
+          onClose={() => setEditingMatch(null)}
+        />
       )}
     </div>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// MATCHES GRID
-// ═══════════════════════════════════════════════════════════════
-function MatchesGrid({ matches, onSetWinner }: { matches: Match[]; onSetWinner: (matchId: string, teamId: string) => void }) {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {matches.map(m => (
-        <MatchCard key={m.id} match={m} onSetWinner={onSetWinner} />
-      ))}
-    </div>
-  );
-}
+function BracketView({ matches, onSetWinner }: { matches: Match[]; onSetWinner: (matchId: string, teamId: string) => void }) {
+  const rounds: Record<number, Match[]> = {};
+  matches.forEach(m => { if (!rounds[m.round]) rounds[m.round] = []; rounds[m.round].push(m); });
+  const roundKeys = Object.keys(rounds).map(Number).sort((a, b) => a - b);
 
-// ═══════════════════════════════════════════════════════════════
-// TEAMS GRID
-// ═══════════════════════════════════════════════════════════════
-function TeamsGrid({ teams }: { teams: Team[] }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {teams.map((team, i) => (
-        <div key={team.id} className="glass rounded-xl p-5 border border-white/5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center font-black">
-              {team.seed}
+    <div className="overflow-x-auto pb-4">
+      <div className="flex gap-6 min-w-max p-2">
+        {roundKeys.map((r, idx) => (
+          <div key={r} className="flex flex-col">
+            <div className="text-center mb-4">
+              <span className="px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-xs font-black uppercase tracking-widest text-indigo-300">
+                {r === roundKeys[roundKeys.length - 1] ? "Final" : `Round ${r}`}
+              </span>
             </div>
-            <div>
-              <div className="font-display font-bold">{team.name}</div>
-              <div className="text-xs text-white/50">Seed #{team.seed}</div>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-center text-xs">
-            <div>
-              <div className="text-green-400 font-black text-lg">{team.wins}</div>
-              <div className="text-white/50">Wins</div>
-            </div>
-            <div>
-              <div className="text-red-400 font-black text-lg">{team.losses}</div>
-              <div className="text-white/50">Losses</div>
-            </div>
-            <div>
-              <div className="text-cyan-400 font-black text-lg">{team.points}</div>
-              <div className="text-white/50">Pts</div>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// STANDINGS TABLE
-// ═══════════════════════════════════════════════════════════════
-function StandingsTable({ standings }: { standings: Team[] }) {
-  return (
-    <div className="glass rounded-2xl overflow-hidden border border-white/5">
-      <div className="p-5 border-b border-white/5 bg-gradient-to-r from-indigo-500/10 to-cyan-500/10">
-        <h3 className="font-display font-bold text-lg flex items-center gap-2">
-          <Trophy className="w-5 h-5 text-yellow-400" />
-          Live Standings
-        </h3>
-      </div>
-      <table className="w-full">
-        <thead className="bg-black/30">
-          <tr className="text-xs uppercase text-white/50">
-            <th className="p-3 text-left">Rank</th>
-            <th className="p-3 text-left">Team</th>
-            <th className="p-3 text-center">W</th>
-            <th className="p-3 text-center">L</th>
-            <th className="p-3 text-center">Pts</th>
-          </tr>
-        </thead>
-        <tbody>
-          {standings.map((team, i) => (
-            <tr key={team.id} className={`border-t border-white/5 ${i < 3 ? "bg-yellow-500/5" : ""}`}>
-              <td className="p-3">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm ${
-                  i === 0 ? "bg-yellow-500 text-black" :
-                  i === 1 ? "bg-gray-400 text-black" :
-                  i === 2 ? "bg-orange-500 text-white" :
-                  "bg-white/10 text-white/70"
-                }`}>
-                  {i + 1}
+            <div className="flex flex-col gap-4 justify-around flex-1" style={{ minHeight: `${Math.pow(2, idx) * 80}px` }}>
+              {rounds[r].sort((a, b) => a.matchNumber - b.matchNumber).map(m => (
+                <div key={m.id} className={`match-card rounded-xl p-3 min-w-[220px] ${m.status === "completed" ? "winner" : ""}`}>
+                  <div className="text-[10px] font-black text-cyan-400 mb-2">M{m.matchNumber}</div>
+                  <div
+                    onClick={() => m.team1 && m.team2 && m.status !== "completed" && onSetWinner(m.id, m.team1.id)}
+                    className={`flex justify-between p-2 rounded-lg mb-1 transition ${
+                      m.winner?.id === m.team1?.id ? "bg-green-500/20 border border-green-500/50" :
+                      m.team1 && m.team2 && m.status !== "completed" ? "bg-white/5 hover:bg-white/10 cursor-pointer" : "bg-white/5"
+                    }`}
+                  >
+                    <span className="text-sm font-semibold truncate">{m.team1?.name || "TBD"}</span>
+                    <span className="font-black text-sm">{m.score1}</span>
+                  </div>
+                  <div
+                    onClick={() => m.team1 && m.team2 && m.status !== "completed" && onSetWinner(m.id, m.team2!.id)}
+                    className={`flex justify-between p-2 rounded-lg transition ${
+                      m.winner?.id === m.team2?.id ? "bg-green-500/20 border border-green-500/50" :
+                      m.team1 && m.team2 && m.status !== "completed" ? "bg-white/5 hover:bg-white/10 cursor-pointer" : "bg-white/5"
+                    }`}
+                  >
+                    <span className="text-sm font-semibold truncate">{m.team2?.name || "TBD"}</span>
+                    <span className="font-black text-sm">{m.score2}</span>
+                  </div>
                 </div>
-              </td>
-              <td className="p-3 font-bold">{team.name}</td>
-              <td className="p-3 text-center text-green-400 font-black">{team.wins}</td>
-              <td className="p-3 text-center text-red-400 font-black">{team.losses}</td>
-              <td className="p-3 text-center text-cyan-400 font-black text-lg">{team.points}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
