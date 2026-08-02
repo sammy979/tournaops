@@ -27,16 +27,16 @@ export default function StatusManager({ tournament, onClose, onSave }: StatusMan
   const selected = STATUSES.find(s => s.value === status)!;
   const changed = status !== tournament.status;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!changed) { onClose(); return; }
     if ((status === "completed" || status === "cancelled") && !confirm) {
       setConfirm(true);
       return;
     }
     setSaving(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       const updated = { ...tournament, status };
-      saveTournament(updated);
+      await saveTournament(updated);
       onSave(updated);
     }, 500);
   };
@@ -119,7 +119,7 @@ export default function StatusManager({ tournament, onClose, onSave }: StatusMan
         <div className="flex justify-between items-center p-6 border-t border-white/10">
           <div className="text-sm text-gray-600">
             {changed ? (
-              <span>{current.label} → <span className="text-white font-medium">{selected.label}</span></span>
+              <span>{current.label} Ã¢â€ â€™ <span className="text-white font-medium">{selected.label}</span></span>
             ) : (
               <span>No changes</span>
             )}

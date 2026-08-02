@@ -22,7 +22,7 @@ export default function CSVImport({ tournament, onClose, onSave }: CSVImportProp
 Nova Esports,Nova_Killer,Nova_IGL,Nova_Sniper,Nova_Support
 Storm Riders,Storm1,Storm2,Storm3,Storm4`;
 
-  const parseCSV = () => {
+  const parseCSV = async () => {
     setError("");
     if (!raw.trim()) { setError("Paste your team list first"); return; }
     const lines = raw.trim().split("\n").filter(l => l.trim());
@@ -47,9 +47,9 @@ Storm Riders,Storm1,Storm2,Storm3,Storm4`;
     setMode("preview");
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     setImporting(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       const newTeams: Team[] = parsed.map((t, i) => {
         const existing = tournament.teams[i];
         const players: Player[] = t.players.map((name, j) => ({
@@ -80,7 +80,7 @@ Storm Riders,Storm1,Storm2,Storm3,Storm4`;
       }
 
       const updated = { ...tournament, teams: newTeams };
-      saveTournament(updated);
+      await saveTournament(updated);
       onSave(updated);
       setImporting(false);
     }, 800);

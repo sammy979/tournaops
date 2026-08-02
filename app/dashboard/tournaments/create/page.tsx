@@ -51,7 +51,7 @@ export default function CreateTournamentPage() {
     if (!form.name.trim()) return;
     setLoading(true);
     try {
-      const t = createTournament({
+      const t = await createTournament({
         name: form.name.trim(),
         description: form.description,
         prizePool: form.prizePool,
@@ -84,7 +84,7 @@ export default function CreateTournamentPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-white">Create Tournament</h1>
-          <p className="text-gray-500 text-sm">PUBG Mobile · Fill in the details below</p>
+          <p className="text-gray-500 text-sm">PUBG Mobile Â· Fill in the details below</p>
         </div>
       </div>
 
@@ -123,7 +123,7 @@ export default function CreateTournamentPage() {
       {/* Step Content */}
       <div className="glass-card rounded-2xl border border-white/10 p-8">
 
-        {/* STEP 1 — BASICS */}
+        {/* STEP 1 â€” BASICS */}
         {step === 1 && (
           <div className="space-y-6">
             <div>
@@ -170,7 +170,7 @@ export default function CreateTournamentPage() {
                     type="text"
                     value={form.prizePool}
                     onChange={e => set("prizePool", e.target.value)}
-                    placeholder="e.g. $500 or ₹10,000"
+                    placeholder="e.g. $500 or â‚¹10,000"
                     className="input-field"
                   />
                 </div>
@@ -189,7 +189,7 @@ export default function CreateTournamentPage() {
           </div>
         )}
 
-        {/* STEP 2 — FORMAT */}
+        {/* STEP 2 â€” FORMAT */}
         {step === 2 && (
           <div className="space-y-6">
             <div>
@@ -220,7 +220,7 @@ export default function CreateTournamentPage() {
                   >
                     <div className="font-semibold text-sm">{p.label}</div>
                     <div className="text-xs opacity-60 mt-0.5">
-                      {p.rounds} round{p.rounds > 1 ? "s" : ""} · {p.matchesPerLobby} matches/lobby
+                      {p.rounds} round{p.rounds > 1 ? "s" : ""} Â· {p.matchesPerLobby} matches/lobby
                     </div>
                   </button>
                 ))}
@@ -276,7 +276,7 @@ export default function CreateTournamentPage() {
           </div>
         )}
 
-        {/* STEP 3 — SCORING */}
+        {/* STEP 3 â€” SCORING */}
         {step === 3 && (
           <div className="space-y-6">
             <div>
@@ -299,8 +299,8 @@ export default function CreateTournamentPage() {
                     <div>
                       <div className="text-white font-semibold text-sm">{s.name}</div>
                       <div className="text-gray-500 text-xs mt-0.5">
-                        1st={s.placementPoints[0]}pts · Kill={s.killPoints}pt{s.killPoints > 1 ? "s" : ""}
-                        {s.wwcdBonus ? ` · WWCD bonus +${s.wwcdBonus}` : ""}
+                        1st={s.placementPoints[0]}pts Â· Kill={s.killPoints}pt{s.killPoints > 1 ? "s" : ""}
+                        {s.wwcdBonus ? ` Â· WWCD bonus +${s.wwcdBonus}` : ""}
                       </div>
                     </div>
                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
@@ -335,9 +335,9 @@ export default function CreateTournamentPage() {
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 {[
-                  { label: "Name", value: form.name || "—" },
+                  { label: "Name", value: form.name || "â€”" },
                   { label: "Size", value: preset.label },
-                  { label: "Maps", value: form.maps.join(", ") || "—" },
+                  { label: "Maps", value: form.maps.join(", ") || "â€”" },
                   { label: "Scoring", value: scoring.name },
                   { label: "Matches/Lobby", value: `${form.matchesPerLobby} matches` },
                   { label: "Total Matches", value: `${preset.maxTeams / 16 * form.matchesPerLobby} matches` },

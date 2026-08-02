@@ -30,10 +30,10 @@ export default function TeamRegisterPage() {
     })),
   });
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
     const slug = params?.slug as string;
     if (slug) {
-      const t = getTournamentBySlug(slug);
+      const t = await getTournamentBySlug(slug);
       setTournament(t || null);
     }
     setLoading(false);
@@ -48,7 +48,7 @@ export default function TeamRegisterPage() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -60,7 +60,7 @@ export default function TeamRegisterPage() {
     setSubmitting(true);
 
     // Save registration to localStorage
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
         const key = `registrations_${tournament?.id}`;
         const existing = JSON.parse(localStorage.getItem(key) || "[]");
@@ -106,7 +106,7 @@ export default function TeamRegisterPage() {
           <span className="font-bold text-white text-sm">TournaOps</span>
         </Link>
         <Link href={`/tournaments/${tournament.slug}`} className="text-gray-500 text-sm hover:text-gray-300 transition-colors">
-          View Tournament →
+          View Tournament ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢
         </Link>
       </div>
 
@@ -119,7 +119,7 @@ export default function TeamRegisterPage() {
           <h1 className="text-3xl font-bold text-white mb-2">{tournament.name}</h1>
           <div className="flex items-center justify-center gap-4 text-gray-500 text-sm">
             <span>{tournament.teams.length} squads registered</span>
-            {tournament.prizePool && <span className="text-yellow-400">🏆 {tournament.prizePool}</span>}
+            {tournament.prizePool && <span className="text-yellow-400">ÃƒÂ°Ã…Â¸Ã‚ÂÃ¢â‚¬Â  {tournament.prizePool}</span>}
           </div>
         </div>
 

@@ -14,10 +14,10 @@ export default function PublicTournamentPage() {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [activeTab, setActiveTab] = useState<"standings" | "matches" | "teams">("standings");
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
     const slug = params?.slug as string;
     if (slug) {
-      const t = getTournamentBySlug(slug);
+      const t = await getTournamentBySlug(slug);
       setTournament(t || null);
       setLastUpdated(new Date());
     }
@@ -101,7 +101,7 @@ export default function PublicTournamentPage() {
             {leaderboard.length >= 3 && (
               <div className="grid grid-cols-3 gap-4 mb-6">
                 {[leaderboard[1], leaderboard[0], leaderboard[2]].map((entry, idx) => {
-                  const medals = ["🥈", "🥇", "🥉"];
+                  const medals = ["Ã°Å¸Â¥Ë†", "Ã°Å¸Â¥â€¡", "Ã°Å¸Â¥â€°"];
                   const colors = ["text-gray-300", "text-yellow-400", "text-amber-600"];
                   return (
                     <div key={entry.teamId} className={`glass-card rounded-xl p-5 text-center border ${idx === 1 ? "border-yellow-500/30 bg-yellow-500/5" : "border-white/10"} ${idx !== 1 ? "mt-6" : ""}`}>
@@ -131,7 +131,7 @@ export default function PublicTournamentPage() {
                       <tr key={entry.teamId} className={`border-b border-white/5 hover:bg-white/5 transition-colors ${entry.rank === 1 ? "bg-yellow-500/5" : ""}`}>
                         <td className="py-3 px-4">
                           <span className={`font-mono font-bold ${entry.rank === 1 ? "text-yellow-400" : entry.rank === 2 ? "text-gray-300" : entry.rank === 3 ? "text-amber-600" : "text-gray-500"}`}>
-                            {entry.rank <= 3 ? ["🥇","🥈","🥉"][entry.rank-1] : `#${entry.rank}`}
+                            {entry.rank <= 3 ? ["Ã°Å¸Â¥â€¡","Ã°Å¸Â¥Ë†","Ã°Å¸Â¥â€°"][entry.rank-1] : `#${entry.rank}`}
                           </span>
                         </td>
                         <td className="py-3 px-4 text-white font-semibold">{entry.teamName}</td>

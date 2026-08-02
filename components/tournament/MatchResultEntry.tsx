@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { X, Save, Zap, Trophy, Crosshair, Shield } from "lucide-react";
@@ -107,7 +107,7 @@ export default function MatchResultEntry({ tournament, match, teams, onClose, on
           wwcd: e.placement === 1,
         };
       });
-      const updated = submitMatchResults(tournament.id, match.id, results);
+      const updated = await submitMatchResults(tournament.id, match.id, results);
       if (updated) onSave(updated);
       onClose();
     } finally {

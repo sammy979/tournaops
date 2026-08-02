@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useSearchParams } from "next/navigation";
@@ -14,10 +14,10 @@ export default function OBSOverlayPage() {
   const theme = searchParams?.get("theme") || "dark";
   const fontSize = searchParams?.get("size") || "md";
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
     const token = params?.token as string;
     if (!token) return;
-    const all = getAllTournaments();
+    const all = await getAllTournaments();
     const found = all.find(t => t.id === token || t.slug === token);
     setTournament(found || null);
   }, [params?.token]);
@@ -31,7 +31,7 @@ export default function OBSOverlayPage() {
   if (!tournament) {
     return (
       <div style={{ background: "transparent", padding: 16 }}>
-        <p style={{ color: "#666", fontFamily: "monospace", fontSize: 12 }}>TournaOps · Waiting...</p>
+        <p style={{ color: "#666", fontFamily: "monospace", fontSize: 12 }}>TournaOps Â· Waiting...</p>
       </div>
     );
   }
