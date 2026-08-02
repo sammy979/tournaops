@@ -84,7 +84,7 @@ export default function LandingPage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-400"></span>
             </span>
-            <span className="text-xs md:text-sm text-white/80 font-medium">Live now  ·  Powering tournaments worldwide</span>
+            <span className="text-xs md:text-sm text-white/80 font-medium">Live now  Â·  Powering tournaments worldwide</span>
           </div>
 
           {/* Headline - much smaller on mobile */}
@@ -196,14 +196,14 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 stagger">
             {[
-              { icon: Trophy, title: "Universal Scoring", desc: "Custom scoring for any game. Placement, kills, bonuses, penalties—all configurable.", color: "from-indigo-500 to-purple-500" },
+              { icon: Trophy, title: "Universal Scoring", desc: "Custom scoring for any game. Placement, kills, bonuses, penaltiesâ€”all configurable.", color: "from-indigo-500 to-purple-500" },
               { icon: BarChart3, title: "Live Leaderboards", desc: "Real-time rank updates with animations. Export CSV, PDF, or share instantly.", color: "from-purple-500 to-pink-500" },
               { icon: Radio, title: "OBS Overlay Studio", desc: "No-code overlay builder. 10+ overlay types. Copy browser source URL to OBS.", color: "from-pink-500 to-orange-500" },
               { icon: Bot, title: "OpsAI Assistant", desc: "AI generates tournaments, rules, announcements, and match summaries.", color: "from-orange-500 to-yellow-500" },
               { icon: Users, title: "Team Management", desc: "Full rosters, substitutes, coaches. Public profiles with stats and history.", color: "from-cyan-500 to-blue-500" },
               { icon: MessageSquare, title: "Discord Integration", desc: "Auto-announce matches, results, and leaderboard updates to your Discord.", color: "from-blue-500 to-indigo-500" },
-              { icon: Layers, title: "Multiple Formats", desc: "Battle Royale, Single/Double Elim, Round Robin, Swiss, Groups—all built-in.", color: "from-green-500 to-cyan-500" },
-              { icon: Shield, title: "Result Verification", desc: "Staff submits → Referee reviews → Organizer approves. Full audit trail.", color: "from-red-500 to-pink-500" },
+              { icon: Layers, title: "Multiple Formats", desc: "Battle Royale, Single/Double Elim, Round Robin, Swiss, Groupsâ€”all built-in.", color: "from-green-500 to-cyan-500" },
+              { icon: Shield, title: "Result Verification", desc: "Staff submits â†’ Referee reviews â†’ Organizer approves. Full audit trail.", color: "from-red-500 to-pink-500" },
               { icon: Rocket, title: "Public Pages", desc: "Beautiful, SEO-optimized pages. Custom branding. Perfect for social sharing.", color: "from-yellow-500 to-orange-500" }
             ].map((feature, i) => (
               <div key={i} className="glass rounded-2xl p-5 md:p-8 border border-white/5 hover:border-white/20 transition-all card-3d group relative overflow-hidden">
@@ -232,7 +232,7 @@ export default function LandingPage() {
               {[
                 { num: "2min", label: "Setup Time" },
                 { num: "10+", label: "Overlays" },
-                { num: "∞", label: "Tournaments" },
+                { num: "âˆž", label: "Tournaments" },
                 { num: "24/7", label: "Real-time" }
               ].map((stat, i) => (
                 <div key={i}>
