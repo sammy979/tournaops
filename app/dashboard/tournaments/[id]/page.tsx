@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
@@ -7,13 +7,14 @@ import Link from "next/link";
 import {
   ArrowLeft, Trophy, Users, MapPin, Play,
   BarChart3, Shield, Crosshair, Zap, Download,
-  Edit, Eye, Award, Flame
+  Edit, Eye, Award, Flame, Sparkles
 } from "lucide-react";
 import { getTournamentById, getLeaderboard, getTopPlayers, generateDemoResults, submitMatchResults } from "@/lib/storage/tournaments";
 import { Tournament, Match, Team } from "@/types/tournament";
 
 const TeamEditor = dynamic(() => import("@/components/tournament/TeamEditor"), { ssr: false });
 const MatchResultEntry = dynamic(() => import("@/components/tournament/MatchResultEntry"), { ssr: false });
+const BroadcastStudio = dynamic(() => import("@/components/studio/BroadcastStudio"), { ssr: false });
 const FullLeaderboard = dynamic(() => import("@/components/tournament/FullLeaderboard"), { ssr: false });
 
 type Tab = "overview" | "matches" | "standings" | "teams";
@@ -26,6 +27,7 @@ export default function TournamentDetailPage() {
   const [showTeamEditor, setShowTeamEditor] = useState(false);
   const [showMatchEntry, setShowMatchEntry] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showStudio, setShowStudio] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [selectedMatchTeams, setSelectedMatchTeams] = useState<Team[]>([]);
   const [generatingDemo, setGeneratingDemo] = useState<string | null>(null);
@@ -112,6 +114,9 @@ export default function TournamentDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={() => setShowStudio(true)} className="flex items-center gap-2 px-4 py-2 text-sm rounded-xl font-semibold bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:opacity-90 transition-opacity shadow-lg shadow-purple-500/20">
+            <Sparkles className="w-4 h-4" />Studio
+          </button>
           <button onClick={() => setShowLeaderboard(true)} className="btn-secondary flex items-center gap-2 px-4 py-2 text-sm">
             <Download className="w-4 h-4" />Export
           </button>
@@ -421,6 +426,13 @@ export default function TournamentDetailPage() {
           teams={selectedMatchTeams}
           onClose={() => { setShowMatchEntry(false); setSelectedMatch(null); }}
           onSave={(updated) => { setTournament(updated); setShowMatchEntry(false); setSelectedMatch(null); }}
+        />
+      )}
+
+      {showStudio && (
+        <BroadcastStudio
+          tournament={tournament}
+          onClose={() => setShowStudio(false)}
         />
       )}
 
