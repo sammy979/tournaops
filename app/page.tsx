@@ -36,7 +36,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white overflow-x-hidden">
 
-      {/* ── ANIMATED BACKGROUND ORBS ────────────────────── */}
+      {/* â”€â”€ ANIMATED BACKGROUND ORBS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-[10%] left-[15%] w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-3xl animate-blob" />
         <div className="absolute top-[30%] right-[10%] w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-3xl animate-blob-delay" />
@@ -48,14 +48,18 @@ export default function LandingPage() {
         }} />
       </div>
 
-      {/* ── NAV ─────────────────────────────────────────── */}
+      {/* â”€â”€ NAV â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? "bg-[#0a0a0f]/80 backdrop-blur-2xl border-b border-white/10 shadow-2xl shadow-blue-500/10" : ""}`}>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl overflow-hidden shadow-lg shadow-blue-500/40 bg-gradient-to-br from-blue-500 to-purple-600 transition-transform group-hover:scale-110 group-hover:rotate-3">
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="relative w-11 h-11 rounded-xl overflow-hidden logo-glow shadow-lg shadow-blue-500/50 bg-gradient-to-br from-blue-500 to-purple-600 transition-all group-hover:scale-110 group-hover:rotate-3">
               <img src="/logo.png" alt="TournaOps" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
-            <span className="text-lg font-bold text-white tracking-tight">TournaOps</span>
+            <div>
+              <span className="text-xl font-black text-white tracking-tight block leading-tight">TournaOps</span>
+              <span className="text-[10px] text-blue-400 uppercase tracking-[0.2em] font-semibold">Tournament OS</span>
+            </div>
           </Link>
 
           <div className="hidden md:flex items-center gap-8 text-sm text-gray-400">
@@ -86,7 +90,7 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* ── HERO ────────────────────────────────────────── */}
+      {/* â”€â”€ HERO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section ref={heroRef} className="relative pt-32 pb-24 px-6 z-10">
         <div className="relative max-w-6xl mx-auto text-center">
 
@@ -218,9 +222,9 @@ export default function LandingPage() {
                     </span>
                   </div>
                   {[
-                    { r: "🥇", n: "Team Alpha", k: 24, p: 87, c: "text-yellow-400" },
-                    { r: "🥈", n: "Nova Esports", k: 19, p: 74, c: "text-gray-300" },
-                    { r: "🥉", n: "Storm Riders", k: 21, p: 68, c: "text-amber-600" },
+                    { r: "ðŸ¥‡", n: "Team Alpha", k: 24, p: 87, c: "text-yellow-400" },
+                    { r: "ðŸ¥ˆ", n: "Nova Esports", k: 19, p: 74, c: "text-gray-300" },
+                    { r: "ðŸ¥‰", n: "Storm Riders", k: 21, p: 68, c: "text-amber-600" },
                     { r: "#4", n: "Dark Knights", k: 16, p: 61, c: "text-gray-500" },
                     { r: "#5", n: "Phoenix Squad", k: 14, p: 55, c: "text-gray-500" },
                   ].map((row) => (
@@ -263,7 +267,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── SOCIAL PROOF ────────────────────────────────── */}
+      {/* â”€â”€ SOCIAL PROOF â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section className="py-16 px-6 border-y border-white/8 bg-gradient-to-b from-transparent via-white/2 to-transparent relative z-10">
         <div className="max-w-6xl mx-auto">
           <p className="text-center text-gray-500 text-xs uppercase tracking-widest font-bold mb-10">
@@ -287,7 +291,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── FEATURES with 3D cards ──────────────────────── */}
+      {/* â”€â”€ FEATURES with 3D cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section id="features" className="py-24 px-6 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
@@ -343,7 +347,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── HOW IT WORKS 3D ─────────────────────────────── */}
+      {/* â”€â”€ HOW IT WORKS 3D â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section id="how" className="py-24 px-6 bg-gradient-to-b from-transparent via-white/2 to-transparent relative z-10">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -388,7 +392,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── PRICING 3D ──────────────────────────────────── */}
+      {/* â”€â”€ PRICING 3D â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section id="pricing" className="py-24 px-6 relative z-10">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
@@ -499,7 +503,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── FINAL CTA ───────────────────────────────────── */}
+      {/* â”€â”€ FINAL CTA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section className="py-24 px-6 relative z-10">
         <div className="max-w-4xl mx-auto text-center">
           <div className="relative glass-card rounded-[2rem] p-12 border border-white/10 overflow-hidden">
@@ -534,7 +538,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── FOOTER ──────────────────────────────────────── */}
+      {/* â”€â”€ FOOTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <footer className="border-t border-white/8 py-12 px-6 relative z-10">
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
           <div className="col-span-2 md:col-span-1">
@@ -547,7 +551,7 @@ export default function LandingPage() {
             <p className="text-gray-500 text-sm leading-relaxed mb-4">
               PUBG Mobile & BGMI tournament platform.
             </p>
-            <p className="text-gray-700 text-xs">© 2025 TournaOps</p>
+            <p className="text-gray-700 text-xs">Â© 2025 TournaOps</p>
           </div>
 
           <div>

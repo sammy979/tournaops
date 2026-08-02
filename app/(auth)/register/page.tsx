@@ -198,7 +198,7 @@ export default function RegisterPage() {
 
         <p className="text-center mt-6">
           <Link href="/" className="text-gray-600 hover:text-gray-400 text-sm transition-colors">
-            ← Back to home
+            â† Back to home
           </Link>
         </p>
       </div>
