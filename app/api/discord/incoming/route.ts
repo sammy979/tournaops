@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// In-memory store (per-instance). For production use Supabase/Redis.
-// This is intentionally simple — resets on Vercel cold start (usually fine for demo)
 const pendingImports: Map<string, any> = (globalThis as any).__pendingImports || new Map();
 (globalThis as any).__pendingImports = pendingImports;
 
 const MAX_STORED = 100;
-const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const TTL_MS = 24 * 60 * 60 * 1000;
 
 function cleanExpired() {
   const now = Date.now();
@@ -22,27 +20,15 @@ export async function POST(req: NextRequest) {
     const authHeader = req.headers.get("authorization");
     const expectedSecret = process.env.TOURNAOPS_API_SECRET;
 
-    if (!expectedSecret) {
-      return NextResponse.json({ error: "Server not configured" }, { status: 500 });
-    }
-
-    if (!authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (authHeader.substring(7) !== expectedSecret) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
+    if (!expectedSecret) return NextResponse.json({ error: "Not configured" }, { status: 500 });
+    if (!authHeader?.startsWith("Bearer ")) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (authHeader.substring(7) !== expectedSecret) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
 
     const data = await req.json();
-
-    if (!data.parseResult?.slots) {
-      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
-    }
+    if (!data.parseResult?.slots) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
 
     cleanExpired();
 
-    // Trim if too many
     if (pendingImports.size >= MAX_STORED) {
       const oldest = [...pendingImports.entries()].sort((a, b) =>
         new Date(a[1].receivedAt).getTime() - new Date(b[1].receivedAt).getTime()
@@ -69,8 +55,7 @@ export async function POST(req: NextRequest) {
     };
 
     pendingImports.set(importId, record);
-
-    console.log(`Discord import queued [${importId}]: ${data.discordGuildName}/#${data.discordChannelName} — ${data.parseResult.totalDetected} slots`);
+    console.log(`Discord import queued [${importId}]: ${data.discordGuildName}/#${data.discordChannelName} - ${data.parseResult.totalDetected} slots`);
 
     return NextResponse.json({
       success: true,
@@ -78,7 +63,6 @@ export async function POST(req: NextRequest) {
       slotsDetected: data.parseResult.totalDetected,
       pendingCount: pendingImports.size,
     });
-
   } catch (err: any) {
     console.error("API error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -86,21 +70,10 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const stats = url.searchParams.get("stats");
-
   cleanExpired();
-
-  if (stats === "true") {
-    return NextResponse.json({
-      status: "TournaOps Discord API",
-      version: "1.0",
-      pendingImports: pendingImports.size,
-    });
-  }
-
   return NextResponse.json({
     status: "TournaOps Discord API endpoint",
     version: "1.0",
+    pendingImports: pendingImports.size,
   });
 }

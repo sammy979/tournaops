@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 const pendingImports: Map<string, any> = (globalThis as any).__pendingImports || new Map();
 (globalThis as any).__pendingImports = pendingImports;
 
-// GET all pending imports (public - browser polls this)
 export async function GET() {
   const list = Array.from(pendingImports.values())
     .filter(i => i.status === "pending")
@@ -16,19 +15,14 @@ export async function GET() {
   });
 }
 
-// DELETE — mark import as consumed (used after import)
 export async function DELETE(req: NextRequest) {
   const url = new URL(req.url);
   const id = url.searchParams.get("id");
 
-  if (!id) {
-    return NextResponse.json({ error: "Missing id" }, { status: 400 });
-  }
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
   const imp = pendingImports.get(id);
-  if (!imp) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
+  if (!imp) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   pendingImports.delete(id);
   return NextResponse.json({ success: true, deletedId: id });
