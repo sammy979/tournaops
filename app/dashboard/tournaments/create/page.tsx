@@ -1,15 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, ArrowRight, Check, Trophy, Users,
-  Map, Target, Zap, Sparkles, Info, Plus, Minus,
-  Award, MessageSquare, DollarSign, FileText, Settings
+  ArrowLeft, ArrowRight, Check, Trophy, Users, Map,
+  Target, Zap, Sparkles, Info, Plus, Minus, Award,
+  MessageSquare, DollarSign, FileText, Settings, Upload,
+  Calendar, Globe, Lock, Eye, EyeOff, Crown, Star,
+  Flame, Shield, Copy, ChevronRight, Radio, Image,
+  User, Mail, Clock, Layers, Grid3X3
 } from "lucide-react";
 import { createTournament } from "@/lib/storage/tournaments";
 import { SCORING_PRESETS } from "@/types/tournament";
+import { parseSlotList } from "@/lib/discord/slotParser";
 
 const MAPS = [
   { name: "Erangel", type: "8x8 Classic", flag: "🏝️" },
@@ -21,176 +25,251 @@ const MAPS = [
   { name: "Nusa", type: "1x1 Mini", flag: "🌺" },
 ];
 
-const PRESETS = [
-  { key: "scrim_16", label: "Scrim", squads: 16, lobbies: 1, matches: 3, rounds: 1, desc: "Quick practice event" },
-  { key: "small_32", label: "Small League", squads: 32, lobbies: 2, matches: 4, rounds: 2, desc: "Weekly community event" },
-  { key: "medium_64", label: "Medium Tournament", squads: 64, lobbies: 4, matches: 4, rounds: 2, desc: "Regional qualifier" },
-  { key: "large_128", label: "Large Championship", squads: 128, lobbies: 8, matches: 4, rounds: 3, desc: "Major esports event" },
-  { key: "mega_256", label: "Mega Circuit", squads: 256, lobbies: 16, matches: 4, rounds: 4, desc: "Multi-region qualifier" },
-  { key: "massive_400", label: "Massive Grand Prix", squads: 400, lobbies: 25, matches: 4, rounds: 5, desc: "PMGC-scale tournament" },
+const STRUCTURE_TEMPLATES = [
+  {
+    key: "simple",
+    label: "Simple Tournament",
+    desc: "Single stage, all teams in one bracket",
+    icon: "🏆",
+    stages: [{ name: "Main Event", type: "GROUP_STAGE", groups: 1, teamsPerGroup: 16, matches: 6 }],
+  },
+  {
+    key: "standard",
+    label: "Qualifier → Final",
+    desc: "Two stages with qualification",
+    icon: "🎯",
+    stages: [
+      { name: "Qualifier", type: "OPEN_QUALIFIER", groups: 4, teamsPerGroup: 16, matches: 4 },
+      { name: "Grand Final", type: "GRAND_FINAL", groups: 1, teamsPerGroup: 16, matches: 6 },
+    ],
+  },
+  {
+    key: "pro",
+    label: "Qualifier → Semi → Final",
+    desc: "Three-stage professional format",
+    icon: "🔥",
+    stages: [
+      { name: "Qualifier", type: "OPEN_QUALIFIER", groups: 8, teamsPerGroup: 16, matches: 4 },
+      { name: "Semi-Final", type: "SEMI_FINAL", groups: 2, teamsPerGroup: 16, matches: 6 },
+      { name: "Grand Final", type: "GRAND_FINAL", groups: 1, teamsPerGroup: 16, matches: 6 },
+    ],
+  },
+  {
+    key: "custom",
+    label: "Custom (Advanced)",
+    desc: "Build your own stage structure",
+    icon: "⚙️",
+    stages: [],
+  },
 ];
 
 const STEPS = [
-  { id: 1, label: "Basics", icon: Trophy, desc: "Name & prize" },
-  { id: 2, label: "Structure", icon: Users, desc: "Squads & format" },
-  { id: 3, label: "Rounds", icon: Award, desc: "Qualifiers & finals" },
-  { id: 4, label: "Maps", icon: Map, desc: "Map rotation" },
-  { id: 5, label: "Scoring", icon: Target, desc: "Point system" },
+  { id: 1, label: "Details", icon: Trophy, desc: "Tournament info" },
+  { id: 2, label: "Registration", icon: Users, desc: "Team settings" },
+  { id: 3, label: "Structure", icon: Layers, desc: "Stages & format" },
+  { id: 4, label: "Scoring", icon: Target, desc: "Point system" },
+  { id: 5, label: "Maps", icon: Map, desc: "Map rotation" },
+  { id: 6, label: "Teams", icon: Shield, desc: "Import teams" },
+  { id: 7, label: "Groups", icon: Grid3X3, desc: "Group assignment" },
+  { id: 8, label: "Publishing", icon: Globe, desc: "Visibility" },
+  { id: 9, label: "Review", icon: Check, desc: "Final check" },
 ];
 
 export default function CreateTournamentPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"preset" | "custom">("preset");
 
-  const [form, setForm] = useState({
-    name: "",
-    description: "",
-    prizePool: "",
-    discord: "",
-    rules: "",
-    scoringKey: "pmgc",
-    maps: ["Erangel", "Miramar", "Sanhok"],
+  // ─── STEP 1: DETAILS ───
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [prizePool, setPrizePool] = useState("");
+  const [discord, setDiscord] = useState("");
+  const [rules, setRules] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
-    // Custom structure (fully editable)
-    totalSquads: 32,
-    squadsPerLobby: 16,
-    matchesPerLobby: 4,
-    totalRounds: 2,
-    roundNames: ["Qualifiers", "Grand Finals"],
-    advanceCount: [16], // How many teams advance per round
-  });
+  // ─── STEP 2: REGISTRATION ───
+  const [regType, setRegType] = useState<"open" | "closed" | "invite">("open");
+  const [maxTeams, setMaxTeams] = useState(64);
+  const [rosterSize, setRosterSize] = useState(4);
+  const [substitutes, setSubstitutes] = useState(1);
 
-  const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
-    setForm(f => ({ ...f, [k]: v }));
+  // ─── STEP 3: STRUCTURE ───
+  const [structureTemplate, setStructureTemplate] = useState("standard");
+  const [customStages, setCustomStages] = useState<any[]>([]);
+
+  // ─── STEP 4: SCORING ───
+  const [scoringKey, setScoringKey] = useState("pmgc");
+  const [customScoring, setCustomScoring] = useState(false);
+  const [placementPoints, setPlacementPoints] = useState([15, 12, 10, 8, 6, 4, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0]);
+  const [killPoints, setKillPoints] = useState(1);
+  const [wwcdBonus, setWwcdBonus] = useState(0);
+  const [tiebreakerOrder, setTiebreakerOrder] = useState(["points", "wwcd", "kills", "damage"]);
+
+  // ─── STEP 5: MAPS ───
+  const [selectedMaps, setSelectedMaps] = useState(["Erangel", "Miramar", "Sanhok"]);
+  const [matchesPerLobby, setMatchesPerLobby] = useState(4);
+
+  // ─── STEP 6: TEAMS ───
+  const [importMode, setImportMode] = useState<"none" | "paste" | "csv" | "manual">("none");
+  const [pasteText, setPasteText] = useState("");
+  const [parsedTeams, setParsedTeams] = useState<any[]>([]);
+  const [manualTeams, setManualTeams] = useState<string[]>([]);
+
+  // ─── STEP 7: GROUPS ───
+  const [groupAssignment, setGroupAssignment] = useState<"auto" | "seeded" | "manual">("auto");
+
+  // ─── STEP 8: PUBLISHING ───
+  const [visibility, setVisibility] = useState<"public" | "unlisted" | "private">("public");
+
+  // Get selected structure
+  const template = STRUCTURE_TEMPLATES.find(t => t.key === structureTemplate);
+  const activeStages = structureTemplate === "custom" ? customStages : (template?.stages || []);
+
+  // Calculate total teams from structure
+  const totalTeamsFromStructure = activeStages.length > 0
+    ? activeStages[0].groups * activeStages[0].teamsPerGroup
+    : maxTeams;
+
+  const effectiveMaxTeams = Math.max(maxTeams, totalTeamsFromStructure);
+
+  // Total rounds
+  const totalRounds = activeStages.length || 1;
+  const totalMatches = activeStages.reduce((sum, s) => sum + (s.groups * (s.matches || 4)), 0) || matchesPerLobby;
 
   const toggleMap = (mapName: string) => {
-    set("maps", form.maps.includes(mapName)
-      ? form.maps.filter(m => m !== mapName)
-      : [...form.maps, mapName]
+    setSelectedMaps(prev =>
+      prev.includes(mapName) ? prev.filter(m => m !== mapName) : [...prev, mapName]
     );
   };
 
-  const applyPreset = (preset: typeof PRESETS[0]) => {
-    const roundNames = ["Qualifiers", "Round of 32", "Semi Finals", "Grand Finals", "Super Finals"];
-    setForm(f => ({
-      ...f,
-      totalSquads: preset.squads,
-      squadsPerLobby: preset.squads >= 16 ? 16 : preset.squads,
-      matchesPerLobby: preset.matches,
-      totalRounds: preset.rounds,
-      roundNames: roundNames.slice(0, preset.rounds),
-      advanceCount: Array.from({ length: preset.rounds - 1 }, (_, i) =>
-        Math.max(8, Math.floor(preset.squads / Math.pow(2, i + 1)))
-      ),
-    }));
+  const handleParse = () => {
+    if (!pasteText.trim()) return;
+    const result = parseSlotList(pasteText);
+    setParsedTeams(result.slots);
   };
 
-  const updateRoundName = (idx: number, name: string) => {
-    const newNames = [...form.roundNames];
-    newNames[idx] = name;
-    set("roundNames", newNames);
+  const addCustomStage = () => {
+    setCustomStages(prev => [...prev, {
+      name: `Stage ${prev.length + 1}`,
+      type: "GROUP_STAGE",
+      groups: 1,
+      teamsPerGroup: 16,
+      matches: 4,
+    }]);
   };
 
-  const updateAdvance = (idx: number, count: number) => {
-    const newAdvance = [...form.advanceCount];
-    newAdvance[idx] = count;
-    set("advanceCount", newAdvance);
+  const updateCustomStage = (idx: number, field: string, value: any) => {
+    setCustomStages(prev => prev.map((s, i) => i === idx ? { ...s, [field]: value } : s));
   };
 
-  const adjustRounds = (delta: number) => {
-    const newTotal = Math.max(1, Math.min(6, form.totalRounds + delta));
-    const defaultNames = ["Qualifiers", "Round of 32", "Semi Finals", "Grand Finals", "Super Finals", "Ultra Finals"];
-    const newNames = defaultNames.slice(0, newTotal);
-    // Preserve existing custom names
-    for (let i = 0; i < Math.min(form.roundNames.length, newTotal); i++) {
-      newNames[i] = form.roundNames[i];
-    }
-    const newAdvance = Array.from({ length: newTotal - 1 }, (_, i) =>
-      form.advanceCount[i] || Math.max(8, Math.floor(form.totalSquads / Math.pow(2, i + 1)))
-    );
-    setForm(f => ({ ...f, totalRounds: newTotal, roundNames: newNames, advanceCount: newAdvance }));
+  const removeCustomStage = (idx: number) => {
+    setCustomStages(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const numLobbies = Math.max(1, Math.ceil(form.totalSquads / form.squadsPerLobby));
-  const totalMatches = numLobbies * form.matchesPerLobby * form.totalRounds;
-  const scoring = SCORING_PRESETS[form.scoringKey as keyof typeof SCORING_PRESETS];
+  const canNext = () => {
+    if (step === 1) return name.trim().length >= 3;
+    if (step === 5) return selectedMaps.length > 0;
+    return true;
+  };
 
+  // ─── CREATE ───
   const handleCreate = async () => {
-    if (!form.name.trim()) return;
+    if (!name.trim()) return;
     setLoading(true);
+
     try {
+      const scoring = customScoring
+        ? { name: "Custom", placementPoints, killPoints, wwcdBonus }
+        : SCORING_PRESETS[scoringKey as keyof typeof SCORING_PRESETS];
+
       const t = await createTournament({
-        name: form.name.trim(),
-        description: form.description,
-        prizePool: form.prizePool,
-        discord: form.discord,
-        rules: form.rules,
-        maxTeams: form.totalSquads,
+        name: name.trim(),
+        description,
+        prizePool,
+        discord,
+        rules,
+        maxTeams: effectiveMaxTeams,
         scoringRule: scoring,
-        mapRotation: form.maps.length > 0 ? form.maps : ["Erangel"],
-        matchesPerLobby: form.matchesPerLobby,
-        rounds: form.totalRounds,
+        mapRotation: selectedMaps.length > 0 ? selectedMaps : ["Erangel"],
+        matchesPerLobby,
+        rounds: totalRounds,
       });
-      if (t) router.push(`/dashboard/tournaments/${t.id}`);
+
+      if (t) {
+        // Create stages if template selected
+        if (activeStages.length > 0) {
+          for (const stage of activeStages) {
+            await fetch(`/api/tournaments/${t.id}/stages`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: stage.name,
+                type: stage.type,
+                numGroups: stage.groups,
+                teamsPerGroup: stage.teamsPerGroup,
+                matchesPerGroup: stage.matches,
+                totalTeams: stage.groups * stage.teamsPerGroup,
+                mapRotation: selectedMaps,
+                scoringRule: scoring,
+                qualificationRule: {
+                  type: "TOP_N_PER_GROUP",
+                  count: Math.floor(stage.teamsPerGroup / 2),
+                },
+              }),
+            });
+          }
+        }
+
+        router.push(`/dashboard/tournaments/${t.id}`);
+      }
     } catch (e) {
       console.error(e);
       setLoading(false);
     }
   };
 
-  const canNext = () => {
-    if (step === 1) return form.name.trim().length >= 3;
-    if (step === 2) return form.totalSquads >= 4 && form.squadsPerLobby >= 4;
-    if (step === 3) return form.totalRounds >= 1;
-    if (step === 4) return form.maps.length > 0;
-    return true;
-  };
-
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 pb-20">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/dashboard/tournaments" className="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+        <Link href="/dashboard/tournaments" className="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
           <h1 className="text-3xl font-bold text-white">Create Tournament</h1>
-          <p className="text-gray-500 text-sm">PUBG Mobile · Fully customizable</p>
+          <p className="text-gray-500 text-sm">PUBG Mobile · Step {step} of {STEPS.length}</p>
         </div>
       </div>
 
       {/* Step Progress */}
-      <div className="glass-card rounded-2xl p-4 border border-white/10">
-        <div className="flex items-center gap-2 overflow-x-auto">
+      <div className="glass-card rounded-2xl p-3 border border-white/10 overflow-x-auto">
+        <div className="flex items-center gap-1 min-w-max">
           {STEPS.map((s, idx) => {
             const Icon = s.icon;
             const done = step > s.id;
             const active = step === s.id;
             return (
-              <div key={s.id} className="flex items-center gap-2 flex-shrink-0">
+              <div key={s.id} className="flex items-center gap-1">
                 <button
-                  onClick={() => step > s.id && setStep(s.id)}
-                  disabled={step < s.id}
-                  className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl transition-all ${
+                  onClick={() => done && setStep(s.id)}
+                  disabled={!done && !active}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all text-xs font-medium ${
                     active ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30" :
-                    done ? "bg-green-500/15 text-green-400 border border-green-500/30 hover:bg-green-500/25 cursor-pointer" :
-                    "bg-white/5 text-gray-600 border border-white/10"
+                    done ? "bg-green-500/15 text-green-400 border border-green-500/20 hover:bg-green-500/25 cursor-pointer" :
+                    "bg-white/3 text-gray-600 border border-white/5"
                   }`}
                 >
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                    done ? "bg-green-500" : active ? "bg-white/20" : "bg-white/10"
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    done ? "bg-green-500 text-white" : active ? "bg-white/20" : "bg-white/5"
                   }`}>
-                    {done ? <Check className="w-3.5 h-3.5 text-white" /> : <Icon className="w-3.5 h-3.5" />}
+                    {done ? <Check className="w-3 h-3" /> : <Icon className="w-3 h-3" />}
                   </div>
-                  <div className="text-left hidden sm:block">
-                    <div className="text-xs font-semibold">{s.label}</div>
-                    <div className="text-[10px] opacity-70">{s.desc}</div>
-                  </div>
+                  <span className="hidden sm:inline">{s.label}</span>
                 </button>
                 {idx < STEPS.length - 1 && (
-                  <div className={`w-4 h-px ${done ? "bg-green-500" : "bg-white/10"}`} />
+                  <div className={`w-3 h-px ${done ? "bg-green-500/50" : "bg-white/10"}`} />
                 )}
               </div>
             );
@@ -201,528 +280,464 @@ export default function CreateTournamentPage() {
       {/* Step Content */}
       <div className="glass-card rounded-2xl border border-white/10 p-8">
 
-        {/* STEP 1: BASICS */}
+        {/* ═══ STEP 1: DETAILS ═══ */}
         {step === 1 && (
           <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-yellow-400" />Tournament Details
-              </h2>
-              <p className="text-gray-500 text-sm">Give your tournament identity</p>
-            </div>
+            <StepHeader icon={Trophy} color="yellow" title="Tournament Details" desc="Basic information about your tournament" />
 
-            <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-400 block mb-1.5">
-                  Tournament Name <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={e => set("name", e.target.value)}
-                  placeholder="e.g. BGMI Champions Cup Season 2"
-                  className="input-field text-lg"
-                  autoFocus
-                />
-                {form.name.length > 0 && form.name.length < 3 && (
-                  <p className="text-red-400 text-xs mt-1">At least 3 characters</p>
-                )}
+                <label className="label-text">Tournament Name <span className="text-red-400">*</span></label>
+                <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. BGMI Champions Cup Season 2" className="input-field text-lg" autoFocus />
+                {name.length > 0 && name.length < 3 && <p className="text-red-400 text-xs mt-1">At least 3 characters</p>}
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-400 block mb-1.5 flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5" />Description
-                </label>
-                <textarea
-                  value={form.description}
-                  onChange={e => set("description", e.target.value)}
-                  placeholder="Tournament format, rules, timeline..."
-                  className="input-field resize-none"
-                  rows={3}
-                />
+                <label className="label-text"><FileText className="w-3.5 h-3.5 inline mr-1" />Description</label>
+                <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Tournament format, rules, timeline..." className="input-field resize-none" rows={3} />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-400 block mb-1.5 flex items-center gap-1.5">
-                    <DollarSign className="w-3.5 h-3.5 text-yellow-400" />Prize Pool
-                  </label>
-                  <input
-                    type="text"
-                    value={form.prizePool}
-                    onChange={e => set("prizePool", e.target.value)}
-                    placeholder="e.g. ₹50,000 or $500"
-                    className="input-field"
-                  />
+                  <label className="label-text"><DollarSign className="w-3.5 h-3.5 inline mr-1 text-yellow-400" />Prize Pool</label>
+                  <input type="text" value={prizePool} onChange={e => setPrizePool(e.target.value)} placeholder="e.g. $500 or ₹50,000" className="input-field" />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-400 block mb-1.5 flex items-center gap-1.5">
-                    <MessageSquare className="w-3.5 h-3.5 text-indigo-400" />Discord Invite
-                  </label>
-                  <input
-                    type="text"
-                    value={form.discord}
-                    onChange={e => set("discord", e.target.value)}
-                    placeholder="discord.gg/yourserver"
-                    className="input-field"
-                  />
+                  <label className="label-text"><MessageSquare className="w-3.5 h-3.5 inline mr-1 text-indigo-400" />Discord Server</label>
+                  <input type="text" value={discord} onChange={e => setDiscord(e.target.value)} placeholder="discord.gg/yourserver" className="input-field" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="label-text"><Calendar className="w-3.5 h-3.5 inline mr-1" />Start Date</label>
+                  <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="input-field" />
+                </div>
+                <div>
+                  <label className="label-text"><Calendar className="w-3.5 h-3.5 inline mr-1" />End Date</label>
+                  <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="input-field" />
                 </div>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-400 block mb-1.5">Rules (Optional)</label>
-                <textarea
-                  value={form.rules}
-                  onChange={e => set("rules", e.target.value)}
-                  placeholder="Team rules, code of conduct, tournament regulations..."
-                  className="input-field resize-none text-sm"
-                  rows={3}
-                />
+                <label className="label-text">Rules (Optional)</label>
+                <textarea value={rules} onChange={e => setRules(e.target.value)} placeholder="Tournament rules, code of conduct..." className="input-field resize-none text-sm" rows={3} />
               </div>
             </div>
           </div>
         )}
 
-        {/* STEP 2: STRUCTURE */}
+        {/* ═══ STEP 2: REGISTRATION ═══ */}
         {step === 2 && (
           <div className="space-y-6">
+            <StepHeader icon={Users} color="blue" title="Registration Settings" desc="How teams join your tournament" />
+
             <div>
-              <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-                <Users className="w-5 h-5 text-blue-400" />Tournament Structure
-              </h2>
-              <p className="text-gray-500 text-sm">Choose a preset or fully customize</p>
-            </div>
-
-            {/* Mode toggle */}
-            <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-white/10 w-fit">
-              <button
-                onClick={() => setMode("preset")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${mode === "preset" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
-              >
-                <Sparkles className="w-3.5 h-3.5 inline mr-1.5" />
-                Quick Presets
-              </button>
-              <button
-                onClick={() => setMode("custom")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${mode === "custom" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
-              >
-                <Settings className="w-3.5 h-3.5 inline mr-1.5" />
-                Full Custom
-              </button>
-            </div>
-
-            {mode === "preset" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {PRESETS.map(p => {
-                  const isSelected = form.totalSquads === p.squads;
+              <label className="label-text">Registration Type</label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { key: "open", label: "Open", desc: "Anyone can register", icon: Globe },
+                  { key: "closed", label: "Closed", desc: "Invite only", icon: Lock },
+                  { key: "invite", label: "Invite Code", desc: "Code required", icon: Shield },
+                ].map(opt => {
+                  const Icon = opt.icon;
                   return (
-                    <button
-                      key={p.key}
-                      onClick={() => applyPreset(p)}
-                      className={`p-5 rounded-xl border-2 text-left transition-all ${
-                        isSelected
-                          ? "border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/20"
-                          : "border-white/10 hover:border-white/25 hover:bg-white/3"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <div className="font-bold text-white text-lg">{p.label}</div>
-                          <div className="text-gray-500 text-xs">{p.desc}</div>
-                        </div>
-                        {isSelected && (
-                          <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
-                            <Check className="w-4 h-4 text-white" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 text-xs">
-                        <span className="flex items-center gap-1 text-blue-400 font-mono font-bold">
-                          <Users className="w-3 h-3" />{p.squads}
-                        </span>
-                        <span className="text-gray-600">·</span>
-                        <span className="text-gray-500">{p.lobbies} lobbies</span>
-                        <span className="text-gray-600">·</span>
-                        <span className="text-gray-500">{p.rounds} rounds</span>
-                        <span className="text-gray-600">·</span>
-                        <span className="text-gray-500">{p.matches} matches</span>
-                      </div>
+                    <button key={opt.key} onClick={() => setRegType(opt.key as any)}
+                      className={`p-4 rounded-xl border-2 text-left transition-all ${regType === opt.key ? "border-blue-500 bg-blue-500/10" : "border-white/10 hover:border-white/25"}`}>
+                      <Icon className={`w-5 h-5 mb-2 ${regType === opt.key ? "text-blue-400" : "text-gray-500"}`} />
+                      <div className="text-white font-bold text-sm">{opt.label}</div>
+                      <div className="text-gray-500 text-xs">{opt.desc}</div>
                     </button>
                   );
                 })}
               </div>
-            )}
+            </div>
 
-            {mode === "custom" && (
-              <div className="space-y-5">
-                <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/15">
-                  <div className="flex items-start gap-2.5 text-blue-300 text-xs">
-                    <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-semibold mb-1">Full Custom Mode</p>
-                      <p className="text-blue-300/70">Set exact numbers for your tournament. Great for unique formats like Erangel-only 24-squad or 3-round leagues.</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Total Squads */}
-                <div>
-                  <label className="text-sm font-medium text-gray-400 block mb-2 flex items-center justify-between">
-                    <span>Total Squads</span>
-                    <span className="text-white font-bold text-lg font-mono">{form.totalSquads}</span>
-                  </label>
-                  <input
-                    type="range"
-                    min={4}
-                    max={400}
-                    step={4}
-                    value={form.totalSquads}
-                    onChange={e => set("totalSquads", parseInt(e.target.value))}
-                    className="w-full accent-blue-500"
-                  />
-                  <div className="flex justify-between text-[10px] text-gray-600 mt-1">
-                    <span>4</span><span>100</span><span>200</span><span>300</span><span>400</span>
-                  </div>
-                  <div className="flex gap-2 mt-2">
-                    {[16, 20, 24, 32, 48, 64, 100, 128, 200].map(n => (
-                      <button
-                        key={n}
-                        onClick={() => set("totalSquads", n)}
-                        className={`px-3 py-1 rounded-lg text-xs font-medium border ${form.totalSquads === n ? "border-blue-500 bg-blue-500/20 text-blue-400" : "border-white/10 text-gray-500 hover:border-white/20"}`}
-                      >
-                        {n}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Squads per lobby */}
-                <div>
-                  <label className="text-sm font-medium text-gray-400 block mb-2 flex items-center justify-between">
-                    <span>Squads per Lobby</span>
-                    <span className="text-white font-bold text-lg font-mono">{form.squadsPerLobby}</span>
-                  </label>
-                  <input
-                    type="range"
-                    min={4}
-                    max={25}
-                    value={form.squadsPerLobby}
-                    onChange={e => set("squadsPerLobby", parseInt(e.target.value))}
-                    className="w-full accent-blue-500"
-                  />
-                  <div className="flex gap-2 mt-2">
-                    {[4, 8, 12, 16, 20, 25].map(n => (
-                      <button
-                        key={n}
-                        onClick={() => set("squadsPerLobby", n)}
-                        className={`px-3 py-1 rounded-lg text-xs font-medium border ${form.squadsPerLobby === n ? "border-blue-500 bg-blue-500/20 text-blue-400" : "border-white/10 text-gray-500 hover:border-white/20"}`}
-                      >
-                        {n}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-gray-600 text-xs mt-2">
-                    PUBG Mobile lobbies typically hold 16 squads. Choose based on your format.
-                  </p>
-                </div>
-
-                {/* Matches per lobby */}
-                <div>
-                  <label className="text-sm font-medium text-gray-400 block mb-2 flex items-center justify-between">
-                    <span>Matches per Lobby</span>
-                    <span className="text-white font-bold text-lg font-mono">{form.matchesPerLobby}</span>
-                  </label>
-                  <input
-                    type="range"
-                    min={1}
-                    max={10}
-                    value={form.matchesPerLobby}
-                    onChange={e => set("matchesPerLobby", parseInt(e.target.value))}
-                    className="w-full accent-blue-500"
-                  />
-                  <div className="flex gap-2 mt-2">
-                    {[1, 2, 3, 4, 5, 6, 8, 10].map(n => (
-                      <button
-                        key={n}
-                        onClick={() => set("matchesPerLobby", n)}
-                        className={`px-3 py-1 rounded-lg text-xs font-medium border ${form.matchesPerLobby === n ? "border-blue-500 bg-blue-500/20 text-blue-400" : "border-white/10 text-gray-500 hover:border-white/20"}`}
-                      >
-                        {n}
-                      </button>
-                    ))}
-                  </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="label-text">Max Teams</label>
+                <input type="number" min={4} max={400} value={maxTeams} onChange={e => setMaxTeams(parseInt(e.target.value) || 16)} className="input-field text-center text-lg font-bold" />
+                <div className="flex gap-1 mt-2">
+                  {[16, 32, 64, 128, 256].map(n => (
+                    <button key={n} onClick={() => setMaxTeams(n)} className={`flex-1 py-1 rounded text-xs font-medium border ${maxTeams === n ? "border-blue-500 bg-blue-500/20 text-blue-400" : "border-white/10 text-gray-500"}`}>
+                      {n}
+                    </button>
+                  ))}
                 </div>
               </div>
-            )}
-
-            {/* Live Preview */}
-            <div className="p-5 rounded-xl bg-gradient-to-br from-white/4 to-white/2 border border-white/10">
-              <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Live Preview</div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[
-                  { label: "Total Squads", value: form.totalSquads, color: "text-blue-400" },
-                  { label: "Lobbies", value: numLobbies, color: "text-purple-400" },
-                  { label: "Matches per Round", value: numLobbies * form.matchesPerLobby, color: "text-green-400" },
-                  { label: "Total Matches", value: totalMatches, color: "text-yellow-400" },
-                ].map(s => (
-                  <div key={s.label} className="text-center p-3 rounded-lg bg-white/3">
-                    <div className={`text-2xl font-black ${s.color}`}>{s.value}</div>
-                    <div className="text-gray-600 text-xs mt-1">{s.label}</div>
-                  </div>
-                ))}
+              <div>
+                <label className="label-text">Roster Size</label>
+                <input type="number" min={1} max={6} value={rosterSize} onChange={e => setRosterSize(parseInt(e.target.value) || 4)} className="input-field text-center text-lg font-bold" />
+                <p className="text-gray-600 text-xs mt-1 text-center">Players per team</p>
+              </div>
+              <div>
+                <label className="label-text">Substitutes</label>
+                <input type="number" min={0} max={4} value={substitutes} onChange={e => setSubstitutes(parseInt(e.target.value) || 0)} className="input-field text-center text-lg font-bold" />
+                <p className="text-gray-600 text-xs mt-1 text-center">Extra players allowed</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* STEP 3: ROUNDS (NEW!) */}
+        {/* ═══ STEP 3: STRUCTURE ═══ */}
         {step === 3 && (
           <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-                <Award className="w-5 h-5 text-purple-400" />Rounds & Qualifiers
-              </h2>
-              <p className="text-gray-500 text-sm">Configure how teams progress through the tournament</p>
-            </div>
+            <StepHeader icon={Layers} color="purple" title="Tournament Structure" desc="Choose how your tournament is organized" />
 
-            {/* Number of rounds */}
-            <div className="p-5 rounded-xl bg-white/3 border border-white/8">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <div className="text-white font-bold text-lg">Number of Rounds</div>
-                  <div className="text-gray-500 text-xs">1 = Single stage · 2 = Qualifiers + Finals · 3+ = Multi-stage</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => adjustRounds(-1)} disabled={form.totalRounds <= 1} className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-40 text-white flex items-center justify-center border border-white/10">
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <span className="text-4xl font-black text-white font-mono w-16 text-center">{form.totalRounds}</span>
-                  <button onClick={() => adjustRounds(1)} disabled={form.totalRounds >= 6} className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-40 text-white flex items-center justify-center border border-white/10">
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map(n => (
-                  <button
-                    key={n}
-                    onClick={() => adjustRounds(n - form.totalRounds)}
-                    className={`flex-1 py-2 rounded-lg text-sm font-medium border ${form.totalRounds === n ? "border-purple-500 bg-purple-500/20 text-purple-300" : "border-white/10 text-gray-500 hover:border-white/20"}`}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Round names & advancement */}
-            <div className="space-y-3">
-              <div className="text-sm font-bold text-gray-500 uppercase tracking-wider">Round Configuration</div>
-              {Array.from({ length: form.totalRounds }).map((_, idx) => {
-                const isLast = idx === form.totalRounds - 1;
-                return (
-                  <div key={idx} className={`p-4 rounded-xl border transition-all ${
-                    isLast ? "bg-yellow-500/5 border-yellow-500/20" : "bg-white/3 border-white/8"
-                  }`}>
-                    <div className="flex items-start gap-4">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-lg ${
-                        isLast ? "bg-yellow-500/20 text-yellow-400" : "bg-purple-500/20 text-purple-400"
-                      }`}>
-                        {idx + 1}
-                      </div>
-                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
-                            Round Name {isLast && "🏆"}
-                          </label>
-                          <input
-                            type="text"
-                            value={form.roundNames[idx] || ""}
-                            onChange={e => updateRoundName(idx, e.target.value)}
-                            className="input-field text-sm"
-                            placeholder={`Round ${idx + 1}`}
-                          />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {STRUCTURE_TEMPLATES.map(tmpl => (
+                <button key={tmpl.key} onClick={() => { setStructureTemplate(tmpl.key); if (tmpl.key === "custom" && customStages.length === 0) addCustomStage(); }}
+                  className={`p-5 rounded-xl border-2 text-left transition-all ${structureTemplate === tmpl.key ? "border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20" : "border-white/10 hover:border-white/25"}`}>
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-3xl">{tmpl.icon}</span>
+                    <div>
+                      <div className="text-white font-bold">{tmpl.label}</div>
+                      <div className="text-gray-500 text-xs">{tmpl.desc}</div>
+                    </div>
+                    {structureTemplate === tmpl.key && <Check className="w-5 h-5 text-purple-400 ml-auto" />}
+                  </div>
+                  {tmpl.stages.length > 0 && (
+                    <div className="flex items-center gap-1 mt-2">
+                      {tmpl.stages.map((s, i) => (
+                        <div key={i} className="flex items-center gap-1">
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-gray-400">{s.name}</span>
+                          {i < tmpl.stages.length - 1 && <ChevronRight className="w-3 h-3 text-gray-600" />}
                         </div>
-                        {!isLast && (
-                          <div>
-                            <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
-                              Teams Advancing to Next
-                            </label>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="number"
-                                min={2}
-                                max={form.totalSquads}
-                                value={form.advanceCount[idx] || 16}
-                                onChange={e => updateAdvance(idx, parseInt(e.target.value) || 16)}
-                                className="input-field text-sm w-24"
-                              />
-                              <div className="flex flex-wrap gap-1">
-                                {[8, 16, 24, 32].map(n => (
-                                  <button
-                                    key={n}
-                                    onClick={() => updateAdvance(idx, n)}
-                                    className={`px-2 py-1 rounded text-[10px] font-medium border ${form.advanceCount[idx] === n ? "border-purple-500 bg-purple-500/20 text-purple-300" : "border-white/10 text-gray-500 hover:border-white/20"}`}
-                                  >
-                                    {n}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        )}
+                      ))}
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Custom stage builder */}
+            {structureTemplate === "custom" && (
+              <div className="space-y-3 pt-4 border-t border-white/10">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-white font-bold text-sm">Custom Stages</h3>
+                  <button onClick={addCustomStage} className="btn-secondary flex items-center gap-1.5 px-3 py-1.5 text-xs">
+                    <Plus className="w-3 h-3" />Add Stage
+                  </button>
+                </div>
+                {customStages.map((stage, idx) => (
+                  <div key={idx} className="glass-card rounded-xl p-4 border border-white/10">
+                    <div className="grid grid-cols-5 gap-3">
+                      <div className="col-span-2">
+                        <label className="text-xs text-gray-500">Stage Name</label>
+                        <input type="text" value={stage.name} onChange={e => updateCustomStage(idx, "name", e.target.value)} className="input-field text-sm" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500">Groups</label>
+                        <input type="number" min={1} value={stage.groups} onChange={e => updateCustomStage(idx, "groups", parseInt(e.target.value) || 1)} className="input-field text-sm text-center" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500">Teams/G</label>
+                        <input type="number" min={2} value={stage.teamsPerGroup} onChange={e => updateCustomStage(idx, "teamsPerGroup", parseInt(e.target.value) || 16)} className="input-field text-sm text-center" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500">Matches</label>
+                        <input type="number" min={1} value={stage.matches} onChange={e => updateCustomStage(idx, "matches", parseInt(e.target.value) || 4)} className="input-field text-sm text-center" />
                       </div>
                     </div>
+                    <button onClick={() => removeCustomStage(idx)} className="text-red-400 text-xs mt-2 hover:text-red-300">Remove</button>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
+
+            {/* Structure Preview */}
+            {activeStages.length > 0 && (
+              <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/15">
+                <div className="text-xs font-bold text-purple-400 uppercase tracking-wider mb-3">Structure Preview</div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {activeStages.map((s, i) => (
+                    <div key={i} className="flex items-center gap-1.5">
+                      <div className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-center">
+                        <div className="text-white text-xs font-bold">{s.name}</div>
+                        <div className="text-gray-500 text-[10px]">{s.groups * s.teamsPerGroup} teams · {s.groups}G · {s.matches}M</div>
+                      </div>
+                      {i < activeStages.length - 1 && <ArrowRight className="w-4 h-4 text-gray-600" />}
+                    </div>
+                  ))}
+                  <div className="px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-center">
+                    <div className="text-yellow-400 text-xs font-bold">🏆 Champion</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* STEP 4: MAPS */}
+        {/* ═══ STEP 4: SCORING ═══ */}
         {step === 4 && (
           <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-                <Map className="w-5 h-5 text-green-400" />Map Rotation
-              </h2>
-              <p className="text-gray-500 text-sm">Select maps that will be played (rotates each match)</p>
+            <StepHeader icon={Target} color="orange" title="Scoring System" desc="How points are awarded per match" />
+
+            <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-white/10 w-fit">
+              <button onClick={() => setCustomScoring(false)} className={`px-4 py-2 rounded-lg text-sm font-medium ${!customScoring ? "bg-blue-600 text-white" : "text-gray-400"}`}>
+                <Trophy className="w-3.5 h-3.5 inline mr-1.5" />Presets
+              </button>
+              <button onClick={() => setCustomScoring(true)} className={`px-4 py-2 rounded-lg text-sm font-medium ${customScoring ? "bg-blue-600 text-white" : "text-gray-400"}`}>
+                <Settings className="w-3.5 h-3.5 inline mr-1.5" />Custom
+              </button>
             </div>
+
+            {!customScoring ? (
+              <div className="space-y-2">
+                {Object.entries(SCORING_PRESETS).map(([key, s]) => (
+                  <button key={key} onClick={() => setScoringKey(key)}
+                    className={`w-full p-4 rounded-xl border-2 text-left transition-all ${scoringKey === key ? "border-orange-500 bg-orange-500/5" : "border-white/10 hover:border-white/25"}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-white font-bold">{s.name}</div>
+                        <div className="text-gray-500 text-xs">1st={s.placementPoints[0]}pts · Kill={s.killPoints}pt{s.killPoints > 1 ? "s" : ""}{s.wwcdBonus ? ` · WWCD+${s.wwcdBonus}` : ""}</div>
+                      </div>
+                      {scoringKey === key && <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center"><Check className="w-4 h-4 text-white" /></div>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="label-text">Placement Points (position #1 to #16)</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {placementPoints.map((pts, idx) => (
+                      <div key={idx} className={`flex flex-col items-center p-2 rounded-lg border ${idx < 3 ? "border-yellow-500/30 bg-yellow-500/5" : "border-white/8"}`}>
+                        <span className={`text-[10px] font-bold ${idx === 0 ? "text-yellow-400" : idx === 1 ? "text-gray-300" : idx === 2 ? "text-amber-600" : "text-gray-500"}`}>
+                          #{idx + 1}
+                        </span>
+                        <input type="number" min={0} value={pts}
+                          onChange={e => setPlacementPoints(prev => { const n = [...prev]; n[idx] = parseInt(e.target.value) || 0; return n; })}
+                          className="w-full mt-1 bg-transparent text-white font-mono font-bold text-center outline-none border-b border-white/10 focus:border-blue-500" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="label-text">Kill Points</label>
+                    <input type="number" min={0} value={killPoints} onChange={e => setKillPoints(parseInt(e.target.value) || 0)} className="input-field text-center font-mono font-bold" />
+                  </div>
+                  <div>
+                    <label className="label-text">WWCD Bonus</label>
+                    <input type="number" min={0} value={wwcdBonus} onChange={e => setWwcdBonus(parseInt(e.target.value) || 0)} className="input-field text-center font-mono font-bold" />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ═══ STEP 5: MAPS ═══ */}
+        {step === 5 && (
+          <div className="space-y-6">
+            <StepHeader icon={Map} color="green" title="Map Rotation" desc="Select maps and match count" />
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {MAPS.map(map => {
-                const isSelected = form.maps.includes(map.name);
+                const isSelected = selectedMaps.includes(map.name);
                 return (
-                  <button
-                    key={map.name}
-                    onClick={() => toggleMap(map.name)}
-                    className={`p-4 rounded-xl border-2 text-left transition-all ${
-                      isSelected
-                        ? "border-green-500 bg-green-500/10 shadow-lg shadow-green-500/20"
-                        : "border-white/10 hover:border-white/25 hover:bg-white/3"
-                    }`}
-                  >
+                  <button key={map.name} onClick={() => toggleMap(map.name)}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${isSelected ? "border-green-500 bg-green-500/10" : "border-white/10 hover:border-white/25"}`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-2xl">{map.flag}</span>
-                      {isSelected && (
-                        <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                          <Check className="w-3 h-3 text-white" />
-                        </div>
-                      )}
+                      {isSelected && <Check className="w-4 h-4 text-green-400" />}
                     </div>
-                    <div className="font-bold text-white text-sm">{map.name}</div>
+                    <div className="text-white font-bold text-sm">{map.name}</div>
                     <div className="text-gray-500 text-xs">{map.type}</div>
                   </button>
                 );
               })}
             </div>
 
-            {form.maps.length === 0 && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
-                Select at least 1 map
+            {selectedMaps.length === 0 && (
+              <p className="text-red-400 text-sm text-center">Select at least 1 map</p>
+            )}
+
+            <div>
+              <label className="label-text">Matches Per Lobby: <span className="text-white font-bold">{matchesPerLobby}</span></label>
+              <input type="range" min={1} max={10} value={matchesPerLobby} onChange={e => setMatchesPerLobby(parseInt(e.target.value))} className="w-full accent-blue-500" />
+              <div className="flex justify-between text-xs text-gray-600"><span>1</span><span>5</span><span>10</span></div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══ STEP 6: TEAMS ═══ */}
+        {step === 6 && (
+          <div className="space-y-6">
+            <StepHeader icon={Shield} color="cyan" title="Import Teams" desc="Add teams now or later" />
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { key: "none", label: "Skip", desc: "Add teams later", icon: Clock },
+                { key: "paste", label: "Discord Paste", desc: "Paste slot list", icon: MessageSquare },
+                { key: "csv", label: "CSV Upload", desc: "Upload spreadsheet", icon: Upload },
+                { key: "manual", label: "Manual", desc: "Type team names", icon: User },
+              ].map(opt => {
+                const Icon = opt.icon;
+                return (
+                  <button key={opt.key} onClick={() => setImportMode(opt.key as any)}
+                    className={`p-4 rounded-xl border-2 text-center transition-all ${importMode === opt.key ? "border-cyan-500 bg-cyan-500/10" : "border-white/10 hover:border-white/25"}`}>
+                    <Icon className={`w-6 h-6 mx-auto mb-2 ${importMode === opt.key ? "text-cyan-400" : "text-gray-500"}`} />
+                    <div className="text-white font-bold text-sm">{opt.label}</div>
+                    <div className="text-gray-500 text-xs">{opt.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {importMode === "paste" && (
+              <div className="space-y-3">
+                <textarea value={pasteText} onChange={e => setPasteText(e.target.value)} placeholder="Paste your Discord slot list here..." className="input-field font-mono text-sm resize-none" rows={8} />
+                <button onClick={handleParse} disabled={!pasteText.trim()} className="btn-primary px-4 py-2 text-sm">
+                  <Zap className="w-4 h-4" />Parse Teams
+                </button>
+                {parsedTeams.length > 0 && (
+                  <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20">
+                    <p className="text-green-400 font-bold text-sm">{parsedTeams.length} teams detected!</p>
+                    <div className="max-h-32 overflow-y-auto mt-2 space-y-0.5">
+                      {parsedTeams.map(t => (
+                        <div key={t.slotNumber} className="text-xs text-gray-300">#{t.slotNumber} {t.teamName}</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {form.maps.length > 0 && (
-              <div className="p-4 rounded-xl bg-green-500/5 border border-green-500/15">
-                <div className="text-xs text-gray-400 mb-2">Map Rotation Order:</div>
-                <div className="flex flex-wrap gap-2">
-                  {form.maps.map((m, i) => (
-                    <span key={m} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20 text-green-300 text-sm">
-                      <span className="text-xs text-gray-500 font-mono">M{i + 1}</span>
-                      {m}
-                    </span>
+            {importMode === "manual" && (
+              <div className="space-y-2">
+                <p className="text-gray-500 text-xs">Enter one team name per line</p>
+                <textarea
+                  value={manualTeams.join("\n")}
+                  onChange={e => setManualTeams(e.target.value.split("\n").filter(t => t.trim()))}
+                  placeholder="Team Alpha\nTeam Bravo\nTeam Charlie"
+                  className="input-field font-mono text-sm resize-none"
+                  rows={8}
+                />
+                {manualTeams.length > 0 && <p className="text-blue-400 text-xs">{manualTeams.length} teams entered</p>}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ═══ STEP 7: GROUPS ═══ */}
+        {step === 7 && (
+          <div className="space-y-6">
+            <StepHeader icon={Grid3X3} color="indigo" title="Group Assignment" desc="How teams are distributed into groups" />
+
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { key: "auto", label: "Automatic", desc: "Random balanced distribution", icon: Sparkles },
+                { key: "seeded", label: "Snake Seeding", desc: "Top teams spread evenly", icon: TrendingUp },
+                { key: "manual", label: "Manual", desc: "Assign after creation", icon: User },
+              ].map(opt => {
+                const Icon = opt.icon;
+                return (
+                  <button key={opt.key} onClick={() => setGroupAssignment(opt.key as any)}
+                    className={`p-5 rounded-xl border-2 text-center transition-all ${groupAssignment === opt.key ? "border-indigo-500 bg-indigo-500/10" : "border-white/10 hover:border-white/25"}`}>
+                    <Icon className={`w-6 h-6 mx-auto mb-2 ${groupAssignment === opt.key ? "text-indigo-400" : "text-gray-500"}`} />
+                    <div className="text-white font-bold text-sm">{opt.label}</div>
+                    <div className="text-gray-500 text-xs">{opt.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/15">
+              <p className="text-indigo-300 text-xs">
+                <Info className="w-3 h-3 inline mr-1" />
+                Group assignment can always be changed later from the tournament's Stages tab. The Groups visual builder lets you drag-and-drop teams between groups.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ═══ STEP 8: PUBLISHING ═══ */}
+        {step === 8 && (
+          <div className="space-y-6">
+            <StepHeader icon={Globe} color="emerald" title="Publishing" desc="Who can see your tournament" />
+
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { key: "public", label: "Public", desc: "Visible to everyone, listed on TournaOps", icon: Globe, color: "green" },
+                { key: "unlisted", label: "Unlisted", desc: "Accessible by link only", icon: Eye, color: "blue" },
+                { key: "private", label: "Private", desc: "Only you can see it", icon: Lock, color: "red" },
+              ].map(opt => {
+                const Icon = opt.icon;
+                return (
+                  <button key={opt.key} onClick={() => setVisibility(opt.key as any)}
+                    className={`p-5 rounded-xl border-2 text-center transition-all ${visibility === opt.key ? `border-${opt.color}-500 bg-${opt.color}-500/10` : "border-white/10 hover:border-white/25"}`}>
+                    <Icon className={`w-6 h-6 mx-auto mb-2 ${visibility === opt.key ? `text-${opt.color}-400` : "text-gray-500"}`} />
+                    <div className="text-white font-bold text-sm">{opt.label}</div>
+                    <div className="text-gray-500 text-xs">{opt.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ═══ STEP 9: REVIEW ═══ */}
+        {step === 9 && (
+          <div className="space-y-6">
+            <StepHeader icon={Check} color="blue" title="Review & Create" desc="Verify everything before creating" />
+
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 border border-white/10">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                {[
+                  { label: "Name", value: name },
+                  { label: "Prize Pool", value: prizePool || "Not set" },
+                  { label: "Max Teams", value: `${effectiveMaxTeams} squads` },
+                  { label: "Structure", value: template?.label || "Custom" },
+                  { label: "Stages", value: activeStages.map(s => s.name).join(" → ") || "Single stage" },
+                  { label: "Scoring", value: customScoring ? "Custom" : SCORING_PRESETS[scoringKey as keyof typeof SCORING_PRESETS]?.name },
+                  { label: "Maps", value: selectedMaps.join(", ") },
+                  { label: "Matches/Lobby", value: `${matchesPerLobby} matches` },
+                  { label: "Total Matches", value: `~${totalMatches} matches` },
+                  { label: "Registration", value: regType.charAt(0).toUpperCase() + regType.slice(1) },
+                  { label: "Visibility", value: visibility.charAt(0).toUpperCase() + visibility.slice(1) },
+                  { label: "Teams Imported", value: parsedTeams.length > 0 ? `${parsedTeams.length} from Discord` : manualTeams.length > 0 ? `${manualTeams.length} manual` : "None yet" },
+                ].map(row => (
+                  <div key={row.label} className="flex flex-col gap-0.5">
+                    <span className="text-gray-500 text-xs">{row.label}</span>
+                    <span className="text-white font-medium">{row.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Visual pipeline */}
+            {activeStages.length > 0 && (
+              <div className="p-4 rounded-xl bg-white/3 border border-white/10">
+                <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Tournament Pipeline</div>
+                <div className="flex items-center gap-2 flex-wrap justify-center">
+                  <div className="px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-center">
+                    <div className="text-blue-400 text-xs font-bold">{effectiveMaxTeams} Teams</div>
+                    <div className="text-gray-600 text-[10px]">Registration</div>
+                  </div>
+                  {activeStages.map((s, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <ArrowRight className="w-4 h-4 text-gray-600" />
+                      <div className="px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/20 text-center">
+                        <div className="text-purple-400 text-xs font-bold">{s.name}</div>
+                        <div className="text-gray-600 text-[10px]">{s.groups * s.teamsPerGroup}T · {s.groups}G · {s.matches}M</div>
+                      </div>
+                    </div>
                   ))}
+                  <ArrowRight className="w-4 h-4 text-gray-600" />
+                  <div className="px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-center">
+                    <Crown className="w-4 h-4 text-yellow-400 mx-auto" />
+                    <div className="text-yellow-400 text-[10px] font-bold">Champion</div>
+                  </div>
                 </div>
               </div>
             )}
           </div>
         )}
 
-        {/* STEP 5: SCORING */}
-        {step === 5 && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-                <Target className="w-5 h-5 text-orange-400" />Scoring System
-              </h2>
-              <p className="text-gray-500 text-sm">Choose how points are awarded per match</p>
-            </div>
-
-            <div className="space-y-3">
-              {Object.entries(SCORING_PRESETS).map(([key, s]) => {
-                const isSelected = form.scoringKey === key;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => set("scoringKey", key)}
-                    className={`w-full p-5 rounded-xl border-2 text-left transition-all ${
-                      isSelected
-                        ? "border-orange-500 bg-orange-500/5 shadow-lg shadow-orange-500/10"
-                        : "border-white/10 hover:border-white/25 hover:bg-white/3"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <div className="font-bold text-white text-lg">{s.name}</div>
-                        <div className="text-gray-500 text-xs">
-                          1st = {s.placementPoints[0]}pts · Kill = {s.killPoints}pt{s.killPoints > 1 ? "s" : ""}
-                          {s.wwcdBonus ? ` · WWCD bonus +${s.wwcdBonus}` : ""}
-                        </div>
-                      </div>
-                      {isSelected && (
-                        <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
-                          <Check className="w-4 h-4 text-white" />
-                        </div>
-                      )}
-                    </div>
-
-                    {isSelected && (
-                      <div className="mt-3 pt-3 border-t border-white/10">
-                        <div className="text-xs text-gray-500 mb-2">Placement Points Breakdown</div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {s.placementPoints.slice(0, 10).map((pts, i) => (
-                            <div key={i} className="flex items-center gap-1 bg-white/5 rounded px-2 py-1">
-                              <span className="text-gray-500 text-xs">#{i + 1}</span>
-                              <span className="text-orange-400 text-xs font-bold">{pts}pts</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Final Summary */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 border border-white/10">
-              <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Zap className="w-3.5 h-3.5 text-blue-400" />Tournament Summary
-              </div>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                {[
-                  { label: "Name", value: form.name || "—" },
-                  { label: "Prize Pool", value: form.prizePool || "Not set" },
-                  { label: "Total Squads", value: `${form.totalSquads} squads` },
-                  { label: "Structure", value: `${numLobbies} lobbies × ${form.squadsPerLobby} squads` },
-                  { label: "Rounds", value: form.roundNames.join(" → ") },
-                  { label: "Matches", value: `${totalMatches} total (${form.matchesPerLobby}/lobby)` },
-                  { label: "Maps", value: form.maps.join(", ") },
-                  { label: "Scoring", value: scoring.name },
-                ].map(row => (
-                  <div key={row.label} className="flex flex-col gap-0.5">
-                    <span className="text-gray-500 text-xs">{row.label}</span>
-                    <span className="text-white text-sm font-medium truncate">{row.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Navigation */}
+        {/* ═══ NAVIGATION ═══ */}
         <div className="flex items-center justify-between mt-8 pt-6 border-t border-white/8">
           {step > 1 ? (
             <button onClick={() => setStep(s => s - 1)} className="btn-secondary px-5 py-2.5">
@@ -734,29 +749,49 @@ export default function CreateTournamentPage() {
             </Link>
           )}
 
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            Step {step} of {STEPS.length}
-          </div>
+          <div className="text-xs text-gray-500">Step {step} of {STEPS.length}</div>
 
           {step < STEPS.length ? (
             <button onClick={() => setStep(s => s + 1)} disabled={!canNext()} className="btn-primary px-6 py-2.5">
               Next<ArrowRight className="w-4 h-4" />
             </button>
           ) : (
-            <button onClick={handleCreate} disabled={loading || !form.name.trim()} className="btn-primary px-8 py-2.5">
+            <button onClick={handleCreate} disabled={loading || !name.trim()} className="btn-primary px-8 py-2.5">
               {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Creating...
-                </>
+                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Creating...</>
               ) : (
-                <>
-                  <Zap className="w-4 h-4" />Create Tournament
-                </>
+                <><Zap className="w-4 h-4" />Create Tournament</>
               )}
             </button>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══ HELPER COMPONENTS ═══
+
+function StepHeader({ icon: Icon, color, title, desc }: { icon: any; color: string; title: string; desc: string }) {
+  const colorMap: Record<string, string> = {
+    yellow: "from-yellow-500 to-orange-500",
+    blue: "from-blue-500 to-cyan-500",
+    purple: "from-purple-500 to-pink-500",
+    orange: "from-orange-500 to-red-500",
+    green: "from-green-500 to-emerald-500",
+    cyan: "from-cyan-500 to-blue-500",
+    indigo: "from-indigo-500 to-purple-500",
+    emerald: "from-emerald-500 to-green-500",
+    red: "from-red-500 to-pink-500",
+  };
+  return (
+    <div className="flex items-center gap-3 mb-2">
+      <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${colorMap[color] || colorMap.blue} flex items-center justify-center shadow-lg`}>
+        <Icon className="w-6 h-6 text-white" />
+      </div>
+      <div>
+        <h2 className="text-2xl font-bold text-white">{title}</h2>
+        <p className="text-gray-500 text-sm">{desc}</p>
       </div>
     </div>
   );
