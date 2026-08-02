@@ -59,9 +59,9 @@ model Tournament {
   rounds        Round[]
   imports       DiscordImport[]
 
-  // NEW: Multi-stage tournament support
   stages        Stage[]
   progressions  TeamProgression[]
+  auditLogs     QualifierAuditLog[]
 
   @@index([userId])
   @@index([slug])
@@ -77,7 +77,7 @@ model Team {
   contact      String?
   players      Json
   createdAt    DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  updatedAt    DateTime   @updatedAt
 
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   tournamentId String
@@ -103,25 +103,30 @@ model Round {
 }
 
 model Match {
-  id           String     @id @default(cuid())
-  name         String
-  roundId      String
-  lobbyId      String
-  map          String
-  status       String     @default("pending")
-  matchNumber  Int?
-  results      Json?
-  startTime    DateTime?
-  endTime      DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id                  String     @id @default(cuid())
+  name                String
+  roundId             String
+  lobbyId             String
+  map                 String
+  status              String     @default("pending")
+  matchNumber         Int?
+  results             Json?
+  startTime           DateTime?
+  endTime             DateTime?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
 
-  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  tournamentId String
+  stageId             String?
+  groupId             String?
 
-  // NEW: Optional link to stage/group
-  stageId      String?
-  groupId      String?
+  // NEW: Qualifier extras
+  notes               String?    @db.Text
+  screenshotUrl       String?    @db.Text     // base64 or URL
+  compensationData    Json?      // { teamId: points, ... }
+  penaltyData         Json?      // { teamId: points, reason, ... }
+
+  tournament          Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  tournamentId        String
 
   @@index([tournamentId])
   @@index([status])
@@ -154,45 +159,39 @@ model DiscordImport {
 }
 
 // ═══════════════════════════════════════════════════════════
-// NEW: MULTI-STAGE TOURNAMENT SYSTEM
+// MULTI-STAGE TOURNAMENT SYSTEM
 // ═══════════════════════════════════════════════════════════
 
 model Stage {
   id                 String   @id @default(cuid())
   tournamentId       String
   name               String
-  type               String   // OPEN_QUALIFIER, GROUP_STAGE, SEMI_FINAL, etc.
+  type               String
   order              Int
-  status             String   @default("DRAFT")  // DRAFT, LIVE, COMPLETED, etc.
+  status             String   @default("DRAFT")
 
-  // Structure
   numGroups          Int      @default(1)
   teamsPerGroup      Int      @default(16)
   matchesPerGroup    Int      @default(4)
   totalTeams         Int
 
-  // Dates (optional)
   startDate          DateTime?
   endDate            DateTime?
   registrationOpens  DateTime?
   registrationCloses DateTime?
 
-  // Qualification
-  qualificationRule  Json      // { type, count, percent, wildcards, manualOverrides }
+  qualificationRule  Json
   teamsAdvancing     Int      @default(0)
   teamsEliminated    Int      @default(0)
 
-  // Config
   mapRotation        String[]
   scoringRule        Json
   tiebreakerOrder    String[] @default(["points", "kills", "damage", "wwcd"])
 
-  // Lock system
   isLocked           Boolean  @default(false)
   lockedAt           DateTime?
   lockedBy           String?
 
-  // Description
   description        String?
 
   createdAt          DateTime @default(now())
@@ -201,6 +200,7 @@ model Stage {
   tournament         Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   groups             StageGroup[]
   progressions       TeamProgression[]
+  auditLogs          QualifierAuditLog[]
 
   @@index([tournamentId, order])
   @@index([status])
@@ -209,11 +209,11 @@ model Stage {
 model StageGroup {
   id           String   @id @default(cuid())
   stageId      String
-  name         String   // "Group A", "Group B", "Main Lobby"
+  name         String
   order        Int      @default(0)
-  teamIds      String[] // Array of team IDs
-  matchIds     String[] // Array of match IDs
-  status       String   @default("PENDING")  // PENDING, LIVE, COMPLETED
+  teamIds      String[]
+  matchIds     String[]
+  status       String   @default("PENDING")
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -228,16 +228,16 @@ model TeamProgression {
   tournamentId    String
   stageId         String
   teamId          String
-  teamName        String    // Snapshot for history
+  teamName        String
 
-  entryPosition   Int?      // Rank when entering
-  finalPosition   Int?      // Rank when leaving
+  entryPosition   Int?
+  finalPosition   Int?
   points          Int       @default(0)
   kills           Int       @default(0)
   matchesPlayed   Int       @default(0)
   wwcds           Int       @default(0)
 
-  status          String    // QUALIFIED, ELIMINATED, WILDCARD, MANUAL_ADVANCE, MANUAL_ELIMINATE
+  status          String
   advancedToStageId String?
   manualOverride  Boolean   @default(false)
   overrideNote    String?
@@ -250,4 +250,31 @@ model TeamProgression {
   @@unique([stageId, teamId])
   @@index([tournamentId, teamId])
   @@index([stageId])
+}
+
+// ═══════════════════════════════════════════════════════════
+// NEW: QUALIFIER AUDIT LOG
+// ═══════════════════════════════════════════════════════════
+
+model QualifierAuditLog {
+  id             String   @id @default(cuid())
+  tournamentId   String
+  stageId        String?
+  teamId         String?
+  teamName       String?
+
+  action         String   // MANUAL_ADVANCE, MANUAL_ELIMINATE, EDIT_RESULT, ADD_COMPENSATION, ADD_PENALTY, LOCK_STAGE, UNLOCK_STAGE, RESET_STAGE
+  reason         String   @db.Text
+  metadata       Json?    // Additional context (old value, new value, etc.)
+
+  performedBy    String
+  performedAt    DateTime @default(now())
+
+  tournament     Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  stage          Stage? @relation(fields: [stageId], references: [id], onDelete: SetNull)
+
+  @@index([tournamentId])
+  @@index([stageId])
+  @@index([teamId])
+  @@index([performedAt])
 }
