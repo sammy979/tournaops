@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { X, Send, Bot, User, Sparkles, Zap, Trophy, Crosshair, RefreshCw } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { X, Send, Bot, User, Sparkles, Zap, Trophy, Crosshair, RefreshCw, BookOpen, TrendingUp } from "lucide-react";
 import { Tournament } from "@/types/tournament";
 import { getLeaderboard, getTopPlayers, getTournamentStats } from "@/lib/storage/tournaments";
 
@@ -17,126 +17,142 @@ interface Message {
   time: Date;
 }
 
-function generateResponse(input: string, tournament: Tournament): string {
+function generateResponse(input: string, tournament: Tournament, history: Message[]): string {
   const q = input.toLowerCase().trim();
   const leaderboard = getLeaderboard(tournament);
   const { topKillers, topDamage } = getTopPlayers(tournament);
   const stats = getTournamentStats(tournament);
 
-  // Greetings
-  if (q.match(/^(hi|hello|hey|sup|yo)/)) {
-    return `Hey! I'm OpsAI, your tournament assistant for **${tournament.name}**. Ask me anything about standings, stats, match info, or how to use TournaOps. What do you need?`;
+  // Context from recent conversation
+  const recentTopics = history.slice(-6).map(m => m.content.toLowerCase()).join(" ");
+
+  if (q.match(/^(hi|hello|hey|sup|yo|hola)/)) {
+    return `Hey! I'm OpsAI for **${tournament.name}**. I remember our conversation context. Ask me anything about standings, stats, format, or how to use any TournaOps feature. What do you need?`;
   }
 
-  // Leader / who is winning
-  if (q.match(/who.*(lead|win|first|top|#1)|lead|winner/)) {
-    if (leaderboard.length === 0) return "No match results yet. Enter some match results first, then I can tell you who's leading!";
+  if (q.match(/who.*(lead|win|first|top|#1)|lead|winner|winning/)) {
+    if (leaderboard.length === 0) return "No results yet. Enter some match data first!";
     const top3 = leaderboard.slice(0, 3);
-    return `**Current Top 3:**\n\n🥇 **${top3[0]?.teamName}** — ${top3[0]?.totalPoints} pts (${top3[0]?.totalKills} kills)\n🥈 **${top3[1]?.teamName || "—"}** — ${top3[1]?.totalPoints || 0} pts\n🥉 **${top3[2]?.teamName || "—"}** — ${top3[2]?.totalPoints || 0} pts\n\nThe gap between 1st and 2nd is **${(top3[0]?.totalPoints || 0) - (top3[1]?.totalPoints || 0)} points**.`;
+    const gap = (top3[0]?.totalPoints || 0) - (top3[1]?.totalPoints || 0);
+    return `**Current Top 3 in ${tournament.name}:**\n\n🥇 **${top3[0]?.teamName}** — ${top3[0]?.totalPoints}pts (${top3[0]?.totalKills}K)\n🥈 **${top3[1]?.teamName || "—"}** — ${top3[1]?.totalPoints || 0}pts\n🥉 **${top3[2]?.teamName || "—"}** — ${top3[2]?.totalPoints || 0}pts\n\nThe gap between 1st and 2nd is **${gap} points**.${gap <= 5 ? " 🔥 Very close race!" : gap >= 20 ? " Strong lead." : ""}`;
   }
 
-  // Top killer / MVP
-  if (q.match(/kill|frag|mvp|best player|top player/)) {
+  if (q.match(/kill|frag|mvp|best player|top player|fragger/)) {
     if (topKillers.length === 0) return "No kill data yet. Enter match results with player stats to track kills.";
     const mvp = topKillers[0];
-    return `🎯 **Top Fragger: ${mvp.playerName}** (${mvp.teamName})\n\n**${mvp.kills} total kills** across all matches.\n\nTop 3 fraggers:\n1. ${topKillers[0]?.playerName} — ${topKillers[0]?.kills}K\n2. ${topKillers[1]?.playerName || "—"} — ${topKillers[1]?.kills || 0}K\n3. ${topKillers[2]?.playerName || "—"} — ${topKillers[2]?.kills || 0}K`;
+    const avg = (mvp.kills / Math.max(stats.completedMatches, 1)).toFixed(1);
+    return `🎯 **MVP: ${mvp.playerName}** (${mvp.teamName})\n\n**${mvp.kills} total kills** — avg ${avg}K per match\n\nTop 5 Fraggers:\n${topKillers.slice(0, 5).map((p, i) => `${i+1}. ${p.playerName} (${p.teamName}) — ${p.kills}K`).join("\n")}`;
   }
 
-  // Damage
   if (q.match(/damage|dmg/)) {
-    if (topDamage.length === 0) return "No damage data yet. Enter match results with player damage stats.";
+    if (topDamage.length === 0) return "No damage data yet. Enter match results with player stats.";
     const king = topDamage[0];
-    return `🔥 **Damage King: ${king.playerName}** (${king.teamName})\n\n**${king.damage?.toLocaleString()} total damage** dealt!\n\nTop damage dealers:\n1. ${topDamage[0]?.playerName} — ${topDamage[0]?.damage?.toLocaleString()}\n2. ${topDamage[1]?.playerName || "—"} — ${topDamage[1]?.damage?.toLocaleString() || 0}\n3. ${topDamage[2]?.playerName || "—"} — ${topDamage[2]?.damage?.toLocaleString() || 0}`;
+    return `🔥 **Damage King: ${king.playerName}** (${king.teamName})\n\n**${king.damage?.toLocaleString()} total damage**\n\nTop 5 by damage:\n${topDamage.slice(0, 5).map((p, i) => `${i+1}. ${p.playerName} — ${p.damage?.toLocaleString()}`).join("\n")}`;
   }
 
-  // Progress
-  if (q.match(/progress|how many|match.*done|complete/)) {
-    return `📊 **Tournament Progress: ${stats.progress}%**\n\n✅ ${stats.completedMatches} matches completed\n⏳ ${stats.totalMatches - stats.completedMatches} matches remaining\n👥 ${stats.teamsCount} squads competing\n💥 ${stats.totalKills} total kills so far`;
+  if (q.match(/progress|how many|match.*done|complet/)) {
+    return `📊 **${tournament.name} Progress: ${stats.progress}%**\n\n✅ ${stats.completedMatches} matches completed\n⏳ ${stats.totalMatches - stats.completedMatches} remaining\n👥 ${stats.teamsCount} squads\n💥 ${stats.totalKills} total kills\n\n${stats.progress === 100 ? "🏁 Tournament complete!" : stats.progress === 0 ? "⏳ Not started yet." : `🔄 ${100 - stats.progress}% to go.`}`;
   }
 
-  // Standings
-  if (q.match(/standing|leaderboard|rank|table/)) {
-    if (leaderboard.length === 0) return "No standings yet. Enter match results to generate the leaderboard.";
-    const top5 = leaderboard.slice(0, 5);
-    return `📊 **Top 5 Standings:**\n\n${top5.map(e => `${e.rank <= 3 ? ["🥇","🥈","🥉"][e.rank-1] : `#${e.rank}`} ${e.teamName} — **${e.totalPoints}pts** (${e.totalKills}K)`).join("\n")}\n\n${leaderboard.length > 5 ? `+${leaderboard.length - 5} more teams` : ""}`;
+  if (q.match(/standing|leaderboard|rank|table|top 10/)) {
+    if (leaderboard.length === 0) return "No standings yet. Enter match results first.";
+    const top10 = leaderboard.slice(0, 10);
+    return `📊 **Top 10 Standings — ${tournament.name}:**\n\n${top10.map(e => `${e.rank <= 3 ? ["🥇","🥈","🥉"][e.rank-1] : `#${e.rank}`} ${e.teamName} — **${e.totalPoints}pts** (${e.totalKills}K)`).join("\n")}`;
   }
 
-  // Teams
   if (q.match(/team|squad|roster|how many team/)) {
-    return `👥 **${tournament.teams.length} squads** are registered in **${tournament.name}**.\n\nTotal players: **${tournament.teams.reduce((a, t) => a + t.players.length, 0)}**\n\nTo edit squads, use the **Edit Squads** button or **Import CSV** for bulk import.`;
+    return `👥 **${tournament.teams.length} squads** in ${tournament.name}\n\nTotal players: **${tournament.teams.reduce((a, t) => a + t.players.length, 0)}**\nMax squads: **${tournament.maxTeams}**\n\n${tournament.maxTeams - tournament.teams.length > 0 ? `${tournament.maxTeams - tournament.teams.length} spots remaining.` : "Tournament is full!"}`;
   }
 
-  // Format
-  if (q.match(/format|round|lobby|structure/)) {
-    const roundInfo = tournament.rounds.map((r, i) =>
-      `${i + 1}. ${r.name} — ${r.lobbies.length} lobbies × ${r.matchesPerLobby} matches`
-    ).join("\n");
-    return `🏆 **Tournament Format:**\n\n${roundInfo}\n\nTotal matches: **${tournament.matches.length}**\nScoring: **${tournament.scoringRule.name}**`;
+  if (q.match(/format|round|lobby|structure|bracket/)) {
+    const roundInfo = tournament.rounds.map((r, i) => `${i+1}. ${r.name} — ${r.lobbies.length} lobbies × ${r.matchesPerLobby} matches`).join("\n");
+    return `🏆 **Format:**\n\n${roundInfo}\n\nTotal matches: **${tournament.matches.length}**\nScoring: **${tournament.scoringRule.name}**\nMaps: ${tournament.mapRotation.join(", ")}`;
   }
 
-  // Scoring
-  if (q.match(/scor|point|kill point|placement/)) {
+  if (q.match(/scor|point|kill point|placement|pmgc|pmpl/)) {
     const s = tournament.scoringRule;
-    return `🎯 **Scoring System: ${s.name}**\n\n📍 Placement points:\n1st = ${s.placementPoints[0]}pts\n2nd = ${s.placementPoints[1]}pts\n3rd = ${s.placementPoints[2]}pts\n4th = ${s.placementPoints[3]}pts\n5th = ${s.placementPoints[4]}pts\n\n💥 Kill points: **${s.killPoints}pt per kill**${s.wwcdBonus ? `\n🍗 WWCD bonus: **+${s.wwcdBonus}pts**` : ""}`;
+    return `🎯 **Scoring: ${s.name}**\n\n1st = ${s.placementPoints[0]}pts | 2nd = ${s.placementPoints[1]}pts | 3rd = ${s.placementPoints[2]}pts\n4th = ${s.placementPoints[3]}pts | 5th = ${s.placementPoints[4]}pts\n\n💥 Kill = **${s.killPoints}pt**${s.wwcdBonus ? `\n🍗 WWCD bonus = **+${s.wwcdBonus}pts**` : ""}`;
   }
 
-  // Maps
   if (q.match(/map|erangel|miramar|sanhok|vikendi|livik/)) {
-    return `🗺️ **Map Rotation for ${tournament.name}:**\n\n${tournament.mapRotation.map((m, i) => `${i + 1}. ${m}`).join("\n")}\n\nMaps cycle through this order for each match.`;
+    return `🗺️ **Map Rotation:**\n\n${tournament.mapRotation.map((m, i) => `${i+1}. ${m}`).join("\n")}`;
   }
 
-  // Prize
   if (q.match(/prize|reward|money|cash/)) {
     return tournament.prizePool
-      ? `💰 **Prize Pool: ${tournament.prizePool}**\n\nGood luck to all teams!`
-      : "No prize pool has been set for this tournament yet. You can add one in tournament settings.";
+      ? `💰 **Prize Pool: ${tournament.prizePool}**\n\nUse the Prize Tracker in your dashboard to manage payouts.`
+      : "No prize pool set. Add it in tournament settings.";
   }
 
-  // How to use
-  if (q.match(/how|help|what can|guide|tutorial/)) {
-    return `🤖 **Here's what I can help with:**\n\n• **Standings** — "Who is winning?"\n• **Kills** — "Who has most kills?"\n• **Damage** — "Top damage dealers"\n• **Progress** — "How many matches done?"\n• **Format** — "How many rounds?"\n• **Scoring** — "How are points calculated?"\n• **Maps** — "What maps are being played?"\n• **Teams** — "How many squads?"\n\nJust ask naturally!`;
+  if (q.match(/share|social|twitter|discord|export|download/)) {
+    return `📤 **Sharing options:**\n\n🐦 **Twitter** — Use the Share button for pre-written tweet templates\n💬 **Discord** — Use Discord Webhook to auto-post results\n📊 **Export** — Download PNG or PDF leaderboard\n🎨 **Studio** — Generate social media cards\n🌐 **Public link** — tournaops.com/tournaments/${tournament.slug}`;
   }
 
-  // Status
+  if (q.match(/obs|overlay|stream|broadcast/)) {
+    return `📺 **Streaming Setup:**\n\n1. Go to **OBS Overlay** in your dashboard\n2. Copy the browser source URL\n3. In OBS: Sources → + → Browser → paste URL\n4. Set width: 420, height: 600\n\nThe overlay updates every 10 seconds automatically!\n\nAlso try the **Match Timer** for between-match countdowns.`;
+  }
+
+  if (q.match(/how|help|what can|guide|tutorial|feature/)) {
+    return `🤖 **OpsAI can help with:**\n\n📊 Standings — "Who is winning?"\n🎯 Kills — "Top fragger?"\n🔥 Damage — "Most damage?"\n📈 Progress — "How many matches done?"\n🏆 Format — "How many rounds?"\n🎮 Scoring — "How are points calculated?"\n🗺️ Maps — "What maps are playing?"\n👥 Teams — "How many squads?"\n📤 Sharing — "How to share?"\n📺 Streaming — "How to set up OBS?"\n\nJust ask naturally!`;
+  }
+
   if (q.match(/status|live|draft|complet/)) {
-    return `📡 **Tournament Status: ${tournament.status.toUpperCase()}**\n\n${
-      tournament.status === "draft" ? "Tournament is in setup mode. Change status to Live when matches start." :
-      tournament.status === "live" ? "🔴 Tournament is LIVE! Click the status badge to update it." :
-      tournament.status === "completed" ? "Tournament has finished. Final results are locked in." :
-      "Tournament has been cancelled."
-    }`;
+    const statusMsg: Record<string, string> = {
+      draft: "⚙️ Draft — Click the status badge to set it Live when you start.",
+      live: "🔴 LIVE — Tournament is running. Good luck!",
+      completed: "🏁 Completed — Final results are locked.",
+      cancelled: "❌ Cancelled.",
+    };
+    return `📡 **Status: ${tournament.status.toUpperCase()}**\n\n${statusMsg[tournament.status] || "Unknown status."}`;
   }
 
-  // Export / share
-  if (q.match(/export|download|share|discord|social|png|pdf/)) {
-    return `📤 **Sharing & Export options:**\n\n🎨 **Broadcast Studio** — Generate social media cards (Instagram, Twitter, Stories)\n📊 **Export button** — Download leaderboard as PNG or PDF\n📡 **Discord** — Post results directly to your server\n🌐 **Public link** — Share \`tournaops.com/tournaments/${tournament.slug}\`\n📺 **OBS Overlay** — Add live leaderboard to your stream`;
+  // Context-aware follow-ups
+  if (recentTopics.includes("kill") && q.match(/who|name|player/)) {
+    if (topKillers[0]) return `The top fragger is **${topKillers[0].playerName}** from **${topKillers[0].teamName}** with **${topKillers[0].kills} kills**.`;
   }
 
-  // Default
-  const randomTips = [
-    `I didn't quite understand that. Try asking about **standings**, **kills**, **damage**, **format**, or **scoring**!`,
-    `Hmm, not sure about that one. Ask me "who is winning?" or "how many matches are done?" for quick stats!`,
-    `I can help with tournament stats and info! Try "show top killers" or "what's the scoring system?"`,
+  if (recentTopics.includes("standing") && q.match(/second|2nd|third|3rd/)) {
+    if (leaderboard.length >= 3) {
+      if (q.includes("second") || q.includes("2nd")) return `🥈 **${leaderboard[1].teamName}** is in 2nd place with **${leaderboard[1].totalPoints} points**.`;
+      if (q.includes("third") || q.includes("3rd")) return `🥉 **${leaderboard[2].teamName}** is in 3rd with **${leaderboard[2].totalPoints} points**.`;
+    }
+  }
+
+  const fallbacks = [
+    `I didn't quite get that. Try: **"who is winning?"**, **"top fragger?"**, or **"how many matches done?"**`,
+    `Not sure about that one. Ask me about **standings**, **kills**, **format**, or **scoring**!`,
+    `Hmm! Try asking: **"show standings"**, **"scoring system"**, or **"how to share?"**`,
   ];
-  return randomTips[Math.floor(Math.random() * randomTips.length)];
+  return fallbacks[Math.floor(Math.random() * fallbacks.length)];
 }
 
 const QUICK_PROMPTS = [
-  { label: "Who is winning?", icon: Trophy },
+  { label: "Who's winning?", icon: Trophy },
   { label: "Top fragger?", icon: Crosshair },
-  { label: "Progress?", icon: Zap },
-  { label: "Scoring system?", icon: Sparkles },
+  { label: "Progress?", icon: TrendingUp },
+  { label: "Scoring?", icon: Sparkles },
 ];
 
 export default function OpsAI({ tournament, onClose }: OpsAIProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
+  const storageKey = `opsai_history_${tournament.id}`;
+
+  const loadHistory = (): Message[] => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.map((m: any) => ({ ...m, time: new Date(m.time) }));
+      }
+    } catch {}
+    return [{
       id: "1",
       role: "ai",
-      content: `Hey! I'm **OpsAI** — your tournament assistant for **${tournament.name}**. Ask me about standings, stats, format, or how to use any feature. What do you need?`,
+      content: `Hey! I'm **OpsAI** for **${tournament.name}**. I remember our previous conversations. Ask me anything! 🎮`,
       time: new Date(),
-    }
-  ]);
+    }];
+  };
+
+  const [messages, setMessages] = useState<Message[]>(loadHistory);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -145,46 +161,52 @@ export default function OpsAI({ tournament, onClose }: OpsAIProps) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const saveHistory = useCallback((msgs: Message[]) => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(msgs.slice(-50)));
+    } catch {}
+  }, [storageKey]);
+
+  const clearHistory = () => {
+    const fresh: Message[] = [{
+      id: Date.now().toString(),
+      role: "ai",
+      content: `Chat cleared! I'm still here for **${tournament.name}**. What do you need?`,
+      time: new Date(),
+    }];
+    setMessages(fresh);
+    saveHistory(fresh);
+  };
+
   const sendMessage = (text?: string) => {
     const msg = text || input.trim();
     if (!msg) return;
     setInput("");
 
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: msg,
-      time: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMsg]);
+    const userMsg: Message = { id: Date.now().toString(), role: "user", content: msg, time: new Date() };
+    const updated = [...messages, userMsg];
+    setMessages(updated);
     setThinking(true);
 
     setTimeout(() => {
-      const response = generateResponse(msg, tournament);
-      const aiMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "ai",
-        content: response,
-        time: new Date(),
-      };
-      setMessages(prev => [...prev, aiMsg]);
+      const response = generateResponse(msg, tournament, updated);
+      const aiMsg: Message = { id: (Date.now() + 1).toString(), role: "ai", content: response, time: new Date() };
+      const final = [...updated, aiMsg];
+      setMessages(final);
+      saveHistory(final);
       setThinking(false);
-    }, 600 + Math.random() * 400);
+    }, 500 + Math.random() * 400);
   };
 
-  const formatContent = (content: string) => {
-    return content
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\n/g, '<br/>');
-  };
+  const formatContent = (content: string) =>
+    content.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>").replace(/\n/g, "<br/>");
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:justify-end bg-black/60 backdrop-blur-sm p-4">
-      <div className="glass-card w-full sm:w-96 rounded-2xl border border-white/10 shadow-2xl flex flex-col" style={{ height: "600px", maxHeight: "90vh" }}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:justify-end bg-black/50 backdrop-blur-sm p-4">
+      <div className="glass-card w-full sm:w-96 rounded-2xl border border-white/10 shadow-2xl flex flex-col" style={{ height: 580, maxHeight: "90vh" }}>
 
         {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-gradient-to-r from-blue-500/10 to-purple-500/10">
+        <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-gradient-to-r from-blue-500/8 to-purple-500/8">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
             <Bot className="w-5 h-5 text-white" />
           </div>
@@ -192,14 +214,10 @@ export default function OpsAI({ tournament, onClose }: OpsAIProps) {
             <p className="text-white font-bold text-sm">OpsAI</p>
             <div className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              <p className="text-gray-500 text-xs">Always online</p>
+              <p className="text-gray-500 text-xs">Memory enabled · {messages.length - 1} messages</p>
             </div>
           </div>
-          <button
-            onClick={() => setMessages([messages[0]])}
-            className="p-1.5 rounded-lg hover:bg-white/10 text-gray-500 hover:text-gray-300 transition-colors"
-            title="Clear chat"
-          >
+          <button onClick={clearHistory} className="p-1.5 rounded-lg hover:bg-white/10 text-gray-600 hover:text-gray-300 transition-colors" title="Clear chat">
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
@@ -211,21 +229,10 @@ export default function OpsAI({ tournament, onClose }: OpsAIProps) {
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {messages.map(msg => (
             <div key={msg.id} className={`flex items-start gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
-                msg.role === "ai"
-                  ? "bg-gradient-to-br from-blue-500 to-purple-600"
-                  : "bg-white/10 border border-white/15"
-              }`}>
-                {msg.role === "ai"
-                  ? <Bot className="w-3.5 h-3.5 text-white" />
-                  : <User className="w-3.5 h-3.5 text-gray-400" />
-                }
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === "ai" ? "bg-gradient-to-br from-blue-500 to-purple-600" : "bg-white/10 border border-white/15"}`}>
+                {msg.role === "ai" ? <Bot className="w-3.5 h-3.5 text-white" /> : <User className="w-3.5 h-3.5 text-gray-400" />}
               </div>
-              <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
-                msg.role === "ai"
-                  ? "bg-white/6 text-gray-200 rounded-tl-sm"
-                  : "bg-blue-600 text-white rounded-tr-sm"
-              }`}>
+              <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${msg.role === "ai" ? "bg-white/6 text-gray-200 rounded-tl-sm" : "bg-blue-600 text-white rounded-tr-sm"}`}>
                 <span dangerouslySetInnerHTML={{ __html: formatContent(msg.content) }} />
                 <div className={`text-[10px] mt-1.5 ${msg.role === "ai" ? "text-gray-600" : "text-blue-200/60"}`}>
                   {msg.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -239,30 +246,24 @@ export default function OpsAI({ tournament, onClose }: OpsAIProps) {
               <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
                 <Bot className="w-3.5 h-3.5 text-white" />
               </div>
-              <div className="bg-white/6 rounded-2xl rounded-tl-sm px-3.5 py-3 flex items-center gap-1">
-                <div className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "0ms" }} />
-                <div className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "150ms" }} />
-                <div className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+              <div className="bg-white/6 rounded-2xl rounded-tl-sm px-3.5 py-3 flex items-center gap-1.5">
+                {[0, 150, 300].map(delay => (
+                  <div key={delay} className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: `${delay}ms` }} />
+                ))}
               </div>
             </div>
           )}
-
           <div ref={bottomRef} />
         </div>
 
         {/* Quick prompts */}
-        {messages.length <= 2 && (
+        {messages.length <= 3 && (
           <div className="px-4 pb-2 flex flex-wrap gap-1.5">
             {QUICK_PROMPTS.map(p => {
               const Icon = p.icon;
               return (
-                <button
-                  key={p.label}
-                  onClick={() => sendMessage(p.label)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/20 text-xs transition-all"
-                >
-                  <Icon className="w-3 h-3" />
-                  {p.label}
+                <button key={p.label} onClick={() => sendMessage(p.label)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/20 text-xs transition-all">
+                  <Icon className="w-3 h-3" />{p.label}
                 </button>
               );
             })}
@@ -277,7 +278,7 @@ export default function OpsAI({ tournament, onClose }: OpsAIProps) {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendMessage()}
-              placeholder="Ask anything about the tournament..."
+              placeholder="Ask anything..."
               className="flex-1 bg-transparent text-white text-sm outline-none placeholder-gray-600"
             />
             <button
