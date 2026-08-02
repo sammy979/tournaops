@@ -1,115 +1,191 @@
-"use client";
-import { useState } from "react";
-import { Save, X, Camera, User, Trash2, Users } from "lucide-react";
+﻿"use client";
 
-interface Props {
-  teams: any[];
-  onSave: (teams: any[]) => void;
+import { useState } from "react";
+import { X, Upload, User, Save, ChevronDown, ChevronUp } from "lucide-react";
+import { Tournament, Team, Player } from "@/types/tournament";
+import { saveTournament } from "@/lib/storage/tournaments";
+
+interface TeamEditorProps {
+  tournament: Tournament;
   onClose: () => void;
+  onSave: (updated: Tournament) => void;
 }
 
-export default function TeamEditor({ teams, onSave, onClose }: Props) {
-  const [edited, setEdited] = useState<any[]>(JSON.parse(JSON.stringify(teams)));
-  const [activeIdx, setActiveIdx] = useState(0);
+const ROLES = ["IGL", "Fragger", "Support", "Entry", "Sniper", "Assaulter", "Scout"];
 
-  const updateTeam = (idx: number, field: string, value: any) => {
-    const u = [...edited]; u[idx] = { ...u[idx], [field]: value }; setEdited(u);
+export default function TeamEditor({ tournament, onClose, onSave }: TeamEditorProps) {
+  const [teams, setTeams] = useState<Team[]>(JSON.parse(JSON.stringify(tournament.teams)));
+  const [expandedTeam, setExpandedTeam] = useState<string | null>(teams[0]?.id || null);
+  const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filteredTeams = teams.filter(t =>
+    t.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const updateTeam = (teamId: string, field: string, value: string) => {
+    setTeams(prev => prev.map(t => t.id === teamId ? { ...t, [field]: value } : t));
   };
 
-  const updatePlayer = (tIdx: number, pIdx: number, field: string, value: any) => {
-    const u = [...edited]; u[tIdx].players[pIdx] = { ...u[tIdx].players[pIdx], [field]: value }; setEdited(u);
+  const updatePlayer = (teamId: string, playerId: string, field: string, value: string) => {
+    setTeams(prev => prev.map(t => {
+      if (t.id !== teamId) return t;
+      return {
+        ...t,
+        players: t.players.map(p => p.id === playerId ? { ...p, [field]: value } : p)
+      };
+    }));
   };
 
-  const uploadImage = (cb: (data: string) => void) => {
-    const input = document.createElement("input");
-    input.type = "file"; input.accept = "image/*";
-    input.onchange = (e: any) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      if (file.size > 500 * 1024) { alert("Max 500KB"); return; }
-      const reader = new FileReader();
-      reader.onload = (ev: any) => cb(ev.target.result);
-      reader.readAsDataURL(file);
-    };
-    input.click();
+  const handleLogoUpload = (teamId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => updateTeam(teamId, "logo", ev.target?.result as string);
+    reader.readAsDataURL(file);
   };
 
-  const team = edited[activeIdx];
-  if (!team) return null;
+  const handlePlayerPhotoUpload = (teamId: string, playerId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => updatePlayer(teamId, playerId, "photo", ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const updated = { ...tournament, teams };
+      saveTournament(updated);
+      onSave(updated);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md overflow-y-auto">
-      <div className="max-w-4xl mx-auto p-4 md:p-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
-              <Users className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className="font-display font-black text-xl md:text-2xl">Edit Squads</h2>
-              <p className="text-xs text-white/50">{edited.length} squads</p>
-            </div>
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/80 backdrop-blur-sm overflow-y-auto py-8">
+      <div className="glass-card w-full max-w-4xl mx-4 rounded-2xl border border-white/10">
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div>
+            <h2 className="text-2xl font-bold text-white">Edit Squads</h2>
+            <p className="text-gray-400 text-sm mt-1">{teams.length} squads</p>
           </div>
-          <div className="flex gap-2">
-            <button onClick={onClose} className="btn-ghost text-xs py-2 px-3">Cancel</button>
-            <button onClick={() => onSave(edited)} className="btn-primary text-xs py-2 px-4" style={{background:"linear-gradient(135deg,#f59e0b,#f97316)"}}>
-              <Save className="w-3.5 h-3.5 mr-1 inline" /> Save All
+          <div className="flex items-center gap-3">
+            <button onClick={handleSave} disabled={saving} className="btn-primary flex items-center gap-2 px-6 py-2">
+              <Save className="w-4 h-4" />
+              {saving ? "Saving..." : "Save All"}
+            </button>
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        <div className="flex gap-1 overflow-x-auto pb-2 mb-4">
-          {edited.map((t: any, i: number) => (
-            <button key={t.id} onClick={() => setActiveIdx(i)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
-                activeIdx === i ? "bg-yellow-500 text-black" : "bg-white/5 text-white/60 hover:bg-white/10"
-              }`}>
-              {t.logo ? <img src={t.logo} alt="" className="w-4 h-4 rounded object-cover" /> : <span className="w-4 h-4 rounded bg-white/20 text-[8px] flex items-center justify-center font-black">{i+1}</span>}
-              {t.name}
-            </button>
+        <div className="p-4 border-b border-white/10">
+          <input
+            type="text"
+            placeholder="Search squads..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="input-field w-full"
+          />
+        </div>
+
+        <div className="p-4 space-y-3 max-h-[70vh] overflow-y-auto">
+          {filteredTeams.map((team) => (
+            <div key={team.id} className="border border-white/10 rounded-xl overflow-hidden">
+              <div
+                className="flex items-center gap-4 p-4 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors"
+                onClick={() => setExpandedTeam(expandedTeam === team.id ? null : team.id)}
+              >
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden border border-white/20">
+                    {(team as any).logo ? (
+                      <img src={(team as any).logo} alt={team.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xl font-bold text-white">{team.name.charAt(0)}</span>
+                    )}
+                  </div>
+                  <label className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-400 transition-colors">
+                    <Upload className="w-3 h-3 text-white" />
+                    <input type="file" accept="image/*" className="hidden" onChange={e => handleLogoUpload(team.id, e)} onClick={e => e.stopPropagation()} />
+                  </label>
+                </div>
+
+                <div className="flex-1" onClick={e => e.stopPropagation()}>
+                  <input
+                    type="text"
+                    value={team.name}
+                    onChange={e => updateTeam(team.id, "name", e.target.value)}
+                    className="bg-transparent text-white font-semibold text-lg border-b border-transparent hover:border-white/30 focus:border-blue-500 outline-none w-full transition-colors"
+                    placeholder="Team name"
+                  />
+                  <p className="text-gray-500 text-xs">{team.players.length} players</p>
+                </div>
+
+                <div className="text-gray-400">
+                  {expandedTeam === team.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </div>
+              </div>
+
+              {expandedTeam === team.id && (
+                <div className="p-4 space-y-3 bg-black/20">
+                  {team.players.map((player, idx) => (
+                    <div key={player.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/10">
+                      <div className="relative flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center overflow-hidden border border-white/20">
+                          {(player as any).photo ? (
+                            <img src={(player as any).photo} alt={player.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <User className="w-5 h-5 text-gray-400" />
+                          )}
+                        </div>
+                        <label className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-400 transition-colors">
+                          <Upload className="w-2.5 h-2.5 text-white" />
+                          <input type="file" accept="image/*" className="hidden" onChange={e => handlePlayerPhotoUpload(team.id, player.id, e)} />
+                        </label>
+                      </div>
+
+                      <div className="flex-1 grid grid-cols-3 gap-2">
+                        <input
+                          type="text"
+                          value={player.name}
+                          onChange={e => updatePlayer(team.id, player.id, "name", e.target.value)}
+                          className="input-field text-sm py-1.5"
+                          placeholder="Display name"
+                        />
+                        <input
+                          type="text"
+                          value={(player as any).ign || ""}
+                          onChange={e => updatePlayer(team.id, player.id, "ign", e.target.value)}
+                          className="input-field text-sm py-1.5"
+                          placeholder="IGN"
+                        />
+                        <select
+                          value={player.role || "Fragger"}
+                          onChange={e => updatePlayer(team.id, player.id, "role", e.target.value)}
+                          className="input-field text-sm py-1.5"
+                        >
+                          {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                        </select>
+                      </div>
+
+                      <span className="text-gray-600 text-xs w-4 text-center">#{idx + 1}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </div>
 
-        <div className="glass rounded-2xl p-5 border border-white/10">
-          <div className="flex items-start gap-4 mb-6">
-            <div className="flex flex-col items-center gap-1">
-              <div onClick={() => uploadImage((d) => updateTeam(activeIdx, "logo", d))}
-                className="w-20 h-20 rounded-xl border-2 border-dashed border-white/30 flex items-center justify-center cursor-pointer hover:border-yellow-400 transition overflow-hidden">
-                {team.logo ? <img src={team.logo} alt="" className="w-full h-full object-cover" /> : <div className="text-center"><Camera className="w-5 h-5 text-white/40 mx-auto" /><span className="text-[8px] text-white/40">Logo</span></div>}
-              </div>
-              {team.logo && <button onClick={() => updateTeam(activeIdx, "logo", undefined)} className="text-[9px] text-red-400">Remove</button>}
-            </div>
-            <div className="flex-1 space-y-2">
-              <div>
-                <label className="text-[9px] text-white/40 uppercase font-bold">Squad Name</label>
-                <input type="text" value={team.name} onChange={e => updateTeam(activeIdx, "name", e.target.value)} className="input font-bold" />
-              </div>
-              <div>
-                <label className="text-[9px] text-white/40 uppercase font-bold">Tag (4 chars)</label>
-                <input type="text" value={team.tag || ""} onChange={e => updateTeam(activeIdx, "tag", e.target.value.toUpperCase().substring(0, 4))} className="input" maxLength={4} />
-              </div>
-            </div>
-          </div>
-
-          <h4 className="text-xs font-bold text-white/60 uppercase tracking-wider mb-3">Players</h4>
-          <div className="space-y-2">
-            {(team.players || []).map((p: any, pi: number) => (
-              <div key={p.id} className="glass rounded-xl p-3 border border-white/5 flex items-center gap-3">
-                <div onClick={() => uploadImage((d) => updatePlayer(activeIdx, pi, "photo", d))}
-                  className="w-12 h-12 rounded-lg border border-dashed border-white/20 flex items-center justify-center cursor-pointer hover:border-yellow-400 transition overflow-hidden flex-shrink-0">
-                  {p.photo ? <img src={p.photo} alt="" className="w-full h-full object-cover" /> : <User className="w-5 h-5 text-white/30" />}
-                </div>
-                <div className="flex-1 grid grid-cols-3 gap-2">
-                  <input type="text" value={p.name} onChange={e => updatePlayer(activeIdx, pi, "name", e.target.value)} className="input text-xs py-1.5" placeholder="Name" />
-                  <input type="text" value={p.ign} onChange={e => updatePlayer(activeIdx, pi, "ign", e.target.value)} className="input text-xs py-1.5" placeholder="IGN" />
-                  <select value={p.role} onChange={e => updatePlayer(activeIdx, pi, "role", e.target.value)} className="input text-xs py-1.5">
-                    <option>IGL</option><option>Fragger</option><option>Support</option><option>Entry</option><option>Sniper</option><option>Assaulter</option><option>Scout</option>
-                  </select>
-                </div>
-                {p.photo && <button onClick={() => updatePlayer(activeIdx, pi, "photo", undefined)} className="text-red-400 hover:text-red-300"><Trash2 className="w-3.5 h-3.5" /></button>}
-              </div>
-            ))}
-          </div>
+        <div className="p-4 border-t border-white/10 flex justify-between items-center">
+          <p className="text-gray-500 text-sm">Changes saved to this tournament only</p>
+          <button onClick={handleSave} disabled={saving} className="btn-primary px-8 py-2">
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
         </div>
       </div>
     </div>
