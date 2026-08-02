@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// This endpoint receives slot list data from the Discord bot
 export async function POST(req: NextRequest) {
   try {
     const authHeader = req.headers.get("authorization");
@@ -25,12 +24,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
-    console.log("Received slot list from Discord bot:", {
+    console.log("Discord bot slot list received:", {
       guild: data.discordGuildName,
       channel: data.discordChannelName,
-      user: data.discordUsername,
       slots: data.parseResult.totalDetected,
-      confidence: data.parseResult.confidence,
     });
 
     return NextResponse.json({
@@ -46,5 +43,5 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  return NextResponse.json({ status: "TournaOps Discord API endpoint" });
+  return NextResponse.json({ status: "TournaOps Discord API endpoint", version: "1.0" });
 }
