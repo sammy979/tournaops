@@ -1,14 +1,16 @@
 "use client";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Command, Mail, Lock, ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Mail, Lock, ArrowRight, AlertCircle, CheckCircle2, Zap, Eye, EyeOff } from "lucide-react";
 import { loginUser } from "@/lib/auth/auth";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -17,7 +19,6 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     setTimeout(() => {
       const result = loginUser(email, password);
       if (result.success) {
@@ -31,114 +32,138 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 py-12 relative">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4 py-12">
+      {/* Background */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/8 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/6 rounded-full blur-3xl" />
+      </div>
+
+      <div className="w-full max-w-md relative">
         {/* Logo */}
-        <Link href="/" className="flex items-center justify-center gap-3 mb-8 group">
-          <div className="relative w-12 h-12">
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-cyan-400 rounded-xl blur-md opacity-60"></div>
-            <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center border border-white/10">
-              <Command className="w-6 h-6 text-white" strokeWidth={2.5} />
-            </div>
+        <Link href="/" className="flex items-center justify-center gap-3 mb-8">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
+            <Zap className="w-5 h-5 text-white" />
           </div>
-          <div>
-            <div className="font-display font-black text-2xl">
-              <span className="text-white">TOURNA</span><span className="text-cyan-400">OPS</span>
-            </div>
-          </div>
+          <span className="text-2xl font-bold text-white tracking-tight">TournaOps</span>
         </Link>
 
         {/* Card */}
-        <div className="glass-heavy neon-border rounded-2xl p-6 md:p-8 relative overflow-hidden">
-          <div className="absolute -top-20 -right-20 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl"></div>
-          
-          <div className="relative">
-            <h1 className="font-display font-black text-2xl md:text-3xl mb-2">Welcome Back</h1>
-            <p className="text-white/60 mb-6 text-sm">Sign in to continue to your command center</p>
-
-            {success ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-4 fade-in-up">
-                <div className="w-16 h-16 rounded-full bg-green-500/20 border border-green-500/50 flex items-center justify-center">
-                  <CheckCircle2 className="w-8 h-8 text-green-400" />
-                </div>
-                <div className="text-lg font-bold text-green-400">Login Successful!</div>
-                <div className="text-sm text-white/60">Redirecting to dashboard...</div>
+        <div className="glass-card rounded-2xl p-8 border border-white/10">
+          {success ? (
+            <div className="flex flex-col items-center justify-center py-8 gap-4">
+              <div className="w-16 h-16 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-green-400" />
               </div>
-            ) : (
+              <p className="text-xl font-bold text-green-400">Login Successful!</p>
+              <p className="text-gray-500 text-sm">Redirecting to dashboard...</p>
+            </div>
+          ) : (
+            <>
+              <div className="mb-6">
+                <h1 className="text-2xl font-bold text-white mb-1">Welcome back</h1>
+                <p className="text-gray-500 text-sm">Sign in to your TournaOps account</p>
+              </div>
+
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="label">
-                    <Mail className="w-3.5 h-3.5 inline mr-1" /> Email Address
+                {/* Email */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-400 flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5" /> Email Address
                   </label>
                   <input
                     type="email"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="input"
+                    className="input-field"
                     required
                     autoFocus
                     disabled={loading}
                   />
                 </div>
 
-                <div>
-                  <label className="label">
-                    <Lock className="w-3.5 h-3.5 inline mr-1" /> Password
+                {/* Password */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-400 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5" /> Password
                   </label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    className="input"
-                    required
-                    disabled={loading}
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder="Enter your password"
+                      className="input-field pr-10"
+                      required
+                      disabled={loading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
 
+                {/* Error */}
                 {error && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                  <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                     <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     <span>{error}</span>
                   </div>
                 )}
 
+                {/* Submit */}
                 <button
                   type="submit"
                   disabled={loading}
-                  className="btn-primary w-full py-3.5 disabled:opacity-50"
+                  className="btn-primary w-full py-3 mt-2"
                 >
                   {loading ? (
-                    <span className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       Signing in...
-                    </span>
+                    </>
                   ) : (
-                    <span className="flex items-center gap-2">
+                    <>
                       Sign In
                       <ArrowRight className="w-4 h-4" />
-                    </span>
+                    </>
                   )}
                 </button>
 
-                <div className="text-center text-sm text-white/60 pt-4 border-t border-white/5">
-                  Don't have an account?{" "}
-                  <Link href="/register" className="text-cyan-400 hover:text-cyan-300 font-bold transition">
-                    Create one
-                  </Link>
+                {/* Divider */}
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-white/8" />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="px-3 bg-[#0f0f18] text-gray-600 text-xs">or</span>
+                  </div>
                 </div>
+
+                {/* Register Link */}
+                <p className="text-center text-sm text-gray-500">
+                  No account yet?{" "}
+                  <Link href="/register" className="text-blue-400 hover:text-blue-300 font-semibold transition-colors">
+                    Create one free
+                  </Link>
+                </p>
               </form>
-            )}
-          </div>
+            </>
+          )}
         </div>
 
-        <div className="text-center mt-6">
-          <Link href="/" className="text-sm text-white/40 hover:text-white/70 transition">
+        {/* Back Link */}
+        <p className="text-center mt-6">
+          <Link href="/" className="text-gray-600 hover:text-gray-400 text-sm transition-colors">
             ← Back to home
           </Link>
-        </div>
+        </p>
       </div>
-    </main>
+    </div>
   );
 }
