@@ -36,3 +36,5 @@ yarn-error.log*
 Thumbs.db
 .vercel
 .env*
+
+/lib/generated/prisma

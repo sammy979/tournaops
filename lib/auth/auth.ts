@@ -9,124 +9,89 @@ export interface User {
   createdAt: string;
 }
 
-const USERS_KEY = "tournaops_users";
-const CURRENT_USER_KEY = "tournaops_current_user";
-const SESSION_KEY = "tournaops_session";
+let cachedUser: User | null = null;
+let cacheTime = 0;
+const CACHE_TTL = 5000; // 5 seconds
 
-// Simple ID generator
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
-}
-
-// Get all users
-export function getAllUsers(): any[] {
-  if (typeof window === "undefined") return [];
+export async function registerUser(
+  email: string,
+  password: string,
+  username: string,
+  displayName: string
+): Promise<{ success: boolean; user?: User; error?: string }> {
   try {
-    return JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-  } catch {
-    return [];
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, username, displayName }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error };
+    cachedUser = data.user;
+    cacheTime = Date.now();
+    return { success: true, user: data.user };
+  } catch (err: any) {
+    return { success: false, error: err.message };
   }
 }
 
-// Register new user
-export function registerUser(email: string, password: string, username: string, displayName: string): { success: boolean; user?: User; error?: string } {
-  if (typeof window === "undefined") return { success: false, error: "Not in browser" };
-  
-  const users = getAllUsers();
-  
-  // Check if email exists
-  if (users.find((u: any) => u.email.toLowerCase() === email.toLowerCase())) {
-    return { success: false, error: "Email already registered" };
-  }
-  
-  // Check if username exists
-  if (users.find((u: any) => u.username.toLowerCase() === username.toLowerCase())) {
-    return { success: false, error: "Username already taken" };
-  }
-  
-  // Validate password
-  if (password.length < 6) {
-    return { success: false, error: "Password must be at least 6 characters" };
-  }
-  
-  // Create user
-  const newUser = {
-    id: generateId(),
-    email,
-    username,
-    displayName,
-    password, // In production, hash this!
-    createdAt: new Date().toISOString(),
-  };
-  
-  users.push(newUser);
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  
-  // Auto login
-  const { password: _, ...userWithoutPassword } = newUser;
-  localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userWithoutPassword));
-  localStorage.setItem(SESSION_KEY, generateId());
-  
-  return { success: true, user: userWithoutPassword };
-}
-
-// Login user
-export function loginUser(email: string, password: string): { success: boolean; user?: User; error?: string } {
-  if (typeof window === "undefined") return { success: false, error: "Not in browser" };
-  
-  const users = getAllUsers();
-  const user = users.find((u: any) => 
-    u.email.toLowerCase() === email.toLowerCase() && u.password === password
-  );
-  
-  if (!user) {
-    return { success: false, error: "Invalid email or password" };
-  }
-  
-  const { password: _, ...userWithoutPassword } = user;
-  localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userWithoutPassword));
-  localStorage.setItem(SESSION_KEY, generateId());
-  
-  return { success: true, user: userWithoutPassword };
-}
-
-// Logout
-export function logoutUser(): void {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(CURRENT_USER_KEY);
-  localStorage.removeItem(SESSION_KEY);
-}
-
-// Get current user
-export function getCurrentUser(): User | null {
-  if (typeof window === "undefined") return null;
+export async function loginUser(
+  email: string,
+  password: string
+): Promise<{ success: boolean; user?: User; error?: string }> {
   try {
-    const user = localStorage.getItem(CURRENT_USER_KEY);
-    return user ? JSON.parse(user) : null;
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error };
+    cachedUser = data.user;
+    cacheTime = Date.now();
+    return { success: true, user: data.user };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function logoutUser(): Promise<void> {
+  try {
+    await fetch("/api/auth/logout", { method: "POST" });
+  } catch {}
+  cachedUser = null;
+  cacheTime = 0;
+}
+
+export async function fetchCurrentUser(): Promise<User | null> {
+  const now = Date.now();
+  if (cachedUser && now - cacheTime < CACHE_TTL) return cachedUser;
+
+  try {
+    const res = await fetch("/api/auth/me", { cache: "no-store" });
+    const data = await res.json();
+    if (data.user) {
+      cachedUser = data.user;
+      cacheTime = now;
+      return data.user;
+    }
+    cachedUser = null;
+    return null;
   } catch {
     return null;
   }
 }
 
-// Check if logged in
-export function isLoggedIn(): boolean {
-  return getCurrentUser() !== null;
+// Sync version — uses cache only (for legacy compat)
+export function getCurrentUser(): User | null {
+  return cachedUser;
 }
 
-// Update user
-export function updateUser(updates: Partial<User>): { success: boolean; user?: User; error?: string } {
-  const currentUser = getCurrentUser();
-  if (!currentUser) return { success: false, error: "Not logged in" };
-  
-  const users = getAllUsers();
-  const idx = users.findIndex((u: any) => u.id === currentUser.id);
-  if (idx === -1) return { success: false, error: "User not found" };
-  
-  users[idx] = { ...users[idx], ...updates };
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  
-  const { password: _, ...userWithoutPassword } = users[idx];
-  localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userWithoutPassword));
-  
-  return { success: true, user: userWithoutPassword };
+export function isLoggedIn(): boolean {
+  return cachedUser !== null;
+}
+
+export async function updateUser(updates: Partial<User>): Promise<{ success: boolean; error?: string }> {
+  // TODO: Add PUT /api/auth/me endpoint if you want editable profile
+  return { success: false, error: "Not implemented yet" };
 }

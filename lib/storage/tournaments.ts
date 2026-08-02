@@ -1,171 +1,108 @@
-import { Tournament, Team, Match, Round, Lobby, TeamMatchResult, LeaderboardEntry, ScoringRule } from "@/types/tournament";
+"use client";
 
-const STORAGE_KEY = "tournaops_tournaments";
+import { Tournament, ScoringRule, TeamMatchResult, LeaderboardEntry } from "@/types/tournament";
 
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
+// ─── API HELPERS ─────────────────────────────────────────────
 
-function generateId(): string {
-  return Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
-}
-
-function generateSlug(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + Math.random().toString(36).substring(2, 6);
-}
-
-/** Validate and repair tournament data */
-function normalizeT(t: any): Tournament | null {
-  if (!t || typeof t !== "object") return null;
-  if (!t.id || !t.name) return null;
-
-  return {
-    id: t.id,
-    slug: t.slug || generateSlug(t.name),
-    name: t.name,
-    description: t.description || "",
-    game: t.game || "pubg_mobile",
-    status: t.status || "draft",
-    format: t.format || "",
-    prizePool: t.prizePool || "",
-    maxTeams: t.maxTeams || 16,
-    teams: Array.isArray(t.teams) ? t.teams.filter((tm: any) => tm && tm.id).map((tm: any) => ({
-      id: tm.id,
-      name: tm.name || "Team",
-      logo: tm.logo,
-      tag: tm.tag,
-      players: Array.isArray(tm.players) ? tm.players : [],
-      seed: tm.seed,
-      contact: tm.contact,
-    })) : [],
-    matches: Array.isArray(t.matches) ? t.matches.filter((m: any) => m && m.id).map((m: any) => ({
-      id: m.id,
-      name: m.name || "Match",
-      roundId: m.roundId || "",
-      lobbyId: m.lobbyId || "",
-      map: m.map || "Erangel",
-      status: m.status || "pending",
-      results: Array.isArray(m.results) ? m.results : undefined,
-      startTime: m.startTime,
-      endTime: m.endTime,
-      matchNumber: m.matchNumber,
-    })) : [],
-    rounds: Array.isArray(t.rounds) ? t.rounds.filter((r: any) => r && r.id).map((r: any) => ({
-      id: r.id,
-      name: r.name || "Round",
-      type: r.type || "qualifier",
-      lobbies: Array.isArray(r.lobbies) ? r.lobbies.filter((l: any) => l && l.id).map((l: any) => ({
-        id: l.id,
-        name: l.name || "Lobby",
-        teamIds: Array.isArray(l.teamIds) ? l.teamIds : [],
-        matchIds: Array.isArray(l.matchIds) ? l.matchIds : [],
-      })) : [],
-      matchesPerLobby: r.matchesPerLobby || 4,
-      advanceTop: r.advanceTop,
-      order: r.order || 0,
-    })) : [],
-    scoringRule: t.scoringRule || {
-      name: "PMGC Standard",
-      placementPoints: [15, 12, 10, 8, 6, 4, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0],
-      killPoints: 1,
-    },
-    mapRotation: Array.isArray(t.mapRotation) ? t.mapRotation : ["Erangel"],
-    createdBy: t.createdBy || "unknown",
-    createdAt: t.createdAt || new Date().toISOString(),
-    updatedAt: t.updatedAt || new Date().toISOString(),
-    overlayToken: t.overlayToken,
-    isPublic: t.isPublic !== undefined ? t.isPublic : true,
-    discord: t.discord,
-    rules: t.rules,
-    bannerImage: t.bannerImage,
-  };
-}
-
-function getStorage(): Tournament[] {
-  if (typeof window === "undefined") return [];
+async function fetchTournaments(): Promise<Tournament[]> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    // Normalize each tournament, filter out null (invalid) ones
-    return parsed.map(normalizeT).filter((t): t is Tournament => t !== null);
+    const res = await fetch("/api/tournaments", { cache: "no-store" });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.tournaments || [];
   } catch (e) {
-    console.error("Storage read error:", e);
+    console.error("Fetch tournaments failed:", e);
     return [];
   }
 }
 
-function setStorage(data: Tournament[]): void {
-  if (typeof window === "undefined") return;
+async function fetchTournamentById(id: string): Promise<Tournament | undefined> {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch (e) {
-    console.error("Storage write error:", e);
+    const res = await fetch(`/api/tournaments/${id}`, { cache: "no-store" });
+    if (!res.ok) return undefined;
+    const data = await res.json();
+    return data.tournament;
+  } catch {
+    return undefined;
   }
 }
 
-// ─── CRUD ─────────────────────────────────────────────────────────────────────
-
-export function getAllTournaments(): Tournament[] {
+async function fetchTournamentBySlug(slug: string): Promise<Tournament | undefined> {
   try {
-    return getStorage().sort((a, b) =>
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-  } catch { return []; }
+    const all = await fetchTournaments();
+    return all.find(t => t.slug === slug);
+  } catch {
+    return undefined;
+  }
 }
 
-export function getMyTournaments(): Tournament[] {
-  try {
-    const all = getStorage();
-    if (typeof window === "undefined") return all;
-    const raw = localStorage.getItem("tournaops_current_user");
-    if (!raw) return all;
-    const user = JSON.parse(raw);
-    if (!user || !user.id) return all;
-    return all
-      .filter(t => t.createdBy === user.id || t.createdBy === "anonymous" || t.createdBy === "unknown")
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  } catch { return []; }
+// ─── SYNC-STYLE CACHED FUNCTIONS ────────────────────────────
+// Note: These are async now but keep the same names for compat
+// UI code will need to await these
+
+let cache: Tournament[] = [];
+let cacheTime = 0;
+const CACHE_TTL = 3000;
+
+async function loadCache(force = false): Promise<Tournament[]> {
+  const now = Date.now();
+  if (!force && cache.length > 0 && now - cacheTime < CACHE_TTL) return cache;
+  cache = await fetchTournaments();
+  cacheTime = now;
+  return cache;
 }
 
-export function getTournamentById(id: string): Tournament | undefined {
-  try {
-    return getStorage().find(t => t.id === id);
-  } catch { return undefined; }
+export function invalidateCache() {
+  cache = [];
+  cacheTime = 0;
 }
 
-export function getTournamentBySlug(slug: string): Tournament | undefined {
-  try {
-    return getStorage().find(t => t.slug === slug);
-  } catch { return undefined; }
+// ─── PUBLIC API (Async) ─────────────────────────────────────
+
+export async function getAllTournaments(): Promise<Tournament[]> {
+  return loadCache();
 }
 
-export function saveTournament(tournament: Tournament): Tournament {
+export async function getMyTournaments(): Promise<Tournament[]> {
+  return loadCache();
+}
+
+export async function getTournamentById(id: string): Promise<Tournament | undefined> {
+  return fetchTournamentById(id);
+}
+
+export async function getTournamentBySlug(slug: string): Promise<Tournament | undefined> {
+  return fetchTournamentBySlug(slug);
+}
+
+export async function saveTournament(tournament: Tournament): Promise<Tournament | undefined> {
   try {
-    const all = getStorage();
-    const idx = all.findIndex(t => t.id === tournament.id);
-    const updated = { ...tournament, updatedAt: new Date().toISOString() };
-    if (idx >= 0) all[idx] = updated;
-    else all.push(updated);
-    setStorage(all);
-    return updated;
+    const res = await fetch(`/api/tournaments/${tournament.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(tournament),
+    });
+    if (!res.ok) return undefined;
+    const data = await res.json();
+    invalidateCache();
+    return data.tournament;
   } catch (e) {
     console.error("Save failed:", e);
-    return tournament;
+    return undefined;
   }
 }
 
-export function deleteTournament(id: string): void {
+export async function deleteTournament(id: string): Promise<boolean> {
   try {
-    const all = getStorage().filter(t => t.id !== id);
-    setStorage(all);
-  } catch (e) {
-    console.error("Delete failed:", e);
+    const res = await fetch(`/api/tournaments/${id}`, { method: "DELETE" });
+    if (res.ok) invalidateCache();
+    return res.ok;
+  } catch {
+    return false;
   }
 }
 
-// ─── CREATE ───────────────────────────────────────────────────────────────────
-
-export function createTournament(data: {
+export async function createTournament(data: {
   name: string;
   description?: string;
   prizePool?: string;
@@ -176,120 +113,38 @@ export function createTournament(data: {
   rounds: number;
   discord?: string;
   rules?: string;
-}): Tournament {
-  const userId = (() => {
-    try {
-      if (typeof window === "undefined") return "anonymous";
-      const raw = localStorage.getItem("tournaops_current_user");
-      return raw ? JSON.parse(raw).id : "anonymous";
-    } catch { return "anonymous"; }
-  })();
-
-  const id = generateId();
-  const slug = generateSlug(data.name);
-  const overlayToken = generateId();
-
-  const teams: Team[] = Array.from({ length: data.maxTeams }, (_, i) => ({
-    id: generateId(),
-    name: `Team ${i + 1}`,
-    tag: `T${i + 1}`,
-    logo: undefined,
-    players: Array.from({ length: 4 }, (_, j) => ({
-      id: generateId(),
-      name: `Player ${j + 1}`,
-      ign: `Player${i + 1}_${j + 1}`,
-      role: (["IGL", "Fragger", "Support", "Entry"] as const)[j],
-    })),
-    seed: i + 1,
-  }));
-
-  const teamsPerLobby = 16;
-  const numLobbies = Math.max(1, Math.ceil(data.maxTeams / teamsPerLobby));
-  const roundNames = ["Qualifiers", "Round of 32", "Semi Finals", "Grand Finals", "Super Finals"];
-  const roundTypes = ["qualifier", "qualifier", "semifinal", "grand_final", "final"] as const;
-
-  const rounds: Round[] = [];
-  const matches: Match[] = [];
-
-  for (let r = 0; r < Math.max(1, data.rounds); r++) {
-    const lobbies: Lobby[] = [];
-    const lobbiesThisRound = r === 0 ? numLobbies : Math.max(1, Math.ceil(numLobbies / Math.pow(2, r)));
-
-    for (let l = 0; l < lobbiesThisRound; l++) {
-      const lobbyId = generateId();
-      const startIdx = l * teamsPerLobby;
-      const lobbyTeams = teams.slice(startIdx, startIdx + teamsPerLobby);
-      const matchIds: string[] = [];
-
-      for (let m = 0; m < Math.max(1, data.matchesPerLobby); m++) {
-        const mapIndex = m % Math.max(1, data.mapRotation.length);
-        const matchId = generateId();
-        matches.push({
-          id: matchId,
-          name: `Match ${m + 1}`,
-          roundId: `round_${r}`,
-          lobbyId,
-          map: data.mapRotation[mapIndex] || "Erangel",
-          status: "pending",
-          matchNumber: m + 1,
-        });
-        matchIds.push(matchId);
-      }
-
-      lobbies.push({
-        id: lobbyId,
-        name: lobbiesThisRound === 1 ? "Main Lobby" : `Lobby ${l + 1}`,
-        teamIds: lobbyTeams.map(t => t.id),
-        matchIds,
-      });
-    }
-
-    rounds.push({
-      id: `round_${r}`,
-      name: roundNames[r] || `Round ${r + 1}`,
-      type: roundTypes[r] || "qualifier",
-      lobbies,
-      matchesPerLobby: data.matchesPerLobby,
-      advanceTop: r < data.rounds - 1 ? teamsPerLobby : undefined,
-      order: r,
+}): Promise<Tournament | undefined> {
+  try {
+    const res = await fetch("/api/tournaments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
     });
+    if (!res.ok) {
+      const err = await res.json();
+      console.error("Create failed:", err);
+      return undefined;
+    }
+    const result = await res.json();
+    invalidateCache();
+    return result.tournament;
+  } catch (e) {
+    console.error("Create tournament failed:", e);
+    return undefined;
   }
-
-  const tournament: Tournament = {
-    id, slug,
-    name: data.name,
-    description: data.description || "",
-    game: "pubg_mobile",
-    status: "draft",
-    format: `${data.maxTeams} squads`,
-    prizePool: data.prizePool || "",
-    maxTeams: data.maxTeams,
-    teams, rounds, matches,
-    scoringRule: data.scoringRule,
-    mapRotation: data.mapRotation.length > 0 ? data.mapRotation : ["Erangel"],
-    createdBy: userId,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    overlayToken,
-    isPublic: true,
-    discord: data.discord || "",
-    rules: data.rules || "",
-  };
-
-  return saveTournament(tournament);
 }
 
-// ─── MATCH RESULTS ────────────────────────────────────────────────────────────
-
-export function submitMatchResults(
+export async function submitMatchResults(
   tournamentId: string,
   matchId: string,
   results: TeamMatchResult[]
-): Tournament | undefined {
+): Promise<Tournament | undefined> {
   try {
-    const tournament = getTournamentById(tournamentId);
+    // Get current tournament
+    const tournament = await fetchTournamentById(tournamentId);
     if (!tournament) return undefined;
 
+    // Update match with results
     const updatedMatches = tournament.matches.map(m => {
       if (m.id !== matchId) return m;
       return {
@@ -300,14 +155,22 @@ export function submitMatchResults(
       };
     });
 
-    return saveTournament({ ...tournament, matches: updatedMatches });
+    // Save via API (matches are part of tournament JSON in this simple version)
+    // For now, we do it directly via update
+    const updated = { ...tournament, matches: updatedMatches };
+
+    // Note: In a full impl, you'd have PUT /api/matches/[id]
+    // For simplicity, using the tournament update
+    const saved = await saveTournament(updated);
+    invalidateCache();
+    return saved;
   } catch (e) {
     console.error("Submit results failed:", e);
     return undefined;
   }
 }
 
-// ─── DEMO RESULTS ─────────────────────────────────────────────────────────────
+// ─── DEMO RESULTS (Client-side) ─────────────────────────────
 
 export function generateDemoResults(tournament: Tournament, matchId: string): TeamMatchResult[] {
   try {
@@ -329,9 +192,7 @@ export function generateDemoResults(tournament: Tournament, matchId: string): Te
       const placementPoints = scoring.placementPoints[placement - 1] || 0;
 
       const playerResults = (team.players || []).map(player => {
-        const kills = placement <= 3
-          ? Math.floor(Math.random() * 6) + 1
-          : Math.floor(Math.random() * 4);
+        const kills = placement <= 3 ? Math.floor(Math.random() * 6) + 1 : Math.floor(Math.random() * 4);
         const damage = kills * (Math.floor(Math.random() * 150) + 100) + Math.floor(Math.random() * 300);
         return {
           playerId: player.id,
@@ -362,27 +223,26 @@ export function generateDemoResults(tournament: Tournament, matchId: string): Te
         playerResults,
       };
     });
-  } catch (e) {
-    console.error("Demo generation failed:", e);
+  } catch {
     return [];
   }
 }
 
-// ─── LEADERBOARD ──────────────────────────────────────────────────────────────
+// ─── LEADERBOARD (Pure client-side, from tournament data) ───
 
 export function getLeaderboard(tournament: Tournament, lobbyId?: string): LeaderboardEntry[] {
   try {
-    if (!tournament || !tournament.matches) return [];
+    if (!tournament?.matches) return [];
 
     const completedMatches = tournament.matches.filter(m =>
-      m && m.status === "completed" && m.results && m.results.length > 0 &&
+      m?.status === "completed" && m.results && m.results.length > 0 &&
       (lobbyId ? m.lobbyId === lobbyId : true)
     );
 
     const teamMap: Record<string, LeaderboardEntry> = {};
 
     (tournament.teams || []).forEach(team => {
-      if (!team || !team.id) return;
+      if (!team?.id) return;
       teamMap[team.id] = {
         rank: 0,
         teamId: team.id,
@@ -396,8 +256,7 @@ export function getLeaderboard(tournament: Tournament, lobbyId?: string): Leader
     completedMatches.forEach(match => {
       if (!match.results) return;
       match.results.forEach(result => {
-        if (!result || !result.teamId) return;
-
+        if (!result?.teamId) return;
         if (!teamMap[result.teamId]) {
           teamMap[result.teamId] = {
             rank: 0,
@@ -408,7 +267,6 @@ export function getLeaderboard(tournament: Tournament, lobbyId?: string): Leader
             matchResults: {},
           };
         }
-
         const entry = teamMap[result.teamId];
         entry.totalPoints += result.totalPoints || 0;
         entry.placementPoints += result.placementPoints || 0;
@@ -436,39 +294,34 @@ export function getLeaderboard(tournament: Tournament, lobbyId?: string): Leader
 
     sorted.forEach((entry, idx) => { entry.rank = idx + 1; });
     return sorted;
-  } catch (e) {
-    console.error("Leaderboard failed:", e);
+  } catch {
     return [];
   }
 }
 
-// ─── TOP PLAYERS ──────────────────────────────────────────────────────────────
-
 export function getTopPlayers(tournament: Tournament) {
   const empty = { topKillers: [], topDamage: [], topKD: [] };
-
   try {
-    if (!tournament || !tournament.matches) return empty;
+    if (!tournament?.matches) return empty;
 
     const playerMap: Record<string, any> = {};
 
     tournament.matches.forEach(match => {
       if (!match || match.status !== "completed" || !match.results) return;
       match.results.forEach(result => {
-        if (!result || !result.playerResults) return;
+        if (!result?.playerResults) return;
         result.playerResults.forEach(pr => {
-          if (!pr || !pr.playerId) return;
-          const key = pr.playerId;
-          if (!playerMap[key]) {
-            playerMap[key] = {
+          if (!pr?.playerId) return;
+          if (!playerMap[pr.playerId]) {
+            playerMap[pr.playerId] = {
               playerName: pr.playerName || "Unknown",
               teamName: result.teamName || "Unknown",
               kills: 0, damage: 0, matches: 0,
             };
           }
-          playerMap[key].kills += pr.kills || 0;
-          playerMap[key].damage += pr.damage || 0;
-          playerMap[key].matches += 1;
+          playerMap[pr.playerId].kills += pr.kills || 0;
+          playerMap[pr.playerId].damage += pr.damage || 0;
+          playerMap[pr.playerId].matches += 1;
         });
       });
     });
@@ -479,35 +332,28 @@ export function getTopPlayers(tournament: Tournament) {
       topDamage: [...players].sort((a: any, b: any) => b.damage - a.damage).slice(0, 10),
       topKD: [...players].filter((p: any) => p.matches > 0).sort((a: any, b: any) => (b.kills / b.matches) - (a.kills / a.matches)).slice(0, 10),
     };
-  } catch (e) {
-    console.error("Top players failed:", e);
+  } catch {
     return empty;
   }
 }
 
-// ─── STATS ────────────────────────────────────────────────────────────────────
-
 export function getTournamentStats(tournament: Tournament) {
   try {
     if (!tournament) return { completedMatches: 0, totalMatches: 0, progress: 0, leader: "TBD", leaderPoints: 0, totalKills: 0, teamsCount: 0 };
-
-    const completed = (tournament.matches || []).filter(m => m && m.status === "completed").length;
+    const completed = (tournament.matches || []).filter(m => m?.status === "completed").length;
     const total = (tournament.matches || []).length;
     const leaderboard = getLeaderboard(tournament);
     const leader = leaderboard[0];
-    const totalKills = leaderboard.reduce((a, e) => a + (e.totalKills || 0), 0);
-
     return {
       completedMatches: completed,
       totalMatches: total,
       progress: total > 0 ? Math.round((completed / total) * 100) : 0,
       leader: leader?.teamName || "TBD",
       leaderPoints: leader?.totalPoints || 0,
-      totalKills,
+      totalKills: leaderboard.reduce((a, e) => a + (e.totalKills || 0), 0),
       teamsCount: (tournament.teams || []).length,
     };
-  } catch (e) {
-    console.error("Stats failed:", e);
+  } catch {
     return { completedMatches: 0, totalMatches: 0, progress: 0, leader: "TBD", leaderPoints: 0, totalKills: 0, teamsCount: 0 };
   }
 }

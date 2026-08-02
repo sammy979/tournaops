@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  username     String       @unique
+  displayName  String
+  password     String
+  avatar       String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  tournaments  Tournament[]
+
+  @@index([email])
+  @@index([username])
+}
+
+model Tournament {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  description   String?
+  game          String   @default("pubg_mobile")
+  status        String   @default("draft")
+  format        String?
+  prizePool     String?
+  maxTeams      Int      @default(16)
+  scoringRule   Json
+  mapRotation   String[]
+  overlayToken  String   @unique @default(cuid())
+  isPublic      Boolean  @default(true)
+  discord       String?
+  rules         String?
+  bannerImage   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  createdBy     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+
+  teams         Team[]
+  matches       Match[]
+  rounds        Round[]
+  imports       DiscordImport[]
+
+  @@index([userId])
+  @@index([slug])
+  @@index([status])
+}
+
+model Team {
+  id           String     @id @default(cuid())
+  name         String
+  tag          String?
+  logo         String?
+  seed         Int?
+  contact      String?
+  players      Json
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  tournamentId String
+
+  @@index([tournamentId])
+  @@index([seed])
+}
+
+model Round {
+  id              String     @id @default(cuid())
+  name            String
+  type            String
+  matchesPerLobby Int
+  advanceTop      Int?
+  order           Int
+  lobbies         Json
+
+  tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  tournamentId    String
+
+  @@index([tournamentId])
+  @@index([order])
+}
+
+model Match {
+  id           String     @id @default(cuid())
+  name         String
+  roundId      String
+  lobbyId      String
+  map          String
+  status       String     @default("pending")
+  matchNumber  Int?
+  results      Json?
+  startTime    DateTime?
+  endTime      DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  tournamentId String
+
+  @@index([tournamentId])
+  @@index([status])
+  @@index([roundId])
+}
+
+model DiscordImport {
+  id                  String      @id @default(cuid())
+  discordMessageId    String      @unique
+  discordChannelId    String
+  discordChannelName  String
+  discordGuildId      String
+  discordGuildName    String
+  discordUserId       String
+  discordUsername     String
+  discordUserAvatar   String?
+  messageContent      String      @db.Text
+  parseResult         Json
+  status              String      @default("pending")
+  receivedAt          DateTime    @default(now())
+  importedAt          DateTime?
+
+  tournament          Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  tournamentId        String?
+
+  @@index([status])
+  @@index([discordGuildId])
+  @@index([receivedAt])
+}

@@ -1,19 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const pendingImports: Map<string, any> = (globalThis as any).__pendingImports || new Map();
-(globalThis as any).__pendingImports = pendingImports;
-
-const MAX_STORED = 100;
-const TTL_MS = 24 * 60 * 60 * 1000;
-
-function cleanExpired() {
-  const now = Date.now();
-  for (const [key, value] of pendingImports.entries()) {
-    if (now - new Date(value.receivedAt).getTime() > TTL_MS) {
-      pendingImports.delete(key);
-    }
-  }
-}
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,53 +13,53 @@ export async function POST(req: NextRequest) {
     const data = await req.json();
     if (!data.parseResult?.slots) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
 
-    cleanExpired();
+    // Check duplicate
+    const existing = await prisma.discordImport.findUnique({
+      where: { discordMessageId: data.discordMessageId },
+    });
 
-    if (pendingImports.size >= MAX_STORED) {
-      const oldest = [...pendingImports.entries()].sort((a, b) =>
-        new Date(a[1].receivedAt).getTime() - new Date(b[1].receivedAt).getTime()
-      )[0];
-      if (oldest) pendingImports.delete(oldest[0]);
+    if (existing) {
+      return NextResponse.json({
+        success: true,
+        duplicate: true,
+        importId: existing.id,
+      });
     }
 
-    const importId = `imp_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const imp = await prisma.discordImport.create({
+      data: {
+        discordMessageId: data.discordMessageId,
+        discordChannelId: data.discordChannelId,
+        discordChannelName: data.discordChannelName,
+        discordGuildId: data.discordGuildId,
+        discordGuildName: data.discordGuildName,
+        discordUserId: data.discordUserId,
+        discordUsername: data.discordUsername,
+        discordUserAvatar: data.discordUserAvatar,
+        messageContent: data.messageContent,
+        parseResult: data.parseResult,
+        status: "pending",
+      },
+    });
 
-    const record = {
-      id: importId,
-      discordMessageId: data.discordMessageId,
-      discordChannelId: data.discordChannelId,
-      discordChannelName: data.discordChannelName,
-      discordGuildId: data.discordGuildId,
-      discordGuildName: data.discordGuildName,
-      discordUserId: data.discordUserId,
-      discordUsername: data.discordUsername,
-      discordUserAvatar: data.discordUserAvatar,
-      messageContent: data.messageContent,
-      parseResult: data.parseResult,
-      receivedAt: new Date().toISOString(),
-      status: "pending",
-    };
-
-    pendingImports.set(importId, record);
-    console.log(`Discord import queued [${importId}]: ${data.discordGuildName}/#${data.discordChannelName} - ${data.parseResult.totalDetected} slots`);
+    console.log(`Discord import saved [${imp.id}]: ${data.discordGuildName}/#${data.discordChannelName} - ${data.parseResult.totalDetected} slots`);
 
     return NextResponse.json({
       success: true,
-      importId,
+      importId: imp.id,
       slotsDetected: data.parseResult.totalDetected,
-      pendingCount: pendingImports.size,
     });
   } catch (err: any) {
-    console.error("API error:", err);
+    console.error("Discord API error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
-export async function GET(req: NextRequest) {
-  cleanExpired();
+export async function GET() {
+  const count = await prisma.discordImport.count({ where: { status: "pending" } });
   return NextResponse.json({
-    status: "TournaOps Discord API endpoint",
-    version: "1.0",
-    pendingImports: pendingImports.size,
+    status: "TournaOps Discord API",
+    version: "2.0-postgres",
+    pendingImports: count,
   });
 }

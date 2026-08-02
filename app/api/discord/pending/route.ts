@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const pendingImports: Map<string, any> = (globalThis as any).__pendingImports || new Map();
-(globalThis as any).__pendingImports = pendingImports;
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const list = Array.from(pendingImports.values())
-    .filter(i => i.status === "pending")
-    .sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime())
-    .slice(0, 50);
+  const pendingImports = await prisma.discordImport.findMany({
+    where: { status: "pending" },
+    orderBy: { receivedAt: "desc" },
+    take: 50,
+  });
 
   return NextResponse.json({
-    pendingImports: list,
-    count: list.length,
+    pendingImports,
+    count: pendingImports.length,
   });
 }
 
@@ -21,9 +20,10 @@ export async function DELETE(req: NextRequest) {
 
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-  const imp = pendingImports.get(id);
-  if (!imp) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-  pendingImports.delete(id);
-  return NextResponse.json({ success: true, deletedId: id });
+  try {
+    await prisma.discordImport.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 }
