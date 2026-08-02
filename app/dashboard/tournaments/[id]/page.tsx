@@ -26,10 +26,11 @@ const PlayerStats = dynamic(() => import("@/components/tournament/PlayerStats"),
 const BracketView = dynamic(() => import("@/components/bracket/BracketView"), { ssr: false });
 const SharePanel = dynamic(() => import("@/components/share/SharePanel"), { ssr: false });
 const DiscordSlotImporter = dynamic(() => import("@/components/discord/DiscordSlotImporter"), { ssr: false });
+const StageManager = dynamic(() => import("@/components/stages/StageManager"), { ssr: false });
 const DiscordWebhook = dynamic(() => import("@/components/integrations/DiscordWebhook"), { ssr: false });
 const OpsAI = dynamic(() => import("@/components/ai/OpsAI"), { ssr: false });
 
-type Tab = "overview" | "matches" | "standings" | "teams";
+type Tab = "overview" | "matches" | "standings" | "teams" | "stages";
 
 export default function TournamentDetailPage() {
   const params = useParams();
@@ -129,6 +130,7 @@ export default function TournamentDetailPage() {
     { key: "matches", label: "Matches", icon: Play },
     { key: "standings", label: "Standings", icon: Trophy },
     { key: "teams", label: "Teams", icon: Users },
+    { key: "stages", label: "Stages", icon: Award },
   ];
 
   const medals = ["1st", "2nd", "3rd"];
