@@ -355,7 +355,7 @@ export default function TournamentDetailPage() {
                 <Award className="w-5 h-5 text-purple-400" />{round.name}
               </h3>
               {round.lobbies.map((lobby) => {
-                const lobbyMatches = tournament.matches.filter(m => lobby.matchIds.includes(m.id));
+                const lobbyMatches = tournament.matches.filter(m => lobby.matchIds.includes(m.id) || m.lobbyId === lobby.id || (m.roundId === round.id && !tournament.rounds.flatMap((r: any) => r.lobbies).some((l: any) => l.id !== lobby.id && (l.matchIds || []).includes(m.id))));
                 return (
                   <div key={lobby.id} className="mb-6">
                     <div className="flex items-center gap-2 mb-3">
