@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Trophy, Plus, Settings,
   LogOut, Menu, X, Monitor, ChevronRight,
   Zap, BarChart3, Users, Clock, DollarSign,
-  Calendar, MessageSquare, Palette, Crown
+  Calendar, MessageSquare, Palette, Crown, Shield
 } from "lucide-react";
 import { fetchCurrentUser, logoutUser } from "@/lib/auth/auth";
 
@@ -36,6 +36,14 @@ const NAV_SECTIONS = [
   ]},
 ];
 
+// Admin-only section (only shown to admins)
+const ADMIN_SECTION = {
+  label: "Admin",
+  items: [
+    { href: "/admin", icon: Crown, label: "Admin Panel" },
+  ],
+};
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -46,10 +54,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     const check = async () => {
       const u = await fetchCurrentUser();
-      if (!u) {
-        router.replace("/login");
-        return;
-      }
+      if (!u) { router.replace("/login"); return; }
       setUser(u);
       setLoading(false);
     };
@@ -76,6 +81,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (href === "/dashboard") return pathname === "/dashboard";
     return pathname?.startsWith(href);
   };
+
+  const isAdmin = user?.isAdmin === true;
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] flex">
@@ -115,15 +122,65 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
             </div>
           ))}
+
+          {/* ADMIN SECTION - Only visible to admins */}
+          {isAdmin && (
+            <div>
+              <div className="flex items-center gap-2 px-3 mb-1">
+                <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-widest">{ADMIN_SECTION.label}</p>
+                <div className="flex-1 h-px bg-gradient-to-r from-yellow-500/30 to-transparent" />
+              </div>
+              <div className="space-y-0.5">
+                {ADMIN_SECTION.items.map(item => {
+                  const Icon = item.icon;
+                  const active = isActive(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setSidebarOpen(false)}
+                      className={`sidebar-link ${active ? "active-admin" : ""} relative`}
+                      style={active ? {
+                        background: "linear-gradient(135deg, rgba(234,179,8,0.15), rgba(249,115,22,0.15))",
+                        borderColor: "rgba(234,179,8,0.3)",
+                        color: "#fbbf24",
+                      } : {
+                        color: "#eab308",
+                      }}
+                    >
+                      <Icon className="w-4 h-4 flex-shrink-0" />
+                      <span className="flex-1 text-sm font-medium">{item.label}</span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 font-bold">ADMIN</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </nav>
 
         <div className="p-3 border-t border-white/8">
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-white/4 border border-white/8 mb-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">
-              {(user?.displayName || user?.username || "U").charAt(0).toUpperCase()}
+          <div className={`flex items-center gap-3 p-3 rounded-xl border mb-2 ${
+            isAdmin
+              ? "bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/30"
+              : "bg-white/4 border-white/8"
+          }`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm ${
+              isAdmin
+                ? "bg-gradient-to-br from-yellow-500 to-orange-500"
+                : "bg-gradient-to-br from-blue-500 to-purple-600"
+            }`}>
+              {isAdmin ? <Crown className="w-4 h-4" /> : (user?.displayName || user?.username || "U").charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white text-sm font-semibold truncate">{user?.displayName || user?.username}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-white text-sm font-semibold truncate">{user?.displayName || user?.username}</p>
+                {isAdmin && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 font-bold">
+                    ADMIN
+                  </span>
+                )}
+              </div>
               <p className="text-gray-600 text-xs truncate">{user?.email}</p>
             </div>
           </div>
@@ -143,6 +200,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Zap className="w-3 h-3 text-white" />
             </div>
             <span className="font-bold text-white text-sm">TournaOps</span>
+            {isAdmin && (
+              <Crown className="w-3.5 h-3.5 text-yellow-400" />
+            )}
           </div>
           <div className="w-9" />
         </header>
