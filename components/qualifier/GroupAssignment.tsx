@@ -47,7 +47,7 @@ export default function GroupAssignment({ stageId, teams, groups: initialGroups,
     t.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  // ─── DRAG & DROP ───
+  // â”€â”€â”€ DRAG & DROP â”€â”€â”€
   const handleDragStart = (teamId: string) => {
     if (isLocked) return;
     setDraggedTeam(teamId);
@@ -80,8 +80,8 @@ export default function GroupAssignment({ stageId, teams, groups: initialGroups,
     setDropTarget(null);
   };
 
-  // ─── AUTO ASSIGN ───
-  const autoAssign = async (mode: "random" | "seeded" | "regional") => {
+  // â”€â”€â”€ AUTO ASSIGN â”€â”€â”€
+  const autoAssign = async (mode: "random" | "seeded" | "regional" | "snake" | "from_previous") => {
     if (isLocked) return;
     setRandomizing(true);
     try {
@@ -99,7 +99,7 @@ export default function GroupAssignment({ stageId, teams, groups: initialGroups,
     }
   };
 
-  // ─── SAVE MANUAL ───
+  // â”€â”€â”€ SAVE MANUAL â”€â”€â”€
   const saveManual = async () => {
     setSaving(true);
     const assignments = Object.fromEntries(groups.map(g => [g.id, g.teamIds]));
@@ -135,9 +135,9 @@ export default function GroupAssignment({ stageId, teams, groups: initialGroups,
               Group Assignment
             </h2>
             <p className="text-gray-500 text-sm mt-1">
-              {totalAssigned}/{teams.length} teams · {groups.length} groups
-              {balanced && <span className="text-green-400 ml-2">· Balanced ✓</span>}
-              {isLocked && <span className="text-yellow-400 ml-2">· Locked 🔒</span>}
+              {totalAssigned}/{teams.length} teams Â· {groups.length} groups
+              {balanced && <span className="text-green-400 ml-2">Â· Balanced âœ“</span>}
+              {isLocked && <span className="text-yellow-400 ml-2">Â· Locked ðŸ”’</span>}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -164,6 +164,13 @@ export default function GroupAssignment({ stageId, teams, groups: initialGroups,
             </button>
             <button onClick={() => autoAssign("regional")} disabled={randomizing} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-medium hover:bg-green-500/20">
               <Award className="w-3 h-3" />Regional Balance
+            </button>
+
+            <button onClick={() => autoAssign("snake")} disabled={randomizing} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-medium hover:bg-orange-500/20">
+              <Zap className="w-3 h-3" />Snake Seeding
+            </button>
+            <button onClick={() => autoAssign("from_previous")} disabled={randomizing} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-medium hover:bg-yellow-500/20">
+              <Trophy className="w-3 h-3" />Import from Previous Stage
             </button>
             {randomizing && (
               <span className="text-xs text-yellow-400 flex items-center gap-1"><RefreshCw className="w-3 h-3 animate-spin" />Working...</span>

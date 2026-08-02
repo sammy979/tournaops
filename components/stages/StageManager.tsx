@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
   Plus, Trophy, Users, Lock, Unlock, Play, Check, X,
-  ChevronRight, Award, AlertTriangle, Zap, Calendar,
+  ChevronRight, Award, AlertTriangle, Zap, Calendar, Crown,
   Settings, ArrowRight, Trash2, Edit
 } from "lucide-react";
 import { Tournament } from "@/types/tournament";
@@ -50,7 +50,7 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }>
   REGISTRATION_OPEN: { bg: "bg-blue-500/20", text: "text-blue-400", label: "Reg Open" },
   REGISTRATION_CLOSED: { bg: "bg-cyan-500/20", text: "text-cyan-400", label: "Reg Closed" },
   READY: { bg: "bg-purple-500/20", text: "text-purple-400", label: "Ready" },
-  LIVE: { bg: "bg-green-500/20", text: "text-green-400", label: "● Live" },
+  LIVE: { bg: "bg-green-500/20", text: "text-green-400", label: "Ã¢â€”Â Live" },
   RESULTS_PENDING: { bg: "bg-yellow-500/20", text: "text-yellow-400", label: "Results Pending" },
   COMPLETED: { bg: "bg-emerald-500/20", text: "text-emerald-400", label: "Completed" },
   ARCHIVED: { bg: "bg-gray-600/20", text: "text-gray-500", label: "Archived" },
@@ -112,6 +112,9 @@ export default function StageManager({ tournament, onStageChange }: StageManager
 
   return (
     <div className="space-y-6">
+      {/* Progression Timeline */}
+      <StageProgressionTimeline tournamentId={tournament.id} compact={true} />
+
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -120,7 +123,7 @@ export default function StageManager({ tournament, onStageChange }: StageManager
             Tournament Stages
           </h2>
           <p className="text-gray-500 text-sm mt-1">
-            {stages.length} stage{stages.length !== 1 ? "s" : ""} · Manage qualifiers, group stages, finals
+            {stages.length} stage{stages.length !== 1 ? "s" : ""} Ã‚Â· Manage qualifiers, group stages, finals
           </p>
         </div>
         <button
@@ -137,7 +140,7 @@ export default function StageManager({ tournament, onStageChange }: StageManager
           <Award className="w-14 h-14 text-gray-700 mx-auto mb-4" />
           <h3 className="text-white text-xl font-bold mb-2">No Stages Yet</h3>
           <p className="text-gray-500 mb-6 max-w-md mx-auto">
-            Create your first stage — Qualifiers, Group Stage, Semi-Finals, Grand Final.
+            Create your first stage Ã¢â‚¬â€ Qualifiers, Group Stage, Semi-Finals, Grand Final.
             Advance teams automatically between stages.
           </p>
           <button onClick={() => setShowBuilder(true)} className="btn-primary px-6 py-2.5">
@@ -189,7 +192,7 @@ export default function StageManager({ tournament, onStageChange }: StageManager
                           <Users className="w-3 h-3" />{stage.totalTeams} teams
                         </span>
                         <span className="flex items-center gap-1">
-                          <Award className="w-3 h-3" />{stage.numGroups} {stage.numGroups === 1 ? "group" : "groups"} × {stage.teamsPerGroup}
+                          <Award className="w-3 h-3" />{stage.numGroups} {stage.numGroups === 1 ? "group" : "groups"} Ãƒâ€” {stage.teamsPerGroup}
                         </span>
                         <span className="flex items-center gap-1">
                           <Play className="w-3 h-3" />{stage.matchesPerGroup} matches/group
@@ -274,7 +277,7 @@ export default function StageManager({ tournament, onStageChange }: StageManager
                     )}
                     {rule.wildcardCount && rule.wildcardCount > 0 && (
                       <>
-                        <span className="text-gray-600">·</span>
+                        <span className="text-gray-600">Ã‚Â·</span>
                         <span className="text-purple-400 font-bold">+{rule.wildcardCount} wildcards</span>
                       </>
                     )}
@@ -355,9 +358,9 @@ export default function StageManager({ tournament, onStageChange }: StageManager
   );
 }
 
-// ═══════════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 // STAGE BUILDER (Inline component)
-// ═══════════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 
 function StageBuilder({ tournament, stage, onClose, onSave }: any) {
   const [form, setForm] = useState({
@@ -559,9 +562,9 @@ function StageBuilder({ tournament, stage, onClose, onSave }: any) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 // ADVANCE TEAMS MODAL
-// ═══════════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 
 function AdvanceTeamsModal({ stage, nextStage, onClose, onAdvanced }: any) {
   const [preview, setPreview] = useState<any>(null);
@@ -657,7 +660,7 @@ function AdvanceTeamsModal({ stage, nextStage, onClose, onAdvanced }: any) {
               {/* Qualified teams */}
               <div>
                 <div className="text-xs font-bold text-green-400 uppercase tracking-wider mb-2">
-                  ✓ Qualified ({preview.qualified.length + preview.wildcards.length})
+                  Ã¢Å“â€œ Qualified ({preview.qualified.length + preview.wildcards.length})
                 </div>
                 <div className="max-h-48 overflow-y-auto space-y-1">
                   {[...preview.qualified, ...preview.wildcards].map((t: any) => (
@@ -688,7 +691,7 @@ function AdvanceTeamsModal({ stage, nextStage, onClose, onAdvanced }: any) {
               {/* Eliminated teams */}
               <div>
                 <div className="text-xs font-bold text-red-400 uppercase tracking-wider mb-2">
-                  ✗ Eliminated ({preview.eliminated.length})
+                  Ã¢Å“â€” Eliminated ({preview.eliminated.length})
                 </div>
                 <div className="max-h-32 overflow-y-auto space-y-1">
                   {preview.eliminated.slice(0, 10).map((t: any) => (
@@ -709,7 +712,7 @@ function AdvanceTeamsModal({ stage, nextStage, onClose, onAdvanced }: any) {
 
               {manualEliminate.size > 0 && (
                 <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-sm">
-                  ⚠️ {manualEliminate.size} team{manualEliminate.size !== 1 ? "s" : ""} will be manually eliminated
+                  Ã¢Å¡Â Ã¯Â¸Â {manualEliminate.size} team{manualEliminate.size !== 1 ? "s" : ""} will be manually eliminated
                 </div>
               )}
             </div>
