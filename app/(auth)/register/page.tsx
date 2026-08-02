@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle2, Zap, AtSign, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle2, AtSign, Eye, EyeOff } from "lucide-react";
 import { registerUser } from "@/lib/auth/auth";
 
 export default function RegisterPage() {
@@ -21,7 +21,6 @@ export default function RegisterPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
       const result = await registerUser(email, password, username, displayName);
       if (result.success) {
@@ -38,34 +37,39 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4 py-12 relative overflow-hidden">
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-500/8 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-blue-500/6 rounded-full blur-3xl" />
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-500/12 rounded-full blur-3xl animate-blob" />
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-blue-500/12 rounded-full blur-3xl animate-blob-delay" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-pink-500/8 rounded-full blur-3xl animate-blob-slow" />
       </div>
 
-      <div className="w-full max-w-md relative">
-        <Link href="/" className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
-            <Zap className="w-5 h-5 text-white" />
+      <div className="w-full max-w-md relative z-10">
+        <Link href="/" className="flex flex-col items-center gap-4 mb-8 group">
+          <div className="relative w-20 h-20 rounded-2xl overflow-hidden logo-glow shadow-2xl shadow-blue-500/50 bg-gradient-to-br from-blue-500 to-purple-600 group-hover:scale-105 transition-transform animate-pulse-glow">
+            <img src="/logo.png" alt="TournaOps" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+            <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent" />
           </div>
-          <span className="text-2xl font-bold text-white tracking-tight">TournaOps</span>
+          <div className="text-center">
+            <div className="text-2xl font-black text-white tracking-tight">TournaOps</div>
+            <div className="text-[10px] text-blue-400 uppercase tracking-[0.25em] font-semibold">Tournament OS</div>
+          </div>
         </Link>
 
-        <div className="glass-card rounded-2xl p-8 border border-white/10">
+        <div className="glass-heavy rounded-3xl p-8 border border-white/10 shadow-2xl">
           {success ? (
             <div className="flex flex-col items-center justify-center py-8 gap-4">
-              <div className="w-16 h-16 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center animate-pulse-glow">
                 <CheckCircle2 className="w-8 h-8 text-green-400" />
               </div>
               <p className="text-xl font-bold text-green-400">Account Created!</p>
-              <p className="text-gray-500 text-sm">Welcome to TournaOps! Redirecting...</p>
+              <p className="text-gray-500 text-sm">Welcome to TournaOps!</p>
             </div>
           ) : (
             <>
-              <div className="mb-6">
+              <div className="mb-6 text-center">
                 <h1 className="text-2xl font-bold text-white mb-1">Create account</h1>
-                <p className="text-gray-500 text-sm">Free forever. No credit card required.</p>
+                <p className="text-gray-500 text-sm">Free forever. No credit card.</p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -100,12 +104,12 @@ export default function RegisterPage() {
                     maxLength={20}
                     disabled={loading}
                   />
-                  <p className="text-xs text-gray-600">Lowercase letters, numbers, underscores - 3-20 chars</p>
+                  <p className="text-xs text-gray-600">Lowercase, numbers, underscores - 3-20 chars</p>
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-400 flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5" /> Email Address
+                    <Mail className="w-3.5 h-3.5" /> Email
                   </label>
                   <input
                     type="email"
@@ -133,11 +137,7 @@ export default function RegisterPage() {
                       minLength={6}
                       disabled={loading}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
-                    >
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
@@ -187,7 +187,7 @@ export default function RegisterPage() {
 
                 <p className="text-center text-sm text-gray-500">
                   Already have an account?{" "}
-                  <Link href="/login" className="text-blue-400 hover:text-blue-300 font-semibold transition-colors">
+                  <Link href="/login" className="text-blue-400 hover:text-blue-300 font-semibold">
                     Sign in
                   </Link>
                 </p>
@@ -197,8 +197,8 @@ export default function RegisterPage() {
         </div>
 
         <p className="text-center mt-6">
-          <Link href="/" className="text-gray-600 hover:text-gray-400 text-sm transition-colors">
-            â† Back to home
+          <Link href="/" className="text-gray-600 hover:text-gray-400 text-sm">
+            ← Back to home
           </Link>
         </p>
       </div>

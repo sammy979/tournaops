@@ -100,13 +100,16 @@ export default function TeamRegisterPage() {
       {/* Nav */}
       <div className="border-b border-white/8 px-6 py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-            <Zap className="w-3.5 h-3.5 text-white" />
+          <div className="relative w-9 h-9 rounded-xl overflow-hidden logo-glow shadow-lg shadow-blue-500/40 bg-gradient-to-br from-blue-500 to-purple-600">
+            <img src="/logo.png" alt="TournaOps" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />
           </div>
-          <span className="font-bold text-white text-sm">TournaOps</span>
+          <div>
+            <span className="font-bold text-white text-sm tracking-tight block leading-tight">TournaOps</span>
+            <span className="text-[8px] text-blue-400 uppercase tracking-widest">Tournament OS</span>
+          </div>
         </Link>
         <Link href={`/tournaments/${tournament.slug}`} className="text-gray-500 text-sm hover:text-gray-300 transition-colors">
-          View Tournament ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢
+          View Tournament ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢
         </Link>
       </div>
 
@@ -119,7 +122,7 @@ export default function TeamRegisterPage() {
           <h1 className="text-3xl font-bold text-white mb-2">{tournament.name}</h1>
           <div className="flex items-center justify-center gap-4 text-gray-500 text-sm">
             <span>{tournament.teams.length} squads registered</span>
-            {tournament.prizePool && <span className="text-yellow-400">ÃƒÂ°Ã…Â¸Ã‚ÂÃ¢â‚¬Â  {tournament.prizePool}</span>}
+            {tournament.prizePool && <span className="text-yellow-400">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã‚Â  {tournament.prizePool}</span>}
           </div>
         </div>
 

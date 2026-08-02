@@ -22,10 +22,13 @@ export default function ContactPage() {
     <div className="min-h-screen bg-[#0a0a0f] text-white">
       <nav className="border-b border-white/8 px-6 py-4">
         <Link href="/" className="flex items-center gap-2.5 w-fit">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-            <Zap className="w-4 h-4 text-white" />
+          <div className="relative w-10 h-10 rounded-xl overflow-hidden logo-glow shadow-lg shadow-blue-500/40 bg-gradient-to-br from-blue-500 to-purple-600">
+            <img src="/logo.png" alt="TournaOps" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />
           </div>
-          <span className="text-lg font-bold text-white">TournaOps</span>
+          <div>
+            <span className="text-lg font-bold text-white tracking-tight block leading-tight">TournaOps</span>
+            <span className="text-[9px] text-blue-400 uppercase tracking-widest">Tournament OS</span>
+          </div>
         </Link>
       </nav>
 
@@ -189,7 +192,7 @@ export default function ContactPage() {
 
       <footer className="border-t border-white/8 py-8 px-6 mt-12">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <p className="text-gray-600 text-sm">© 2025 TournaOps. All rights reserved.</p>
+          <p className="text-gray-600 text-sm">Â© 2025 TournaOps. All rights reserved.</p>
           <div className="flex gap-4 text-sm text-gray-600">
             <Link href="/privacy" className="hover:text-gray-400">Privacy</Link>
             <Link href="/terms" className="hover:text-gray-400">Terms</Link>

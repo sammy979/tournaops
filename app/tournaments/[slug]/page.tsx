@@ -59,7 +59,12 @@ export default function PublicTournamentPage() {
     <div className="min-h-screen bg-[#0a0a0f]">
       <div className="border-b border-white/10 bg-black/40 backdrop-blur-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="text-blue-400 font-bold text-lg">TournaOps</Link>
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="relative w-8 h-8 rounded-lg overflow-hidden logo-glow shadow-lg shadow-blue-500/40 bg-gradient-to-br from-blue-500 to-purple-600 group-hover:scale-110 transition-transform">
+              <img src="/logo.png" alt="TournaOps" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+            </div>
+            <span className="text-blue-400 font-bold text-lg">TournaOps</span>
+          </Link>
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <RefreshCw className="w-3 h-3" />
             Updated: {lastUpdated.toLocaleTimeString()}
@@ -101,7 +106,7 @@ export default function PublicTournamentPage() {
             {leaderboard.length >= 3 && (
               <div className="grid grid-cols-3 gap-4 mb-6">
                 {[leaderboard[1], leaderboard[0], leaderboard[2]].map((entry, idx) => {
-                  const medals = ["Ã°Å¸Â¥Ë†", "Ã°Å¸Â¥â€¡", "Ã°Å¸Â¥â€°"];
+                  const medals = ["ÃƒÂ°Ã…Â¸Ã‚Â¥Ã‹â€ ", "ÃƒÂ°Ã…Â¸Ã‚Â¥Ã¢â‚¬Â¡", "ÃƒÂ°Ã…Â¸Ã‚Â¥Ã¢â‚¬Â°"];
                   const colors = ["text-gray-300", "text-yellow-400", "text-amber-600"];
                   return (
                     <div key={entry.teamId} className={`glass-card rounded-xl p-5 text-center border ${idx === 1 ? "border-yellow-500/30 bg-yellow-500/5" : "border-white/10"} ${idx !== 1 ? "mt-6" : ""}`}>
@@ -131,7 +136,7 @@ export default function PublicTournamentPage() {
                       <tr key={entry.teamId} className={`border-b border-white/5 hover:bg-white/5 transition-colors ${entry.rank === 1 ? "bg-yellow-500/5" : ""}`}>
                         <td className="py-3 px-4">
                           <span className={`font-mono font-bold ${entry.rank === 1 ? "text-yellow-400" : entry.rank === 2 ? "text-gray-300" : entry.rank === 3 ? "text-amber-600" : "text-gray-500"}`}>
-                            {entry.rank <= 3 ? ["Ã°Å¸Â¥â€¡","Ã°Å¸Â¥Ë†","Ã°Å¸Â¥â€°"][entry.rank-1] : `#${entry.rank}`}
+                            {entry.rank <= 3 ? ["ÃƒÂ°Ã…Â¸Ã‚Â¥Ã¢â‚¬Â¡","ÃƒÂ°Ã…Â¸Ã‚Â¥Ã‹â€ ","ÃƒÂ°Ã…Â¸Ã‚Â¥Ã¢â‚¬Â°"][entry.rank-1] : `#${entry.rank}`}
                           </span>
                         </td>
                         <td className="py-3 px-4 text-white font-semibold">{entry.teamName}</td>
