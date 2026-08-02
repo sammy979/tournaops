@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Trophy, Plus, Settings,
   LogOut, Menu, X, Monitor, ChevronRight,
   Zap, BarChart3, Users, Clock, DollarSign,
-  Calendar, MessageSquare, Palette, Crown, Shield
+  Calendar, MessageSquare, Palette, Crown, Shield, Sparkles
 } from "lucide-react";
 import { fetchCurrentUser, logoutUser } from "@/lib/auth/auth";
 
@@ -30,6 +30,7 @@ const NAV_SECTIONS = [
     { href: "/dashboard/schedule", icon: Calendar, label: "Schedule" },
     { href: "/dashboard/prizes", icon: DollarSign, label: "Prize Tracker" },
     { href: "/dashboard/branding", icon: Palette, label: "Branding" },
+      { href: "/dashboard/scoring", icon: Sparkles, label: "Scoring Systems" },
   ]},
   { label: "Account", items: [
     { href: "/dashboard/settings", icon: Settings, label: "Settings" },
