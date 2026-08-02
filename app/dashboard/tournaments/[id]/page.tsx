@@ -26,6 +26,7 @@ const PlayerStats = dynamic(() => import("@/components/tournament/PlayerStats"),
 const BracketView = dynamic(() => import("@/components/bracket/BracketView"), { ssr: false });
 const SharePanel = dynamic(() => import("@/components/share/SharePanel"), { ssr: false });
 const DiscordSlotImporter = dynamic(() => import("@/components/discord/DiscordSlotImporter"), { ssr: false });
+const OnboardingChecklist = dynamic(() => import("@/components/onboarding/OnboardingChecklist"), { ssr: false });
 const StageManager = dynamic(() => import("@/components/stages/StageManager"), { ssr: false });
 const VisualStageBuilder = dynamic(() => import("@/components/stages/VisualStageBuilder"), { ssr: false });
 const DiscordWebhook = dynamic(() => import("@/components/integrations/DiscordWebhook"), { ssr: false });
@@ -51,6 +52,7 @@ export default function TournamentDetailPage() {
   const [showShare, setShowShare] = useState(false);
   const [showDiscordImport, setShowDiscordImport] = useState(false);
   const [showOpsAI, setShowOpsAI] = useState(false);
+  const [stageCount, setStageCount] = useState(0);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [selectedMatchTeams, setSelectedMatchTeams] = useState<Team[]>([]);
   const [generatingDemo, setGeneratingDemo] = useState<string | null>(null);
@@ -68,6 +70,12 @@ export default function TournamentDetailPage() {
         }
       }
       setLoading(false);
+      // Load stage count
+      if (id) {
+        fetch(`/api/tournaments/${id}/stages`).then(r => r.json()).then(d => {
+          setStageCount((d.stages || []).length);
+        }).catch(() => {});
+      }
     };
     load();
   }, [params?.id]);
