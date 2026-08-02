@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { CustomCursor, Particles } from "@/components/Effects";
 
 export const metadata: Metadata = {
   title: "Tournaops - Free Tournament Operations Platform",
@@ -10,7 +11,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
-      <body>{children}</body>
+      <body>
+        <Particles />
+        <CustomCursor />
+        {children}
+      </body>
     </html>
   );
 }
