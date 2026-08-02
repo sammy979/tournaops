@@ -18,7 +18,7 @@ import { Tournament, Match, Team } from "@/types/tournament";
 
 const TeamEditor = dynamic(() => import("@/components/tournament/TeamEditor"), { ssr: false });
 const MatchResultEntry = dynamic(() => import("@/components/tournament/MatchResultEntry"), { ssr: false });
-const FullLeaderboard = dynamic(() => import("@/components/tournament/FullLeaderboard"), { ssr: false });
+const PointsTable = dynamic(() => import("@/components/tournament/PointsTable"), { ssr: false });
 const BroadcastStudio = dynamic(() => import("@/components/studio/BroadcastStudio"), { ssr: false });
 const CSVImport = dynamic(() => import("@/components/tournament/CSVImport"), { ssr: false });
 const StatusManager = dynamic(() => import("@/components/tournament/StatusManager"), { ssr: false });
@@ -569,7 +569,7 @@ export default function TournamentDetailPage() {
       )}
 
       {showLeaderboard && (
-        <FullLeaderboard tournament={tournament} onClose={() => setShowLeaderboard(false)} />
+        <PointsTable tournament={tournament} onClose={() => setShowLeaderboard(false)} />
       )}
 
       {showStudio && (
