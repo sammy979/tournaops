@@ -1,245 +1,270 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Trophy, Zap, Users, Download, Share2, Settings, ChevronRight, Sparkles, Cpu, Target, Shield, Rocket, BarChart3 } from "lucide-react";
+import { 
+  Zap, Trophy, Users, BarChart3, Radio, Bot, ChevronRight, 
+  Command, Cpu, Sparkles, ArrowRight, CheckCircle2, Play,
+  Layers, Shield, Rocket, Globe, MessageSquare, TrendingUp
+} from "lucide-react";
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 50);
+    const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   return (
     <main className="min-h-screen relative">
-      {/* Promo Banner */}
-      <div className="relative z-30 bg-gradient-to-r from-purple-600/30 via-pink-600/30 to-cyan-600/30 border-b border-purple-500/30 py-2.5 px-4 text-center text-sm backdrop-blur-md">
-        <span className="text-purple-200 inline-flex items-center gap-2">
-          <Sparkles className="w-4 h-4 animate-pulse" />
-          Also try our AI website audit:
-          <a href="https://trywebpulseai.com" target="_blank" className="text-cyan-400 font-bold hover:text-cyan-300 transition underline underline-offset-4">
-            TryWebPulse AI
-          </a>
-        </span>
-      </div>
-
       {/* Nav */}
-      <nav className={`sticky top-0 z-20 transition-all duration-500 ${scrolled ? "glass-heavy py-3" : "py-5"} px-6 border-b border-purple-500/20`}>
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled ? "glass-heavy py-3 border-b border-white/5" : "py-5"
+      }`}>
+        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative w-12 h-12">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500 via-pink-500 to-cyan-500 rounded-xl blur-md opacity-70 group-hover:opacity-100 transition"></div>
-              <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-cyan-500 flex items-center justify-center">
-                <Cpu className="w-6 h-6 text-white" strokeWidth={2.5} />
+            <div className="relative w-11 h-11">
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-cyan-400 rounded-xl blur-md opacity-60 group-hover:opacity-100 transition"></div>
+              <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center border border-white/10">
+                <Command className="w-6 h-6 text-white" strokeWidth={2.5} />
               </div>
             </div>
             <div>
-              <div className="font-display font-black text-2xl leading-none tracking-wide">
-                <span className="text-purple-400">TOURNA</span><span className="text-cyan-400">OPS</span>
+              <div className="font-display font-black text-xl tracking-tight">
+                <span className="text-white">TOURNA</span><span className="text-cyan-400">OPS</span>
               </div>
-              <div className="text-xs text-purple-300 mt-1 tracking-[0.3em] uppercase font-semibold">Tournament Operations</div>
             </div>
           </Link>
-          <Link href="/create" className="btn-primary text-sm hidden md:flex items-center gap-2">
-            <Zap className="w-4 h-4" />
-            Launch Tournament
+          
+          <div className="hidden md:flex items-center gap-8 text-sm">
+            <Link href="/features" className="text-white/70 hover:text-white transition">Features</Link>
+            <Link href="/pricing" className="text-white/70 hover:text-white transition">Pricing</Link>
+            <Link href="/discover" className="text-white/70 hover:text-white transition">Discover</Link>
+            <Link href="/login" className="text-white/70 hover:text-white transition">Sign In</Link>
+          </div>
+          
+          <Link href="/register" className="btn-primary text-sm px-6 py-2.5">
+            Get Started
           </Link>
         </div>
       </nav>
 
       {/* Hero */}
-      <section className="relative py-24 md:py-32 px-6 overflow-hidden">
-        <div className="max-w-7xl mx-auto text-center relative z-10 stagger">
+      <section className="relative pt-40 pb-32 px-6">
+        <div className="max-w-7xl mx-auto text-center">
           
-          {/* Floating badge */}
-          <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full glass border border-purple-500/40 mb-8 glow-pulse">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border border-indigo-500/30 mb-8 fade-in-up">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-400"></span>
             </span>
-            <span className="text-sm text-purple-200 font-semibold tracking-wider">ENTERPRISE TOURNAMENT PLATFORM</span>
+            <span className="text-sm text-white/80 font-medium">Live now  ·  Powering tournaments worldwide</span>
           </div>
 
-          {/* Hero Title */}
-          <h1 className="font-display text-7xl md:text-9xl font-black mb-8 leading-none">
+          {/* Headline */}
+          <h1 className="font-display font-black text-6xl md:text-8xl lg:text-9xl leading-[0.95] mb-8 tracking-tight fade-in-up" style={{animationDelay:"0.1s"}}>
+            <span className="block text-white">RUN EVERY</span>
             <span className="block gradient-text">TOURNAMENT</span>
-            <span className="block neon-text-cyan mt-2">OPERATIONS</span>
-            <span className="block text-white mt-2">SIMPLIFIED</span>
+            <span className="block text-white">FROM ONE</span>
+            <span className="block gradient-text">COMMAND CENTER</span>
           </h1>
 
-          <p className="text-xl md:text-2xl text-purple-200/80 max-w-3xl mx-auto mb-12 leading-relaxed">
-            Professional tournament management platform for esports, gaming events, and competitive leagues. 
-            <span className="text-cyan-400 font-semibold"> From bracket to champion in minutes.</span>
+          <p className="text-lg md:text-2xl text-white/60 max-w-3xl mx-auto mb-12 leading-relaxed fade-in-up" style={{animationDelay:"0.2s"}}>
+            Create tournaments, manage teams, calculate scores, publish live leaderboards, 
+            power OBS overlays, and automate operations with AI.
           </p>
 
-          {/* CTA */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <Link href="/create" className="btn-primary text-lg px-10 py-5 inline-flex items-center gap-3 justify-center">
-              <Zap className="w-5 h-5" />
-              CREATE TOURNAMENT
-              <ChevronRight className="w-5 h-5" />
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16 fade-in-up" style={{animationDelay:"0.3s"}}>
+            <Link href="/register" className="btn-primary text-base px-8 py-4 inline-flex items-center justify-center gap-2">
+              Create Your Tournament
+              <ArrowRight className="w-5 h-5" />
             </Link>
-            <Link href="#features" className="btn-neon inline-flex items-center gap-2 justify-center">
-              <Target className="w-4 h-4" />
-              SEE FEATURES
-            </Link>
+            <button className="btn-ghost text-base px-8 py-4 inline-flex items-center justify-center gap-2">
+              <Play className="w-4 h-4" />
+              Watch Demo
+            </button>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto stagger">
-            {[
-              { num: "4-64", label: "Teams", icon: Users },
-              { num: "4", label: "Formats", icon: Trophy },
-              { num: "0$", label: "Cost", icon: Rocket },
-              { num: "∞", label: "Exports", icon: Download }
-            ].map((stat, i) => (
-              <div key={i} className="glass neon-border rounded-2xl p-6 card-3d relative group">
-                <stat.icon className="w-6 h-6 text-cyan-400 mb-3 mx-auto glow-pulse" />
-                <div className="text-4xl font-display font-black gradient-text mb-1">{stat.num}</div>
-                <div className="text-xs text-purple-300 uppercase tracking-widest font-semibold">{stat.label}</div>
-              </div>
-            ))}
+          {/* Trust indicators */}
+          <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-white/50 fade-in-up" style={{animationDelay:"0.4s"}}>
+            <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-cyan-400" /> Free forever plan</span>
+            <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-cyan-400" /> No credit card</span>
+            <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-cyan-400" /> Setup in 2 minutes</span>
           </div>
         </div>
 
-        {/* Decorative floating shapes */}
-        <div className="absolute top-20 -left-20 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl rotate-slow"></div>
-        <div className="absolute bottom-20 -right-20 w-64 h-64 bg-cyan-500/20 rounded-full blur-3xl rotate-slow"></div>
+        {/* Decorative gradients */}
+        <div className="absolute top-32 -left-40 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-64 -right-40 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl"></div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="py-24 px-6 relative">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16 stagger">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border border-cyan-500/40 mb-4">
+      {/* One Result Everywhere Section */}
+      <section className="py-24 px-6 relative">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border border-cyan-500/30 mb-4">
               <Sparkles className="w-4 h-4 text-cyan-400" />
-              <span className="text-xs text-cyan-300 font-bold tracking-widest uppercase">Premium Features</span>
+              <span className="text-xs font-bold text-cyan-300 tracking-widest uppercase">Our Core Innovation</span>
             </div>
-            <h2 className="font-display text-5xl md:text-7xl font-black mb-4">
-              <span className="gradient-text">EVERYTHING</span>
-              <span className="text-white"> YOU NEED</span>
+            <h2 className="font-display font-black text-5xl md:text-7xl mb-4">
+              <span className="text-white">ONE RESULT.</span><br/>
+              <span className="gradient-text">EVERYWHERE.</span>
             </h2>
-            <p className="text-xl text-purple-200/70 max-w-2xl mx-auto">
-              Built for the modern esports era with enterprise-grade features
+            <p className="text-xl text-white/60 max-w-2xl mx-auto">
+              Enter data once. Watch it flow through your entire tournament in real-time.
             </p>
+          </div>
+
+          {/* Flow diagram */}
+          <div className="glass-heavy neon-border rounded-3xl p-8 md:p-12 relative overflow-hidden">
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl rotate-slow"></div>
+            
+            <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { step: "01", title: "MATCH RESULT", desc: "Staff submits", icon: Trophy, color: "from-indigo-500 to-purple-500" },
+                { step: "02", title: "SCORING ENGINE", desc: "Auto-calculates", icon: Cpu, color: "from-purple-500 to-pink-500" },
+                { step: "03", title: "LIVE UPDATES", desc: "Instantly everywhere", icon: Zap, color: "from-pink-500 to-orange-500" },
+                { step: "04", title: "BROADCAST READY", desc: "OBS + Discord + Web", icon: Radio, color: "from-orange-500 to-cyan-500" }
+              ].map((item, i) => (
+                <div key={i} className="relative">
+                  <div className="glass rounded-2xl p-6 border border-white/10 hover:border-cyan-400/50 transition group card-3d">
+                    <div className="text-xs font-mono text-white/40 mb-2">{item.step}</div>
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-4 group-hover:scale-110 transition`}>
+                      <item.icon className="w-6 h-6 text-white" strokeWidth={2.5} />
+                    </div>
+                    <div className="font-display font-black text-lg mb-1">{item.title}</div>
+                    <div className="text-sm text-white/60">{item.desc}</div>
+                  </div>
+                  {i < 3 && (
+                    <div className="hidden lg:flex absolute top-1/2 -right-3 w-6 h-6 items-center justify-center">
+                      <ChevronRight className="w-6 h-6 text-cyan-400" />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 grid grid-cols-3 md:grid-cols-5 gap-3">
+              {[
+                { name: "Leaderboard", icon: BarChart3 },
+                { name: "OBS Overlay", icon: Radio },
+                { name: "Public Page", icon: Globe },
+                { name: "Discord Bot", icon: MessageSquare },
+                { name: "Analytics", icon: TrendingUp }
+              ].map((item, i) => (
+                <div key={i} className="glass rounded-xl p-4 text-center border border-white/5 hover:border-cyan-400/30 transition">
+                  <item.icon className="w-5 h-5 mx-auto mb-2 text-cyan-400" />
+                  <div className="text-xs font-bold text-white/70">{item.name}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Grid */}
+      <section id="features" className="py-24 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="font-display font-black text-5xl md:text-7xl mb-4">
+              <span className="text-white">EVERYTHING YOU NEED.</span><br/>
+              <span className="gradient-text">NOTHING YOU DON'T.</span>
+            </h2>
+            <p className="text-xl text-white/60">Built for tournament organizers, by esports professionals.</p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 stagger">
             {[
-              { icon: Trophy, title: "4 Tournament Formats", desc: "Single Elimination, Double Elimination, Round Robin, and Swiss System — all professionally implemented.", color: "purple", gradient: "from-purple-500 to-pink-500" },
-              { icon: Users, title: "4 to 64 Teams", desc: "Support for small local scrims or massive esports championships with hundreds of players.", color: "cyan", gradient: "from-cyan-500 to-blue-500" },
-              { icon: Zap, title: "Instant Auto-Advance", desc: "Click a winner and watch them advance automatically through the bracket in real-time.", color: "pink", gradient: "from-pink-500 to-orange-500" },
-              { icon: Settings, title: "Full Admin Control", desc: "Edit scores, swap teams, reset matches, and manage everything from a beautiful admin panel.", color: "blue", gradient: "from-blue-500 to-purple-500" },
-              { icon: Download, title: "PNG & PDF Export", desc: "Export beautiful tournament brackets for social media, print, or client presentations.", color: "green", gradient: "from-green-500 to-cyan-500" },
-              { icon: Share2, title: "Public Spectator Links", desc: "Share a public URL so fans can follow along without needing an account.", color: "orange", gradient: "from-orange-500 to-red-500" }
+              { icon: Trophy, title: "Universal Scoring Engine", desc: "Custom scoring for any game. Placement, kills, bonuses, penalties—all configurable.", color: "from-indigo-500 to-purple-500" },
+              { icon: BarChart3, title: "Live Leaderboards", desc: "Real-time rank updates with animations. Export CSV, PDF, or share instantly.", color: "from-purple-500 to-pink-500" },
+              { icon: Radio, title: "OBS Overlay Studio", desc: "No-code overlay builder. 10+ overlay types. Copy browser source URL to OBS.", color: "from-pink-500 to-orange-500" },
+              { icon: Bot, title: "OpsAI Assistant", desc: "AI generates tournaments, rules, announcements, and match summaries.", color: "from-orange-500 to-yellow-500" },
+              { icon: Users, title: "Team & Player Management", desc: "Full rosters, substitutes, coaches. Public profiles with stats and history.", color: "from-cyan-500 to-blue-500" },
+              { icon: MessageSquare, title: "Discord Integration", desc: "Auto-announce matches, results, and leaderboard updates to your Discord.", color: "from-blue-500 to-indigo-500" },
+              { icon: Layers, title: "Multiple Formats", desc: "Battle Royale, Single/Double Elim, Round Robin, Swiss, Groups—all built-in.", color: "from-green-500 to-cyan-500" },
+              { icon: Shield, title: "Result Verification", desc: "Staff submits → Referee reviews → Organizer approves. Full audit trail.", color: "from-red-500 to-pink-500" },
+              { icon: Rocket, title: "Public Tournament Pages", desc: "Beautiful, SEO-optimized pages. Custom branding. Perfect for social sharing.", color: "from-yellow-500 to-orange-500" }
             ].map((feature, i) => (
-              <div key={i} className="glass neon-border rounded-3xl p-8 card-3d group relative overflow-hidden">
-                <div className={`absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br ${feature.gradient} rounded-full opacity-20 blur-3xl group-hover:opacity-40 transition-opacity`}></div>
+              <div key={i} className="glass rounded-3xl p-8 border border-white/5 hover:border-white/20 transition-all card-3d group relative overflow-hidden">
+                <div className={`absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br ${feature.color} rounded-full opacity-10 blur-3xl group-hover:opacity-30 transition`}></div>
                 
-                <div className={`relative w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
+                <div className={`relative w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-5 group-hover:scale-110 transition duration-300`}>
                   <feature.icon className="w-7 h-7 text-white" strokeWidth={2.5} />
                 </div>
                 
-                <h3 className="font-display text-2xl font-bold mb-3 group-hover:text-cyan-400 transition">{feature.title}</h3>
-                <p className="text-purple-200/70 leading-relaxed">{feature.desc}</p>
+                <h3 className="font-display text-xl font-bold mb-3 text-white">{feature.title}</h3>
+                <p className="text-white/60 leading-relaxed">{feature.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Formats */}
-      <section className="py-24 px-6 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-950/30 to-transparent pointer-events-none"></div>
-        <div className="max-w-7xl mx-auto relative">
-          <div className="text-center mb-16 stagger">
-            <h2 className="font-display text-5xl md:text-7xl font-black mb-4">
-              <span className="text-white">CHOOSE YOUR</span><br/>
-              <span className="neon-text-cyan">FORMAT</span>
-            </h2>
-            <p className="text-xl text-purple-200/70">Every competitive style, professionally implemented</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 stagger">
-            {[
-              { name: "SINGLE ELIM", subtitle: "Classic Knockout", desc: "Lose once, you're out. Fast paced.", color: "from-purple-500 to-pink-500", icon: Zap },
-              { name: "DOUBLE ELIM", subtitle: "Second Chance", desc: "Losers bracket for a comeback.", color: "from-blue-500 to-purple-500", icon: Shield },
-              { name: "ROUND ROBIN", subtitle: "Everyone Plays", desc: "Most fair format for all teams.", color: "from-cyan-500 to-blue-500", icon: Users },
-              { name: "SWISS SYSTEM", subtitle: "Optimal Pairing", desc: "Best for large tournaments.", color: "from-green-500 to-cyan-500", icon: BarChart3 }
-            ].map((format, i) => (
-              <div key={i} className="glass rounded-3xl p-6 border-2 border-purple-500/20 hover:border-cyan-400 transition-all card-3d group cursor-pointer">
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${format.color} flex items-center justify-center mb-4 group-hover:scale-110 transition`}>
-                  <format.icon className="w-6 h-6 text-white" strokeWidth={2.5} />
-                </div>
-                <div className={`w-full h-1 rounded-full bg-gradient-to-r ${format.color} mb-4 opacity-70`}></div>
-                <h3 className="font-display text-xl font-black mb-1">{format.name}</h3>
-                <p className="text-cyan-400 text-xs font-bold tracking-wider mb-2">{format.subtitle}</p>
-                <p className="text-purple-200/70 text-sm">{format.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="py-24 px-6 relative">
-        <div className="max-w-5xl mx-auto text-center">
-          <div className="glass-heavy neon-border rounded-[3rem] p-12 md:p-20 relative overflow-hidden">
-            <div className="absolute -top-40 -left-40 w-80 h-80 bg-purple-500/30 rounded-full blur-3xl rotate-slow"></div>
-            <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-cyan-500/30 rounded-full blur-3xl rotate-slow"></div>
+      {/* Stats */}
+      <section className="py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="glass-heavy neon-border rounded-3xl p-12 md:p-16 relative overflow-hidden">
+            <div className="absolute -top-40 -left-40 w-80 h-80 bg-cyan-500/20 rounded-full blur-3xl"></div>
+            <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl"></div>
             
-            <div className="relative">
-              <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/40 mb-6">
-                <Rocket className="w-4 h-4 text-cyan-400" />
-                <span className="text-cyan-300 text-sm font-bold tracking-wider">READY TO LAUNCH</span>
-              </div>
-              
-              <h2 className="font-display text-5xl md:text-7xl font-black mb-6">
-                <span className="gradient-text">CREATE YOUR</span><br/>
-                <span className="text-white">TOURNAMENT NOW</span>
-              </h2>
-              
-              <p className="text-xl text-purple-200/80 mb-10 max-w-2xl mx-auto">
-                No signup. No credit card. No BS. Just professional tournament operations, ready in 30 seconds.
-              </p>
-              
-              <Link href="/create" className="btn-primary text-xl px-12 py-6 inline-flex items-center gap-3">
-                <Zap className="w-6 h-6" />
-                LAUNCH TOURNAMENT
-                <ChevronRight className="w-6 h-6" />
-              </Link>
-              
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm text-purple-300/70">
-                <span className="flex items-center gap-2"><Shield className="w-4 h-4 text-green-400"/> No signup</span>
-                <span className="flex items-center gap-2"><Zap className="w-4 h-4 text-yellow-400"/> Instant setup</span>
-                <span className="flex items-center gap-2"><Rocket className="w-4 h-4 text-cyan-400"/> Free forever</span>
-              </div>
+            <div className="relative grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+              {[
+                { num: "2min", label: "Setup Time" },
+                { num: "10+", label: "Overlay Types" },
+                { num: "∞", label: "Tournaments" },
+                { num: "24/7", label: "Real-time" }
+              ].map((stat, i) => (
+                <div key={i}>
+                  <div className="font-display font-black text-5xl md:text-6xl gradient-text mb-2">{stat.num}</div>
+                  <div className="text-sm text-white/60 uppercase tracking-widest font-bold">{stat.label}</div>
+                </div>
+              ))}
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-24 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="font-display font-black text-5xl md:text-7xl mb-6">
+            <span className="text-white">READY TO</span><br/>
+            <span className="gradient-text">ELEVATE?</span>
+          </h2>
+          <p className="text-xl text-white/60 mb-10 max-w-2xl mx-auto">
+            Join tournament organizers building the future of esports. Start free, forever.
+          </p>
+          <Link href="/register" className="btn-primary text-lg px-10 py-5 inline-flex items-center gap-3">
+            <Rocket className="w-5 h-5" />
+            Start Your First Tournament
+            <ArrowRight className="w-5 h-5" />
+          </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-purple-500/20 py-12 px-6 relative">
+      <footer className="border-t border-white/5 py-12 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-cyan-500 flex items-center justify-center">
-                <Cpu className="w-5 h-5 text-white" strokeWidth={2.5} />
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center">
+                <Command className="w-5 h-5 text-white" strokeWidth={2.5} />
               </div>
               <div>
-                <div className="font-display font-black text-lg">
-                  <span className="text-purple-400">TOURNA</span><span className="text-cyan-400">OPS</span>
+                <div className="font-display font-black">
+                  <span className="text-white">TOURNA</span><span className="text-cyan-400">OPS</span>
                 </div>
-                <div className="text-xs text-purple-300/60 mt-0.5">Tournament Operations © 2026</div>
+                <div className="text-xs text-white/40">Organize. Compete. Elevate.</div>
               </div>
             </div>
-            <div className="flex gap-8 text-sm text-purple-300/60">
+            <div className="flex gap-8 text-sm text-white/50">
+              <Link href="/features" className="hover:text-white transition">Features</Link>
+              <Link href="/pricing" className="hover:text-white transition">Pricing</Link>
+              <Link href="/discover" className="hover:text-white transition">Discover</Link>
               <a href="https://trywebpulseai.com" target="_blank" className="hover:text-cyan-400 transition">TryWebPulse AI</a>
-              <a href="https://trywebpulseai.com/privacy" target="_blank" className="hover:text-cyan-400 transition">Privacy</a>
-              <a href="https://trywebpulseai.com/contact" target="_blank" className="hover:text-cyan-400 transition">Contact</a>
             </div>
           </div>
         </div>

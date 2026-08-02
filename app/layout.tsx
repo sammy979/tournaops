@@ -1,19 +1,24 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { CustomCursor, Particles } from "@/components/Effects";
 
 export const metadata: Metadata = {
-  title: "Tournaops - Free Tournament Operations Platform",
-  description: "Enterprise-grade tournament management for esports. Single/Double elimination, Round Robin, Swiss. No signup required.",
-  keywords: "tournament ops, bracket generator, esports, tournament management, round robin, swiss"
+  title: "TournaOps - Organize. Compete. Elevate.",
+  description: "Run every tournament from one command center. Live leaderboards, OBS overlays, Discord integration, and AI automation for esports tournaments.",
+  keywords: "tournament operations, esports tournament, bracket generator, OBS overlay, live leaderboard, tournament management",
+  openGraph: {
+    title: "TournaOps - Tournament Command Center",
+    description: "Enter data once. Everything updates automatically.",
+    type: "website",
+    siteName: "TournaOps"
+  }
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
       <body>
-        <Particles />
-        <CustomCursor />
+        <div className="bg-mesh" />
+        <div className="grid-bg" />
         {children}
       </body>
     </html>
