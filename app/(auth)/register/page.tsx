@@ -17,12 +17,13 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-    setTimeout(() => {
-      const result = registerUser(email, password, username, displayName);
+
+    try {
+      const result = await registerUser(email, password, username, displayName);
       if (result.success) {
         setSuccess(true);
         setTimeout(() => router.push("/dashboard"), 1000);
@@ -30,19 +31,20 @@ export default function RegisterPage() {
         setError(result.error || "Registration failed");
         setLoading(false);
       }
-    }, 500);
+    } catch (err: any) {
+      setError(err.message || "Network error");
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4 py-12">
-      {/* Background */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-500/8 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-blue-500/6 rounded-full blur-3xl" />
       </div>
 
       <div className="w-full max-w-md relative">
-        {/* Logo */}
         <Link href="/" className="flex items-center justify-center gap-3 mb-8">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
             <Zap className="w-5 h-5 text-white" />
@@ -50,7 +52,6 @@ export default function RegisterPage() {
           <span className="text-2xl font-bold text-white tracking-tight">TournaOps</span>
         </Link>
 
-        {/* Card */}
         <div className="glass-card rounded-2xl p-8 border border-white/10">
           {success ? (
             <div className="flex flex-col items-center justify-center py-8 gap-4">
@@ -68,7 +69,6 @@ export default function RegisterPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Display Name */}
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-400 flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5" /> Display Name
@@ -85,7 +85,6 @@ export default function RegisterPage() {
                   />
                 </div>
 
-                {/* Username */}
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-400 flex items-center gap-1.5">
                     <AtSign className="w-3.5 h-3.5" /> Username
@@ -101,10 +100,9 @@ export default function RegisterPage() {
                     maxLength={20}
                     disabled={loading}
                   />
-                  <p className="text-xs text-gray-600">Lowercase letters, numbers, underscores · 3-20 chars</p>
+                  <p className="text-xs text-gray-600">Lowercase letters, numbers, underscores - 3-20 chars</p>
                 </div>
 
-                {/* Email */}
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-400 flex items-center gap-1.5">
                     <Mail className="w-3.5 h-3.5" /> Email Address
@@ -120,7 +118,6 @@ export default function RegisterPage() {
                   />
                 </div>
 
-                {/* Password */}
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-400 flex items-center gap-1.5">
                     <Lock className="w-3.5 h-3.5" /> Password
@@ -144,7 +141,6 @@ export default function RegisterPage() {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
-                  {/* Password strength */}
                   {password.length > 0 && (
                     <div className="flex gap-1 mt-1.5">
                       {[1,2,3,4].map(i => (
@@ -158,7 +154,6 @@ export default function RegisterPage() {
                   )}
                 </div>
 
-                {/* Error */}
                 {error && (
                   <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                     <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -166,22 +161,14 @@ export default function RegisterPage() {
                   </div>
                 )}
 
-                {/* Submit */}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn-primary w-full py-3 mt-2"
-                >
+                <button type="submit" disabled={loading} className="btn-primary w-full py-3 mt-2">
                   {loading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       Creating account...
                     </>
                   ) : (
-                    <>
-                      Create Free Account
-                      <ArrowRight className="w-4 h-4" />
-                    </>
+                    <>Create Free Account<ArrowRight className="w-4 h-4" /></>
                   )}
                 </button>
 
@@ -189,7 +176,6 @@ export default function RegisterPage() {
                   By signing up you agree to our Terms of Service
                 </p>
 
-                {/* Divider */}
                 <div className="relative my-2">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-white/8" />
@@ -199,7 +185,6 @@ export default function RegisterPage() {
                   </div>
                 </div>
 
-                {/* Login Link */}
                 <p className="text-center text-sm text-gray-500">
                   Already have an account?{" "}
                   <Link href="/login" className="text-blue-400 hover:text-blue-300 font-semibold transition-colors">
@@ -211,7 +196,6 @@ export default function RegisterPage() {
           )}
         </div>
 
-        {/* Back Link */}
         <p className="text-center mt-6">
           <Link href="/" className="text-gray-600 hover:text-gray-400 text-sm transition-colors">
             ← Back to home
