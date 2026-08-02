@@ -7,6 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ═══════════════════════════════════════════════════════════
+// USER
+// ═══════════════════════════════════════════════════════════
+
 model User {
   id           String       @id @default(cuid())
   email        String       @unique
@@ -22,6 +26,10 @@ model User {
   @@index([email])
   @@index([username])
 }
+
+// ═══════════════════════════════════════════════════════════
+// TOURNAMENT
+// ═══════════════════════════════════════════════════════════
 
 model Tournament {
   id            String   @id @default(cuid())
@@ -51,6 +59,10 @@ model Tournament {
   rounds        Round[]
   imports       DiscordImport[]
 
+  // NEW: Multi-stage tournament support
+  stages        Stage[]
+  progressions  TeamProgression[]
+
   @@index([userId])
   @@index([slug])
   @@index([status])
@@ -65,7 +77,7 @@ model Team {
   contact      String?
   players      Json
   createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  updatedAt   DateTime   @updatedAt
 
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   tournamentId String
@@ -107,9 +119,14 @@ model Match {
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   tournamentId String
 
+  // NEW: Optional link to stage/group
+  stageId      String?
+  groupId      String?
+
   @@index([tournamentId])
   @@index([status])
   @@index([roundId])
+  @@index([stageId])
 }
 
 model DiscordImport {
@@ -134,4 +151,103 @@ model DiscordImport {
   @@index([status])
   @@index([discordGuildId])
   @@index([receivedAt])
+}
+
+// ═══════════════════════════════════════════════════════════
+// NEW: MULTI-STAGE TOURNAMENT SYSTEM
+// ═══════════════════════════════════════════════════════════
+
+model Stage {
+  id                 String   @id @default(cuid())
+  tournamentId       String
+  name               String
+  type               String   // OPEN_QUALIFIER, GROUP_STAGE, SEMI_FINAL, etc.
+  order              Int
+  status             String   @default("DRAFT")  // DRAFT, LIVE, COMPLETED, etc.
+
+  // Structure
+  numGroups          Int      @default(1)
+  teamsPerGroup      Int      @default(16)
+  matchesPerGroup    Int      @default(4)
+  totalTeams         Int
+
+  // Dates (optional)
+  startDate          DateTime?
+  endDate            DateTime?
+  registrationOpens  DateTime?
+  registrationCloses DateTime?
+
+  // Qualification
+  qualificationRule  Json      // { type, count, percent, wildcards, manualOverrides }
+  teamsAdvancing     Int      @default(0)
+  teamsEliminated    Int      @default(0)
+
+  // Config
+  mapRotation        String[]
+  scoringRule        Json
+  tiebreakerOrder    String[] @default(["points", "kills", "damage", "wwcd"])
+
+  // Lock system
+  isLocked           Boolean  @default(false)
+  lockedAt           DateTime?
+  lockedBy           String?
+
+  // Description
+  description        String?
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  tournament         Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  groups             StageGroup[]
+  progressions       TeamProgression[]
+
+  @@index([tournamentId, order])
+  @@index([status])
+}
+
+model StageGroup {
+  id           String   @id @default(cuid())
+  stageId      String
+  name         String   // "Group A", "Group B", "Main Lobby"
+  order        Int      @default(0)
+  teamIds      String[] // Array of team IDs
+  matchIds     String[] // Array of match IDs
+  status       String   @default("PENDING")  // PENDING, LIVE, COMPLETED
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  stage        Stage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  @@index([stageId])
+}
+
+model TeamProgression {
+  id              String    @id @default(cuid())
+  tournamentId    String
+  stageId         String
+  teamId          String
+  teamName        String    // Snapshot for history
+
+  entryPosition   Int?      // Rank when entering
+  finalPosition   Int?      // Rank when leaving
+  points          Int       @default(0)
+  kills           Int       @default(0)
+  matchesPlayed   Int       @default(0)
+  wwcds           Int       @default(0)
+
+  status          String    // QUALIFIED, ELIMINATED, WILDCARD, MANUAL_ADVANCE, MANUAL_ELIMINATE
+  advancedToStageId String?
+  manualOverride  Boolean   @default(false)
+  overrideNote    String?
+
+  createdAt       DateTime  @default(now())
+
+  tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  stage           Stage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  @@unique([stageId, teamId])
+  @@index([tournamentId, teamId])
+  @@index([stageId])
 }
