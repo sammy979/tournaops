@@ -7,7 +7,7 @@ import {
   ArrowRight, Monitor, Clock, MessageSquare
 } from "lucide-react";
 import { getMyTournaments, getTournamentStats } from "@/lib/storage/tournaments";
-import { getCurrentUser } from "@/lib/auth/auth";
+import { fetchCurrentUser } from "@/lib/auth/auth";
 import { Tournament } from "@/types/tournament";
 
 export default function DashboardPage() {
@@ -16,16 +16,20 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      setUser(getCurrentUser());
-      const t = getMyTournaments();
-      setTournaments(t || []);
-    } catch (e) {
-      console.error("Dashboard load error:", e);
-      setTournaments([]);
-    } finally {
-      setLoading(false);
-    }
+    const load = async () => {
+      try {
+        const u = await fetchCurrentUser();
+        setUser(u);
+        const t = await getMyTournaments();
+        setTournaments(t || []);
+      } catch (e) {
+        console.error("Dashboard load error:", e);
+        setTournaments([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
 
   if (loading) {
@@ -60,29 +64,13 @@ export default function DashboardPage() {
   ];
 
   const quickActions = [
-    {
-      href: "/dashboard/tournaments/create",
-      icon: Plus, title: "Create Tournament",
-      desc: "Set up a new PUBG Mobile tournament",
-      color: "text-blue-400", bg: "bg-blue-500/20",
-    },
-    {
-      href: "/dashboard/overlay",
-      icon: Monitor, title: "OBS Overlay",
-      desc: "Add live leaderboard to your stream",
-      color: "text-purple-400", bg: "bg-purple-500/20",
-    },
-    {
-      href: "/dashboard/discord",
-      icon: MessageSquare, title: "Discord Import",
-      desc: "Auto-detect slot lists from Discord",
-      color: "text-indigo-400", bg: "bg-indigo-500/20",
-    },
+    { href: "/dashboard/tournaments/create", icon: Plus, title: "Create Tournament", desc: "Set up a new PUBG Mobile tournament", color: "text-blue-400", bg: "bg-blue-500/20" },
+    { href: "/dashboard/overlay", icon: Monitor, title: "OBS Overlay", desc: "Add live leaderboard to your stream", color: "text-purple-400", bg: "bg-purple-500/20" },
+    { href: "/dashboard/discord", icon: MessageSquare, title: "Discord Import", desc: "Auto-detect slot lists from Discord", color: "text-indigo-400", bg: "bg-indigo-500/20" },
   ];
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white">
@@ -91,7 +79,7 @@ export default function DashboardPage() {
           <p className="text-gray-400 mt-1">
             {totalTournaments === 0
               ? "Create your first tournament to get started"
-              : `${totalTournaments} tournament${totalTournaments !== 1 ? "s" : ""}${liveTournaments > 0 ? ` - ${liveTournaments} live` : ""}`
+              : `${totalTournaments} tournament${totalTournaments !== 1 ? "s" : ""}${liveTournaments > 0 ? " - " + liveTournaments + " live" : ""}`
             }
           </p>
         </div>
@@ -100,7 +88,6 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {stats.map((s) => {
           const Icon = s.icon;
@@ -116,16 +103,11 @@ export default function DashboardPage() {
         })}
       </div>
 
-      {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {quickActions.map((a) => {
           const Icon = a.icon;
           return (
-            <Link
-              key={a.href}
-              href={a.href}
-              className="glass-card-hover rounded-xl p-5 flex items-start gap-4 group"
-            >
+            <Link key={a.href} href={a.href} className="glass-card-hover rounded-xl p-5 flex items-start gap-4 group">
               <div className={`w-10 h-10 rounded-xl ${a.bg} flex items-center justify-center flex-shrink-0`}>
                 <Icon className={`w-5 h-5 ${a.color}`} />
               </div>
@@ -141,7 +123,6 @@ export default function DashboardPage() {
         })}
       </div>
 
-      {/* Recent Tournaments */}
       {recent.length > 0 ? (
         <div>
           <div className="flex items-center justify-between mb-4">
@@ -154,29 +135,16 @@ export default function DashboardPage() {
           </div>
           <div className="space-y-2">
             {recent.map((t) => {
-              let stats;
-              try {
-                stats = getTournamentStats(t);
-              } catch {
-                stats = { completedMatches: 0, totalMatches: 0, progress: 0 };
-              }
+              const stats = getTournamentStats(t);
               return (
-                <Link
-                  key={t.id}
-                  href={`/dashboard/tournaments/${t.id}`}
-                  className="flex items-center gap-4 p-4 rounded-xl border border-white/8 bg-white/3 hover:bg-white/5 hover:border-white/15 transition-all group"
-                >
+                <Link key={t.id} href={`/dashboard/tournaments/${t.id}`} className="flex items-center gap-4 p-4 rounded-xl border border-white/8 bg-white/3 hover:bg-white/5 hover:border-white/15 transition-all group">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center flex-shrink-0 border border-white/10">
                     <Trophy className="w-5 h-5 text-blue-400" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-white font-medium truncate">{t.name}</p>
-                      <span className={`badge ${
-                        t.status === "live" ? "badge-live" :
-                        t.status === "completed" ? "badge-completed" :
-                        "badge-draft"
-                      }`}>
+                      <span className={`badge ${t.status === "live" ? "badge-live" : t.status === "completed" ? "badge-completed" : "badge-draft"}`}>
                         {t.status === "live" ? "Live" : t.status}
                       </span>
                     </div>

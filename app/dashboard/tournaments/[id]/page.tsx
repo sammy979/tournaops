@@ -54,12 +54,20 @@ export default function TournamentDetailPage() {
   const [generatingDemo, setGeneratingDemo] = useState<string | null>(null);
 
   useEffect(() => {
-    const id = params?.id as string;
-    if (id) {
-      const t = getTournamentById(id);
-      setTournament(t || null);
-    }
-    setLoading(false);
+    const load = async () => {
+      const id = params?.id as string;
+      if (id) {
+        try {
+          const t = await getTournamentById(id);
+          setTournament(t || null);
+        } catch (e) {
+          console.error("Load failed:", e);
+          setTournament(null);
+        }
+      }
+      setLoading(false);
+    };
+    load();
   }, [params?.id]);
 
   const handleDemoResult = async (matchId: string) => {
@@ -67,7 +75,7 @@ export default function TournamentDetailPage() {
     setGeneratingDemo(matchId);
     await new Promise(r => setTimeout(r, 600));
     const results = generateDemoResults(tournament, matchId);
-    const updated = submitMatchResults(tournament.id, matchId, results);
+    const updated = await submitMatchResults(tournament.id, matchId, results);
     if (updated) setTournament(updated);
     setGeneratingDemo(null);
   };
