@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Trophy, Plus, Settings,
   LogOut, Menu, X, Monitor, ChevronRight,
   Zap, BarChart3, Users, Clock, DollarSign,
-  Calendar, MessageSquare, Palette
+  Calendar, MessageSquare, Palette, Crown
 } from "lucide-react";
 import { fetchCurrentUser, logoutUser } from "@/lib/auth/auth";
 
