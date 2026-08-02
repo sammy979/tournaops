@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Trophy, Skull, Crosshair, Zap, Save, Sparkles, ChevronLeft } from "lucide-react";
 import type { Tournament, Match, TeamMatchResult, PlayerMatchStats } from "@/types/tournament";
-import { submitMatchResults, generateRandomResults } from "@/lib/storage/tournaments";
+import { submitMatchResults, generateDemoResults } from "@/lib/storage/tournaments";
 
 interface Props {
   tournament: Tournament;
@@ -59,7 +59,7 @@ export default function MatchResultEntry({ tournament, match, onSubmit, onClose 
   };
 
   const handleAutoGenerate = () => {
-    const generated = generateRandomResults(tournament, match.id);
+    const generated = generateDemoResults(tournament, match.id);
     setResults(generated);
   };
 

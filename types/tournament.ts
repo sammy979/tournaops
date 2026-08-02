@@ -1,86 +1,177 @@
 // ═══════════════════════════════════════════════════════════════
-// REAL ESPORTS TOURNAMENT SYSTEM
-// 128 slots, 4 players per slot, lobbies, rounds, stages
+// TOURNAOPS - PUBG MOBILE TOURNAMENT SYSTEM
+// Clean, focused, PUBG Mobile only
 // ═══════════════════════════════════════════════════════════════
 
-export type TournamentFormat = "battle_royale" | "single_elim" | "double_elim" | "round_robin" | "swiss" | "group_stage";
-export type TournamentStatus = "draft" | "registration" | "live" | "completed";
-export type MatchStatus = "scheduled" | "live" | "completed";
-export type SeedingMethod = "random" | "manual" | "ranked";
+// PUBG Mobile Constants
+export const GAME_NAME = "PUBG Mobile";
+export const TEAM_SIZE = 4;
+export const LOBBY_SIZE = 16;
+export const PLAYERS_PER_LOBBY = 64;
 
-// Game configs with real team sizes
-export const GAME_CONFIGS: Record<string, { teamSize: number; lobbySize: number; genre: string }> = {
-  "PUBG Mobile": { teamSize: 4, lobbySize: 16, genre: "br" },
-  "PUBG PC": { teamSize: 4, lobbySize: 16, genre: "br" },
-  "Free Fire": { teamSize: 4, lobbySize: 12, genre: "br" },
-  "Apex Legends": { teamSize: 3, lobbySize: 20, genre: "br" },
-  "Fortnite": { teamSize: 4, lobbySize: 25, genre: "br" },
-  "COD Warzone": { teamSize: 4, lobbySize: 20, genre: "br" },
-  "Valorant": { teamSize: 5, lobbySize: 2, genre: "fps" },
-  "CS2": { teamSize: 5, lobbySize: 2, genre: "fps" },
-  "League of Legends": { teamSize: 5, lobbySize: 2, genre: "moba" },
-  "Dota 2": { teamSize: 5, lobbySize: 2, genre: "moba" },
-  "MLBB": { teamSize: 5, lobbySize: 2, genre: "moba" },
-  "Overwatch 2": { teamSize: 5, lobbySize: 2, genre: "fps" },
-  "Rocket League": { teamSize: 3, lobbySize: 2, genre: "sports" },
-  "Rainbow Six": { teamSize: 5, lobbySize: 2, genre: "fps" },
-  "Custom": { teamSize: 4, lobbySize: 16, genre: "br" },
+// PUBG Mobile Maps
+export const MAPS = [
+  "Erangel",
+  "Miramar",
+  "Sanhok",
+  "Vikendi",
+  "Livik",
+  "Karakin",
+  "Nusa",
+] as const;
+
+export type PubgMap = typeof MAPS[number];
+
+// Map rotation based on match count
+export const MAP_ROTATIONS: Record<number, string[]> = {
+  3: ["Erangel", "Miramar", "Sanhok"],
+  4: ["Erangel", "Miramar", "Sanhok", "Erangel"],
+  5: ["Erangel", "Miramar", "Sanhok", "Vikendi", "Erangel"],
+  6: ["Erangel", "Miramar", "Sanhok", "Erangel", "Miramar", "Erangel"],
+  8: ["Erangel", "Miramar", "Sanhok", "Vikendi", "Erangel", "Miramar", "Sanhok", "Erangel"],
+  10: ["Erangel", "Miramar", "Sanhok", "Vikendi", "Erangel", "Miramar", "Sanhok", "Vikendi", "Erangel", "Miramar"],
+  12: ["Erangel", "Miramar", "Sanhok", "Vikendi", "Erangel", "Miramar", "Sanhok", "Vikendi", "Erangel", "Miramar", "Sanhok", "Erangel"],
 };
 
-// Valid slot counts for tournaments
-export const SLOT_COUNTS = [8, 12, 16, 20, 24, 32, 48, 64, 96, 128, 256, 400];
+// Player roles in PUBG Mobile
+export const PLAYER_ROLES = ["IGL", "Fragger", "Support", "Entry", "Sniper", "Assaulter", "Scout"] as const;
+export type PlayerRole = typeof PLAYER_ROLES[number];
 
-// Real scoring presets
-export const SCORING_PRESETS: Record<string, ScoringRule> = {
-  pmgc: {
-    name: "PUBG Standard (PMGC/PEL)",
-    placements: { 1: 15, 2: 12, 3: 10, 4: 8, 5: 6, 6: 4, 7: 2, 8: 1, 9: 1, 10: 1, 11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0 },
-    killPoints: 1, assistPoints: 0, winnerBonus: 0,
-  },
-  freefire: {
-    name: "Free Fire (FFWS)",
-    placements: { 1: 12, 2: 9, 3: 8, 4: 7, 5: 6, 6: 5, 7: 4, 8: 3, 9: 2, 10: 1, 11: 0, 12: 0 },
-    killPoints: 1, assistPoints: 0, winnerBonus: 0,
-  },
-  algs: {
-    name: "Apex Legends (ALGS)",
-    placements: { 1: 12, 2: 9, 3: 7, 4: 5, 5: 4, 6: 3, 7: 3, 8: 2, 9: 2, 10: 2, 11: 1, 12: 1, 13: 1, 14: 1, 15: 1, 16: 0, 17: 0, 18: 0, 19: 0, 20: 0 },
-    killPoints: 1, assistPoints: 0, winnerBonus: 0,
-  },
-  fncs: {
-    name: "Fortnite (FNCS)",
-    placements: { 1: 25, 2: 20, 3: 16, 4: 14, 5: 11, 6: 9, 7: 7, 8: 5, 9: 4, 10: 3, 11: 2, 12: 2, 13: 2, 14: 2, 15: 1, 16: 1 },
-    killPoints: 1, assistPoints: 0, winnerBonus: 0,
-  },
-  pubg_kill_heavy: {
-    name: "Kill-Heavy BR",
-    placements: { 1: 10, 2: 6, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1, 9: 0, 10: 0 },
-    killPoints: 2, assistPoints: 0.5, winnerBonus: 5,
-  },
-  standard_elim: {
-    name: "Standard Win/Loss",
-    placements: { 1: 3, 2: 0 },
-    killPoints: 0, assistPoints: 0, winnerBonus: 0,
-  },
-  custom: {
-    name: "Custom Scoring",
-    placements: {}, killPoints: 1, assistPoints: 0, winnerBonus: 0,
-  },
-};
-
+// ═══ SCORING SYSTEMS ═══
 export interface ScoringRule {
+  id: string;
   name: string;
+  description: string;
   placements: Record<number, number>;
   killPoints: number;
-  assistPoints: number;
   winnerBonus: number;
 }
 
+export const SCORING_SYSTEMS: ScoringRule[] = [
+  {
+    id: "pmgc",
+    name: "PMGC Standard",
+    description: "Official PUBG Mobile Global Championship scoring",
+    placements: { 1: 15, 2: 12, 3: 10, 4: 8, 5: 6, 6: 4, 7: 2, 8: 1, 9: 1, 10: 1, 11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0 },
+    killPoints: 1,
+    winnerBonus: 0,
+  },
+  {
+    id: "pmpl",
+    name: "PMPL South Asia",
+    description: "PUBG Mobile Pro League South Asia format",
+    placements: { 1: 10, 2: 6, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1, 9: 0, 10: 0, 11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0 },
+    killPoints: 1,
+    winnerBonus: 5,
+  },
+  {
+    id: "community",
+    name: "Community Standard",
+    description: "Popular community tournament scoring",
+    placements: { 1: 12, 2: 9, 3: 7, 4: 5, 5: 4, 6: 3, 7: 2, 8: 1, 9: 1, 10: 0, 11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0 },
+    killPoints: 1,
+    winnerBonus: 0,
+  },
+  {
+    id: "kill_heavy",
+    name: "Kill Heavy",
+    description: "More points for kills. Aggressive gameplay rewarded.",
+    placements: { 1: 10, 2: 6, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1, 9: 0, 10: 0, 11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0 },
+    killPoints: 2,
+    winnerBonus: 0,
+  },
+];
+
+// ═══ TOURNAMENT SIZE PRESETS ═══
+export interface TournamentPreset {
+  id: string;
+  name: string;
+  description: string;
+  totalSlots: number;
+  rounds: RoundConfig[];
+}
+
+export interface RoundConfig {
+  name: string;
+  matchCount: number;
+  advanceTop: number;
+}
+
+export const TOURNAMENT_PRESETS: TournamentPreset[] = [
+  {
+    id: "scrim_16",
+    name: "Scrim (16 Squads)",
+    description: "1 lobby, 3 matches. Quick practice scrim.",
+    totalSlots: 16,
+    rounds: [
+      { name: "Scrim", matchCount: 3, advanceTop: 0 },
+    ],
+  },
+  {
+    id: "small_32",
+    name: "Small Tournament (32 Squads)",
+    description: "2 lobbies → Grand Finals. Perfect for local events.",
+    totalSlots: 32,
+    rounds: [
+      { name: "Qualifiers", matchCount: 3, advanceTop: 8 },
+      { name: "Grand Finals", matchCount: 6, advanceTop: 0 },
+    ],
+  },
+  {
+    id: "medium_64",
+    name: "Medium Tournament (64 Squads)",
+    description: "4 lobbies → Grand Finals. Great for community tournaments.",
+    totalSlots: 64,
+    rounds: [
+      { name: "Qualifiers", matchCount: 3, advanceTop: 4 },
+      { name: "Grand Finals", matchCount: 6, advanceTop: 0 },
+    ],
+  },
+  {
+    id: "large_128",
+    name: "Large Tournament (128 Squads)",
+    description: "8 lobbies → Semi Finals → Grand Finals. PMGC-style format.",
+    totalSlots: 128,
+    rounds: [
+      { name: "Group Stage", matchCount: 3, advanceTop: 4 },
+      { name: "Semi Finals", matchCount: 4, advanceTop: 8 },
+      { name: "Grand Finals", matchCount: 6, advanceTop: 0 },
+    ],
+  },
+  {
+    id: "mega_256",
+    name: "Mega Tournament (256 Squads)",
+    description: "16 lobbies → multiple elimination rounds. Massive event.",
+    totalSlots: 256,
+    rounds: [
+      { name: "Open Qualifiers", matchCount: 3, advanceTop: 4 },
+      { name: "Closed Qualifiers", matchCount: 4, advanceTop: 4 },
+      { name: "Semi Finals", matchCount: 4, advanceTop: 8 },
+      { name: "Grand Finals", matchCount: 6, advanceTop: 0 },
+    ],
+  },
+  {
+    id: "massive_400",
+    name: "Massive Tournament (400 Squads)",
+    description: "25 lobbies → 5 elimination rounds. Nation-level tournament.",
+    totalSlots: 400,
+    rounds: [
+      { name: "Round 1 (Open)", matchCount: 3, advanceTop: 3 },
+      { name: "Round 2 (Closed)", matchCount: 3, advanceTop: 4 },
+      { name: "Quarter Finals", matchCount: 4, advanceTop: 8 },
+      { name: "Semi Finals", matchCount: 4, advanceTop: 8 },
+      { name: "Grand Finals", matchCount: 6, advanceTop: 0 },
+    ],
+  },
+];
+
+// ═══ DATA TYPES ═══
 export interface Player {
   id: string;
   name: string;
   ign: string;
-  role?: string;
+  uid?: string;
+  role: PlayerRole;
 }
 
 export interface Team {
@@ -89,12 +180,11 @@ export interface Team {
   tag: string;
   logo?: string;
   seed: number;
-  group?: string;
   lobby?: string;
   players: Player[];
-  // Cumulative stats across all matches
+  // Stats
   wins: number;
-  losses: number;
+  wwcd: number;
   points: number;
   totalKills: number;
   totalDeaths: number;
@@ -106,6 +196,15 @@ export interface Team {
   penaltyPoints: number;
   placements: number[];
   avgPlacement: number;
+  matchResults: MatchSummary[];
+}
+
+export interface MatchSummary {
+  matchNumber: number;
+  map: string;
+  placement: number;
+  kills: number;
+  points: number;
 }
 
 export interface PlayerMatchStats {
@@ -118,12 +217,15 @@ export interface PlayerMatchStats {
   damage: number;
   headshots: number;
   knockdowns: number;
+  revives: number;
   survived: boolean;
+  survivalTime: number;
 }
 
 export interface TeamMatchResult {
   teamId: string;
   teamName: string;
+  teamTag: string;
   placement: number;
   kills: number;
   deaths: number;
@@ -141,44 +243,38 @@ export interface Lobby {
   id: string;
   name: string;
   code?: string;
-  teams: string[]; // team IDs
-  matches: string[]; // match IDs
+  teamIds: string[];
+  matchIds: string[];
 }
 
 export interface Round {
   id: string;
   number: number;
   name: string;
+  status: "upcoming" | "live" | "completed";
   lobbies: Lobby[];
   matchesPerLobby: number;
-  advanceCount: number; // top N teams advance from each lobby
-  advanceTo?: string; // next round ID
-  status: "upcoming" | "live" | "completed";
+  advanceTop: number;
+  totalTeams: number;
 }
 
 export interface Match {
   id: string;
   matchNumber: number;
-  round: number;
-  roundId?: string;
-  lobbyId?: string;
-  lobbyName?: string;
+  globalMatchNumber: number;
+  roundNumber: number;
+  roundName: string;
+  lobbyId: string;
+  lobbyName: string;
   lobbyCode?: string;
-  bracket?: string;
-  team1?: Team;
-  team2?: Team;
-  score1: number;
-  score2: number;
-  winner?: Team;
-  status: MatchStatus;
-  bestOf: number;
-  scheduledAt?: string;
-  nextMatchId?: string;
+  map: string;
+  status: "scheduled" | "live" | "completed";
+  teamsInMatch: string[];
   results?: TeamMatchResult[];
   mvpPlayerId?: string;
   topKillerId?: string;
   topDamageId?: string;
-  teamsInMatch?: string[]; // For BR: all team IDs in this match
+  completedAt?: string;
 }
 
 export interface Tournament {
@@ -186,32 +282,20 @@ export interface Tournament {
   slug: string;
   name: string;
   description: string;
-  game: string;
-  format: TournamentFormat;
-  status: TournamentStatus;
-  // Slot system
+  status: "draft" | "registration" | "live" | "completed";
   totalSlots: number;
-  playersPerSlot: number;
   totalPlayers: number;
-  // Lobby config
-  slotsPerLobby: number;
-  totalLobbies: number;
-  // Round config
   rounds: Round[];
-  matchesPerRound: number;
-  totalRounds: number;
-  // Data
+  currentRound: number;
   teams: Team[];
   matches: Match[];
   scoringRule: ScoringRule;
-  seedingMethod: SeedingMethod;
-  tiebreakers: string[];
-  // Meta
+  mapRotation: string[];
+  presetId: string;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
-  bannerColor?: string;
+  bannerColor: string;
   prizePool?: string;
-  rules?: string;
   region?: string;
 }

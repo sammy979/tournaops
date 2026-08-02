@@ -2,347 +2,230 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  ChevronLeft, ChevronRight, Trophy, Users, Zap, Sparkles, 
-  Check, Rocket, Target, Shield, BarChart3, Cpu 
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Trophy, Users, Sparkles, Rocket, Check, Map, Target, Award } from "lucide-react";
 import { createTournament } from "@/lib/storage/tournaments";
-
-const GAMES = [
-  { name: "Valorant", emoji: "🎯" },
-  { name: "League of Legends", emoji: "⚔️" },
-  { name: "CS2", emoji: "🔫" },
-  { name: "Dota 2", emoji: "🏹" },
-  { name: "Rocket League", emoji: "🚗" },
-  { name: "Fortnite", emoji: "🎮" },
-  { name: "Apex Legends", emoji: "🎪" },
-  { name: "Overwatch 2", emoji: "🦸" },
-  { name: "PUBG Mobile", emoji: "📱" },
-  { name: "Free Fire", emoji: "🔥" },
-  { name: "Chess", emoji: "♟️" },
-  { name: "Custom", emoji: "✨" }
-];
-
-const FORMATS = [
-  { id: "single_elim", name: "Single Elimination", desc: "Lose once, you're out. Fast & simple.", icon: Zap, color: "from-indigo-500 to-purple-500" },
-  { id: "round_robin", name: "Round Robin", desc: "Everyone plays everyone. Most fair.", icon: Users, color: "from-cyan-500 to-blue-500" },
-  { id: "swiss", name: "Swiss System", desc: "Best for large tournaments.", icon: BarChart3, color: "from-green-500 to-cyan-500" },
-  { id: "double_elim", name: "Double Elimination", desc: "Losers bracket for second chances.", icon: Shield, color: "from-purple-500 to-pink-500" },
-];
+import { TOURNAMENT_PRESETS, SCORING_SYSTEMS } from "@/types/tournament";
 
 export default function CreateTournamentPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [game, setGame] = useState("Valorant");
-  const [format, setFormat] = useState<any>("single_elim");
-  const [teamCount, setTeamCount] = useState(8);
-  const [bestOf, setBestOf] = useState<any>(1);
-  const [teamNames, setTeamNames] = useState<string[]>(Array(8).fill(""));
+  const [presetId, setPresetId] = useState("small_32");
+  const [scoringId, setScoringId] = useState("pmgc");
+  const [prizePool, setPrizePool] = useState("");
+  const [region, setRegion] = useState("South Asia");
 
-  const handleTeamCountChange = (n: number) => {
-    setTeamCount(n);
-    setTeamNames(Array(n).fill(""));
-  };
-
-  const handleTeamNameChange = (idx: number, value: string) => {
-    const updated = [...teamNames];
-    updated[idx] = value;
-    setTeamNames(updated);
-  };
+  const selectedPreset = TOURNAMENT_PRESETS.find(p => p.id === presetId);
+  const selectedScoring = SCORING_SYSTEMS.find(s => s.id === scoringId);
 
   const handleCreate = () => {
-    if (!name.trim()) {
-      alert("Please enter a tournament name");
-      return;
-    }
+    if (!name.trim()) return alert("Enter tournament name");
     setLoading(true);
-    
-    const teams = teamNames.map((n, i) => ({
-      name: n.trim() || `Team ${i + 1}`,
-    }));
-    
     setTimeout(() => {
       try {
-        const tournament = createTournament({
-          name,
-          description: description || `${game} tournament`,
-          game,
-          format,
-          bestOf,
-          maxTeams: teamCount,
-          teams,
-        });
-        router.push(`/dashboard/tournaments/${tournament.id}`);
-      } catch (err) {
-        alert("Failed to create tournament");
-        setLoading(false);
-      }
+        const t = createTournament({ name, description, presetId, scoringId, prizePool, region });
+        router.push("/dashboard/tournaments/" + t.id);
+      } catch { alert("Failed"); setLoading(false); }
     }, 800);
   };
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Back nav */}
-      <Link href="/dashboard/tournaments" className="inline-flex items-center gap-2 text-white/60 hover:text-white mb-6 transition group">
-        <ChevronLeft className="w-4 h-4" />
-        <span className="text-sm">Back to tournaments</span>
+      <Link href="/dashboard/tournaments" className="inline-flex items-center gap-2 text-white/60 hover:text-white mb-6 text-sm">
+        <ChevronLeft className="w-4 h-4" /> Back
       </Link>
 
-      {/* Card */}
-      <div className="glass-heavy neon-border rounded-2xl md:rounded-3xl p-6 md:p-10 relative overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl"></div>
-        
-        <div className="relative">
-          {/* Header */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center">
-              <Trophy className="w-6 h-6 text-white" strokeWidth={2.5} />
+      <div className="glass-heavy neon-border rounded-2xl p-6 md:p-10 relative overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-yellow-500/10 rounded-full blur-3xl"></div>
+
+        {/* Header */}
+        <div className="relative flex items-center gap-3 mb-6">
+          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
+            <Trophy className="w-7 h-7 text-white" strokeWidth={2.5} />
+          </div>
+          <div>
+            <h1 className="font-display font-black text-2xl md:text-3xl">Create PUBG Mobile Tournament</h1>
+            <p className="text-sm text-white/50">Step {step} of 3 · 4 players per squad · 16 squads per lobby</p>
+          </div>
+        </div>
+
+        {/* Progress */}
+        <div className="flex gap-2 mb-8">
+          {[1, 2, 3].map(s => (
+            <div key={s} className={`h-1.5 flex-1 rounded-full transition-all ${s <= step ? "bg-gradient-to-r from-yellow-500 to-orange-500" : "bg-white/10"}`} />
+          ))}
+        </div>
+
+        {/* STEP 1: Basic Info */}
+        {step === 1 && (
+          <div className="space-y-5 fade-in-up">
+            <div>
+              <label className="label">Tournament Name *</label>
+              <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Nepal PUBG Mobile Championship 2026" className="input text-lg" autoFocus />
             </div>
             <div>
-              <h1 className="font-display font-black text-2xl md:text-3xl">Create Tournament</h1>
-              <p className="text-sm text-white/50">Step {step} of 4</p>
+              <label className="label">Description</label>
+              <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Official PUBG Mobile tournament for Nepal region" className="input" />
             </div>
-          </div>
-
-          {/* Progress */}
-          <div className="flex gap-2 mb-8">
-            {[1, 2, 3, 4].map(s => (
-              <div key={s} className={`h-1.5 flex-1 rounded-full transition-all ${
-                s <= step ? "bg-gradient-to-r from-indigo-500 to-cyan-500" : "bg-white/10"
-              }`} />
-            ))}
-          </div>
-
-          {/* STEP 1: Basic Info */}
-          {step === 1 && (
-            <div className="space-y-5 fade-in-up">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="label">Tournament Name *</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder="Summer Championship 2026"
-                  className="input text-lg"
-                  autoFocus
-                />
+                <label className="label">Prize Pool</label>
+                <input type="text" value={prizePool} onChange={e => setPrizePool(e.target.value)} placeholder="NPR 50,000" className="input" />
               </div>
-
               <div>
-                <label className="label">Description (optional)</label>
-                <input
-                  type="text"
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  placeholder="A friendly community tournament"
-                  className="input"
-                />
+                <label className="label">Region</label>
+                <select value={region} onChange={e => setRegion(e.target.value)} className="input">
+                  <option>South Asia</option>
+                  <option>Southeast Asia</option>
+                  <option>Middle East</option>
+                  <option>Europe</option>
+                  <option>North America</option>
+                  <option>Global</option>
+                </select>
               </div>
+            </div>
+            <button onClick={() => name.trim() ? setStep(2) : alert("Enter name")} className="btn-primary w-full" style={{background:"linear-gradient(135deg,#f59e0b,#f97316)"}}>
+              Continue <ChevronRight className="w-4 h-4 ml-2 inline" />
+            </button>
+          </div>
+        )}
 
-              <div>
-                <label className="label">Select Game</label>
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                  {GAMES.map(g => (
-                    <button
-                      key={g.name}
-                      onClick={() => setGame(g.name)}
-                      className={`p-3 rounded-xl text-xs font-semibold transition-all ${
-                        game === g.name
-                          ? "bg-gradient-to-br from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/50"
-                          : "glass border border-white/10 text-white/70 hover:border-white/30"
-                      }`}
-                    >
-                      <div className="text-xl mb-1">{g.emoji}</div>
-                      <div className="text-[10px]">{g.name}</div>
-                    </button>
-                  ))}
+        {/* STEP 2: Format */}
+        {step === 2 && (
+          <div className="space-y-5 fade-in-up">
+            <div>
+              <label className="label flex items-center gap-2">
+                <Users className="w-4 h-4" /> Tournament Size
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {TOURNAMENT_PRESETS.map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => setPresetId(p.id)}
+                    className={`p-4 rounded-xl text-left transition-all relative ${
+                      presetId === p.id
+                        ? "border-2 border-yellow-400 bg-yellow-500/10 shadow-lg shadow-yellow-500/20"
+                        : "border-2 border-white/10 glass hover:border-white/30"
+                    }`}
+                  >
+                    {presetId === p.id && (
+                      <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center">
+                        <Check className="w-4 h-4 text-black" strokeWidth={3} />
+                      </div>
+                    )}
+                    <div className="font-display font-bold text-base mb-1">{p.name}</div>
+                    <div className="text-xs text-white/60 mb-2">{p.description}</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {p.rounds.map((r, i) => (
+                        <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/70">
+                          {r.name} ({r.matchCount}M)
+                        </span>
+                      ))}
+                    </div>
+                    <div className="mt-2 text-xs text-yellow-400 font-bold">
+                      {p.totalSlots} Squads · {p.totalSlots * 4} Players · {Math.ceil(p.totalSlots / 16)} Lobbies
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="label flex items-center gap-2">
+                <Target className="w-4 h-4" /> Scoring System
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {SCORING_SYSTEMS.map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => setScoringId(s.id)}
+                    className={`p-3 rounded-xl text-center transition-all ${
+                      scoringId === s.id
+                        ? "border-2 border-yellow-400 bg-yellow-500/10"
+                        : "border-2 border-white/10 glass hover:border-white/30"
+                    }`}
+                  >
+                    <div className="font-bold text-sm mb-0.5">{s.name}</div>
+                    <div className="text-[10px] text-white/60">{s.killPoints}pt/kill</div>
+                    <div className="text-[10px] text-yellow-400">1st = {s.placements[1]}pts</div>
+                  </button>
+                ))}
+              </div>
+              {selectedScoring && (
+                <div className="mt-3 glass rounded-xl p-4 border border-white/10 text-xs">
+                  <div className="font-bold text-yellow-400 mb-2">{selectedScoring.name} Placement Points:</div>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(selectedScoring.placements).map(([pos, pts]) => (
+                      <span key={pos} className={`px-2 py-0.5 rounded ${Number(pts) > 0 ? "bg-white/10" : "bg-white/5 text-white/30"}`}>
+                        #{pos} = {pts}pts
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-2">Kill Points: {selectedScoring.killPoints}pt/kill{selectedScoring.winnerBonus > 0 ? ` | WWCD Bonus: +${selectedScoring.winnerBonus}pts` : ""}</div>
                 </div>
-              </div>
+              )}
+            </div>
 
-              <button
-                onClick={() => setStep(2)}
-                disabled={!name.trim()}
-                className="btn-primary w-full disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Continue <ChevronRight className="w-4 h-4 ml-2" />
+            <div className="flex gap-3">
+              <button onClick={() => setStep(1)} className="btn-ghost flex-1">
+                <ChevronLeft className="w-4 h-4 mr-1 inline" /> Back
+              </button>
+              <button onClick={() => setStep(3)} className="btn-primary flex-[2]" style={{background:"linear-gradient(135deg,#f59e0b,#f97316)"}}>
+                Continue <ChevronRight className="w-4 h-4 ml-1 inline" />
               </button>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* STEP 2: Format */}
-          {step === 2 && (
-            <div className="space-y-5 fade-in-up">
-              <div>
-                <label className="label">Number of Teams</label>
-                <div className="grid grid-cols-5 gap-2">
-                  {[4, 8, 16, 32, 64].map(n => (
-                    <button
-                      key={n}
-                      onClick={() => handleTeamCountChange(n)}
-                      className={`p-4 rounded-xl font-display font-black text-xl transition-all ${
-                        teamCount === n
-                          ? "bg-gradient-to-br from-cyan-500 to-indigo-500 text-white shadow-lg shadow-cyan-500/50 scale-105"
-                          : "glass border border-white/10 text-white/70 hover:border-white/30"
-                      }`}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
+        {/* STEP 3: Review */}
+        {step === 3 && (
+          <div className="space-y-5 fade-in-up">
+            <div className="glass rounded-xl p-5 border border-yellow-500/30">
+              <h3 className="font-display font-bold text-lg mb-3 flex items-center gap-2 text-yellow-400">
+                <Award className="w-5 h-5" /> Tournament Summary
+              </h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div><div className="text-white/50 text-xs">Name</div><div className="font-bold">{name}</div></div>
+                <div><div className="text-white/50 text-xs">Game</div><div className="font-bold">PUBG Mobile</div></div>
+                <div><div className="text-white/50 text-xs">Total Squads</div><div className="font-bold text-yellow-400">{selectedPreset?.totalSlots}</div></div>
+                <div><div className="text-white/50 text-xs">Total Players</div><div className="font-bold">{(selectedPreset?.totalSlots || 0) * 4}</div></div>
+                <div><div className="text-white/50 text-xs">Lobbies</div><div className="font-bold">{Math.ceil((selectedPreset?.totalSlots || 16) / 16)}</div></div>
+                <div><div className="text-white/50 text-xs">Scoring</div><div className="font-bold">{selectedScoring?.name}</div></div>
+                <div><div className="text-white/50 text-xs">Prize Pool</div><div className="font-bold">{prizePool || "None"}</div></div>
+                <div><div className="text-white/50 text-xs">Region</div><div className="font-bold">{region}</div></div>
               </div>
-
-              <div>
-                <label className="label">Tournament Format</label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {FORMATS.map(f => (
-                    <button
-                      key={f.id}
-                      onClick={() => setFormat(f.id)}
-                      className={`p-4 rounded-xl text-left transition-all ${
-                        format === f.id
-                          ? "bg-white/5 border-2 border-cyan-400 shadow-lg shadow-cyan-500/30"
-                          : "glass border-2 border-white/10 hover:border-white/30"
-                      }`}
-                    >
-                      <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${f.color} flex items-center justify-center mb-3`}>
-                        <f.icon className="w-5 h-5 text-white" strokeWidth={2.5} />
-                      </div>
-                      <div className="font-display font-bold text-base mb-1">{f.name}</div>
-                      <div className="text-xs text-white/60">{f.desc}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="label">Match Format</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[1, 3, 5].map(n => (
-                    <button
-                      key={n}
-                      onClick={() => setBestOf(n)}
-                      className={`p-3 rounded-xl font-bold transition-all ${
-                        bestOf === n
-                          ? "bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg"
-                          : "glass border border-white/10 text-white/70"
-                      }`}
-                    >
-                      <div className="font-display text-lg">BO{n}</div>
-                      <div className="text-[10px] text-white/60">Best of {n}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button onClick={() => setStep(1)} className="btn-ghost flex-1">
-                  <ChevronLeft className="w-4 h-4 mr-2" /> Back
-                </button>
-                <button onClick={() => setStep(3)} className="btn-primary flex-[2]">
-                  Continue <ChevronRight className="w-4 h-4 ml-2" />
-                </button>
+              <div className="mt-4 border-t border-white/10 pt-3">
+                <div className="text-xs text-white/50 mb-2">Tournament Rounds:</div>
+                {selectedPreset?.rounds.map((r, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm mb-1">
+                    <span className="w-2 h-2 rounded-full bg-yellow-400"></span>
+                    <span className="font-bold">{r.name}</span>
+                    <span className="text-white/50">{r.matchCount} matches</span>
+                    {r.advanceTop > 0 && <span className="text-cyan-400 text-xs">Top {r.advanceTop} advance</span>}
+                  </div>
+                ))}
               </div>
             </div>
-          )}
 
-          {/* STEP 3: Teams */}
-          {step === 3 && (
-            <div className="space-y-5 fade-in-up">
-              <div>
-                <label className="label">Team Names (optional - defaults to Team 1, Team 2, etc.)</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-96 overflow-y-auto">
-                  {teamNames.map((name, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center flex-shrink-0 text-xs font-black">
-                        {i + 1}
-                      </div>
-                      <input
-                        type="text"
-                        value={name}
-                        onChange={e => handleTeamNameChange(i, e.target.value)}
-                        placeholder={`Team ${i + 1}`}
-                        className="input text-sm py-2"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button onClick={() => setStep(2)} className="btn-ghost flex-1">
-                  <ChevronLeft className="w-4 h-4 mr-2" /> Back
-                </button>
-                <button onClick={() => setStep(4)} className="btn-primary flex-[2]">
-                  Continue <ChevronRight className="w-4 h-4 ml-2" />
-                </button>
-              </div>
+            <div className="flex gap-3">
+              <button onClick={() => setStep(2)} className="btn-ghost flex-1" disabled={loading}>
+                <ChevronLeft className="w-4 h-4 mr-1 inline" /> Back
+              </button>
+              <button onClick={handleCreate} disabled={loading} className="btn-primary flex-[2] disabled:opacity-50" style={{background:"linear-gradient(135deg,#f59e0b,#f97316)"}}>
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Creating...
+                  </span>
+                ) : (
+                  <><Rocket className="w-4 h-4 mr-1 inline" /> Launch Tournament</>
+                )}
+              </button>
             </div>
-          )}
-
-          {/* STEP 4: Review */}
-          {step === 4 && (
-            <div className="space-y-5 fade-in-up">
-              <div className="glass rounded-xl p-5 border border-cyan-500/30">
-                <h3 className="font-display font-bold text-lg mb-3 flex items-center gap-2 text-cyan-400">
-                  <Sparkles className="w-4 h-4" /> Ready to Launch
-                </h3>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <div className="text-white/50 text-xs">Name</div>
-                    <div className="font-bold">{name}</div>
-                  </div>
-                  <div>
-                    <div className="text-white/50 text-xs">Game</div>
-                    <div className="font-bold">{game}</div>
-                  </div>
-                  <div>
-                    <div className="text-white/50 text-xs">Teams</div>
-                    <div className="font-bold">{teamCount}</div>
-                  </div>
-                  <div>
-                    <div className="text-white/50 text-xs">Format</div>
-                    <div className="font-bold">{FORMATS.find(f => f.id === format)?.name}</div>
-                  </div>
-                  <div>
-                    <div className="text-white/50 text-xs">Match Format</div>
-                    <div className="font-bold">Best of {bestOf}</div>
-                  </div>
-                  <div>
-                    <div className="text-white/50 text-xs">Auto-generates</div>
-                    <div className="font-bold">Bracket + Matches</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button onClick={() => setStep(3)} className="btn-ghost flex-1" disabled={loading}>
-                  <ChevronLeft className="w-4 h-4 mr-2" /> Back
-                </button>
-                <button 
-                  onClick={handleCreate} 
-                  disabled={loading}
-                  className="btn-primary flex-[2] disabled:opacity-50"
-                >
-                  {loading ? (
-                    <span className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Creating...
-                    </span>
-                  ) : (
-                    <>
-                      <Rocket className="w-4 h-4 mr-2" />
-                      Create & Launch Tournament
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
