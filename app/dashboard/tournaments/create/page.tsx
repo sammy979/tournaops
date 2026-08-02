@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Trophy, Users, Sparkles, Rocket, Check, Map, Target, Award } from "lucide-react";
 import { createTournament } from "@/lib/storage/tournaments";
-import { TOURNAMENT_PRESETS, SCORING_SYSTEMS } from "@/types/tournament";
+import { TOURNAMENT_PRESETS, SCORING_PRESETS } from "@/types/tournament";
 
 export default function CreateTournamentPage() {
   const router = useRouter();
@@ -18,7 +18,7 @@ export default function CreateTournamentPage() {
   const [region, setRegion] = useState("South Asia");
 
   const selectedPreset = TOURNAMENT_PRESETS.find(p => p.id === presetId);
-  const selectedScoring = SCORING_SYSTEMS.find(s => s.id === scoringId);
+  const selectedScoring = SCORING_PRESETS.find(s => s.id === scoringId);
 
   const handleCreate = () => {
     if (!name.trim()) return alert("Enter tournament name");
@@ -47,7 +47,7 @@ export default function CreateTournamentPage() {
           </div>
           <div>
             <h1 className="font-display font-black text-2xl md:text-3xl">Create PUBG Mobile Tournament</h1>
-            <p className="text-sm text-white/50">Step {step} of 3 · 4 players per squad · 16 squads per lobby</p>
+            <p className="text-sm text-white/50">Step {step} of 3 Â· 4 players per squad Â· 16 squads per lobby</p>
           </div>
         </div>
 
@@ -125,7 +125,7 @@ export default function CreateTournamentPage() {
                       ))}
                     </div>
                     <div className="mt-2 text-xs text-yellow-400 font-bold">
-                      {p.totalSlots} Squads · {p.totalSlots * 4} Players · {Math.ceil(p.totalSlots / 16)} Lobbies
+                      {p.totalSlots} Squads Â· {p.totalSlots * 4} Players Â· {Math.ceil(p.totalSlots / 16)} Lobbies
                     </div>
                   </button>
                 ))}
@@ -137,7 +137,7 @@ export default function CreateTournamentPage() {
                 <Target className="w-4 h-4" /> Scoring System
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {SCORING_SYSTEMS.map(s => (
+                {SCORING_PRESETS.map(s => (
                   <button
                     key={s.id}
                     onClick={() => setScoringId(s.id)}
