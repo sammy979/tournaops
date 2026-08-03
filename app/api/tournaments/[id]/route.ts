@@ -5,10 +5,18 @@ import { getSession } from "@/lib/auth/session";
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const tournament = await prisma.tournament.findUnique({
+  // Try by ID first, then by slug
+  let tournament = await prisma.tournament.findUnique({
     where: { id },
     include: { teams: true, matches: true, rounds: true },
   });
+
+  if (!tournament) {
+    tournament = await prisma.tournament.findUnique({
+      where: { slug: id },
+      include: { teams: true, matches: true, rounds: true },
+    });
+  }
 
   if (!tournament) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
