@@ -18,6 +18,7 @@ import { Tournament, Match, Team } from "@/types/tournament";
 
 const TeamEditor = dynamic(() => import("@/components/tournament/TeamEditor"), { ssr: false });
 const MatchResultEntry = dynamic(() => import("@/components/tournament/MatchResultEntry"), { ssr: false });
+const AIPointsTable = dynamic(() => import("@/components/ai/AIPointsTable"), { ssr: false });
 const PointsTable = dynamic(() => import("@/components/tournament/PointsTable"), { ssr: false });
 const BroadcastStudio = dynamic(() => import("@/components/studio/BroadcastStudio"), { ssr: false });
 const CSVImport = dynamic(() => import("@/components/tournament/CSVImport"), { ssr: false });
@@ -426,7 +427,11 @@ export default function TournamentDetailPage() {
       )}
 
       {/* STANDINGS */}
-      {activeTab === "standings" && (
+      {activeTab === "standings" && tournament && (
+        <AIPointsTable tournamentId={tournament.id} embedded={true} />
+      )}
+
+      {activeTab === "standings_old_disabled" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <h3 className="text-white font-semibold">Live Standings</h3>
