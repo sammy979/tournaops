@@ -2,7 +2,7 @@
 
 import { Tournament, ScoringRule, TeamMatchResult, LeaderboardEntry } from "@/types/tournament";
 
-// ─── API HELPERS ─────────────────────────────────────────────
+// â”€â”€â”€ API HELPERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function fetchTournaments(): Promise<Tournament[]> {
   try {
@@ -36,7 +36,7 @@ async function fetchTournamentBySlug(slug: string): Promise<Tournament | undefin
   }
 }
 
-// ─── SYNC-STYLE CACHED FUNCTIONS ────────────────────────────
+// â”€â”€â”€ SYNC-STYLE CACHED FUNCTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Note: These are async now but keep the same names for compat
 // UI code will need to await these
 
@@ -57,7 +57,7 @@ export function invalidateCache() {
   cacheTime = 0;
 }
 
-// ─── PUBLIC API (Async) ─────────────────────────────────────
+// â”€â”€â”€ PUBLIC API (Async) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function getAllTournaments(): Promise<Tournament[]> {
   return loadCache();
@@ -140,37 +140,32 @@ export async function submitMatchResults(
   results: TeamMatchResult[]
 ): Promise<Tournament | undefined> {
   try {
-    // Get current tournament
-    const tournament = await fetchTournamentById(tournamentId);
-    if (!tournament) return undefined;
+    const sortedResults = results.sort((a, b) => a.placement - b.placement);
 
-    // Update match with results
-    const updatedMatches = tournament.matches.map(m => {
-      if (m.id !== matchId) return m;
-      return {
-        ...m,
-        status: "completed" as const,
-        results: results.sort((a, b) => a.placement - b.placement),
-        endTime: new Date().toISOString(),
-      };
+    const res = await fetch(`/api/matches/${matchId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        status: "completed",
+        results: sortedResults,
+      }),
     });
 
-    // Save via API (matches are part of tournament JSON in this simple version)
-    // For now, we do it directly via update
-    const updated = { ...tournament, matches: updatedMatches };
+    if (!res.ok) {
+      console.error("Submit failed:", await res.text());
+      return undefined;
+    }
 
-    // Note: In a full impl, you'd have PUT /api/matches/[id]
-    // For simplicity, using the tournament update
-    const saved = await saveTournament(updated);
+    const data = await res.json();
     invalidateCache();
-    return saved;
+    return data.tournament;
   } catch (e) {
     console.error("Submit results failed:", e);
     return undefined;
   }
 }
 
-// ─── DEMO RESULTS (Client-side) ─────────────────────────────
+// â”€â”€â”€ DEMO RESULTS (Client-side) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export function generateDemoResults(tournament: Tournament, matchId: string): TeamMatchResult[] {
   try {
@@ -228,7 +223,7 @@ export function generateDemoResults(tournament: Tournament, matchId: string): Te
   }
 }
 
-// ─── LEADERBOARD (Pure client-side, from tournament data) ───
+// â”€â”€â”€ LEADERBOARD (Pure client-side, from tournament data) â”€â”€â”€
 
 export function getLeaderboard(tournament: Tournament, lobbyId?: string): LeaderboardEntry[] {
   try {
