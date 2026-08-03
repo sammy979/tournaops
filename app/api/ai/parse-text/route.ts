@@ -1,85 +1,65 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { generateAI } from "@/lib/ai";
 
 export async function POST(req: NextRequest) {
-  const { text, scoringRule } = await req.json();
+  try {
+    const { text, format } = await req.json();
+    
+    if (!text) {
+      return NextResponse.json({ error: "text required" }, { status: 400 });
+    }
 
-  if (!text || text.trim().length < 10) {
-    return NextResponse.json({ error: "Text too short" }, { status: 400 });
-  }
+    // Build prompt for parsing PUBG match text
+    const prompt = `Parse this PUBG Mobile tournament data into structured JSON.
+Extract team names, placements (1-16), and kills.
 
-  const apiKey = process.env.OPENAI_API_KEY;
+INPUT TEXT:
+${text.substring(0, 3000)}
 
-  // Try AI first
-  if (apiKey && apiKey.startsWith("sk-")) {
+Return ONLY valid JSON in this exact format (no markdown, no explanation):
+{
+  "teams": [
+    { "name": "Team Name", "placement": 1, "kills": 15 }
+  ]
+}`;
+
+    const result = await generateAI({ 
+      prompt, 
+      temperature: 0.3,  // Lower = more accurate parsing
+      maxTokens: 1500 
+    });
+
+    if (!result.text) {
+      return NextResponse.json({ 
+        error: result.error || "AI failed to parse",
+        fallback: true 
+      }, { status: 200 });
+    }
+
+    // Try to extract JSON from AI response
+    let parsed;
     try {
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [{
-            role: "system",
-            content: "You extract PUBG Mobile match results from messy text. Return ONLY valid JSON: {\"teams\":[{\"teamName\":\"NAME\",\"placement\":1,\"kills\":8,\"confidence\":95}],\"format\":\"detected_format\",\"confidence\":90}. Do NOT guess. If unclear, set low confidence."
-          }, {
-            role: "user",
-            content: "Extract match results from this text:\n\n" + text.substring(0, 3000)
-          }],
-          max_tokens: 1500,
-          temperature: 0.1,
-        }),
+      // Remove markdown code blocks if present
+      let cleanJson = result.text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+      parsed = JSON.parse(cleanJson);
+    } catch (parseErr) {
+      // If not valid JSON, return raw text
+      return NextResponse.json({ 
+        raw: result.text,
+        provider: result.provider,
+        error: "Could not parse AI response as JSON",
+        fallback: true 
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        const content = data.choices?.[0]?.message?.content || "";
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          return NextResponse.json({
-            ...parsed,
-            method: "ai",
-            teams: (parsed.teams || []).map((t: any) => ({
-              teamName: String(t.teamName || "").trim(),
-              placement: parseInt(t.placement) || 0,
-              kills: parseInt(t.kills) || 0,
-              confidence: parseInt(t.confidence) || 50,
-            })),
-          });
-        }
-      }
-    } catch (e: any) {
-      console.error("AI parse failed:", e.message);
     }
+
+    return NextResponse.json({ 
+      teams: parsed.teams || [],
+      provider: result.provider,
+      success: true 
+    });
+
+  } catch (e: any) {
+    console.error("[parse-text] Error:", e.message);
+    return NextResponse.json({ error: e.message, fallback: true }, { status: 200 });
   }
-
-  // Fallback: regex parsing
-  const lines = text.split(/\r?\n/).filter((l: string) => l.trim());
-  const teams: any[] = [];
-  const patterns = [
-    /(\d+)\.\s*(.+?)\s+(\d+)\s*(?:kills?|k)/i,
-    /(.+?)\s+(\d+)(?:st|nd|rd|th)\s+(\d+)\s*(?:kills?|k)/i,
-    /(\d+)\.\s*(.+?)\s*[-|]\s*(\d+)/,
-  ];
-
-  lines.forEach((line: string, idx: number) => {
-    for (const pattern of patterns) {
-      const m = line.match(pattern);
-      if (m) {
-        teams.push({
-          teamName: (m[2] || m[1]).trim(),
-          placement: parseInt(m[1]) || idx + 1,
-          kills: parseInt(m[3]) || 0,
-          confidence: 70,
-        });
-        return;
-      }
-    }
-  });
-
-  return NextResponse.json({
-    teams,
-    format: teams.length > 0 ? "REGEX_FALLBACK" : "UNKNOWN",
-    confidence: teams.length > 0 ? 60 : 0,
-    method: "regex",
-  });
 }
