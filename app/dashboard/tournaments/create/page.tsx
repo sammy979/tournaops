@@ -740,7 +740,14 @@ export default function CreateTournamentPage() {
         {/*  NAVIGATION  */}
         <div className="flex items-center justify-between mt-8 pt-6 border-t border-white/8">
           {step > 1 ? (
-            <button onClick={() => setStep(s => s - 1)} className="btn-secondary px-5 py-2.5">
+            <button onClick={() => {
+              let prevStep = step - 1;
+              // Skip Groups step going back if no teams
+              if (prevStep === 7 && importMode === "none" && parsedTeams.length === 0 && manualTeams.length === 0) {
+                prevStep = 6;
+              }
+              setStep(prevStep);
+            }} className="btn-secondary px-5 py-2.5">
               <ArrowLeft className="w-4 h-4" />Back
             </button>
           ) : (
@@ -752,7 +759,14 @@ export default function CreateTournamentPage() {
           <div className="text-xs text-gray-500">Step {step} of {STEPS.length}</div>
 
           {step < STEPS.length ? (
-            <button onClick={() => setStep(s => s + 1)} disabled={!canNext()} className="btn-primary px-6 py-2.5">
+            <button onClick={() => {
+              let nextStep = step + 1;
+              // Skip Groups step if no teams imported
+              if (nextStep === 7 && importMode === "none" && parsedTeams.length === 0 && manualTeams.length === 0) {
+                nextStep = 8;
+              }
+              setStep(nextStep);
+            }} disabled={!canNext()} className="btn-primary px-6 py-2.5">
               Next<ArrowRight className="w-4 h-4" />
             </button>
           ) : (
