@@ -30,7 +30,7 @@ function NextMatchContent() {
   if (!nextMatch) return (
     <div style={{ background: "transparent", padding: 12, fontFamily: "Inter" }}>
       <div style={{ background: "rgba(10,10,20,0.9)", borderRadius: 16, padding: 24, textAlign: "center", color: "#22c55e", fontWeight: 700, border: "1px solid rgba(34,197,94,0.3)" }}>
-        All matches completed! 🏆
+        All matches completed! 
       </div>
     </div>
   );
@@ -57,7 +57,7 @@ function NextMatchContent() {
         <div style={{ padding: 20, textAlign: "center" }}>
           <div style={{ color: t.text, fontSize: 32, fontWeight: 900, marginBottom: 8 }}>{nextMatch.name}</div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", borderRadius: 999, background: `${t.accent}15`, border: `1px solid ${t.accent}30` }}>
-            <span style={{ fontSize: 16 }}>🗺️</span>
+            <span style={{ fontSize: 16 }}></span>
             <span style={{ color: t.accent, fontSize: 14, fontWeight: 700 }}>{nextMatch.map}</span>
           </div>
         </div>

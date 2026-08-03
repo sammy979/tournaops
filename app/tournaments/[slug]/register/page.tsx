@@ -109,7 +109,7 @@ export default function TeamRegisterPage() {
           </div>
         </Link>
         <Link href={`/tournaments/${tournament.slug}`} className="text-gray-500 text-sm hover:text-gray-300 transition-colors">
-          View Tournament ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢
+          View Tournament 
         </Link>
       </div>
 
@@ -122,7 +122,7 @@ export default function TeamRegisterPage() {
           <h1 className="text-3xl font-bold text-white mb-2">{tournament.name}</h1>
           <div className="flex items-center justify-center gap-4 text-gray-500 text-sm">
             <span>{tournament.teams.length} squads registered</span>
-            {tournament.prizePool && <span className="text-yellow-400">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã‚Â  {tournament.prizePool}</span>}
+            {tournament.prizePool && <span className="text-yellow-400"> {tournament.prizePool}</span>}
           </div>
         </div>
 

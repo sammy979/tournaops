@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TournaOps — PUBG Mobile Tournament Management Platform",
+  title: "TournaOps  PUBG Mobile Tournament Management Platform",
   description: "Run professional PUBG Mobile tournaments in minutes. Live leaderboards, OBS overlays, PMGC scoring, squad management, and social media card generation. Free to start.",
   keywords: "PUBG Mobile tournament, BGMI tournament, esports tournament management, PMGC scoring, tournament leaderboard, OBS overlay, tournament organizer tool, BGMI tournament app",
   manifest: "/manifest.json",
@@ -12,15 +12,15 @@ export const metadata: Metadata = {
     title: "TournaOps",
   },
   openGraph: {
-    title: "TournaOps — PUBG Mobile Tournament Platform",
-    description: "Stop managing chaos. Start running tournaments. Live leaderboards, OBS overlays, and PMGC scoring — all in one place.",
+    title: "TournaOps  PUBG Mobile Tournament Platform",
+    description: "Stop managing chaos. Start running tournaments. Live leaderboards, OBS overlays, and PMGC scoring  all in one place.",
     type: "website",
     siteName: "TournaOps",
     url: "https://www.tournaops.com",
   },
   twitter: {
     card: "summary_large_image",
-    title: "TournaOps — PUBG Mobile Tournament Platform",
+    title: "TournaOps  PUBG Mobile Tournament Platform",
     description: "Professional tournament management for PUBG Mobile organizers. Free to start.",
   },
   robots: { index: true, follow: true },

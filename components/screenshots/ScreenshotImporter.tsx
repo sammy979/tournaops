@@ -41,7 +41,7 @@ export default function ScreenshotImporter({
   const [aiError, setAiError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ─── UPLOAD ───
+  //  UPLOAD 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -74,7 +74,7 @@ export default function ScreenshotImporter({
     }
   };
 
-  // ─── EXTRACT ───
+  //  EXTRACT 
   const extractResults = async () => {
     if (!screenshot) return;
     setStep("extracting");
@@ -142,7 +142,7 @@ export default function ScreenshotImporter({
     })));
   };
 
-  // ─── EDIT ───
+  //  EDIT 
   const updateResult = (idx: number, field: keyof ExtractedResult, value: any) => {
     setResults(prev => prev.map((r, i) => i === idx ? { ...r, [field]: value, edited: true } : r));
   };
@@ -155,7 +155,7 @@ export default function ScreenshotImporter({
     ));
   };
 
-  // ─── SAVE ───
+  //  SAVE 
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -214,7 +214,7 @@ export default function ScreenshotImporter({
               Screenshot Result Importer
             </h2>
             <p className="text-gray-500 text-sm mt-1">
-              {match.name} · {match.map} · {method === "ai" ? "AI-powered extraction" : "Manual entry"}
+              {match.name}  {match.map}  {method === "ai" ? "AI-powered extraction" : "Manual entry"}
             </p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/10 text-gray-400 border border-white/10">
@@ -248,7 +248,7 @@ export default function ScreenshotImporter({
           </div>
         </div>
 
-        {/* ═══ UPLOAD STEP ═══ */}
+        {/*  UPLOAD STEP  */}
         {step === "upload" && (
           <div className="p-8">
             <div
@@ -276,7 +276,7 @@ export default function ScreenshotImporter({
                   <Upload className="w-12 h-12 text-gray-500 mx-auto mb-4" />
                   <p className="text-white font-semibold mb-2">Drop screenshot here or click to upload</p>
                   <p className="text-gray-500 text-sm mb-4">Also supports Ctrl+V paste from clipboard</p>
-                  <p className="text-gray-600 text-xs">PNG, JPG, WEBP · Max 5MB</p>
+                  <p className="text-gray-600 text-xs">PNG, JPG, WEBP  Max 5MB</p>
                 </div>
               )}
               <input
@@ -301,7 +301,7 @@ export default function ScreenshotImporter({
                   onClick={() => { initManualResults(); setStep("review"); }}
                   className="btn-secondary flex items-center gap-2 px-4 py-2 text-sm"
                 >
-                  <Edit className="w-4 h-4" />Skip AI · Enter Manually
+                  <Edit className="w-4 h-4" />Skip AI  Enter Manually
                 </button>
                 <button
                   onClick={extractResults}
@@ -315,7 +315,7 @@ export default function ScreenshotImporter({
           </div>
         )}
 
-        {/* ═══ EXTRACTING STEP ═══ */}
+        {/*  EXTRACTING STEP  */}
         {step === "extracting" && (
           <div className="p-16 text-center">
             <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-6" />
@@ -328,7 +328,7 @@ export default function ScreenshotImporter({
           </div>
         )}
 
-        {/* ═══ REVIEW STEP ═══ */}
+        {/*  REVIEW STEP  */}
         {step === "review" && (
           <div className="p-5">
             {/* AI Error Warning */}

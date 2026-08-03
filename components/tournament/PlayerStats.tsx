@@ -127,7 +127,7 @@ export default function PlayerStats({ tournament, onClose }: PlayerStatsProps) {
                 }`}>
                   <div className="col-span-1">
                     <span className={`font-mono font-bold text-sm ${i === 0 ? "text-yellow-400" : i === 1 ? "text-gray-300" : i === 2 ? "text-amber-600" : "text-gray-600"}`}>
-                      {i < 3 ? ["🥇","🥈","🥉"][i] : `${i+1}`}
+                      {i < 3 ? ["","",""][i] : `${i+1}`}
                     </span>
                   </div>
                   <div className="col-span-4">
@@ -168,7 +168,7 @@ export default function PlayerStats({ tournament, onClose }: PlayerStatsProps) {
                 }`}>
                   <div className="col-span-1">
                     <span className={`font-mono font-bold text-sm ${i === 0 ? "text-yellow-400" : i === 1 ? "text-gray-300" : i === 2 ? "text-amber-600" : "text-gray-600"}`}>
-                      {i < 3 ? ["🥇","🥈","🥉"][i] : `${i+1}`}
+                      {i < 3 ? ["","",""][i] : `${i+1}`}
                     </span>
                   </div>
                   <div className="col-span-4 text-white font-semibold text-sm">{p.playerName}</div>
@@ -203,7 +203,7 @@ export default function PlayerStats({ tournament, onClose }: PlayerStatsProps) {
                 }`}>
                   <div className="col-span-1">
                     <span className={`font-mono font-bold text-sm ${e.rank === 1 ? "text-yellow-400" : e.rank === 2 ? "text-gray-300" : e.rank === 3 ? "text-amber-600" : "text-gray-600"}`}>
-                      {e.rank <= 3 ? ["🥇","🥈","🥉"][e.rank-1] : e.rank}
+                      {e.rank <= 3 ? ["","",""][e.rank-1] : e.rank}
                     </span>
                   </div>
                   <div className="col-span-3 text-white font-semibold text-sm truncate">{e.teamName}</div>

@@ -182,7 +182,7 @@ export default function TeamEditor({ tournament, onClose, onSave }: TeamEditorPr
       <div className="w-full max-w-5xl mx-3 sm:mx-4">
         <div className="glass-card rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
 
-          {/* â”€â”€ HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/*  HEADER  */}
           <div className="flex items-center justify-between p-5 sm:p-6 border-b border-white/10 bg-white/3">
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
@@ -191,9 +191,9 @@ export default function TeamEditor({ tournament, onClose, onSave }: TeamEditorPr
               </h2>
               <div className="flex items-center gap-3 mt-1.5">
                 <span className="text-gray-500 text-sm">{teams.length} squads</span>
-                <span className="text-gray-700">Â·</span>
+                <span className="text-gray-700"></span>
                 <span className="text-gray-500 text-sm">{totalPlayers} players</span>
-                <span className="text-gray-700">Â·</span>
+                <span className="text-gray-700"></span>
                 <span className="text-gray-500 text-sm">{teamsWithLogos} logos</span>
                 {hasChanges && (
                   <span className="flex items-center gap-1 text-yellow-400 text-xs font-medium">
@@ -230,7 +230,7 @@ export default function TeamEditor({ tournament, onClose, onSave }: TeamEditorPr
             </div>
           </div>
 
-          {/* â”€â”€ TOOLBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/*  TOOLBAR  */}
           <div className="flex flex-wrap items-center gap-3 p-4 border-b border-white/8 bg-white/2">
             {/* Search */}
             <div className="relative flex-1 min-w-[200px]">
@@ -281,7 +281,7 @@ export default function TeamEditor({ tournament, onClose, onSave }: TeamEditorPr
             )}
           </div>
 
-          {/* â”€â”€ TEAMS LIST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/*  TEAMS LIST  */}
           <div className="max-h-[65vh] overflow-y-auto scrollbar-thin">
             {filteredTeams.length === 0 ? (
               <div className="p-16 text-center">
@@ -300,7 +300,7 @@ export default function TeamEditor({ tournament, onClose, onSave }: TeamEditorPr
                   return (
                     <div key={team.id} className={`transition-all ${isExpanded ? "bg-white/3" : ""}`}>
 
-                      {/* â”€â”€ TEAM ROW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                      {/*  TEAM ROW  */}
                       <div
                         className="flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3.5 cursor-pointer hover:bg-white/4 transition-colors group"
                         onClick={() => setExpandedTeam(isExpanded ? null : team.id)}
@@ -382,7 +382,7 @@ export default function TeamEditor({ tournament, onClose, onSave }: TeamEditorPr
                         </div>
                       </div>
 
-                      {/* â”€â”€ PLAYER CARDS (Expanded) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                      {/*  PLAYER CARDS (Expanded)  */}
                       {isExpanded && (
                         <div className="px-4 sm:px-6 pb-5 space-y-2.5 animate-fade-in">
                           {/* Column Headers */}
@@ -502,11 +502,11 @@ export default function TeamEditor({ tournament, onClose, onSave }: TeamEditorPr
             )}
           </div>
 
-          {/* â”€â”€ FOOTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/*  FOOTER  */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 sm:p-5 border-t border-white/10 bg-white/3">
             <div className="flex items-center gap-4 text-sm">
               <span className="text-gray-600">
-                {teams.length} squads Â· {totalPlayers} players
+                {teams.length} squads  {totalPlayers} players
               </span>
               {hasChanges && (
                 <span className="flex items-center gap-1.5 text-yellow-400 text-xs">

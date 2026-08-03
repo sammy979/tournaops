@@ -227,7 +227,7 @@ export default function AdminPage() {
                   {filteredTournaments.map(t => (
                     <tr key={t.id} className="border-b border-white/5 hover:bg-white/3">
                       <td className="py-3 px-4 text-white font-medium">{t.name}</td>
-                      <td className="py-3 px-4 text-gray-400 text-xs">{t.createdBy?.email || "—"}</td>
+                      <td className="py-3 px-4 text-gray-400 text-xs">{t.createdBy?.email || ""}</td>
                       <td className="py-3 px-4 text-center">
                         <span className={`badge ${t.status === "live" ? "badge-live" : t.status === "completed" ? "badge-completed" : "badge-draft"}`}>
                           {t.status}

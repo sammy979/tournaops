@@ -124,7 +124,7 @@ export default function MatchResultEntry({ tournament, match, teams, onClose, on
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <div>
             <h2 className="text-2xl font-bold text-white">Enter Match Results</h2>
-            <p className="text-gray-400 text-sm mt-1">{match.name} · {teams.length} squads · {match.map}</p>
+            <p className="text-gray-400 text-sm mt-1">{match.name}  {teams.length} squads  {match.map}</p>
           </div>
           <div className="flex items-center gap-3">
             <button onClick={handleDemoFill} className="btn-secondary flex items-center gap-2 px-4 py-2">
@@ -198,7 +198,7 @@ export default function MatchResultEntry({ tournament, match, teams, onClose, on
                   className={`w-full text-left px-4 py-3 text-sm border-b border-white/5 transition-colors ${activeTeam === entry.teamId ? "bg-blue-500/20 text-blue-400" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
                 >
                   <div className="font-medium truncate">{entry.teamName}</div>
-                  <div className="text-xs opacity-60">{entry.players.reduce((a, p) => a + p.kills, 0)}K · #{entry.placement}</div>
+                  <div className="text-xs opacity-60">{entry.players.reduce((a, p) => a + p.kills, 0)}K  #{entry.placement}</div>
                 </button>
               ))}
             </div>

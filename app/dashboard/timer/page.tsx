@@ -31,7 +31,7 @@ export default function TimerSetupPage() {
     <div className="space-y-8 max-w-4xl">
       <div>
         <h1 className="text-3xl font-bold text-white">Match Timer</h1>
-        <p className="text-gray-400 mt-1">Countdown timer for OBS — perfect for between-match breaks</p>
+        <p className="text-gray-400 mt-1">Countdown timer for OBS  perfect for between-match breaks</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -101,7 +101,7 @@ export default function TimerSetupPage() {
                 {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>
-            <p className="text-gray-700 text-xs mt-2">Width: 400px · Height: 300px recommended</p>
+            <p className="text-gray-700 text-xs mt-2">Width: 400px  Height: 300px recommended</p>
           </div>
         </div>
 

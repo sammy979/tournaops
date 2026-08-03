@@ -24,7 +24,7 @@ export default function BracketView({ tournament, onClose }: BracketViewProps) {
               Tournament Bracket
             </h2>
             <p className="text-gray-500 text-sm mt-1">
-              {tournament.name} · {tournament.rounds.length} rounds
+              {tournament.name}  {tournament.rounds.length} rounds
             </p>
           </div>
           <button
@@ -53,10 +53,10 @@ export default function BracketView({ tournament, onClose }: BracketViewProps) {
                       : "bg-white/4 border-white/10"
                   }`}>
                     <p className={`font-bold text-sm ${isLast ? "text-yellow-400" : "text-white"}`}>
-                      {isLast ? "🏆 " : ""}{round.name}
+                      {isLast ? " " : ""}{round.name}
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      {round.lobbies.length} {round.lobbies.length === 1 ? "lobby" : "lobbies"} · {completedCount}/{roundMatches.length} done
+                      {round.lobbies.length} {round.lobbies.length === 1 ? "lobby" : "lobbies"}  {completedCount}/{roundMatches.length} done
                     </p>
                   </div>
 

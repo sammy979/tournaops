@@ -192,7 +192,7 @@ export default function ContactPage() {
 
       <footer className="border-t border-white/8 py-8 px-6 mt-12">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <p className="text-gray-600 text-sm">Â© 2025 TournaOps. All rights reserved.</p>
+          <p className="text-gray-600 text-sm"> 2025 TournaOps. All rights reserved.</p>
           <div className="flex gap-4 text-sm text-gray-600">
             <Link href="/privacy" className="hover:text-gray-400">Privacy</Link>
             <Link href="/terms" className="hover:text-gray-400">Terms</Link>

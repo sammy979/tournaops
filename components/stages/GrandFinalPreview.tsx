@@ -186,7 +186,7 @@ export default function GrandFinalPreview({ stageId, currentStageName, onClose, 
                             idx === 1 ? "text-gray-300" :
                             idx === 2 ? "text-amber-600" : "text-gray-500"
                           }`}>
-                            {idx <= 2 ? ["🥇","🥈","🥉"][idx] : `#${idx + 1}`}
+                            {idx <= 2 ? ["","",""][idx] : `#${idx + 1}`}
                           </span>
                         </td>
                         <td className="py-2 px-3 text-white font-semibold">{q.teamName}</td>

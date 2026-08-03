@@ -36,7 +36,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white overflow-x-hidden">
 
-      {/* ── NAV ─────────────────────────────────────────── */}
+      {/*  NAV  */}
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? "bg-[#0a0a0f]/90 backdrop-blur-2xl border-b border-white/10 shadow-xl" : ""}`}>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group">
@@ -68,7 +68,7 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* ── HERO ────────────────────────────────────────── */}
+      {/*  HERO  */}
       <section ref={heroRef} className="relative pt-32 pb-24 px-6 z-10">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-500/6 rounded-full blur-3xl animate-blob" />
@@ -130,7 +130,7 @@ export default function LandingPage() {
                 <div className="mx-auto bg-white/8 rounded px-4 py-0.5 text-xs text-gray-500">tournaops.com/dashboard</div>
               </div>
               <div className="p-6 bg-[#0a0a0f] text-center">
-                <p className="text-gray-500 text-sm">Your tournament dashboard — leaderboards, match results, team management, and more.</p>
+                <p className="text-gray-500 text-sm">Your tournament dashboard  leaderboards, match results, team management, and more.</p>
                 <div className="grid grid-cols-3 gap-3 mt-4">
                   <div className="bg-white/4 rounded-xl p-4 border border-white/8">
                     <Trophy className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
@@ -154,16 +154,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── TRUST (Honest) ──────────────────────────────── */}
+      {/*  TRUST (Honest)  */}
       <section className="py-10 px-6 border-y border-white/8">
         <div className="max-w-4xl mx-auto text-center">
           <p className="text-gray-500 text-sm">
-            Built for PUBG Mobile and BGMI tournament organizers. Free to start — upgrade when you need more.
+            Built for PUBG Mobile and BGMI tournament organizers. Free to start  upgrade when you need more.
           </p>
         </div>
       </section>
 
-      {/* ── PROBLEM → SOLUTION ──────────────────────────── */}
+      {/*  PROBLEM  SOLUTION  */}
       <section className="py-24 px-6 relative z-10">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
@@ -194,12 +194,12 @@ export default function LandingPage() {
               <h3 className="text-green-400 font-bold text-lg mb-5">With TournaOps</h3>
               <ul className="space-y-3 text-gray-400 text-sm">
                 {[
-                  "Enter results once — standings update automatically",
+                  "Enter results once  standings update automatically",
                   "Points calculated instantly (PMGC, PMPL, or custom)",
                   "Live leaderboard auto-refreshes for viewers",
                   "Discord bot detects slot lists automatically",
                   "One-click social media cards and exports",
-                  "OBS overlay ready — paste one URL",
+                  "OBS overlay ready  paste one URL",
                 ].map(i => (
                   <li key={i} className="flex items-start gap-2.5">
                     <Check className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />{i}
@@ -211,7 +211,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── FEATURES ────────────────────────────────────── */}
+      {/*  FEATURES  */}
       <section id="features" className="py-24 px-6 bg-white/2 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
@@ -251,7 +251,7 @@ export default function LandingPage() {
               {
                 icon: MessageSquare, color: "indigo",
                 title: "Discord Bot",
-                desc: "Post a slot list in Discord — the bot detects it automatically. Use slash commands to show live standings.",
+                desc: "Post a slot list in Discord  the bot detects it automatically. Use slash commands to show live standings.",
               },
             ].map((f) => {
               const Icon = f.icon;
@@ -277,7 +277,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ────────────────────────────────── */}
+      {/*  HOW IT WORKS  */}
       <section id="how" className="py-24 px-6 relative z-10">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
@@ -332,7 +332,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── PRICING (Honest) ────────────────────────────── */}
+      {/*  PRICING (Honest)  */}
       <section id="pricing" className="py-24 px-6 bg-white/2 relative z-10">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-14">
@@ -439,7 +439,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── FINAL CTA ───────────────────────────────────── */}
+      {/*  FINAL CTA  */}
       <section className="py-24 px-6 relative z-10">
         <div className="max-w-3xl mx-auto text-center">
           <div className="glass-card rounded-3xl p-12 border border-white/10 relative overflow-hidden">
@@ -471,7 +471,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── FOOTER ──────────────────────────────────────── */}
+      {/*  FOOTER  */}
       <footer className="border-t border-white/8 py-12 px-6 relative z-10">
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
           <div className="col-span-2 md:col-span-1">
@@ -484,7 +484,7 @@ export default function LandingPage() {
             <p className="text-gray-500 text-sm leading-relaxed mb-3">
               Tournament management platform for PUBG Mobile and BGMI organizers.
             </p>
-            <p className="text-gray-700 text-xs">© 2025 TournaOps. All rights reserved.</p>
+            <p className="text-gray-700 text-xs"> 2025 TournaOps. All rights reserved.</p>
           </div>
 
           <div>

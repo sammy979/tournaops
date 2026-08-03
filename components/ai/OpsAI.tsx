@@ -34,76 +34,76 @@ function generateResponse(input: string, tournament: Tournament, history: Messag
     if (leaderboard.length === 0) return "No results yet. Enter some match data first!";
     const top3 = leaderboard.slice(0, 3);
     const gap = (top3[0]?.totalPoints || 0) - (top3[1]?.totalPoints || 0);
-    return `**Current Top 3 in ${tournament.name}:**\n\n🥇 **${top3[0]?.teamName}** — ${top3[0]?.totalPoints}pts (${top3[0]?.totalKills}K)\n🥈 **${top3[1]?.teamName || "—"}** — ${top3[1]?.totalPoints || 0}pts\n🥉 **${top3[2]?.teamName || "—"}** — ${top3[2]?.totalPoints || 0}pts\n\nThe gap between 1st and 2nd is **${gap} points**.${gap <= 5 ? " 🔥 Very close race!" : gap >= 20 ? " Strong lead." : ""}`;
+    return `**Current Top 3 in ${tournament.name}:**\n\n **${top3[0]?.teamName}**  ${top3[0]?.totalPoints}pts (${top3[0]?.totalKills}K)\n **${top3[1]?.teamName || ""}**  ${top3[1]?.totalPoints || 0}pts\n **${top3[2]?.teamName || ""}**  ${top3[2]?.totalPoints || 0}pts\n\nThe gap between 1st and 2nd is **${gap} points**.${gap <= 5 ? "  Very close race!" : gap >= 20 ? " Strong lead." : ""}`;
   }
 
   if (q.match(/kill|frag|mvp|best player|top player|fragger/)) {
     if (topKillers.length === 0) return "No kill data yet. Enter match results with player stats to track kills.";
     const mvp = topKillers[0];
     const avg = (mvp.kills / Math.max(stats.completedMatches, 1)).toFixed(1);
-    return `🎯 **MVP: ${mvp.playerName}** (${mvp.teamName})\n\n**${mvp.kills} total kills** — avg ${avg}K per match\n\nTop 5 Fraggers:\n${topKillers.slice(0, 5).map((p, i) => `${i+1}. ${p.playerName} (${p.teamName}) — ${p.kills}K`).join("\n")}`;
+    return ` **MVP: ${mvp.playerName}** (${mvp.teamName})\n\n**${mvp.kills} total kills**  avg ${avg}K per match\n\nTop 5 Fraggers:\n${topKillers.slice(0, 5).map((p, i) => `${i+1}. ${p.playerName} (${p.teamName})  ${p.kills}K`).join("\n")}`;
   }
 
   if (q.match(/damage|dmg/)) {
     if (topDamage.length === 0) return "No damage data yet. Enter match results with player stats.";
     const king = topDamage[0];
-    return `🔥 **Damage King: ${king.playerName}** (${king.teamName})\n\n**${king.damage?.toLocaleString()} total damage**\n\nTop 5 by damage:\n${topDamage.slice(0, 5).map((p, i) => `${i+1}. ${p.playerName} — ${p.damage?.toLocaleString()}`).join("\n")}`;
+    return ` **Damage King: ${king.playerName}** (${king.teamName})\n\n**${king.damage?.toLocaleString()} total damage**\n\nTop 5 by damage:\n${topDamage.slice(0, 5).map((p, i) => `${i+1}. ${p.playerName}  ${p.damage?.toLocaleString()}`).join("\n")}`;
   }
 
   if (q.match(/progress|how many|match.*done|complet/)) {
-    return `📊 **${tournament.name} Progress: ${stats.progress}%**\n\n✅ ${stats.completedMatches} matches completed\n⏳ ${stats.totalMatches - stats.completedMatches} remaining\n👥 ${stats.teamsCount} squads\n💥 ${stats.totalKills} total kills\n\n${stats.progress === 100 ? "🏁 Tournament complete!" : stats.progress === 0 ? "⏳ Not started yet." : `🔄 ${100 - stats.progress}% to go.`}`;
+    return ` **${tournament.name} Progress: ${stats.progress}%**\n\n ${stats.completedMatches} matches completed\n ${stats.totalMatches - stats.completedMatches} remaining\n ${stats.teamsCount} squads\n ${stats.totalKills} total kills\n\n${stats.progress === 100 ? " Tournament complete!" : stats.progress === 0 ? " Not started yet." : ` ${100 - stats.progress}% to go.`}`;
   }
 
   if (q.match(/standing|leaderboard|rank|table|top 10/)) {
     if (leaderboard.length === 0) return "No standings yet. Enter match results first.";
     const top10 = leaderboard.slice(0, 10);
-    return `📊 **Top 10 Standings — ${tournament.name}:**\n\n${top10.map(e => `${e.rank <= 3 ? ["🥇","🥈","🥉"][e.rank-1] : `#${e.rank}`} ${e.teamName} — **${e.totalPoints}pts** (${e.totalKills}K)`).join("\n")}`;
+    return ` **Top 10 Standings  ${tournament.name}:**\n\n${top10.map(e => `${e.rank <= 3 ? ["","",""][e.rank-1] : `#${e.rank}`} ${e.teamName}  **${e.totalPoints}pts** (${e.totalKills}K)`).join("\n")}`;
   }
 
   if (q.match(/team|squad|roster|how many team/)) {
-    return `👥 **${tournament.teams.length} squads** in ${tournament.name}\n\nTotal players: **${tournament.teams.reduce((a, t) => a + t.players.length, 0)}**\nMax squads: **${tournament.maxTeams}**\n\n${tournament.maxTeams - tournament.teams.length > 0 ? `${tournament.maxTeams - tournament.teams.length} spots remaining.` : "Tournament is full!"}`;
+    return ` **${tournament.teams.length} squads** in ${tournament.name}\n\nTotal players: **${tournament.teams.reduce((a, t) => a + t.players.length, 0)}**\nMax squads: **${tournament.maxTeams}**\n\n${tournament.maxTeams - tournament.teams.length > 0 ? `${tournament.maxTeams - tournament.teams.length} spots remaining.` : "Tournament is full!"}`;
   }
 
   if (q.match(/format|round|lobby|structure|bracket/)) {
-    const roundInfo = tournament.rounds.map((r, i) => `${i+1}. ${r.name} — ${r.lobbies.length} lobbies × ${r.matchesPerLobby} matches`).join("\n");
-    return `🏆 **Format:**\n\n${roundInfo}\n\nTotal matches: **${tournament.matches.length}**\nScoring: **${tournament.scoringRule.name}**\nMaps: ${tournament.mapRotation.join(", ")}`;
+    const roundInfo = tournament.rounds.map((r, i) => `${i+1}. ${r.name}  ${r.lobbies.length} lobbies  ${r.matchesPerLobby} matches`).join("\n");
+    return ` **Format:**\n\n${roundInfo}\n\nTotal matches: **${tournament.matches.length}**\nScoring: **${tournament.scoringRule.name}**\nMaps: ${tournament.mapRotation.join(", ")}`;
   }
 
   if (q.match(/scor|point|kill point|placement|pmgc|pmpl/)) {
     const s = tournament.scoringRule;
-    return `🎯 **Scoring: ${s.name}**\n\n1st = ${s.placementPoints[0]}pts | 2nd = ${s.placementPoints[1]}pts | 3rd = ${s.placementPoints[2]}pts\n4th = ${s.placementPoints[3]}pts | 5th = ${s.placementPoints[4]}pts\n\n💥 Kill = **${s.killPoints}pt**${s.wwcdBonus ? `\n🍗 WWCD bonus = **+${s.wwcdBonus}pts**` : ""}`;
+    return ` **Scoring: ${s.name}**\n\n1st = ${s.placementPoints[0]}pts | 2nd = ${s.placementPoints[1]}pts | 3rd = ${s.placementPoints[2]}pts\n4th = ${s.placementPoints[3]}pts | 5th = ${s.placementPoints[4]}pts\n\n Kill = **${s.killPoints}pt**${s.wwcdBonus ? `\n WWCD bonus = **+${s.wwcdBonus}pts**` : ""}`;
   }
 
   if (q.match(/map|erangel|miramar|sanhok|vikendi|livik/)) {
-    return `🗺️ **Map Rotation:**\n\n${tournament.mapRotation.map((m, i) => `${i+1}. ${m}`).join("\n")}`;
+    return ` **Map Rotation:**\n\n${tournament.mapRotation.map((m, i) => `${i+1}. ${m}`).join("\n")}`;
   }
 
   if (q.match(/prize|reward|money|cash/)) {
     return tournament.prizePool
-      ? `💰 **Prize Pool: ${tournament.prizePool}**\n\nUse the Prize Tracker in your dashboard to manage payouts.`
+      ? ` **Prize Pool: ${tournament.prizePool}**\n\nUse the Prize Tracker in your dashboard to manage payouts.`
       : "No prize pool set. Add it in tournament settings.";
   }
 
   if (q.match(/share|social|twitter|discord|export|download/)) {
-    return `📤 **Sharing options:**\n\n🐦 **Twitter** — Use the Share button for pre-written tweet templates\n💬 **Discord** — Use Discord Webhook to auto-post results\n📊 **Export** — Download PNG or PDF leaderboard\n🎨 **Studio** — Generate social media cards\n🌐 **Public link** — tournaops.com/tournaments/${tournament.slug}`;
+    return ` **Sharing options:**\n\n **Twitter**  Use the Share button for pre-written tweet templates\n **Discord**  Use Discord Webhook to auto-post results\n **Export**  Download PNG or PDF leaderboard\n **Studio**  Generate social media cards\n **Public link**  tournaops.com/tournaments/${tournament.slug}`;
   }
 
   if (q.match(/obs|overlay|stream|broadcast/)) {
-    return `📺 **Streaming Setup:**\n\n1. Go to **OBS Overlay** in your dashboard\n2. Copy the browser source URL\n3. In OBS: Sources → + → Browser → paste URL\n4. Set width: 420, height: 600\n\nThe overlay updates every 10 seconds automatically!\n\nAlso try the **Match Timer** for between-match countdowns.`;
+    return ` **Streaming Setup:**\n\n1. Go to **OBS Overlay** in your dashboard\n2. Copy the browser source URL\n3. In OBS: Sources  +  Browser  paste URL\n4. Set width: 420, height: 600\n\nThe overlay updates every 10 seconds automatically!\n\nAlso try the **Match Timer** for between-match countdowns.`;
   }
 
   if (q.match(/how|help|what can|guide|tutorial|feature/)) {
-    return `🤖 **OpsAI can help with:**\n\n📊 Standings — "Who is winning?"\n🎯 Kills — "Top fragger?"\n🔥 Damage — "Most damage?"\n📈 Progress — "How many matches done?"\n🏆 Format — "How many rounds?"\n🎮 Scoring — "How are points calculated?"\n🗺️ Maps — "What maps are playing?"\n👥 Teams — "How many squads?"\n📤 Sharing — "How to share?"\n📺 Streaming — "How to set up OBS?"\n\nJust ask naturally!`;
+    return ` **OpsAI can help with:**\n\n Standings  "Who is winning?"\n Kills  "Top fragger?"\n Damage  "Most damage?"\n Progress  "How many matches done?"\n Format  "How many rounds?"\n Scoring  "How are points calculated?"\n Maps  "What maps are playing?"\n Teams  "How many squads?"\n Sharing  "How to share?"\n Streaming  "How to set up OBS?"\n\nJust ask naturally!`;
   }
 
   if (q.match(/status|live|draft|complet/)) {
     const statusMsg: Record<string, string> = {
-      draft: "⚙️ Draft — Click the status badge to set it Live when you start.",
-      live: "🔴 LIVE — Tournament is running. Good luck!",
-      completed: "🏁 Completed — Final results are locked.",
-      cancelled: "❌ Cancelled.",
+      draft: " Draft  Click the status badge to set it Live when you start.",
+      live: " LIVE  Tournament is running. Good luck!",
+      completed: " Completed  Final results are locked.",
+      cancelled: " Cancelled.",
     };
-    return `📡 **Status: ${tournament.status.toUpperCase()}**\n\n${statusMsg[tournament.status] || "Unknown status."}`;
+    return ` **Status: ${tournament.status.toUpperCase()}**\n\n${statusMsg[tournament.status] || "Unknown status."}`;
   }
 
   // Context-aware follow-ups
@@ -113,8 +113,8 @@ function generateResponse(input: string, tournament: Tournament, history: Messag
 
   if (recentTopics.includes("standing") && q.match(/second|2nd|third|3rd/)) {
     if (leaderboard.length >= 3) {
-      if (q.includes("second") || q.includes("2nd")) return `🥈 **${leaderboard[1].teamName}** is in 2nd place with **${leaderboard[1].totalPoints} points**.`;
-      if (q.includes("third") || q.includes("3rd")) return `🥉 **${leaderboard[2].teamName}** is in 3rd with **${leaderboard[2].totalPoints} points**.`;
+      if (q.includes("second") || q.includes("2nd")) return ` **${leaderboard[1].teamName}** is in 2nd place with **${leaderboard[1].totalPoints} points**.`;
+      if (q.includes("third") || q.includes("3rd")) return ` **${leaderboard[2].teamName}** is in 3rd with **${leaderboard[2].totalPoints} points**.`;
     }
   }
 
@@ -147,7 +147,7 @@ export default function OpsAI({ tournament, onClose }: OpsAIProps) {
     return [{
       id: "1",
       role: "ai",
-      content: `Hey! I'm **OpsAI** for **${tournament.name}**. I remember our previous conversations. Ask me anything! 🎮`,
+      content: `Hey! I'm **OpsAI** for **${tournament.name}**. I remember our previous conversations. Ask me anything! `,
       time: new Date(),
     }];
   };
@@ -214,7 +214,7 @@ export default function OpsAI({ tournament, onClose }: OpsAIProps) {
             <p className="text-white font-bold text-sm">OpsAI</p>
             <div className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              <p className="text-gray-500 text-xs">Memory enabled · {messages.length - 1} messages</p>
+              <p className="text-gray-500 text-xs">Memory enabled  {messages.length - 1} messages</p>
             </div>
           </div>
           <button onClick={clearHistory} className="p-1.5 rounded-lg hover:bg-white/10 text-gray-600 hover:text-gray-300 transition-colors" title="Clear chat">

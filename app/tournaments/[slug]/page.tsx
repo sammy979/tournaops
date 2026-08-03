@@ -99,8 +99,8 @@ export default function PublicTournamentPage() {
   const shareTwitter = () => {
     const leader = leaderboard[0];
     const text = leader
-      ? `🏆 ${tournament?.name} — ${leader.name} leads with ${leader.points}pts!`
-      : `🏆 ${tournament?.name} is live on TournaOps!`;
+      ? ` ${tournament?.name}  ${leader.name} leads with ${leader.points}pts!`
+      : ` ${tournament?.name} is live on TournaOps!`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(publicUrl)}`, "_blank");
   };
   const shareWhatsApp = () => {
@@ -263,7 +263,7 @@ export default function PublicTournamentPage() {
                   </div>
                 </div>
                 <div className="text-xs text-gray-500">
-                  {currentMatch ? "🔴 In Progress" : "Last Completed"}
+                  {currentMatch ? " In Progress" : "Last Completed"}
                 </div>
               </div>
             </div>
@@ -278,8 +278,8 @@ export default function PublicTournamentPage() {
             <div className="flex items-center gap-2 overflow-x-auto">
               {stages.map((s: any, idx: number) => {
                 const icons: Record<string, string> = {
-                  OPEN_QUALIFIER: "🎯", CLOSED_QUALIFIER: "🎯", GROUP_STAGE: "👥",
-                  SEMI_FINAL: "🔥", GRAND_FINAL: "👑", QUARTER_FINAL: "⚡",
+                  OPEN_QUALIFIER: "", CLOSED_QUALIFIER: "", GROUP_STAGE: "",
+                  SEMI_FINAL: "", GRAND_FINAL: "", QUARTER_FINAL: "",
                 };
                 const statusColors: Record<string, string> = {
                   COMPLETED: "bg-green-500/15 text-green-400 border-green-500/30",
@@ -294,7 +294,7 @@ export default function PublicTournamentPage() {
                       onClick={() => { setSelectedStage(s.id); setActiveTab("stages"); }}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold ${statusColors[s.status] || statusColors.DRAFT}`}
                     >
-                      <span>{icons[s.type] || "🏆"}</span>
+                      <span>{icons[s.type] || ""}</span>
                       {s.name}
                       {s.status === "COMPLETED" && <Check className="w-3 h-3" />}
                       {s.status === "LIVE" && <Radio className="w-3 h-3 animate-pulse" />}
@@ -363,7 +363,7 @@ export default function PublicTournamentPage() {
                 {[1, 0, 2].map(idx => {
                   const t = leaderboard[idx];
                   if (!t) return null;
-                  const medals = ["🥇", "🥈", "🥉"];
+                  const medals = ["", "", ""];
                   const colors = ["text-yellow-400", "text-gray-300", "text-amber-600"];
                   return (
                     <div key={t.id} className={`glass-card rounded-xl p-5 text-center border ${
@@ -372,7 +372,7 @@ export default function PublicTournamentPage() {
                       <div className="text-4xl mb-2">{medals[t.rank - 1]}</div>
                       {t.logo && <img src={t.logo} alt="" className="w-12 h-12 rounded-xl mx-auto mb-2" />}
                       <div className={`font-bold ${colors[t.rank - 1]}`}>{t.name}</div>
-                      <div className="text-gray-500 text-xs mt-1">{t.wwcds}W · {t.kills}K</div>
+                      <div className="text-gray-500 text-xs mt-1">{t.wwcds}W  {t.kills}K</div>
                       <div className={`text-2xl font-black ${colors[t.rank - 1]} mt-1`}>{t.points}</div>
                     </div>
                   );
@@ -388,7 +388,7 @@ export default function PublicTournamentPage() {
                     <Trophy className="w-4 h-4 text-yellow-400" />Quick Standings
                   </h3>
                   <button onClick={() => setActiveTab("standings")} className="text-blue-400 text-xs hover:text-blue-300">
-                    View all →
+                    View all 
                   </button>
                 </div>
                 <div className="divide-y divide-white/5">
@@ -397,7 +397,7 @@ export default function PublicTournamentPage() {
                       <span className={`font-mono font-black w-8 text-sm ${
                         t.rank === 1 ? "text-yellow-400" : t.rank === 2 ? "text-gray-300" : t.rank === 3 ? "text-amber-600" : "text-gray-500"
                       }`}>
-                        {t.rank <= 3 ? ["🥇","🥈","🥉"][t.rank-1] : `#${t.rank}`}
+                        {t.rank <= 3 ? ["","",""][t.rank-1] : `#${t.rank}`}
                       </span>
                       <span className="flex-1 text-white font-medium text-sm">{t.name}</span>
                       <span className="text-orange-400 font-mono text-xs">{t.kills}K</span>
@@ -433,7 +433,7 @@ export default function PublicTournamentPage() {
                         <span className={`font-mono font-black ${
                           t.rank === 1 ? "text-yellow-400" : t.rank === 2 ? "text-gray-300" : t.rank === 3 ? "text-amber-600" : "text-gray-500"
                         }`}>
-                          {t.rank <= 3 ? ["🥇","🥈","🥉"][t.rank-1] : `#${t.rank}`}
+                          {t.rank <= 3 ? ["","",""][t.rank-1] : `#${t.rank}`}
                         </span>
                       </td>
                       <td className="py-3 px-4">
@@ -480,7 +480,7 @@ export default function PublicTournamentPage() {
                     m.status === "live" ? "bg-red-500/20 text-red-400" :
                     "bg-gray-500/20 text-gray-500"
                   }`}>
-                    {m.status === "completed" ? "✓ Done" : m.status === "live" ? "🔴 Live" : "Pending"}
+                    {m.status === "completed" ? " Done" : m.status === "live" ? " Live" : "Pending"}
                   </span>
                 </div>
                 <div className="text-gray-500 text-xs flex items-center gap-1 mb-3">
@@ -491,7 +491,7 @@ export default function PublicTournamentPage() {
                     {m.results.slice(0, 3).map((r: any, i: number) => (
                       <div key={i} className="flex items-center justify-between text-xs">
                         <span className={`font-bold ${i === 0 ? "text-yellow-400" : i === 1 ? "text-gray-300" : "text-amber-600"}`}>
-                          {["🥇","🥈","🥉"][i]} {r.teamName}
+                          {["","",""][i]} {r.teamName}
                         </span>
                         <span className="text-blue-400 font-mono font-bold">{r.totalPoints}pts</span>
                       </div>
@@ -524,7 +524,7 @@ export default function PublicTournamentPage() {
                   )}
                   <div>
                     <div className="text-white font-semibold">{team.name}</div>
-                    <div className="text-gray-500 text-xs">Seed #{team.seed || idx + 1} · {(team.players || []).length} players</div>
+                    <div className="text-gray-500 text-xs">Seed #{team.seed || idx + 1}  {(team.players || []).length} players</div>
                   </div>
                 </div>
                 {(team.players || []).length > 0 && (
@@ -579,8 +579,8 @@ export default function PublicTournamentPage() {
           <div className="space-y-4">
             {stages.map((s: any, idx: number) => {
               const icons: Record<string, string> = {
-                OPEN_QUALIFIER: "🎯", CLOSED_QUALIFIER: "🎯", GROUP_STAGE: "👥",
-                SEMI_FINAL: "🔥", GRAND_FINAL: "👑",
+                OPEN_QUALIFIER: "", CLOSED_QUALIFIER: "", GROUP_STAGE: "",
+                SEMI_FINAL: "", GRAND_FINAL: "",
               };
               return (
                 <div key={s.id} className={`glass-card rounded-xl p-5 border ${
@@ -590,10 +590,10 @@ export default function PublicTournamentPage() {
                 }`}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <span className="text-2xl">{icons[s.type] || "🏆"}</span>
+                      <span className="text-2xl">{icons[s.type] || ""}</span>
                       <div>
                         <div className="text-white font-bold">{s.name}</div>
-                        <div className="text-gray-500 text-xs">{s.totalTeams} teams · {s.numGroups} groups</div>
+                        <div className="text-gray-500 text-xs">{s.totalTeams} teams  {s.numGroups} groups</div>
                       </div>
                     </div>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
@@ -608,7 +608,7 @@ export default function PublicTournamentPage() {
                   {s.teamsAdvancing > 0 && (
                     <div className="flex items-center gap-3 text-xs">
                       <span className="text-green-400 font-bold">{s.teamsAdvancing} advanced</span>
-                      <span className="text-gray-600">·</span>
+                      <span className="text-gray-600"></span>
                       <span className="text-red-400">{s.teamsEliminated} eliminated</span>
                     </div>
                   )}
@@ -622,7 +622,7 @@ export default function PublicTournamentPage() {
       {/* FOOTER */}
       <div className="border-t border-white/8 mt-12 py-6 text-center">
         <p className="text-gray-600 text-sm">
-          Powered by <Link href="/" className="text-blue-400 hover:text-blue-300 font-semibold">TournaOps</Link> · tournaops.com
+          Powered by <Link href="/" className="text-blue-400 hover:text-blue-300 font-semibold">TournaOps</Link>  tournaops.com
         </p>
       </div>
     </div>

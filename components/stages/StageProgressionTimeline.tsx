@@ -30,13 +30,13 @@ export default function StageProgressionTimeline({ tournamentId, compact = false
   if (!data?.stages || data.stages.length === 0) return null;
 
   const getStageIcon = (type: string) => {
-    if (type.includes("QUALIFIER")) return "🎯";
-    if (type === "GROUP_STAGE") return "👥";
-    if (type === "ROUND_OF_16") return "🎮";
-    if (type === "QUARTER_FINAL") return "⚡";
-    if (type === "SEMI_FINAL") return "🔥";
-    if (type === "GRAND_FINAL") return "👑";
-    return "🏆";
+    if (type.includes("QUALIFIER")) return "";
+    if (type === "GROUP_STAGE") return "";
+    if (type === "ROUND_OF_16") return "";
+    if (type === "QUARTER_FINAL") return "";
+    if (type === "SEMI_FINAL") return "";
+    if (type === "GRAND_FINAL") return "";
+    return "";
   };
 
   const getStatusIcon = (status: string) => {
@@ -126,13 +126,13 @@ export default function StageProgressionTimeline({ tournamentId, compact = false
                         </span>
                         {stage.teamsAdvancing > 0 && (
                           <>
-                            <span className="text-gray-700">·</span>
+                            <span className="text-gray-700"></span>
                             <span className="text-green-400 font-semibold">{stage.teamsAdvancing} advanced</span>
                           </>
                         )}
                         {stage.teamsEliminated > 0 && (
                           <>
-                            <span className="text-gray-700">·</span>
+                            <span className="text-gray-700"></span>
                             <span className="text-red-400">{stage.teamsEliminated} eliminated</span>
                           </>
                         )}

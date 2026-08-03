@@ -259,7 +259,7 @@ export default function GrandFinalDashboard({ stageId, onLock, onPublish }: Gran
                 <div key={i} className="text-yellow-300/80 text-xs mb-1">
                   #{tie.rank1} <strong>{tie.team1.teamName}</strong> = #{tie.rank2} <strong>{tie.team2.teamName}</strong>
                   <span className="text-yellow-500 ml-2">({tie.team1.totalPoints} pts each)</span>
-                  <span className="text-gray-500 ml-2">→ tiebreaker: kills ({tie.team1.kills} vs {tie.team2.kills})</span>
+                  <span className="text-gray-500 ml-2"> tiebreaker: kills ({tie.team1.kills} vs {tie.team2.kills})</span>
                 </div>
               ))}
             </div>
@@ -298,7 +298,7 @@ export default function GrandFinalDashboard({ stageId, onLock, onPublish }: Gran
                 "border-amber-700/30 bg-amber-700/5"
               }`}>
                 <div className="text-4xl mb-2">
-                  {rank === 1 ? "🥇" : rank === 2 ? "🥈" : "🥉"}
+                  {rank === 1 ? "" : rank === 2 ? "" : ""}
                 </div>
                 <div className={`text-lg font-black ${
                   rank === 1 ? "text-yellow-400" :
@@ -308,7 +308,7 @@ export default function GrandFinalDashboard({ stageId, onLock, onPublish }: Gran
                   {r.teamName}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  {r.wwcds} WWCD · {r.kills}K
+                  {r.wwcds} WWCD  {r.kills}K
                 </div>
                 <div className={`text-3xl font-black font-mono mt-2 ${
                   rank === 1 ? "text-yellow-400" :
@@ -363,7 +363,7 @@ export default function GrandFinalDashboard({ stageId, onLock, onPublish }: Gran
                       r.rank === 2 ? "text-gray-300" :
                       r.rank === 3 ? "text-amber-600" : "text-gray-500"
                     }`}>
-                      {r.rank <= 3 ? ["🥇","🥈","🥉"][r.rank-1] : `#${r.rank}`}
+                      {r.rank <= 3 ? ["","",""][r.rank-1] : `#${r.rank}`}
                     </span>
                   </td>
                   <td className="py-2.5 px-3">
@@ -387,7 +387,7 @@ export default function GrandFinalDashboard({ stageId, onLock, onPublish }: Gran
                   <td className="py-2.5 px-2 text-center text-green-400 font-mono text-xs">{r.killPoints}</td>
                   <td className="py-2.5 px-2 text-center">
                     <span className={`font-mono text-xs ${r.penaltyPoints > 0 ? "text-red-400 font-bold" : "text-gray-700"}`}>
-                      {r.penaltyPoints > 0 ? `-${r.penaltyPoints}` : "—"}
+                      {r.penaltyPoints > 0 ? `-${r.penaltyPoints}` : ""}
                     </span>
                   </td>
                   <td className="py-2.5 px-3 text-center">

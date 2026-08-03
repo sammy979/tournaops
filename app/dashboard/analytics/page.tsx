@@ -33,7 +33,7 @@ export default function AnalyticsPage() {
   const totalPlayers = tournaments.reduce((a, t) => a + (t?.teams?.reduce((b, tm) => b + (tm?.players?.length || 0), 0) || 0), 0);
 
   const overallStats = [
-    { label: "Total Tournaments", value: totalTournaments, icon: Trophy, color: "text-blue-400", bg: "bg-blue-500/10", sub: `${liveTournaments} live · ${completedTournaments} done` },
+    { label: "Total Tournaments", value: totalTournaments, icon: Trophy, color: "text-blue-400", bg: "bg-blue-500/10", sub: `${liveTournaments} live  ${completedTournaments} done` },
     { label: "Total Squads", value: totalTeams, icon: Users, color: "text-purple-400", bg: "bg-purple-500/10", sub: `${totalPlayers} players total` },
     { label: "Matches Done", value: completedMatches, icon: Target, color: "text-green-400", bg: "bg-green-500/10", sub: `of ${totalMatches} total` },
     { label: "Total Kills", value: allKills.toLocaleString(), icon: Crosshair, color: "text-red-400", bg: "bg-red-500/10", sub: "across all tournaments" },

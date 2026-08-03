@@ -14,18 +14,18 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       if (t) {
         const leader = "Live on TournaOps";
         return {
-          title: `${t.name} · TournaOps`,
-          description: `${t.description || "PUBG Mobile Tournament"} · ${(t.teams || []).length} squads · ${t.prizePool || "Free entry"} · Follow live standings`,
+          title: `${t.name}  TournaOps`,
+          description: `${t.description || "PUBG Mobile Tournament"}  ${(t.teams || []).length} squads  ${t.prizePool || "Free entry"}  Follow live standings`,
           openGraph: {
-            title: `🏆 ${t.name}`,
-            description: `${(t.teams || []).length} squads competing · ${t.prizePool || "Free"} prize pool · Live standings on TournaOps`,
+            title: ` ${t.name}`,
+            description: `${(t.teams || []).length} squads competing  ${t.prizePool || "Free"} prize pool  Live standings on TournaOps`,
             type: "website",
             siteName: "TournaOps",
           },
           twitter: {
             card: "summary_large_image",
-            title: `🏆 ${t.name}`,
-            description: `Live PUBG Mobile tournament · ${(t.teams || []).length} squads · Follow on TournaOps`,
+            title: ` ${t.name}`,
+            description: `Live PUBG Mobile tournament  ${(t.teams || []).length} squads  Follow on TournaOps`,
           },
         };
       }
@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   } catch {}
 
   return {
-    title: "Tournament · TournaOps",
+    title: "Tournament  TournaOps",
     description: "PUBG Mobile Tournament on TournaOps",
   };
 }

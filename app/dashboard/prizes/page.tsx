@@ -34,7 +34,7 @@ export default function PrizesPage() {
   const total = tiers.reduce((a, t) => a + (parseFloat(t.amount) || 0), 0);
   const paid = tiers.filter(t => t.paid).reduce((a, t) => a + (parseFloat(t.amount) || 0), 0);
 
-  const symbols: Record<string, string> = { USD: "$", INR: "₹", EUR: "€", GBP: "£" };
+  const symbols: Record<string, string> = { USD: "$", INR: "", EUR: "", GBP: "" };
   const sym = symbols[currency] || "$";
 
   const addTier = () => {

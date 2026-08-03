@@ -153,10 +153,10 @@ export default function OverlaySetupPage() {
             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3">Show/Hide Columns</label>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { key: "logos", label: "Team Logos", state: showLogos, set: setShowLogos, icon: "🎨" },
-                { key: "kills", label: "Kills (K)", state: showKills, set: setShowKills, icon: "💥" },
-                { key: "wwcd", label: "WWCD (W)", state: showWWCD, set: setShowWWCD, icon: "🏆" },
-                { key: "compact", label: "Compact Mode", state: compact, set: setCompact, icon: "📐" },
+                { key: "logos", label: "Team Logos", state: showLogos, set: setShowLogos, icon: "" },
+                { key: "kills", label: "Kills (K)", state: showKills, set: setShowKills, icon: "" },
+                { key: "wwcd", label: "WWCD (W)", state: showWWCD, set: setShowWWCD, icon: "" },
+                { key: "compact", label: "Compact Mode", state: compact, set: setCompact, icon: "" },
               ].map(opt => (
                 <button
                   key={opt.key}
@@ -202,7 +202,7 @@ export default function OverlaySetupPage() {
             <ol className="space-y-2 text-xs text-gray-400">
               {[
                 "Open OBS Studio",
-                "Sources → + → Browser",
+                "Sources  +  Browser",
                 "Paste the URL above",
                 "Set Width: 480, Height: 700",
                 "Check 'Refresh browser when scene becomes active'",

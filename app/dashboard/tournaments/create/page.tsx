@@ -16,13 +16,13 @@ import { SCORING_PRESETS } from "@/types/tournament";
 import { parseSlotList } from "@/lib/discord/slotParser";
 
 const MAPS = [
-  { name: "Erangel", type: "8x8 Classic", flag: "ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â" },
-  { name: "Miramar", type: "8x8 Desert", flag: "ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â" },
-  { name: "Sanhok", type: "4x4 Jungle", flag: "ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â´" },
-  { name: "Vikendi", type: "6x6 Snow", flag: "ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â" },
-  { name: "Livik", type: "2x2 Fast", flag: "ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â¡" },
-  { name: "Karakin", type: "2x2 Small", flag: "ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â" },
-  { name: "Nusa", type: "1x1 Mini", flag: "ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã¢â‚¬â„¢Ãƒâ€šÃ‚Âº" },
+  { name: "Erangel", type: "8x8 Classic", flag: "E" },
+  { name: "Miramar", type: "8x8 Desert", flag: "M" },
+  { name: "Sanhok", type: "4x4 Jungle", flag: "S" },
+  { name: "Vikendi", type: "6x6 Snow", flag: "V" },
+  { name: "Livik", type: "2x2 Fast", flag: "L" },
+  { name: "Karakin", type: "2x2 Small", flag: "K" },
+  { name: "Nusa", type: "1x1 Mini", flag: "N" },
 ];
 
 const STRUCTURE_TEMPLATES = [
@@ -30,14 +30,14 @@ const STRUCTURE_TEMPLATES = [
     key: "simple",
     label: "Simple Tournament",
     desc: "Single stage, all teams in one bracket",
-    icon: "ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ",
+    icon: "T",
     stages: [{ name: "Main Event", type: "GROUP_STAGE", groups: 1, teamsPerGroup: 16, matches: 6 }],
   },
   {
     key: "standard",
-    label: "Qualifier ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Final",
+    label: "Qualifier  Final",
     desc: "Two stages with qualification",
-    icon: "ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â½Ãƒâ€šÃ‚Â¯",
+    icon: "T",
     stages: [
       { name: "Qualifier", type: "OPEN_QUALIFIER", groups: 4, teamsPerGroup: 16, matches: 4 },
       { name: "Grand Final", type: "GRAND_FINAL", groups: 1, teamsPerGroup: 16, matches: 6 },
@@ -45,9 +45,9 @@ const STRUCTURE_TEMPLATES = [
   },
   {
     key: "pro",
-    label: "Qualifier ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Semi ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Final",
+    label: "Qualifier  Semi  Final",
     desc: "Three-stage professional format",
-    icon: "ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¥",
+    icon: "T",
     stages: [
       { name: "Qualifier", type: "OPEN_QUALIFIER", groups: 8, teamsPerGroup: 16, matches: 4 },
       { name: "Semi-Final", type: "SEMI_FINAL", groups: 2, teamsPerGroup: 16, matches: 6 },
@@ -58,7 +58,7 @@ const STRUCTURE_TEMPLATES = [
     key: "custom",
     label: "Custom (Advanced)",
     desc: "Build your own stage structure",
-    icon: "ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â",
+    icon: "T",
     stages: [],
   },
 ];
@@ -80,7 +80,7 @@ export default function CreateTournamentPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  // ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ STEP 1: DETAILS ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
+  //  STEP 1: DETAILS 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [prizePool, setPrizePool] = useState("");
@@ -89,17 +89,17 @@ export default function CreateTournamentPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ STEP 2: REGISTRATION ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
+  //  STEP 2: REGISTRATION 
   const [regType, setRegType] = useState<"open" | "closed" | "invite">("open");
   const [maxTeams, setMaxTeams] = useState(64);
   const [rosterSize, setRosterSize] = useState(4);
   const [substitutes, setSubstitutes] = useState(1);
 
-  // ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ STEP 3: STRUCTURE ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
+  //  STEP 3: STRUCTURE 
   const [structureTemplate, setStructureTemplate] = useState("standard");
   const [customStages, setCustomStages] = useState<any[]>([]);
 
-  // ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ STEP 4: SCORING ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
+  //  STEP 4: SCORING 
   const [scoringKey, setScoringKey] = useState("pmgc");
   const [customScoring, setCustomScoring] = useState(false);
   const [placementPoints, setPlacementPoints] = useState([15, 12, 10, 8, 6, 4, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0]);
@@ -107,20 +107,20 @@ export default function CreateTournamentPage() {
   const [wwcdBonus, setWwcdBonus] = useState(0);
   const [tiebreakerOrder, setTiebreakerOrder] = useState(["points", "wwcd", "kills", "damage"]);
 
-  // ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ STEP 5: MAPS ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
+  //  STEP 5: MAPS 
   const [selectedMaps, setSelectedMaps] = useState(["Erangel", "Miramar", "Sanhok"]);
   const [matchesPerLobby, setMatchesPerLobby] = useState(4);
 
-  // ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ STEP 6: TEAMS ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
+  //  STEP 6: TEAMS 
   const [importMode, setImportMode] = useState<"none" | "paste" | "csv" | "manual">("none");
   const [pasteText, setPasteText] = useState("");
   const [parsedTeams, setParsedTeams] = useState<any[]>([]);
   const [manualTeams, setManualTeams] = useState<string[]>([]);
 
-  // ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ STEP 7: GROUPS ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
+  //  STEP 7: GROUPS 
   const [groupAssignment, setGroupAssignment] = useState<"auto" | "seeded" | "manual">("auto");
 
-  // ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ STEP 8: PUBLISHING ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
+  //  STEP 8: PUBLISHING 
   const [visibility, setVisibility] = useState<"public" | "unlisted" | "private">("public");
 
   // Get selected structure
@@ -174,7 +174,7 @@ export default function CreateTournamentPage() {
     return true;
   };
 
-  // ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ CREATE ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
+  //  CREATE 
   const handleCreate = async () => {
     if (!name.trim()) return;
     setLoading(true);
@@ -239,7 +239,7 @@ export default function CreateTournamentPage() {
         </Link>
         <div>
           <h1 className="text-3xl font-bold text-white">Create Tournament</h1>
-          <p className="text-gray-500 text-sm">PUBG Mobile ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Step {step} of {STEPS.length}</p>
+          <p className="text-gray-500 text-sm">PUBG Mobile  Step {step} of {STEPS.length}</p>
         </div>
       </div>
 
@@ -280,7 +280,7 @@ export default function CreateTournamentPage() {
       {/* Step Content */}
       <div className="glass-card rounded-2xl border border-white/10 p-8">
 
-        {/* ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â STEP 1: DETAILS ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â */}
+        {/*  STEP 1: DETAILS  */}
         {step === 1 && (
           <div className="space-y-6">
             <StepHeader icon={Trophy} color="yellow" title="Tournament Details" desc="Basic information about your tournament" />
@@ -300,7 +300,7 @@ export default function CreateTournamentPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="label-text"><DollarSign className="w-3.5 h-3.5 inline mr-1 text-yellow-400" />Prize Pool</label>
-                  <input type="text" value={prizePool} onChange={e => setPrizePool(e.target.value)} placeholder="e.g. $500 or ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¹50,000" className="input-field" />
+                  <input type="text" value={prizePool} onChange={e => setPrizePool(e.target.value)} placeholder="e.g. $500 or 50,000" className="input-field" />
                 </div>
                 <div>
                   <label className="label-text"><MessageSquare className="w-3.5 h-3.5 inline mr-1 text-indigo-400" />Discord Server</label>
@@ -327,7 +327,7 @@ export default function CreateTournamentPage() {
           </div>
         )}
 
-        {/* ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â STEP 2: REGISTRATION ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â */}
+        {/*  STEP 2: REGISTRATION  */}
         {step === 2 && (
           <div className="space-y-6">
             <StepHeader icon={Users} color="blue" title="Registration Settings" desc="How teams join your tournament" />
@@ -379,7 +379,7 @@ export default function CreateTournamentPage() {
           </div>
         )}
 
-        {/* ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â STEP 3: STRUCTURE ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â */}
+        {/*  STEP 3: STRUCTURE  */}
         {step === 3 && (
           <div className="space-y-6">
             <StepHeader icon={Award} color="purple" title="Tournament Structure" desc="Choose how your tournament is organized" />
@@ -389,7 +389,7 @@ export default function CreateTournamentPage() {
                 <button key={tmpl.key} onClick={() => { setStructureTemplate(tmpl.key); if (tmpl.key === "custom" && customStages.length === 0) addCustomStage(); }}
                   className={`p-5 rounded-xl border-2 text-left transition-all ${structureTemplate === tmpl.key ? "border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20" : "border-white/10 hover:border-white/25"}`}>
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="text-3xl">{tmpl.icon}</span>
+                    <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400 font-bold text-lg">{tmpl.label.charAt(0)}</div>
                     <div>
                       <div className="text-white font-bold">{tmpl.label}</div>
                       <div className="text-gray-500 text-xs">{tmpl.desc}</div>
@@ -454,13 +454,13 @@ export default function CreateTournamentPage() {
                     <div key={i} className="flex items-center gap-1.5">
                       <div className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-center">
                         <div className="text-white text-xs font-bold">{s.name}</div>
-                        <div className="text-gray-500 text-[10px]">{s.groups * s.teamsPerGroup} teams ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· {s.groups}G ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· {s.matches}M</div>
+                        <div className="text-gray-500 text-[10px]">{s.groups * s.teamsPerGroup} teams  {s.groups}G  {s.matches}M</div>
                       </div>
                       {i < activeStages.length - 1 && <ArrowRight className="w-4 h-4 text-gray-600" />}
                     </div>
                   ))}
                   <div className="px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-center">
-                    <div className="text-yellow-400 text-xs font-bold">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã‚Â  Champion</div>
+                    <div className="text-yellow-400 text-xs font-bold"> Champion</div>
                   </div>
                 </div>
               </div>
@@ -468,7 +468,7 @@ export default function CreateTournamentPage() {
           </div>
         )}
 
-        {/* ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â STEP 4: SCORING ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â */}
+        {/*  STEP 4: SCORING  */}
         {step === 4 && (
           <div className="space-y-6">
             <StepHeader icon={Target} color="orange" title="Scoring System" desc="How points are awarded per match" />
@@ -490,7 +490,7 @@ export default function CreateTournamentPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-white font-bold">{s.name}</div>
-                        <div className="text-gray-500 text-xs">1st={s.placementPoints[0]}pts ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Kill={s.killPoints}pt{s.killPoints > 1 ? "s" : ""}{s.wwcdBonus ? ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· WWCD+${s.wwcdBonus}` : ""}</div>
+                        <div className="text-gray-500 text-xs">1st={s.placementPoints[0]}pts  Kill={s.killPoints}pt{s.killPoints > 1 ? "s" : ""}{s.wwcdBonus ? `  WWCD+${s.wwcdBonus}` : ""}</div>
                       </div>
                       {scoringKey === key && <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center"><Check className="w-4 h-4 text-white" /></div>}
                     </div>
@@ -529,7 +529,7 @@ export default function CreateTournamentPage() {
           </div>
         )}
 
-        {/* ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â STEP 5: MAPS ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â */}
+        {/*  STEP 5: MAPS  */}
         {step === 5 && (
           <div className="space-y-6">
             <StepHeader icon={Map} color="green" title="Map Rotation" desc="Select maps and match count" />
@@ -541,7 +541,7 @@ export default function CreateTournamentPage() {
                   <button key={map.name} onClick={() => toggleMap(map.name)}
                     className={`p-4 rounded-xl border-2 text-left transition-all ${isSelected ? "border-green-500 bg-green-500/10" : "border-white/10 hover:border-white/25"}`}>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-2xl">{map.flag}</span>
+                      <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center text-green-400 font-bold text-sm">{map.name.charAt(0)}</div>
                       {isSelected && <Check className="w-4 h-4 text-green-400" />}
                     </div>
                     <div className="text-white font-bold text-sm">{map.name}</div>
@@ -563,7 +563,7 @@ export default function CreateTournamentPage() {
           </div>
         )}
 
-        {/* ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â STEP 6: TEAMS ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â */}
+        {/*  STEP 6: TEAMS  */}
         {step === 6 && (
           <div className="space-y-6">
             <StepHeader icon={Shield} color="cyan" title="Import Teams" desc="Add teams now or later" />
@@ -622,7 +622,7 @@ export default function CreateTournamentPage() {
           </div>
         )}
 
-        {/* ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â STEP 7: GROUPS ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â */}
+        {/*  STEP 7: GROUPS  */}
         {step === 7 && (
           <div className="space-y-6">
             <StepHeader icon={Users} color="indigo" title="Group Assignment" desc="How teams are distributed into groups" />
@@ -654,7 +654,7 @@ export default function CreateTournamentPage() {
           </div>
         )}
 
-        {/* ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â STEP 8: PUBLISHING ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â */}
+        {/*  STEP 8: PUBLISHING  */}
         {step === 8 && (
           <div className="space-y-6">
             <StepHeader icon={Globe} color="emerald" title="Publishing" desc="Who can see your tournament" />
@@ -679,7 +679,7 @@ export default function CreateTournamentPage() {
           </div>
         )}
 
-        {/* ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â STEP 9: REVIEW ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â */}
+        {/*  STEP 9: REVIEW  */}
         {step === 9 && (
           <div className="space-y-6">
             <StepHeader icon={Check} color="blue" title="Review & Create" desc="Verify everything before creating" />
@@ -691,7 +691,7 @@ export default function CreateTournamentPage() {
                   { label: "Prize Pool", value: prizePool || "Not set" },
                   { label: "Max Teams", value: `${effectiveMaxTeams} squads` },
                   { label: "Structure", value: template?.label || "Custom" },
-                  { label: "Stages", value: activeStages.map(s => s.name).join(" ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ ") || "Single stage" },
+                  { label: "Stages", value: activeStages.map(s => s.name).join("  ") || "Single stage" },
                   { label: "Scoring", value: customScoring ? "Custom" : SCORING_PRESETS[scoringKey as keyof typeof SCORING_PRESETS]?.name },
                   { label: "Maps", value: selectedMaps.join(", ") },
                   { label: "Matches/Lobby", value: `${matchesPerLobby} matches` },
@@ -722,7 +722,7 @@ export default function CreateTournamentPage() {
                       <ArrowRight className="w-4 h-4 text-gray-600" />
                       <div className="px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/20 text-center">
                         <div className="text-purple-400 text-xs font-bold">{s.name}</div>
-                        <div className="text-gray-600 text-[10px]">{s.groups * s.teamsPerGroup}T ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· {s.groups}G ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· {s.matches}M</div>
+                        <div className="text-gray-600 text-[10px]">{s.groups * s.teamsPerGroup}T  {s.groups}G  {s.matches}M</div>
                       </div>
                     </div>
                   ))}
@@ -737,7 +737,7 @@ export default function CreateTournamentPage() {
           </div>
         )}
 
-        {/* ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â NAVIGATION ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â */}
+        {/*  NAVIGATION  */}
         <div className="flex items-center justify-between mt-8 pt-6 border-t border-white/8">
           {step > 1 ? (
             <button onClick={() => setStep(s => s - 1)} className="btn-secondary px-5 py-2.5">
@@ -770,7 +770,7 @@ export default function CreateTournamentPage() {
   );
 }
 
-// ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â HELPER COMPONENTS ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢Ãƒâ€šÃ‚Â
+//  HELPER COMPONENTS 
 
 function StepHeader({ icon: Icon, color, title, desc }: { icon: any; color: string; title: string; desc: string }) {
   const colorMap: Record<string, string> = {

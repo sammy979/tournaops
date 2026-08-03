@@ -43,14 +43,14 @@ export default function DiscordWebhook({ tournament, onClose }: DiscordWebhookPr
 
     if (msgType === "standings") {
       const top10 = leaderboard.slice(0, 10);
-      const medals = ["🥇", "🥈", "🥉"];
+      const medals = ["", "", ""];
       const rows = top10.map(e =>
-        `${e.rank <= 3 ? medals[e.rank - 1] : `\`#${e.rank}\``} **${e.teamName}** — ${e.totalPoints}pts *(${e.totalKills}K)*`
+        `${e.rank <= 3 ? medals[e.rank - 1] : `\`#${e.rank}\``} **${e.teamName}**  ${e.totalPoints}pts *(${e.totalKills}K)*`
       ).join("\n");
 
       return {
         embeds: [{
-          title: `🏆 ${tournament.name} — Live Standings`,
+          title: ` ${tournament.name}  Live Standings`,
           description: rows || "No results yet",
           color: colors.standings,
           fields: [
@@ -58,7 +58,7 @@ export default function DiscordWebhook({ tournament, onClose }: DiscordWebhookPr
             { name: "Total Squads", value: `${tournament.teams.length}`, inline: true },
             { name: "Leader", value: leaderboard[0]?.teamName || "TBD", inline: true },
           ],
-          footer: { text: "Powered by TournaOps • tournaops.com" },
+          footer: { text: "Powered by TournaOps  tournaops.com" },
           timestamp: new Date().toISOString(),
         }]
       };
@@ -69,7 +69,7 @@ export default function DiscordWebhook({ tournament, onClose }: DiscordWebhookPr
       const winner = lastMatch?.results?.[0];
       return {
         embeds: [{
-          title: "🍗 WINNER WINNER CHICKEN DINNER!",
+          title: " WINNER WINNER CHICKEN DINNER!",
           description: winner
             ? `**${winner.teamName}** wins ${lastMatch.name} on **${lastMatch.map}**!`
             : "Match winner TBD",
@@ -77,9 +77,9 @@ export default function DiscordWebhook({ tournament, onClose }: DiscordWebhookPr
           fields: winner ? [
             { name: "Kills", value: `${winner.kills}`, inline: true },
             { name: "Points", value: `${winner.totalPoints}`, inline: true },
-            { name: "Damage", value: `${winner.damage?.toLocaleString() || "—"}`, inline: true },
+            { name: "Damage", value: `${winner.damage?.toLocaleString() || ""}`, inline: true },
           ] : [],
-          footer: { text: "Powered by TournaOps • tournaops.com" },
+          footer: { text: "Powered by TournaOps  tournaops.com" },
           timestamp: new Date().toISOString(),
         }]
       };
@@ -89,16 +89,16 @@ export default function DiscordWebhook({ tournament, onClose }: DiscordWebhookPr
       const mvp = topKillers[0];
       return {
         embeds: [{
-          title: "🎯 Tournament Top Fragger",
+          title: " Tournament Top Fragger",
           description: mvp
             ? `**${mvp.playerName}** from **${mvp.teamName}** leads with **${mvp.kills} kills**!`
             : "No player data yet",
           color: colors.mvp,
           fields: mvp ? [
             { name: "Total Kills", value: `${mvp.kills}`, inline: true },
-            { name: "Total Damage", value: `${mvp.damage?.toLocaleString() || "—"}`, inline: true },
+            { name: "Total Damage", value: `${mvp.damage?.toLocaleString() || ""}`, inline: true },
           ] : [],
-          footer: { text: "Powered by TournaOps • tournaops.com" },
+          footer: { text: "Powered by TournaOps  tournaops.com" },
           timestamp: new Date().toISOString(),
         }]
       };
@@ -107,7 +107,7 @@ export default function DiscordWebhook({ tournament, onClose }: DiscordWebhookPr
     if (msgType === "announcement") {
       return {
         embeds: [{
-          title: `📢 ${tournament.name}`,
+          title: ` ${tournament.name}`,
           description: `Tournament is now **${tournament.status.toUpperCase()}**!\n\nJoin us for the action!`,
           color: colors.announcement,
           fields: [
@@ -115,7 +115,7 @@ export default function DiscordWebhook({ tournament, onClose }: DiscordWebhookPr
             { name: "Status", value: tournament.status, inline: true },
             { name: "Prize Pool", value: tournament.prizePool || "TBD", inline: true },
           ],
-          footer: { text: "Powered by TournaOps • tournaops.com" },
+          footer: { text: "Powered by TournaOps  tournaops.com" },
           timestamp: new Date().toISOString(),
         }]
       };
@@ -126,7 +126,7 @@ export default function DiscordWebhook({ tournament, onClose }: DiscordWebhookPr
       embeds: [{
         description: customMsg,
         color: colors.custom,
-        footer: { text: `${tournament.name} • tournaops.com` },
+        footer: { text: `${tournament.name}  tournaops.com` },
         timestamp: new Date().toISOString(),
       }]
     };
@@ -153,7 +153,7 @@ export default function DiscordWebhook({ tournament, onClose }: DiscordWebhookPr
         saveWebhook();
       } else {
         const text = await res.text();
-        setError(`Discord error: ${res.status} — ${text.substring(0, 100)}`);
+        setError(`Discord error: ${res.status}  ${text.substring(0, 100)}`);
       }
     } catch (e: any) {
       setError(`Failed: ${e.message}`);
@@ -216,7 +216,7 @@ export default function DiscordWebhook({ tournament, onClose }: DiscordWebhookPr
             </div>
             <div className="flex items-center gap-2 mt-2">
               <p className="text-gray-600 text-xs">
-                Discord Server Settings → Integrations → Webhooks → New Webhook → Copy URL
+                Discord Server Settings  Integrations  Webhooks  New Webhook  Copy URL
               </p>
               <a
                 href="https://support.discord.com/hc/en-us/articles/228383668"
@@ -284,10 +284,10 @@ export default function DiscordWebhook({ tournament, onClose }: DiscordWebhookPr
                 <div className="bg-[#2f3136] rounded-lg p-3 border-l-4 border-indigo-500">
                   {msgType === "standings" && (
                     <div>
-                      <p className="text-white font-semibold text-sm mb-2">🏆 {tournament.name} — Live Standings</p>
+                      <p className="text-white font-semibold text-sm mb-2"> {tournament.name}  Live Standings</p>
                       {leaderboard.slice(0, 5).map((e, i) => (
                         <p key={e.teamId} className="text-gray-300 text-xs mb-0.5">
-                          {["🥇","🥈","🥉"][i] || `#${i+1}`} {e.teamName} — {e.totalPoints}pts ({e.totalKills}K)
+                          {["","",""][i] || `#${i+1}`} {e.teamName}  {e.totalPoints}pts ({e.totalKills}K)
                         </p>
                       ))}
                       {leaderboard.length === 0 && <p className="text-gray-500 text-xs">No results yet</p>}
@@ -295,7 +295,7 @@ export default function DiscordWebhook({ tournament, onClose }: DiscordWebhookPr
                   )}
                   {msgType === "wwcd" && (
                     <div>
-                      <p className="text-white font-semibold text-sm">🍗 WINNER WINNER CHICKEN DINNER!</p>
+                      <p className="text-white font-semibold text-sm"> WINNER WINNER CHICKEN DINNER!</p>
                       <p className="text-gray-300 text-xs mt-1">
                         {tournament.matches.filter(m => m.status === "completed").slice(-1)[0]?.results?.[0]?.teamName || "TBD"} wins the last match!
                       </p>
@@ -303,22 +303,22 @@ export default function DiscordWebhook({ tournament, onClose }: DiscordWebhookPr
                   )}
                   {msgType === "mvp" && (
                     <div>
-                      <p className="text-white font-semibold text-sm">🎯 Tournament Top Fragger</p>
+                      <p className="text-white font-semibold text-sm"> Tournament Top Fragger</p>
                       <p className="text-gray-300 text-xs mt-1">
-                        {topKillers[0] ? `${topKillers[0].playerName} — ${topKillers[0].kills} kills` : "No data yet"}
+                        {topKillers[0] ? `${topKillers[0].playerName}  ${topKillers[0].kills} kills` : "No data yet"}
                       </p>
                     </div>
                   )}
                   {msgType === "announcement" && (
                     <div>
-                      <p className="text-white font-semibold text-sm">📢 {tournament.name}</p>
+                      <p className="text-white font-semibold text-sm"> {tournament.name}</p>
                       <p className="text-gray-300 text-xs mt-1">Tournament is now {tournament.status.toUpperCase()}!</p>
                     </div>
                   )}
                   {msgType === "custom" && (
                     <p className="text-gray-300 text-xs">{customMsg || "Your message here..."}</p>
                   )}
-                  <p className="text-gray-600 text-[10px] mt-2">Powered by TournaOps • tournaops.com</p>
+                  <p className="text-gray-600 text-[10px] mt-2">Powered by TournaOps  tournaops.com</p>
                 </div>
               </div>
             </div>

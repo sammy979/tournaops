@@ -61,7 +61,7 @@ function TopFraggerContent() {
         boxShadow: t.glow, textAlign: "center", padding: "24px 20px",
       }}>
         <div style={{ color: t.accent, fontSize: 10, fontWeight: 800, letterSpacing: 6, textTransform: "uppercase", marginBottom: 12 }}>
-          🎯 TOP FRAGGER
+           TOP FRAGGER
         </div>
 
         <div style={{

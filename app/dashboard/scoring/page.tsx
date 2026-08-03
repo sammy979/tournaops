@@ -52,7 +52,7 @@ export default function ScoringPresetsPage() {
             <Sparkles className="w-6 h-6 text-purple-400" />
             Scoring Systems
           </h1>
-          <p className="text-gray-500 mt-1">Create custom scoring rules · Reusable across stages</p>
+          <p className="text-gray-500 mt-1">Create custom scoring rules  Reusable across stages</p>
         </div>
         <button onClick={() => { setEditing(null); setShowBuilder(true); }} className="btn-primary flex items-center gap-2 px-5 py-2.5">
           <Plus className="w-4 h-4" />Create Scoring System

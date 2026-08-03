@@ -46,10 +46,10 @@ export default function QualifierLeaderboard({ stageId, onClose, onOverride, emb
   };
 
   const statusIcons: Record<string, string> = {
-    QUALIFIED: "🟢",
-    ELIMINATED: "🔴",
-    UNDER_REVIEW: "🟡",
-    PENDING: "⚪",
+    QUALIFIED: "",
+    ELIMINATED: "",
+    UNDER_REVIEW: "",
+    PENDING: "",
   };
 
   const content = (
@@ -64,10 +64,10 @@ export default function QualifierLeaderboard({ stageId, onClose, onOverride, emb
         </select>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="input-field w-auto text-sm">
           <option value="all">All Status</option>
-          <option value="qualified">🟢 Qualified</option>
-          <option value="eliminated">🔴 Eliminated</option>
-          <option value="under_review">🟡 Under Review</option>
-          <option value="pending">⚪ Pending</option>
+          <option value="qualified"> Qualified</option>
+          <option value="eliminated"> Eliminated</option>
+          <option value="under_review"> Under Review</option>
+          <option value="pending"> Pending</option>
         </select>
         <button onClick={load} className="btn-ghost text-xs px-3 py-2">
           <RefreshCw className="w-3.5 h-3.5" />
@@ -78,7 +78,7 @@ export default function QualifierLeaderboard({ stageId, onClose, onOverride, emb
         </label>
         {data && (
           <span className="ml-auto text-xs text-gray-500">
-            {data.rows.length} teams · {data.matches?.length || 0} matches
+            {data.rows.length} teams  {data.matches?.length || 0} matches
           </span>
         )}
       </div>
@@ -125,7 +125,7 @@ export default function QualifierLeaderboard({ stageId, onClose, onOverride, emb
                         r.rank === 2 ? "text-gray-300" :
                         r.rank === 3 ? "text-amber-600" : "text-gray-500"
                       }`}>
-                        {r.rank <= 3 ? ["🥇","🥈","🥉"][r.rank-1] : `#${r.rank}`}
+                        {r.rank <= 3 ? ["","",""][r.rank-1] : `#${r.rank}`}
                       </span>
                     </td>
                     <td className="py-2 px-3">
@@ -150,12 +150,12 @@ export default function QualifierLeaderboard({ stageId, onClose, onOverride, emb
                     <td className="py-2 px-2 text-center text-green-400 font-mono text-xs">{r.killPoints}</td>
                     <td className="py-2 px-2 text-center">
                       <span className={`font-mono text-xs ${r.compensationPoints > 0 ? "text-cyan-400 font-bold" : "text-gray-700"}`}>
-                        {r.compensationPoints > 0 ? `+${r.compensationPoints}` : "—"}
+                        {r.compensationPoints > 0 ? `+${r.compensationPoints}` : ""}
                       </span>
                     </td>
                     <td className="py-2 px-2 text-center">
                       <span className={`font-mono text-xs ${r.penaltyPoints > 0 ? "text-red-400 font-bold" : "text-gray-700"}`}>
-                        {r.penaltyPoints > 0 ? `-${r.penaltyPoints}` : "—"}
+                        {r.penaltyPoints > 0 ? `-${r.penaltyPoints}` : ""}
                       </span>
                     </td>
                     <td className="py-2 px-2 text-center">
@@ -197,7 +197,7 @@ export default function QualifierLeaderboard({ stageId, onClose, onOverride, emb
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Trophy className="w-5 h-5 text-yellow-400" />
-              {data?.stage?.name} · Live Leaderboard
+              {data?.stage?.name}  Live Leaderboard
             </h2>
             <p className="text-gray-500 text-sm">Real-time standings with all groups</p>
           </div>

@@ -40,7 +40,7 @@ function ChickenDinnerContent() {
         boxShadow: "0 0 80px rgba(250,204,21,0.4), 0 0 30px rgba(249,115,22,0.3)",
         textAlign: "center", padding: "32px 24px",
       }}>
-        <div style={{ fontSize: 64, marginBottom: 8 }}>🍗</div>
+        <div style={{ fontSize: 64, marginBottom: 8 }}></div>
 
         <div style={{
           color: "#facc15", fontSize: 12, fontWeight: 900, letterSpacing: 8,
@@ -67,7 +67,7 @@ function ChickenDinnerContent() {
         </div>
 
         <div style={{ color: "#ca8a04", fontSize: 14, marginBottom: 20 }}>
-          {lastMatch.name} · {lastMatch.map}
+          {lastMatch.name}  {lastMatch.map}
         </div>
 
         <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
@@ -87,7 +87,7 @@ function ChickenDinnerContent() {
         </div>
 
         <div style={{ color: "#78350f", fontSize: 9, marginTop: 20, letterSpacing: 2 }}>
-          {data.name} · tournaops.com
+          {data.name}  tournaops.com
         </div>
       </div>
     </div>

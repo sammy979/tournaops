@@ -215,7 +215,7 @@ export default function ScoringBuilder({ initialPreset, onSave, onClose, onApply
                       idx === 1 ? "text-gray-300" :
                       idx === 2 ? "text-amber-600" : "text-gray-500"
                     }`}>
-                      {idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `#${idx + 1}`}
+                      {idx === 0 ? "" : idx === 1 ? "" : idx === 2 ? "" : `#${idx + 1}`}
                     </span>
                     <input
                       type="number"
@@ -315,7 +315,7 @@ export default function ScoringBuilder({ initialPreset, onSave, onClose, onApply
                 <RefreshCw className="w-4 h-4 text-blue-400" />
                 Tiebreaker Priority
               </h3>
-              <p className="text-gray-500 text-xs mb-3">Drag to reorder · Applied top to bottom</p>
+              <p className="text-gray-500 text-xs mb-3">Drag to reorder  Applied top to bottom</p>
 
               <div className="space-y-2 mb-3">
                 {activeTiebreakers.map((tb, idx) => {

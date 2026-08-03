@@ -216,7 +216,7 @@ export default function VisualStageBuilder({ tournament }: VisualStageBuilderPro
             <Trophy className="w-6 h-6 text-yellow-400" />
             Tournament Pipeline
           </h2>
-          <p className="text-gray-500 text-sm mt-1">Visual stage builder · Drag stages to reorder</p>
+          <p className="text-gray-500 text-sm mt-1">Visual stage builder  Drag stages to reorder</p>
         </div>
         {stages.length === 0 && (
           <div className="text-xs text-blue-400 flex items-center gap-1.5">
@@ -367,7 +367,7 @@ export default function VisualStageBuilder({ tournament }: VisualStageBuilderPro
                         </div>
                         <div className="flex items-center gap-3 text-xs">
                           <span className="text-green-400 font-bold">{stage.teamsAdvancing} advanced</span>
-                          <span className="text-gray-600">·</span>
+                          <span className="text-gray-600"></span>
                           <span className="text-red-400">{stage.teamsEliminated} eliminated</span>
                         </div>
                       </div>
@@ -509,7 +509,7 @@ export default function VisualStageBuilder({ tournament }: VisualStageBuilderPro
         )}
       </div>
 
-      {/* ═══════ MODALS ═══════ */}
+      {/*  MODALS  */}
 
       {/* Add Stage Picker */}
       {showAddAt !== null && (
@@ -577,9 +577,9 @@ export default function VisualStageBuilder({ tournament }: VisualStageBuilderPro
   );
 }
 
-// ═══════════════════════════════════════════════════════════
+// 
 // ADD STAGE PICKER
-// ═══════════════════════════════════════════════════════════
+// 
 
 function AddStagePicker({ currentStages, insertAt, onSelect, onClose }: any) {
   return (
@@ -638,9 +638,9 @@ function AddStagePicker({ currentStages, insertAt, onSelect, onClose }: any) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════
+// 
 // EDIT STAGE MODAL
-// ═══════════════════════════════════════════════════════════
+// 
 
 function EditStageModal({ stage, onClose, onSave }: any) {
   const [form, setForm] = useState({
@@ -722,9 +722,9 @@ function EditStageModal({ stage, onClose, onSave }: any) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════
+// 
 // ADVANCE CONFIRMATION
-// ═══════════════════════════════════════════════════════════
+// 
 
 function AdvanceConfirmation({ stage, nextStage, onClose, onAdvanced }: any) {
   const [preview, setPreview] = useState<any>(null);

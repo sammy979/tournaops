@@ -119,7 +119,7 @@ export default function StatusManager({ tournament, onClose, onSave }: StatusMan
         <div className="flex justify-between items-center p-6 border-t border-white/10">
           <div className="text-sm text-gray-600">
             {changed ? (
-              <span>{current.label} Ã¢â€ â€™ <span className="text-white font-medium">{selected.label}</span></span>
+              <span>{current.label}  <span className="text-white font-medium">{selected.label}</span></span>
             ) : (
               <span>No changes</span>
             )}

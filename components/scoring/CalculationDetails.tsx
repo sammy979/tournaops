@@ -36,7 +36,7 @@ export default function CalculationDetails({ teamName, matches, grandTotal, onCl
               Calculation Details
             </h2>
             <p className="text-gray-500 text-sm mt-1">
-              <strong className="text-white">{teamName}</strong> · Transparent scoring breakdown
+              <strong className="text-white">{teamName}</strong>  Transparent scoring breakdown
             </p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/10 text-gray-400 border border-white/10">
@@ -67,7 +67,7 @@ export default function CalculationDetails({ teamName, matches, grandTotal, onCl
                       m.placement === 2 ? "text-gray-300" :
                       m.placement === 3 ? "text-amber-600" : "text-gray-500"
                     }`}>
-                      {m.placement <= 3 ? ["🥇","🥈","🥉"][m.placement-1] : `#${m.placement}`}
+                      {m.placement <= 3 ? ["","",""][m.placement-1] : `#${m.placement}`}
                     </div>
                   </div>
 

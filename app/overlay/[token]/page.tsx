@@ -37,7 +37,7 @@ function OverlayContent() {
     return (
       <div style={{ background: "transparent", padding: 16, fontFamily: "Inter, sans-serif" }}>
         <div style={{ color: "#60a5fa", fontSize: 14, opacity: 0.7 }}>
-          🎮 TournaOps · Loading tournament...
+           TournaOps  Loading tournament...
         </div>
       </div>
     );
@@ -129,7 +129,7 @@ function OverlayContent() {
   const t = themes[theme] || themes.midnight;
   const fs = fontSizes[fontSize] || fontSizes.md;
   const rankColors: Record<number, string> = { 1: "#facc15", 2: "#e5e7eb", 3: "#d97706" };
-  const medals: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
+  const medals: Record<number, string> = { 1: "", 2: "", 3: "" };
 
   return (
     <div style={{

@@ -47,7 +47,7 @@ export default function GroupAssignment({ stageId, teams, groups: initialGroups,
     t.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  // â”€â”€â”€ DRAG & DROP â”€â”€â”€
+  //  DRAG & DROP 
   const handleDragStart = (teamId: string) => {
     if (isLocked) return;
     setDraggedTeam(teamId);
@@ -80,7 +80,7 @@ export default function GroupAssignment({ stageId, teams, groups: initialGroups,
     setDropTarget(null);
   };
 
-  // â”€â”€â”€ AUTO ASSIGN â”€â”€â”€
+  //  AUTO ASSIGN 
   const autoAssign = async (mode: "random" | "seeded" | "regional" | "snake" | "from_previous") => {
     if (isLocked) return;
     setRandomizing(true);
@@ -99,7 +99,7 @@ export default function GroupAssignment({ stageId, teams, groups: initialGroups,
     }
   };
 
-  // â”€â”€â”€ SAVE MANUAL â”€â”€â”€
+  //  SAVE MANUAL 
   const saveManual = async () => {
     setSaving(true);
     const assignments = Object.fromEntries(groups.map(g => [g.id, g.teamIds]));
@@ -135,9 +135,9 @@ export default function GroupAssignment({ stageId, teams, groups: initialGroups,
               Group Assignment
             </h2>
             <p className="text-gray-500 text-sm mt-1">
-              {totalAssigned}/{teams.length} teams Â· {groups.length} groups
-              {balanced && <span className="text-green-400 ml-2">Â· Balanced âœ“</span>}
-              {isLocked && <span className="text-yellow-400 ml-2">Â· Locked ðŸ”’</span>}
+              {totalAssigned}/{teams.length} teams  {groups.length} groups
+              {balanced && <span className="text-green-400 ml-2"> Balanced </span>}
+              {isLocked && <span className="text-yellow-400 ml-2"> Locked </span>}
             </p>
           </div>
           <div className="flex items-center gap-2">

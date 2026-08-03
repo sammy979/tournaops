@@ -149,10 +149,10 @@ export default function QualifierMatchEntry({
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Trophy className="w-5 h-5 text-yellow-400" />
-              {match.name} · Qualifier Results
+              {match.name}  Qualifier Results
             </h2>
             <p className="text-gray-500 text-sm mt-1">
-              {teams.length} teams · Map: <span className="text-white">{match.map}</span> · {tournament.scoringRule.name}
+              {teams.length} teams  Map: <span className="text-white">{match.map}</span>  {tournament.scoringRule.name}
             </p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/10 text-gray-400 border border-white/10">
@@ -191,7 +191,7 @@ export default function QualifierMatchEntry({
                         r.placement === 2 ? "text-gray-300" :
                         r.placement === 3 ? "text-amber-600" : "text-gray-600"
                       }`}>
-                        {r.placement <= 3 ? ["🥇","🥈","🥉"][r.placement-1] : `#${r.placement}`}
+                        {r.placement <= 3 ? ["","",""][r.placement-1] : `#${r.placement}`}
                       </span>
                     </div>
                     <div className="col-span-3 text-white text-sm font-semibold truncate">{r.teamName}</div>

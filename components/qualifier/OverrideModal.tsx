@@ -99,7 +99,7 @@ export function OverrideModal({ stageId, teamId, teamName, onClose, onSave }: Ov
               placeholder="e.g. Team qualified due to approved match replay after server crash..."
               autoFocus
             />
-            <div className="text-xs text-gray-600 mt-1">{reason.length} characters · will be logged in audit trail</div>
+            <div className="text-xs text-gray-600 mt-1">{reason.length} characters  will be logged in audit trail</div>
           </div>
 
           <div className="p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/20 text-xs text-yellow-300">
@@ -124,9 +124,9 @@ export function OverrideModal({ stageId, teamId, teamName, onClose, onSave }: Ov
   );
 }
 
-// ═══════════════════════════════════════════════════════════
+// 
 // AUDIT LOG VIEWER
-// ═══════════════════════════════════════════════════════════
+// 
 
 export function AuditLog({ stageId, onClose }: { stageId: string; onClose: () => void }) {
   const [logs, setLogs] = useState<any[]>([]);
@@ -144,17 +144,17 @@ export function AuditLog({ stageId, onClose }: { stageId: string; onClose: () =>
   }, [stageId]);
 
   const actionLabels: Record<string, { label: string; color: string; icon: string }> = {
-    MANUAL_ADVANCE: { label: "Force Qualify", color: "text-green-400 bg-green-500/10 border-green-500/20", icon: "✅" },
-    FORCE_QUALIFY: { label: "Force Qualify", color: "text-green-400 bg-green-500/10 border-green-500/20", icon: "✅" },
-    MANUAL_ELIMINATE: { label: "Force Eliminate", color: "text-red-400 bg-red-500/10 border-red-500/20", icon: "❌" },
-    FORCE_ELIMINATE: { label: "Force Eliminate", color: "text-red-400 bg-red-500/10 border-red-500/20", icon: "❌" },
-    REVERT: { label: "Revert Override", color: "text-blue-400 bg-blue-500/10 border-blue-500/20", icon: "↩️" },
-    ADD_COMPENSATION: { label: "Compensation Added", color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20", icon: "➕" },
-    ADD_PENALTY: { label: "Penalty Added", color: "text-orange-400 bg-orange-500/10 border-orange-500/20", icon: "➖" },
-    GROUP_ASSIGNMENT: { label: "Groups Assigned", color: "text-purple-400 bg-purple-500/10 border-purple-500/20", icon: "👥" },
-    LOCK_STAGE: { label: "Stage Locked", color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20", icon: "🔒" },
-    UNLOCK_STAGE: { label: "Stage Unlocked", color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20", icon: "🔓" },
-    EDIT_RESULT: { label: "Result Edited", color: "text-gray-400 bg-gray-500/10 border-gray-500/20", icon: "✏️" },
+    MANUAL_ADVANCE: { label: "Force Qualify", color: "text-green-400 bg-green-500/10 border-green-500/20", icon: "" },
+    FORCE_QUALIFY: { label: "Force Qualify", color: "text-green-400 bg-green-500/10 border-green-500/20", icon: "" },
+    MANUAL_ELIMINATE: { label: "Force Eliminate", color: "text-red-400 bg-red-500/10 border-red-500/20", icon: "" },
+    FORCE_ELIMINATE: { label: "Force Eliminate", color: "text-red-400 bg-red-500/10 border-red-500/20", icon: "" },
+    REVERT: { label: "Revert Override", color: "text-blue-400 bg-blue-500/10 border-blue-500/20", icon: "" },
+    ADD_COMPENSATION: { label: "Compensation Added", color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20", icon: "" },
+    ADD_PENALTY: { label: "Penalty Added", color: "text-orange-400 bg-orange-500/10 border-orange-500/20", icon: "" },
+    GROUP_ASSIGNMENT: { label: "Groups Assigned", color: "text-purple-400 bg-purple-500/10 border-purple-500/20", icon: "" },
+    LOCK_STAGE: { label: "Stage Locked", color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20", icon: "" },
+    UNLOCK_STAGE: { label: "Stage Unlocked", color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20", icon: "" },
+    EDIT_RESULT: { label: "Result Edited", color: "text-gray-400 bg-gray-500/10 border-gray-500/20", icon: "" },
   };
 
   return (
@@ -184,14 +184,14 @@ export function AuditLog({ stageId, onClose }: { stageId: string; onClose: () =>
           ) : (
             <div className="space-y-2">
               {logs.map(log => {
-                const info = actionLabels[log.action] || { label: log.action, color: "text-gray-400 bg-gray-500/10 border-gray-500/20", icon: "📝" };
+                const info = actionLabels[log.action] || { label: log.action, color: "text-gray-400 bg-gray-500/10 border-gray-500/20", icon: "" };
                 return (
                   <div key={log.id} className={`p-3 rounded-xl border ${info.color}`}>
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <div className="flex items-center gap-2">
                         <span className="text-lg">{info.icon}</span>
                         <span className="font-bold text-sm">{info.label}</span>
-                        {log.teamName && <span className="text-xs opacity-70">· {log.teamName}</span>}
+                        {log.teamName && <span className="text-xs opacity-70"> {log.teamName}</span>}
                       </div>
                       <span className="text-xs opacity-60 flex items-center gap-1">
                         <Clock className="w-3 h-3" />

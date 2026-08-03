@@ -84,7 +84,7 @@ function MatchOverlayContent() {
           background: `linear-gradient(180deg, rgba(250,204,21,0.15) 0%, transparent 100%)`,
           borderBottom: `1px solid ${t.border}`,
         }}>
-          <div style={{ fontSize: 40, marginBottom: 4 }}>🍗</div>
+          <div style={{ fontSize: 40, marginBottom: 4 }}></div>
           <div style={{ color: "#facc15", fontSize: 10, fontWeight: 800, letterSpacing: 4, textTransform: "uppercase" }}>WINNER WINNER CHICKEN DINNER</div>
           <div style={{ color: t.text, fontSize: fs + 10, fontWeight: 900, marginTop: 6 }}>{winner?.teamName}</div>
           <div style={{ display: "flex", justifyContent: "center", gap: 20, marginTop: 8 }}>
@@ -98,7 +98,7 @@ function MatchOverlayContent() {
           <div style={{ color: t.sub, fontSize: 9, fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>TOP 3</div>
           {top3.map((r: any, idx: number) => {
             const team = teamMap[r.teamId];
-            const medals = ["🥇", "🥈", "🥉"];
+            const medals = ["", "", ""];
             const colors = ["#facc15", "#e5e7eb", "#d97706"];
             return (
               <div key={r.teamId} style={{

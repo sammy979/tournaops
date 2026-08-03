@@ -56,7 +56,7 @@ export default function MatchCard({ match, editable = false, onUpdate }: Props) 
         <div className="flex items-center gap-1.5">
           <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></div>
           <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">
-            R{match.round} · M{match.position + 1}
+            R{match.round}  M{match.position + 1}
           </span>
         </div>
         <span className="text-[10px] font-bold text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/30">

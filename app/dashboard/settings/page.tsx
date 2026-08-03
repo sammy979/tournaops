@@ -73,7 +73,7 @@ export default function SettingsPage() {
           <div>
             <p className="text-white font-semibold text-lg">{user.displayName || user.username}</p>
             <p className="text-gray-500 text-sm">{user.email}</p>
-            <p className="text-gray-600 text-xs mt-0.5">@{user.username} · Member since {memberSince}</p>
+            <p className="text-gray-600 text-xs mt-0.5">@{user.username}  Member since {memberSince}</p>
           </div>
         </div>
 

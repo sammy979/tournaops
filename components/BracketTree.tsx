@@ -32,7 +32,7 @@ export default function BracketTree({ matches, editable, onUpdate }: Props) {
             <div className="text-center mb-4">
               <div className="inline-block px-4 py-1 rounded-full bg-purple-500/20 border border-purple-500/40">
                 <span className="text-xs font-black uppercase tracking-widest text-purple-300">
-                  {r.round === maxRound ? "🏆 Final" : 
+                  {r.round === maxRound ? " Final" : 
                    r.round === maxRound - 1 ? "Semifinal" :
                    r.round === maxRound - 2 ? "Quarterfinal" :
                    `Round ${r.round}`}

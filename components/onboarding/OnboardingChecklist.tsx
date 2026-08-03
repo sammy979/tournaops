@@ -138,7 +138,7 @@ export default function OnboardingChecklist({ tournament, stageCount, onAction }
               <div>
                 <h3 className="text-white font-bold">Getting Started</h3>
                 <p className="text-gray-500 text-xs">
-                  {isAllDone ? "All steps complete! 🎉" : `${completedCount}/${CHECKLIST.length} steps complete`}
+                  {isAllDone ? "All steps complete! " : `${completedCount}/${CHECKLIST.length} steps complete`}
                 </p>
               </div>
             </div>

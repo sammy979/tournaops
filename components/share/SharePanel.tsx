@@ -27,23 +27,23 @@ export default function SharePanel({ tournament, onClose }: SharePanelProps) {
   const twitterTexts = [
     {
       label: "Tournament Announcement",
-      text: `🏆 ${tournament.name} is LIVE!\n\n👥 ${tournament.teams.length} squads competing\n🗺️ ${tournament.mapRotation.join(", ")}\n💰 Prize Pool: ${tournament.prizePool || "TBA"}\n\n📊 Live standings:\n${publicUrl}\n\n#PUBGMobile #BGMI #Esports #Tournament`,
+      text: ` ${tournament.name} is LIVE!\n\n ${tournament.teams.length} squads competing\n ${tournament.mapRotation.join(", ")}\n Prize Pool: ${tournament.prizePool || "TBA"}\n\n Live standings:\n${publicUrl}\n\n#PUBGMobile #BGMI #Esports #Tournament`,
     },
     {
       label: "Current Leader",
       text: leader
-        ? `🥇 ${leader.teamName} is leading ${tournament.name} with ${leader.totalPoints} points and ${leader.totalKills} kills!\n\nFollow live:\n${publicUrl}\n\n#PUBGMobile #BGMI #Esports`
-        : `📊 ${tournament.name} is underway! Follow live standings:\n${publicUrl}\n\n#PUBGMobile #BGMI`,
+        ? ` ${leader.teamName} is leading ${tournament.name} with ${leader.totalPoints} points and ${leader.totalKills} kills!\n\nFollow live:\n${publicUrl}\n\n#PUBGMobile #BGMI #Esports`
+        : ` ${tournament.name} is underway! Follow live standings:\n${publicUrl}\n\n#PUBGMobile #BGMI`,
     },
     {
       label: "Team Registration Open",
-      text: `📝 Registrations OPEN for ${tournament.name}!\n\n👥 ${tournament.teams.length}/${tournament.maxTeams} squads registered\n🏆 Prize: ${tournament.prizePool || "TBA"}\n\nRegister your team:\n${registerUrl}\n\n#PUBGMobile #BGMI #Tournament`,
+      text: ` Registrations OPEN for ${tournament.name}!\n\n ${tournament.teams.length}/${tournament.maxTeams} squads registered\n Prize: ${tournament.prizePool || "TBA"}\n\nRegister your team:\n${registerUrl}\n\n#PUBGMobile #BGMI #Tournament`,
     },
     {
       label: "Champion Announcement",
       text: leaderboard.length > 0
-        ? `🏆 CHAMPIONS! ${leaderboard[0]?.teamName} wins ${tournament.name}!\n\n🥇 ${leaderboard[0]?.teamName} — ${leaderboard[0]?.totalPoints}pts\n🥈 ${leaderboard[1]?.teamName || "—"} — ${leaderboard[1]?.totalPoints || 0}pts\n🥉 ${leaderboard[2]?.teamName || "—"} — ${leaderboard[2]?.totalPoints || 0}pts\n\nPowered by TournaOps tournaops.com\n\n#PUBGMobile #BGMI #Esports`
-        : `🏆 ${tournament.name} has ended! Check final results:\n${publicUrl}`,
+        ? ` CHAMPIONS! ${leaderboard[0]?.teamName} wins ${tournament.name}!\n\n ${leaderboard[0]?.teamName}  ${leaderboard[0]?.totalPoints}pts\n ${leaderboard[1]?.teamName || ""}  ${leaderboard[1]?.totalPoints || 0}pts\n ${leaderboard[2]?.teamName || ""}  ${leaderboard[2]?.totalPoints || 0}pts\n\nPowered by TournaOps tournaops.com\n\n#PUBGMobile #BGMI #Esports`
+        : ` ${tournament.name} has ended! Check final results:\n${publicUrl}`,
     },
   ];
 

@@ -141,7 +141,7 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
     <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md overflow-y-auto">
       <div className="min-h-screen p-4 lg:p-6">
 
-        {/* ── HEADER ─────────────────────────────────────── */}
+        {/*  HEADER  */}
         <div className="max-w-[1600px] mx-auto flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
@@ -178,7 +178,7 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
 
         <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
 
-          {/* ── CONTROLS SIDEBAR ─────────────────────────── */}
+          {/*  CONTROLS SIDEBAR  */}
           <div className="space-y-4">
 
             {/* Card Type */}
@@ -254,7 +254,7 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
                       <Icon className={`w-4 h-4 ${active ? "text-blue-400" : "text-gray-600"}`} />
                       <div className="flex-1 text-left">
                         <p className={`text-sm ${active ? "text-white" : "text-gray-400"}`}>{S.label}</p>
-                        <p className="text-[10px] text-gray-600">{S.w} × {S.h}</p>
+                        <p className="text-[10px] text-gray-600">{S.w}  {S.h}</p>
                       </div>
                     </button>
                   );
@@ -272,7 +272,7 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
                   className="input-field text-sm"
                 >
                   {completedMatches.map(m => (
-                    <option key={m.id} value={m.id}>{m.name} · {m.map}</option>
+                    <option key={m.id} value={m.id}>{m.name}  {m.map}</option>
                   ))}
                 </select>
               </div>
@@ -287,7 +287,7 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
             </div>
           </div>
 
-          {/* ── PREVIEW AREA ─────────────────────────────── */}
+          {/*  PREVIEW AREA  */}
           <div className="flex items-start justify-center">
             <div className="relative">
               {/* Scale wrapper */}
@@ -331,7 +331,7 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
                   <div style={{ position: "absolute", bottom: 0, right: 0, width: 120, height: 4, background: t.accent }} />
                   <div style={{ position: "absolute", bottom: 0, right: 0, width: 4, height: 120, background: t.accent }} />
 
-                  {/* ═══ CARD CONTENT ═══ */}
+                  {/*  CARD CONTENT  */}
                   <div style={{
                     position: "relative",
                     height: "100%",
@@ -340,7 +340,7 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
                     padding: size === "story" ? "100px 70px" : "70px",
                   }}>
 
-                    {/* ── HEADER (all cards) ── */}
+                    {/*  HEADER (all cards)  */}
                     <div style={{ textAlign: "center", marginBottom: size === "story" ? 70 : 50 }}>
                       <div style={{
                         display: "inline-block",
@@ -373,7 +373,7 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
                       </h1>
                     </div>
 
-                    {/* ── STANDINGS CARD ── */}
+                    {/*  STANDINGS CARD  */}
                     {cardType === "standings" && (
                       <>
                         <div style={{ textAlign: "center", marginBottom: 40 }}>
@@ -391,7 +391,7 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
                         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
                           {leaderboard.slice(0, size === "story" ? 12 : size === "wide" ? 8 : 10).map((e, i) => {
                             const isTop3 = e.rank <= 3;
-                            const medals = ["🥇", "🥈", "🥉"];
+                            const medals = ["", "", ""];
                             const rankColors = ["#facc15", "#e5e7eb", "#d97706"];
                             return (
                               <div key={e.teamId} style={{
@@ -457,10 +457,10 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
                       </>
                     )}
 
-                    {/* ── WWCD CARD ── */}
+                    {/*  WWCD CARD  */}
                     {cardType === "wwcd" && selectedMatch?.results && (
                       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
-                        <div style={{ fontSize: 120, marginBottom: 24 }}>👑</div>
+                        <div style={{ fontSize: 120, marginBottom: 24 }}></div>
                         <div style={{
                           color: "#facc15",
                           fontSize: 34,
@@ -517,12 +517,12 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
 
                         {/* Match info */}
                         <div style={{ color: t.sub, fontSize: 22, letterSpacing: 3 }}>
-                          {selectedMatch.name.toUpperCase()} · {selectedMatch.map.toUpperCase()}
+                          {selectedMatch.name.toUpperCase()}  {selectedMatch.map.toUpperCase()}
                         </div>
                       </div>
                     )}
 
-                    {/* ── MVP CARD ── */}
+                    {/*  MVP CARD  */}
                     {cardType === "mvp" && topKillers.length > 0 && (
                       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
                         <div style={{
@@ -593,10 +593,10 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
                       </div>
                     )}
 
-                    {/* ── CHAMPION CARD ── */}
+                    {/*  CHAMPION CARD  */}
                     {cardType === "champion" && leaderboard.length > 0 && (
                       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
-                        <div style={{ fontSize: 140, marginBottom: 16 }}>🏆</div>
+                        <div style={{ fontSize: 140, marginBottom: 16 }}></div>
                         <div style={{
                           color: "#facc15",
                           fontSize: 32,
@@ -646,7 +646,7 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
                         <div style={{ display: "flex", gap: 40 }}>
                           {leaderboard.slice(1, 3).map((e, i) => (
                             <div key={e.teamId} style={{ textAlign: "center" }}>
-                              <div style={{ fontSize: 40, marginBottom: 8 }}>{["🥈","🥉"][i]}</div>
+                              <div style={{ fontSize: 40, marginBottom: 8 }}>{["",""][i]}</div>
                               <div style={{ color: t.text, fontSize: 26, fontWeight: 700 }}>{e.teamName}</div>
                               <div style={{ color: t.sub, fontSize: 18, marginTop: 4 }}>{e.totalPoints} pts</div>
                             </div>
@@ -655,7 +655,7 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
                       </div>
                     )}
 
-                    {/* ── MATCH RECAP CARD ── */}
+                    {/*  MATCH RECAP CARD  */}
                     {cardType === "recap" && selectedMatch?.results && (
                       <>
                         <div style={{ textAlign: "center", marginBottom: 36 }}>
@@ -707,7 +707,7 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
                       </>
                     )}
 
-                    {/* ── FOOTER (all cards) ── */}
+                    {/*  FOOTER (all cards)  */}
                     <div style={{
                       marginTop: 40,
                       paddingTop: 28,
@@ -726,7 +726,7 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
                           alignItems: "center",
                           justifyContent: "center",
                         }}>
-                          <span style={{ color: "#fff", fontSize: 22, fontWeight: 900 }}>⚡</span>
+                          <span style={{ color: "#fff", fontSize: 22, fontWeight: 900 }}></span>
                         </div>
                         <span style={{ color: t.text, fontSize: 24, fontWeight: 800, letterSpacing: -0.5 }}>
                           TournaOps
@@ -743,7 +743,7 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
               {/* Size label */}
               <div className="text-center mt-4">
                 <span className="text-gray-600 text-xs font-mono">
-                  {dim.w} × {dim.h} px · exports at 2x = {dim.w*2} × {dim.h*2}
+                  {dim.w}  {dim.h} px  exports at 2x = {dim.w*2}  {dim.h*2}
                 </span>
               </div>
             </div>

@@ -89,7 +89,7 @@ export default function PublicQualifiersPage() {
 
   const currentStage = stages.find(s => s.id === selectedStage);
   const publicUrl = typeof window !== "undefined" ? window.location.href : "";
-  const shareText = tournament ? `🏆 ${tournament.name} - Live Qualifier Standings` : "";
+  const shareText = tournament ? ` ${tournament.name} - Live Qualifier Standings` : "";
 
   const copyShareUrl = () => {
     navigator.clipboard.writeText(publicUrl);
@@ -253,13 +253,13 @@ export default function PublicQualifiersPage() {
               </select>
               <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="input-field w-auto text-sm">
                 <option value="all">All Status</option>
-                <option value="qualified">🟢 Qualified</option>
-                <option value="eliminated">🔴 Eliminated</option>
-                <option value="pending">⚪ Pending</option>
+                <option value="qualified"> Qualified</option>
+                <option value="eliminated"> Eliminated</option>
+                <option value="pending"> Pending</option>
               </select>
               <div className="ml-auto flex items-center gap-2 text-xs text-gray-500">
                 <RefreshCw className="w-3 h-3 animate-spin" />
-                Auto-refresh · Last: {lastUpdated.toLocaleTimeString()}
+                Auto-refresh  Last: {lastUpdated.toLocaleTimeString()}
               </div>
             </div>
 
@@ -298,7 +298,7 @@ export default function PublicQualifiersPage() {
                             r.rank === 2 ? "text-gray-300" :
                             r.rank === 3 ? "text-amber-600" : "text-gray-500"
                           }`}>
-                            {r.rank <= 3 ? ["🥇","🥈","🥉"][r.rank-1] : `#${r.rank}`}
+                            {r.rank <= 3 ? ["","",""][r.rank-1] : `#${r.rank}`}
                           </span>
                         </td>
                         <td className="py-2.5 px-3">
@@ -330,9 +330,9 @@ export default function PublicQualifiersPage() {
                             r.qualificationStatus === "ELIMINATED" ? "bg-red-500/15 text-red-400 border-red-500/30" :
                             "bg-gray-500/15 text-gray-400 border-gray-500/20"
                           }`}>
-                            {r.qualificationStatus === "QUALIFIED" ? "🟢 QUALIFIED" :
-                             r.qualificationStatus === "ELIMINATED" ? "🔴 ELIMINATED" :
-                             "⚪ PENDING"}
+                            {r.qualificationStatus === "QUALIFIED" ? " QUALIFIED" :
+                             r.qualificationStatus === "ELIMINATED" ? " ELIMINATED" :
+                             " PENDING"}
                           </span>
                         </td>
                       </tr>
@@ -368,7 +368,7 @@ export default function PublicQualifiersPage() {
                           ? "bg-green-500/20 text-green-400"
                           : "bg-gray-500/20 text-gray-400"
                       }`}>
-                        {m.status === "completed" ? "✓ Done" : "Pending"}
+                        {m.status === "completed" ? " Done" : "Pending"}
                       </span>
                     </div>
                   </div>
@@ -399,7 +399,7 @@ export default function PublicQualifiersPage() {
             {qualified.length > 0 && (
               <div>
                 <h3 className="text-white font-bold text-lg mb-3 flex items-center gap-2">
-                  <span className="text-2xl">🟢</span>Qualified Teams ({qualified.length})
+                  <span className="text-2xl"></span>Qualified Teams ({qualified.length})
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {qualified.map((t: any) => (
@@ -414,7 +414,7 @@ export default function PublicQualifiersPage() {
                         )}
                         <div className="flex-1">
                           <p className="text-white font-bold">{t.teamName}</p>
-                          <p className="text-gray-500 text-xs">{t.groupName} · Rank #{t.rank}</p>
+                          <p className="text-gray-500 text-xs">{t.groupName}  Rank #{t.rank}</p>
                         </div>
                         <div className="text-right">
                           <div className="text-green-400 font-black font-mono text-lg">{t.totalPoints}</div>
@@ -450,7 +450,7 @@ function PublicNav() {
           </div>
           <span className="text-blue-400 font-bold text-lg">TournaOps</span>
         </Link>
-        <Link href="/" className="text-xs text-gray-500 hover:text-white">Home →</Link>
+        <Link href="/" className="text-xs text-gray-500 hover:text-white">Home </Link>
       </div>
     </div>
   );

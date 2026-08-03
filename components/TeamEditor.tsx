@@ -134,7 +134,7 @@ export default function TeamEditor({ teams, onSave, onClose }: Props) {
             </button>
           </div>
           <p className="text-center text-xs text-purple-300/60 mt-3">
-            💡 Tip: Upload PNG/JPG logos under 2MB. Names will appear on brackets & standings.
+             Tip: Upload PNG/JPG logos under 2MB. Names will appear on brackets & standings.
           </p>
         </div>
       </div>

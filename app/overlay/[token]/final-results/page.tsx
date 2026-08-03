@@ -45,7 +45,7 @@ function FinalResultsContent() {
 
   if (!champion || champion.points === 0) return null;
 
-  const medals = ["🥇", "🥈", "🥉"];
+  const medals = ["", "", ""];
   const rankColors = ["#facc15", "#e5e7eb", "#d97706"];
 
   return (
@@ -58,7 +58,7 @@ function FinalResultsContent() {
         {/* Champion Banner */}
         <div style={{ padding: "20px", textAlign: "center", background: "linear-gradient(180deg, rgba(250,204,21,0.15) 0%, transparent 100%)", borderBottom: "1px solid rgba(250,204,21,0.2)" }}>
           <div style={{ fontSize: 10, color: "#facc15", fontWeight: 900, letterSpacing: 6, marginBottom: 8, textShadow: "0 0 20px rgba(250,204,21,0.5)" }}>
-            🏆 TOURNAMENT CHAMPION 🏆
+             TOURNAMENT CHAMPION 
           </div>
           <div style={{ fontSize: 36, fontWeight: 900, color: "#fef3c7", textShadow: "0 0 30px rgba(250,204,21,0.4)" }}>
             {champion.name}
