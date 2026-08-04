@@ -136,6 +136,17 @@ export default function TournamentDetailPage() {
         </div>
       )}
 
+
+
+      {/* Tournament Status Controls */}
+      <TournamentStatusManager
+        tournamentId={tournament.id}
+        currentStatus={tournament.status}
+        tournamentName={tournament.name}
+        onUpdate={() => {
+          getTournamentById(tournament.id).then((r) => setTournament((r as any) ?? null));
+        }}
+      />
       <div className="flex gap-1 p-1 bg-white/5 rounded-xl border border-white/10 w-fit">
         {tabs.map(tab => {
           const Icon = tab.icon;
