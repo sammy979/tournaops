@@ -1,4 +1,5 @@
 "use client";
+import TournamentStatusManager from "@/components/tournament/TournamentStatusManager";
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
