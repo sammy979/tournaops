@@ -1,212 +1,139 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth/session";
+import { generateAI } from "@/lib/ai";
+import { verifyTournamentOwnership } from "@/lib/authorization";
+import { logError } from "@/lib/logger";
+import { calculateStandings, parseScoringConfig } from "@/lib/scoring-engine";
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
 
-  // Find by ID or slug
-  let tournament = await prisma.tournament.findUnique({
-    where: { id },
-    include: { teams: true, matches: true },
-  });
+    const { id } = await params;
 
-  if (!tournament) {
-    tournament = await prisma.tournament.findUnique({
-      where: { slug: id },
-      include: { teams: true, matches: true },
+    const { authorized, errorResponse } = await verifyTournamentOwnership(id, session);
+    if (!authorized) return errorResponse!;
+
+    // Fetch tournament data for AI context
+    const tournament = await prisma.tournament.findUnique({
+      where: { id },
+      include: {
+        teams: { select: { id: true, name: true, tag: true } },
+        matches: {
+          where: { status: "completed" },
+          select: {
+            id: true, name: true, map: true, matchNumber: true,
+            results: true, status: true,
+          },
+          orderBy: { matchNumber: "asc" },
+        },
+        stages: {
+          select: { id: true, name: true, type: true, status: true, order: true },
+          orderBy: { order: "asc" },
+        },
+      },
     });
-  }
 
-  if (!tournament) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!tournament) {
+      return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
+    }
 
-  const completedMatches = tournament.matches.filter(m => m.status === "completed" && m.results);
+    // Calculate standings using official scoring engine
+    const scoringConfig = parseScoringConfig(tournament.scoringRule);
+    const allResults: Array<{
+      teamId: string;
+      teamName: string;
+      matchNumber: number;
+      placement: number;
+      kills: number;
+    }> = [];
 
-  if (completedMatches.length === 0) {
+    for (const match of tournament.matches) {
+      if (!match.results || !Array.isArray(match.results)) continue;
+      for (const result of match.results as Array<Record<string, unknown>>) {
+        allResults.push({
+          teamId: String(result.teamId || ""),
+          teamName: String(result.teamName || ""),
+          matchNumber: match.matchNumber || 0,
+          placement: Number(result.placement) || 0,
+          kills: Number(result.kills) || 0,
+        });
+      }
+    }
+
+    const standings = calculateStandings(allResults, scoringConfig);
+    const leader = standings[0];
+    const completedMatches = tournament.matches.length;
+
+    // Build AI context from VERIFIED database data
+    const context = {
+      name: tournament.name,
+      status: tournament.status,
+      teams: tournament.teams.length,
+      completedMatches,
+      leader: leader ? { name: leader.teamName, points: leader.totalPoints, kills: leader.totalKills } : null,
+      top5: standings.slice(0, 5).map(s => ({
+        rank: s.rank,
+        team: s.teamName,
+        points: s.totalPoints,
+        kills: s.totalKills,
+        wwcds: s.wwcdCount,
+      })),
+      scoringType: scoringConfig.type,
+      stages: tournament.stages.map(s => ({ name: s.name, type: s.type, status: s.status })),
+    };
+
+    const prompt = `You are TournaOps AI analyzing a PUBG Mobile tournament.
+    
+TOURNAMENT DATA (verified from database — do NOT modify these numbers):
+${JSON.stringify(context, null, 2)}
+
+Generate a professional esports analysis including:
+1. Current tournament summary (2-3 sentences)
+2. Key observations about the leaderboard
+3. Teams to watch
+4. What makes this tournament interesting
+
+IMPORTANT: Base your analysis ONLY on the data provided above.
+Do not invent scores, kills, or statistics not in the data.
+Keep response under 300 words.`;
+
+    const result = await generateAI({
+      prompt,
+      temperature: 0.7,
+      maxTokens: 500,
+      preferProvider: "groq",
+    });
+
+    if (!result.text) {
+      return NextResponse.json({
+        error: "AI analysis unavailable. Please try again.",
+        standings: standings.slice(0, 10),
+      }, { status: 200 });
+    }
+
     return NextResponse.json({
-      insights: null,
-      message: "No completed matches yet",
+      analysis: result.text,
+      provider: result.provider,
+      standings: standings.slice(0, 10),
+      context: {
+        completedMatches,
+        totalTeams: tournament.teams.length,
+        leader: leader?.teamName,
+      },
     });
+  } catch (err) {
+    logError(err, "AI_ANALYSIS");
+    return NextResponse.json(
+      { error: "Failed to generate analysis. Please try again." },
+      { status: 500 }
+    );
   }
-
-  // Build standings
-  const teamMap: Record<string, any> = {};
-  tournament.teams.forEach(t => {
-    teamMap[t.id] = {
-      id: t.id, name: t.name,
-      points: 0, kills: 0, wwcds: 0, damage: 0, matches: 0,
-      matchScores: [] as number[],
-      placements: [] as number[],
-      bestMatch: 0, worstMatch: 999,
-    };
-  });
-
-  completedMatches.forEach(m => {
-    const results = m.results as any[];
-    if (!results) return;
-    results.forEach((r: any) => {
-      if (!teamMap[r.teamId]) return;
-      const t = teamMap[r.teamId];
-      t.points += r.totalPoints || 0;
-      t.kills += r.kills || 0;
-      t.damage += r.damage || 0;
-      if (r.placement === 1) t.wwcds += 1;
-      t.matches += 1;
-      t.matchScores.push(r.totalPoints || 0);
-      t.placements.push(r.placement || 16);
-      if ((r.totalPoints || 0) > t.bestMatch) t.bestMatch = r.totalPoints;
-      if ((r.totalPoints || 0) < t.worstMatch) t.worstMatch = r.totalPoints;
-    });
-  });
-
-  const standings = Object.values(teamMap)
-    .filter((t: any) => t.matches > 0)
-    .sort((a: any, b: any) => b.points - a.points)
-    .map((t: any, i: number) => ({ ...t, rank: i + 1 }));
-
-  // Calculate AI insights (deterministic - no API needed)
-  const totalKills = standings.reduce((a: number, t: any) => a + t.kills, 0);
-  const totalMatches = completedMatches.length;
-  const avgKillsPerMatch = totalMatches > 0 ? Math.round(totalKills / totalMatches) : 0;
-
-  // Per-team insights
-  const teamInsights = standings.slice(0, 16).map((team: any) => {
-    const avgScore = team.matches > 0 ? Math.round(team.points / team.matches) : 0;
-    const avgPlacement = team.placements.length > 0
-      ? (team.placements.reduce((a: number, b: number) => a + b, 0) / team.placements.length).toFixed(1)
-      : "N/A";
-    const consistency = team.matchScores.length >= 2
-      ? Math.round(Math.sqrt(team.matchScores.reduce((sum: number, s: number) => sum + Math.pow(s - avgScore, 2), 0) / team.matchScores.length))
-      : 0;
-
-    // Trend (last 2 matches vs first 2)
-    const recentScores = team.matchScores.slice(-2);
-    const earlyScores = team.matchScores.slice(0, 2);
-    const recentAvg = recentScores.length > 0 ? recentScores.reduce((a: number, b: number) => a + b, 0) / recentScores.length : 0;
-    const earlyAvg = earlyScores.length > 0 ? earlyScores.reduce((a: number, b: number) => a + b, 0) / earlyScores.length : 0;
-    const trend = recentAvg - earlyAvg;
-
-    // Generate insight text
-    let insight = "";
-    if (team.rank === 1) {
-      if (team.wwcds >= 2) insight = `Leading with ${team.wwcds} Chicken Dinners. Avg ${avgScore}pts/match.`;
-      else insight = `Tournament leader with ${team.points}pts. Avg placement: #${avgPlacement}.`;
-    } else if (team.rank <= 3) {
-      const gap = standings[0].points - team.points;
-      insight = `${gap}pts behind #1. ${trend > 3 ? "Trending UP - improving each match." : trend < -3 ? "Slowing down in recent matches." : "Consistent performance."}`;
-    } else if (trend > 5) {
-      insight = `Most improved recently. Gained ${Math.round(trend)}pts avg in last 2 matches.`;
-    } else if (consistency < 3 && team.matches >= 3) {
-      insight = `Very consistent. Only ${consistency}pt variance between matches.`;
-    } else if (team.wwcds > 0) {
-      insight = `${team.wwcds} WWCD but inconsistent placements. High ceiling, needs consistency.`;
-    } else if (team.kills > standings[0].kills * 0.8) {
-      insight = `Strong kill game (${team.kills}K) but needs better placements to climb.`;
-    } else {
-      insight = `Avg ${avgScore}pts/match. Best: ${team.bestMatch}pts. Avg placement: #${avgPlacement}.`;
-    }
-
-    return {
-      teamId: team.id,
-      teamName: team.name,
-      rank: team.rank,
-      insight,
-      avgScore,
-      avgPlacement: parseFloat(avgPlacement as string) || 0,
-      consistency,
-      trend: Math.round(trend),
-      trendDirection: trend > 2 ? "up" : trend < -2 ? "down" : "stable",
-    };
-  });
-
-  // Tie detection with AI explanation
-  const ties = [];
-  for (let i = 0; i < standings.length - 1; i++) {
-    if (standings[i].points === standings[i + 1].points) {
-      const a = standings[i];
-      const b = standings[i + 1];
-      let resolution = "";
-      if (a.kills !== b.kills) {
-        resolution = `${a.kills > b.kills ? a.name : b.name} wins tiebreaker on kills (${Math.max(a.kills, b.kills)} vs ${Math.min(a.kills, b.kills)}).`;
-      } else if (a.wwcds !== b.wwcds) {
-        resolution = `${a.wwcds > b.wwcds ? a.name : b.name} wins on WWCD count (${Math.max(a.wwcds, b.wwcds)} vs ${Math.min(a.wwcds, b.wwcds)}).`;
-      } else {
-        resolution = `Exact tie on points, kills, and WWCD. Manual resolution needed.`;
-      }
-      ties.push({
-        rank: a.rank,
-        team1: a.name,
-        team2: b.name,
-        points: a.points,
-        resolution,
-      });
-    }
-  }
-
-  // Tournament-level insights
-  const mostImproved = teamInsights.filter((t: any) => t.trend > 0).sort((a: any, b: any) => b.trend - a.trend)[0];
-  const mostConsistent = teamInsights.filter((t: any) => t.consistency > 0).sort((a: any, b: any) => a.consistency - b.consistency)[0];
-
-  // Win probability (simple - based on current points lead)
-  const leader = standings[0];
-  const matchesRemaining = tournament.matches.length - completedMatches.length;
-  const maxPossibleSwing = matchesRemaining * 20; // ~20pts max per match
-  const predictions = standings.slice(0, 5).map((t: any) => {
-    const gap = leader.points - t.points;
-    const canCatchUp = gap <= maxPossibleSwing;
-    const probability = t.rank === 1
-      ? Math.min(95, 50 + (t.points - (standings[1]?.points || 0)))
-      : canCatchUp ? Math.max(5, 50 - gap * 2) : 2;
-    return {
-      teamName: t.name,
-      rank: t.rank,
-      probability: Math.min(95, Math.max(2, Math.round(probability))),
-    };
-  });
-
-  // Try AI summary if OpenAI key available
-  let aiSummary = null;
-  const apiKey = process.env.OPENAI_API_KEY;
-
-  if (apiKey && apiKey.startsWith("sk-") && standings.length >= 3) {
-    try {
-      const prompt = `Analyze this PUBG Mobile tournament leaderboard in 2 sentences. Data only, no invention:
-Top 3: #1 ${standings[0].name} (${standings[0].points}pts, ${standings[0].kills}K, ${standings[0].wwcds}W), #2 ${standings[1]?.name} (${standings[1]?.points}pts), #3 ${standings[2]?.name} (${standings[2]?.points}pts).
-${completedMatches.length}/${tournament.matches.length} matches done. Total kills: ${totalKills}. ${ties.length} ties detected.
-Most improved: ${mostImproved?.teamName || "N/A"} (+${mostImproved?.trend || 0}pts trend).
-Keep under 50 words. Professional esports style.`;
-
-      const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [{ role: "user", content: prompt }],
-          max_tokens: 100,
-          temperature: 0.7,
-        }),
-      });
-
-      if (aiRes.ok) {
-        const aiData = await aiRes.json();
-        aiSummary = aiData.choices?.[0]?.message?.content?.trim();
-      }
-    } catch {}
-  }
-
-  return NextResponse.json({
-    standings: standings.slice(0, 20),
-    teamInsights,
-    ties,
-    predictions,
-    statistics: {
-      totalTeams: standings.length,
-      completedMatches: completedMatches.length,
-      totalMatches: tournament.matches.length,
-      totalKills,
-      avgKillsPerMatch,
-      mostImproved: mostImproved?.teamName,
-      mostConsistent: mostConsistent?.teamName,
-    },
-    aiSummary,
-  });
 }
