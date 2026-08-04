@@ -1,4 +1,4 @@
-generator client {
+﻿generator client {
   provider = "prisma-client-js"
 }
 
@@ -40,6 +40,8 @@ model Tournament {
   discord      String?
   rules        String?
   bannerImage  String?
+  brandingData Json?
+  scheduleData Json?
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
   userId       String

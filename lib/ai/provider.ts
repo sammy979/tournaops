@@ -1,4 +1,4 @@
-// TournaOps AI Provider Abstraction
+﻿// TournaOps AI Provider Abstraction
 // Keeps all AI calls server-side via API routes
 // Supports graceful fallback when no API key is set
 
@@ -93,7 +93,7 @@ export interface AIWhatIfResult {
 // Check if AI is available (API key set)
 export function isAIAvailable(): boolean {
   return typeof window === "undefined"
-    ? !!process.env.OPENAI_API_KEY
+    ? !!(process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY)
     : true; // Client always assumes available, server checks
 }
 

@@ -1,49 +1,96 @@
-"use client";
+﻿"use client";
 
-import { useState, useEffect } from "react";
-import { Palette, Save, Check, Eye, Upload, Zap, Globe, RefreshCw } from "lucide-react";
-import { getMyTournaments, saveTournament } from "@/lib/storage/tournaments";
-import { Tournament } from "@/types/tournament";
+import { useState, useEffect, useCallback } from "react";
+import { Palette, Save, Check, Eye, Upload, Globe, RefreshCw } from "lucide-react";
+
+interface BrandingData {
+  primaryColor: string;
+  accentColor: string;
+  orgName: string;
+  orgLogo: string;
+  customMessage: string;
+  discordUrl: string;
+  twitterUrl: string;
+  websiteUrl: string;
+  bannerColor: string;
+}
+
+interface Tournament {
+  id: string;
+  name: string;
+}
+
+const DEFAULT_BRANDING: BrandingData = {
+  primaryColor: "#3b82f6",
+  accentColor: "#8b5cf6",
+  orgName: "",
+  orgLogo: "",
+  customMessage: "",
+  discordUrl: "",
+  twitterUrl: "",
+  websiteUrl: "",
+  bannerColor: "from-blue-900/20 to-purple-900/20",
+};
 
 export default function BrandingPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [selected, setSelected] = useState("");
   const [saved, setSaved] = useState(false);
-  const [branding, setBranding] = useState({
-    primaryColor: "#3b82f6",
-    accentColor: "#8b5cf6",
-    orgName: "",
-    orgLogo: "",
-    customMessage: "",
-    discordUrl: "",
-    twitterUrl: "",
-    websiteUrl: "",
-    bannerColor: "from-blue-900/20 to-purple-900/20",
-  });
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [branding, setBranding] = useState<BrandingData>(DEFAULT_BRANDING);
 
   useEffect(() => {
-    (async () => {
-      const t = await getMyTournaments();
-      setTournaments(t || []);
-      if (t && t.length > 0) {
-        setSelected(t[0].id);
-        loadBranding(t[0].id);
-      }
-    })();
+    fetch("/api/tournaments")
+      .then(r => r.json())
+      .then(data => {
+        const list = data.tournaments || [];
+        setTournaments(list);
+        if (list.length > 0) {
+          setSelected(list[0].id);
+        }
+      })
+      .catch(() => {});
   }, []);
 
-  const loadBranding = (id: string) => {
-    try {
-      const saved = localStorage.getItem(`branding_${id}`);
-      if (saved) setBranding(JSON.parse(saved));
-    } catch {}
-  };
+  const loadBranding = useCallback((id: string) => {
+    if (!id) return;
+    setLoading(true);
+    fetch("/api/tournaments/" + id + "/branding")
+      .then(r => r.json())
+      .then(data => {
+        if (data.branding && Object.keys(data.branding).length > 0) {
+          setBranding({ ...DEFAULT_BRANDING, ...data.branding });
+        } else {
+          setBranding(DEFAULT_BRANDING);
+        }
+      })
+      .catch(() => setBranding(DEFAULT_BRANDING))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const saveBranding = () => {
+  useEffect(() => {
+    if (selected) loadBranding(selected);
+  }, [selected, loadBranding]);
+
+  const saveBranding = async () => {
     if (!selected) return;
-    localStorage.setItem(`branding_${selected}`, JSON.stringify(branding));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setSaving(true);
+    try {
+      const res = await fetch("/api/tournaments/" + selected + "/branding", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(branding),
+      });
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
+    } catch {
+      alert("Failed to save branding");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,13 +101,6 @@ export default function BrandingPage() {
     reader.onload = ev => setBranding(b => ({ ...b, orgLogo: ev.target?.result as string }));
     reader.readAsDataURL(file);
   };
-
-  const reset = () => setBranding({
-    primaryColor: "#3b82f6", accentColor: "#8b5cf6",
-    orgName: "", orgLogo: "", customMessage: "",
-    discordUrl: "", twitterUrl: "", websiteUrl: "",
-    bannerColor: "from-blue-900/20 to-purple-900/20",
-  });
 
   const COLORS = [
     { name: "Blue", primary: "#3b82f6", accent: "#8b5cf6" },
@@ -79,54 +119,83 @@ export default function BrandingPage() {
           <p className="text-gray-400 mt-1">White-label your tournament</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={reset} className="btn-ghost flex items-center gap-2 px-4 py-2 text-sm">
+          <button onClick={() => setBranding(DEFAULT_BRANDING)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 text-gray-400 hover:text-white text-sm transition-all">
             <RefreshCw className="w-4 h-4" />Reset
           </button>
-          <button onClick={saveBranding} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${saved ? "bg-green-500/20 text-green-400 border border-green-500/30" : "btn-primary"}`}>
-            {saved ? <><Check className="w-4 h-4" />Saved!</> : <><Save className="w-4 h-4" />Save</>}
+          <button onClick={saveBranding} disabled={saving || !selected}
+            className={"flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all " +
+              (saved ? "bg-green-500/20 text-green-400 border border-green-500/30" : "bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-50")}>
+            {saved ? <><Check className="w-4 h-4" />Saved!</> : saving ? "Saving..." : <><Save className="w-4 h-4" />Save</>}
           </button>
         </div>
       </div>
 
-      <div className="glass-card rounded-xl p-4 border border-white/10">
+      <div className="bg-white/5 rounded-xl p-4 border border-white/10">
         <label className="text-sm font-medium text-gray-400 block mb-2">Tournament</label>
-        <select value={selected} onChange={e => { setSelected(e.target.value); loadBranding(e.target.value); }} className="input-field w-auto text-sm">
+        <select value={selected}
+          onChange={e => setSelected(e.target.value)}
+          className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm w-auto focus:outline-none focus:border-indigo-500">
           {tournaments.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
+        {loading && <p className="text-gray-500 text-xs mt-2">Loading branding...</p>}
       </div>
 
-      <div className="glass-card rounded-xl p-6 border border-white/10">
+      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
         <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
           <Palette className="w-4 h-4 text-purple-400" />Color Theme
         </h3>
         <div className="grid grid-cols-6 gap-2 mb-4">
           {COLORS.map(c => (
-            <button key={c.name} onClick={() => setBranding(b => ({ ...b, primaryColor: c.primary, accentColor: c.accent }))} className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all ${branding.primaryColor === c.primary ? "border-white/40 bg-white/10" : "border-white/8 hover:border-white/20"}`}>
-              <div className="w-8 h-8 rounded-lg" style={{ background: `linear-gradient(135deg, ${c.primary}, ${c.accent})` }} />
+            <button key={c.name}
+              onClick={() => setBranding(b => ({ ...b, primaryColor: c.primary, accentColor: c.accent }))}
+              className={"flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all " +
+                (branding.primaryColor === c.primary ? "border-white/40 bg-white/10" : "border-white/10 hover:border-white/20")}>
+              <div className="w-8 h-8 rounded-lg" style={{ background: "linear-gradient(135deg, " + c.primary + ", " + c.accent + ")" }} />
               <span className="text-[10px] text-gray-500">{c.name}</span>
             </button>
           ))}
         </div>
       </div>
 
-      <div className="glass-card rounded-xl p-6 border border-white/10">
+      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
         <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
           <Globe className="w-4 h-4 text-blue-400" />Organization
         </h3>
         <div className="space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-400 block mb-1.5">Organization Name</label>
-            <input type="text" value={branding.orgName} onChange={e => setBranding(b => ({ ...b, orgName: e.target.value }))} className="input-field" placeholder="e.g. BGMI Esports India" />
+            <input type="text" value={branding.orgName}
+              onChange={e => setBranding(b => ({ ...b, orgName: e.target.value }))}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+              placeholder="e.g. BGMI Esports Nepal" />
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-400 block mb-1.5">Logo</label>
+            <label className="text-sm font-medium text-gray-400 block mb-1.5">Logo (max 500KB)</label>
             <div className="flex items-center gap-3">
-              {branding.orgLogo && <img src={branding.orgLogo} alt="Logo" className="w-12 h-12 rounded-xl object-cover border border-white/10" />}
-              <label className="btn-secondary flex items-center gap-2 px-4 py-2 text-sm cursor-pointer">
+              {branding.orgLogo && (
+                <img src={branding.orgLogo} alt="Logo"
+                  className="w-12 h-12 rounded-xl object-cover border border-white/10" />
+              )}
+              <label className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 text-gray-400 hover:text-white text-sm cursor-pointer transition-all">
                 <Upload className="w-4 h-4" />Upload Logo
                 <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
               </label>
             </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-400 block mb-1.5">Discord URL</label>
+            <input type="url" value={branding.discordUrl}
+              onChange={e => setBranding(b => ({ ...b, discordUrl: e.target.value }))}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+              placeholder="https://discord.gg/..." />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-400 block mb-1.5">Twitter/X URL</label>
+            <input type="url" value={branding.twitterUrl}
+              onChange={e => setBranding(b => ({ ...b, twitterUrl: e.target.value }))}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+              placeholder="https://twitter.com/..." />
           </div>
         </div>
       </div>
