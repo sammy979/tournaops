@@ -1,9 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Trophy, Users, Play, MapPin, Crosshair, Flame, RefreshCw } from "lucide-react";
+import { Trophy, Users, Play, MapPin, Crosshair, Flame, RefreshCw, ExternalLink } from "lucide-react";
 import { getTournamentBySlug, getLeaderboard, getTopPlayers } from "@/lib/storage/tournaments";
 import { Tournament } from "@/types/tournament";
 
@@ -12,7 +12,7 @@ export default function PublicTournamentPage() {
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const [activeTab, setActiveTab] = useState<"standings" | "matches" | "teams">("standings");
+  const [activeTab, setActiveTab] = useState<"standings" | "matches" | "teams" | "results">("standings");
 
   const load = useCallback(() => {
     const slug = params?.slug as string;
@@ -88,7 +88,7 @@ export default function PublicTournamentPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex gap-1 p-1 bg-white/5 rounded-xl border border-white/10 w-fit mb-6">
-          {(["standings", "matches", "teams"] as const).map(tab => (
+          {(["standings", "matches", "teams", "results"] as const).map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)} className={`px-5 py-2 rounded-lg text-sm font-medium capitalize transition-all ${activeTab === tab ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white hover:bg-white/10"}`}>
               {tab}
             </button>
@@ -240,7 +240,54 @@ export default function PublicTournamentPage() {
                     {(team as any).logo ? (
                       <img src={(team as any).logo} alt={team.name} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="font-bold text-white">{team.name.charAt(0)}</span>
+                      <span className="font-bold text-white">{team.name.charAt(0)}
+
+        {activeTab === "results" && (
+          <div className="space-y-6">
+            <div className="bg-gradient-to-br from-purple-500/10 to-indigo-500/10 border border-purple-500/20 rounded-2xl p-8 text-center">
+              <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-white mb-2">Official Results</h2>
+              <p className="text-gray-400 mb-6">
+                View the full standings, podium, and match-by-match breakdown on the official results page.
+              </p>
+              <a
+                href={"/tournaments/" + tournament.slug + "/results"}
+                className="inline-flex items-center gap-2 px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition-all text-lg"
+              >
+                <Trophy className="w-5 h-5" />
+                View Full Results
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
+
+            {/* Quick standings preview */}
+            <div className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden">
+              <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+                <h3 className="text-white font-bold">Top 5 Preview</h3>
+                <a href={"/tournaments/" + tournament.slug + "/results"} className="text-purple-400 text-sm hover:text-purple-300">
+                  Full standings →
+                </a>
+              </div>
+              <div className="divide-y divide-white/5">
+                {leaderboard.slice(0, 5).map((entry) => (
+                  <div key={entry.teamId} className="flex items-center px-6 py-4 hover:bg-white/5 transition-colors">
+                    <span className={"w-8 font-bold text-lg " + (entry.rank === 1 ? "text-yellow-400" : entry.rank === 2 ? "text-gray-300" : entry.rank === 3 ? "text-orange-400" : "text-gray-500")}>
+                      #{entry.rank}
+                    </span>
+                    <span className="flex-1 text-white font-medium">{entry.teamName}</span>
+                    <span className="text-white font-bold">{entry.totalPoints}</span>
+                    <span className="text-gray-500 text-sm ml-1">pts</span>
+                  </div>
+                ))}
+                {leaderboard.length === 0 && (
+                  <div className="px-6 py-8 text-center text-gray-500">
+                    No results yet. Check back after matches are completed.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}</span>
                     )}
                   </div>
                   <p className="text-white font-semibold">{team.name}</p>
