@@ -1,4 +1,4 @@
-﻿generator client {
+generator client {
   provider = "prisma-client-js"
 }
 
@@ -24,35 +24,36 @@ model User {
 }
 
 model Tournament {
-  id           String              @id @default(cuid())
-  slug         String              @unique
-  name         String
-  description  String?
-  game         String              @default("pubg_mobile")
-  status       String              @default("draft")
-  format       String?
-  prizePool    String?
-  maxTeams     Int                 @default(16)
-  scoringRule  Json
-  mapRotation  String[]
-  overlayToken String              @unique @default(cuid())
-  isPublic     Boolean             @default(true)
-  discord      String?
-  rules        String?
-  bannerImage  String?
-  brandingData Json?
-  scheduleData Json?
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  userId       String
-  imports      DiscordImport[]
-  matches      Match[]
-  auditLogs    QualifierAuditLog[]
-  rounds       Round[]
-  stages       Stage[]
-  teams        Team[]
-  progressions TeamProgression[]
-  createdBy    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String              @id @default(cuid())
+  slug             String              @unique
+  name             String
+  description      String?
+  game             String              @default("pubg_mobile")
+  status           String              @default("draft")
+  format           String?
+  prizePool        String?
+  maxTeams         Int                 @default(16)
+  scoringRule      Json
+  mapRotation      String[]
+  overlayToken     String              @unique @default(cuid())
+  isPublic         Boolean             @default(true)
+  discord          String?
+  rules            String?
+  bannerImage      String?
+  brandingData     Json?
+  scheduleData     Json?
+  registrationData Json?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  userId           String
+  imports          DiscordImport[]
+  matches          Match[]
+  auditLogs        QualifierAuditLog[]
+  rounds           Round[]
+  stages           Stage[]
+  teams            Team[]
+  progressions     TeamProgression[]
+  createdBy        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([slug])

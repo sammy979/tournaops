@@ -1,7 +1,7 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Palette, Save, Check, Eye, Upload, Globe, RefreshCw } from "lucide-react";
+import { Palette, Save, Check, Upload, Globe, RefreshCw } from "lucide-react";
 
 interface BrandingData {
   primaryColor: string;
@@ -15,7 +15,7 @@ interface BrandingData {
   bannerColor: string;
 }
 
-interface Tournament {
+interface TournamentItem {
   id: string;
   name: string;
 }
@@ -33,7 +33,7 @@ const DEFAULT_BRANDING: BrandingData = {
 };
 
 export default function BrandingPage() {
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [tournaments, setTournaments] = useState<TournamentItem[]>([]);
   const [selected, setSelected] = useState("");
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -42,8 +42,8 @@ export default function BrandingPage() {
 
   useEffect(() => {
     fetch("/api/tournaments")
-      .then(r => r.json())
-      .then(data => {
+      .then((r) => r.json())
+      .then((data) => {
         const list = data.tournaments || [];
         setTournaments(list);
         if (list.length > 0) {
@@ -57,8 +57,8 @@ export default function BrandingPage() {
     if (!id) return;
     setLoading(true);
     fetch("/api/tournaments/" + id + "/branding")
-      .then(r => r.json())
-      .then(data => {
+      .then((r) => r.json())
+      .then((data) => {
         if (data.branding && Object.keys(data.branding).length > 0) {
           setBranding({ ...DEFAULT_BRANDING, ...data.branding });
         } else {
@@ -85,6 +85,8 @@ export default function BrandingPage() {
       if (res.ok) {
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
+      } else {
+        alert("Failed to save branding");
       }
     } catch {
       alert("Failed to save branding");
@@ -96,9 +98,12 @@ export default function BrandingPage() {
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 500000) { alert("Max 500KB"); return; }
+    if (file.size > 500000) {
+      alert("Max 500KB");
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = ev => setBranding(b => ({ ...b, orgLogo: ev.target?.result as string }));
+    reader.onload = (ev) => setBranding((b) => ({ ...b, orgLogo: ev.target?.result as string }));
     reader.readAsDataURL(file);
   };
 
@@ -119,13 +124,22 @@ export default function BrandingPage() {
           <p className="text-gray-400 mt-1">White-label your tournament</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setBranding(DEFAULT_BRANDING)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 text-gray-400 hover:text-white text-sm transition-all">
+          <button
+            onClick={() => setBranding(DEFAULT_BRANDING)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 text-gray-400 hover:text-white text-sm transition-all"
+          >
             <RefreshCw className="w-4 h-4" />Reset
           </button>
-          <button onClick={saveBranding} disabled={saving || !selected}
-            className={"flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all " +
-              (saved ? "bg-green-500/20 text-green-400 border border-green-500/30" : "bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-50")}>
+          <button
+            onClick={saveBranding}
+            disabled={saving || !selected}
+            className={
+              "flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all " +
+              (saved
+                ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                : "bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-50")
+            }
+          >
             {saved ? <><Check className="w-4 h-4" />Saved!</> : saving ? "Saving..." : <><Save className="w-4 h-4" />Save</>}
           </button>
         </div>
@@ -133,10 +147,12 @@ export default function BrandingPage() {
 
       <div className="bg-white/5 rounded-xl p-4 border border-white/10">
         <label className="text-sm font-medium text-gray-400 block mb-2">Tournament</label>
-        <select value={selected}
-          onChange={e => setSelected(e.target.value)}
-          className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm w-auto focus:outline-none focus:border-indigo-500">
-          {tournaments.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+        <select
+          value={selected}
+          onChange={(e) => setSelected(e.target.value)}
+          className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm w-auto focus:outline-none focus:border-indigo-500"
+        >
+          {tournaments.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
         {loading && <p className="text-gray-500 text-xs mt-2">Loading branding...</p>}
       </div>
@@ -146,11 +162,15 @@ export default function BrandingPage() {
           <Palette className="w-4 h-4 text-purple-400" />Color Theme
         </h3>
         <div className="grid grid-cols-6 gap-2 mb-4">
-          {COLORS.map(c => (
-            <button key={c.name}
-              onClick={() => setBranding(b => ({ ...b, primaryColor: c.primary, accentColor: c.accent }))}
-              className={"flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all " +
-                (branding.primaryColor === c.primary ? "border-white/40 bg-white/10" : "border-white/10 hover:border-white/20")}>
+          {COLORS.map((c) => (
+            <button
+              key={c.name}
+              onClick={() => setBranding((b) => ({ ...b, primaryColor: c.primary, accentColor: c.accent }))}
+              className={
+                "flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all " +
+                (branding.primaryColor === c.primary ? "border-white/40 bg-white/10" : "border-white/10 hover:border-white/20")
+              }
+            >
               <div className="w-8 h-8 rounded-lg" style={{ background: "linear-gradient(135deg, " + c.primary + ", " + c.accent + ")" }} />
               <span className="text-[10px] text-gray-500">{c.name}</span>
             </button>
@@ -162,20 +182,28 @@ export default function BrandingPage() {
         <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
           <Globe className="w-4 h-4 text-blue-400" />Organization
         </h3>
+
         <div className="space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-400 block mb-1.5">Organization Name</label>
-            <input type="text" value={branding.orgName}
-              onChange={e => setBranding(b => ({ ...b, orgName: e.target.value }))}
+            <input
+              type="text"
+              value={branding.orgName}
+              onChange={(e) => setBranding((b) => ({ ...b, orgName: e.target.value }))}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
-              placeholder="e.g. BGMI Esports Nepal" />
+              placeholder="e.g. TournaOps Nepal"
+            />
           </div>
+
           <div>
             <label className="text-sm font-medium text-gray-400 block mb-1.5">Logo (max 500KB)</label>
             <div className="flex items-center gap-3">
               {branding.orgLogo && (
-                <img src={branding.orgLogo} alt="Logo"
-                  className="w-12 h-12 rounded-xl object-cover border border-white/10" />
+                <img
+                  src={branding.orgLogo}
+                  alt="Logo"
+                  className="w-12 h-12 rounded-xl object-cover border border-white/10"
+                />
               )}
               <label className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 text-gray-400 hover:text-white text-sm cursor-pointer transition-all">
                 <Upload className="w-4 h-4" />Upload Logo
@@ -183,19 +211,27 @@ export default function BrandingPage() {
               </label>
             </div>
           </div>
+
           <div>
             <label className="text-sm font-medium text-gray-400 block mb-1.5">Discord URL</label>
-            <input type="url" value={branding.discordUrl}
-              onChange={e => setBranding(b => ({ ...b, discordUrl: e.target.value }))}
+            <input
+              type="url"
+              value={branding.discordUrl}
+              onChange={(e) => setBranding((b) => ({ ...b, discordUrl: e.target.value }))}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
-              placeholder="https://discord.gg/..." />
+              placeholder="https://discord.gg/..."
+            />
           </div>
+
           <div>
             <label className="text-sm font-medium text-gray-400 block mb-1.5">Twitter/X URL</label>
-            <input type="url" value={branding.twitterUrl}
-              onChange={e => setBranding(b => ({ ...b, twitterUrl: e.target.value }))}
+            <input
+              type="url"
+              value={branding.twitterUrl}
+              onChange={(e) => setBranding((b) => ({ ...b, twitterUrl: e.target.value }))}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
-              placeholder="https://twitter.com/..." />
+              placeholder="https://twitter.com/..."
+            />
           </div>
         </div>
       </div>

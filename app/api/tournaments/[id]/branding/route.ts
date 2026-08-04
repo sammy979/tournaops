@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { verifyTournamentOwnership } from "@/lib/authorization";
@@ -6,7 +6,7 @@ import { logError } from "@/lib/logger";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -14,13 +14,16 @@ export async function GET(
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 
-    const { id } = await params;
+    const { id } = await context.params;
     const { authorized, errorResponse } = await verifyTournamentOwnership(id, session);
     if (!authorized) return errorResponse!;
 
     const tournament = await prisma.tournament.findUnique({
       where: { id },
-      select: { brandingData: true, bannerImage: true },
+      select: {
+        brandingData: true,
+        bannerImage: true,
+      },
     });
 
     if (!tournament) {
@@ -29,7 +32,7 @@ export async function GET(
 
     return NextResponse.json({
       branding: tournament.brandingData || {},
-      bannerImage: tournament.bannerImage,
+      bannerImage: tournament.bannerImage || null,
     });
   } catch (err) {
     logError(err, "BRANDING_GET");
@@ -39,7 +42,7 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -47,34 +50,38 @@ export async function PUT(
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 
-    const { id } = await params;
+    const { id } = await context.params;
     const { authorized, errorResponse } = await verifyTournamentOwnership(id, session);
     if (!authorized) return errorResponse!;
 
-    let body: Record<string, unknown>;
-    try {
-      body = await req.json();
-    } catch {
-      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-    }
+    const body = await req.json();
 
-    // Validate branding fields
-    const allowed = ["primaryColor", "accentColor", "orgName", "orgLogo",
-                     "customMessage", "discordUrl", "twitterUrl", "websiteUrl", "bannerColor"];
-    const branding: Record<string, unknown> = {};
-    for (const key of allowed) {
-      if (body[key] !== undefined) {
-        branding[key] = String(body[key]).substring(0, 500);
-      }
-    }
+    const branding = {
+      primaryColor: String(body.primaryColor || "#3b82f6").substring(0, 30),
+      accentColor: String(body.accentColor || "#8b5cf6").substring(0, 30),
+      orgName: String(body.orgName || "").substring(0, 100),
+      orgLogo: String(body.orgLogo || "").substring(0, 500000),
+      customMessage: String(body.customMessage || "").substring(0, 500),
+      discordUrl: String(body.discordUrl || "").substring(0, 200),
+      twitterUrl: String(body.twitterUrl || "").substring(0, 200),
+      websiteUrl: String(body.websiteUrl || "").substring(0, 200),
+      bannerColor: String(body.bannerColor || "from-blue-900/20 to-purple-900/20").substring(0, 100),
+    };
 
     const updated = await prisma.tournament.update({
       where: { id },
-      data: { brandingData: branding },
-      select: { brandingData: true },
+      data: {
+        brandingData: branding as any,
+      },
+      select: {
+        brandingData: true,
+      },
     });
 
-    return NextResponse.json({ branding: updated.brandingData, success: true });
+    return NextResponse.json({
+      success: true,
+      branding: updated.brandingData,
+    });
   } catch (err) {
     logError(err, "BRANDING_PUT");
     return NextResponse.json({ error: "Failed to save branding" }, { status: 500 });
