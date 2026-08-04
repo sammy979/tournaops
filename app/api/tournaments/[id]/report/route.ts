@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { generateAI } from "@/lib/ai";
@@ -8,7 +8,7 @@ import { calculateStandings, getTopFragger, parseScoringConfig } from "@/lib/sco
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -16,7 +16,7 @@ export async function GET(
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 
-    const { id } = await params;
+    const { id } = await context.params;
 
     const { authorized, errorResponse } = await verifyTournamentOwnership(id, session);
     if (!authorized) return errorResponse!;

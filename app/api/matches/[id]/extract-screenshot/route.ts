@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { generateAI } from "@/lib/ai";
 import { logError } from "@/lib/logger";
@@ -6,7 +6,7 @@ import { checkRateLimit, getClientIp, RATE_LIMITS, getRateLimitHeaders } from "@
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();

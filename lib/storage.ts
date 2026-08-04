@@ -1,37 +1,36 @@
+// ============================================================
+// lib/storage.ts — DEPRECATED
+// This file previously used localStorage for tournament storage.
+// All tournament data now lives in PostgreSQL via Prisma.
+// Use /api/tournaments endpoints instead.
+// This file is kept only for backwards compatibility.
+// ============================================================
+
 import type { Tournament } from "@/types/tournament";
 
-const STORAGE_KEY = "twp_tournaments";
-
-export function saveTournament(t: Tournament): void {
-  if (typeof window === "undefined") return;
-  const all = getAllTournaments();
-  const idx = all.findIndex(x => x.id === t.id);
-  if (idx >= 0) {
-    all[idx] = { ...t, updatedAt: new Date().toISOString() };
-  } else {
-    all.push(t);
+// These functions are no-ops — data is now in the database
+export function saveTournament(_t: Tournament): void {
+  if (process.env.NODE_ENV === "development") {
+    console.warn("[storage.ts] saveTournament is deprecated. Use /api/tournaments instead.");
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
 }
 
-export function getTournament(id: string): Tournament | null {
-  if (typeof window === "undefined") return null;
-  const all = getAllTournaments();
-  return all.find(t => t.id === id) || null;
+export function getTournament(_id: string): Tournament | null {
+  if (process.env.NODE_ENV === "development") {
+    console.warn("[storage.ts] getTournament is deprecated. Use /api/tournaments/[id] instead.");
+  }
+  return null;
 }
 
 export function getAllTournaments(): Tournament[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
+  if (process.env.NODE_ENV === "development") {
+    console.warn("[storage.ts] getAllTournaments is deprecated. Use /api/tournaments instead.");
   }
+  return [];
 }
 
-export function deleteTournament(id: string): void {
-  if (typeof window === "undefined") return;
-  const all = getAllTournaments().filter(t => t.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+export function deleteTournament(_id: string): void {
+  if (process.env.NODE_ENV === "development") {
+    console.warn("[storage.ts] deleteTournament is deprecated. Use DELETE /api/tournaments/[id] instead.");
+  }
 }

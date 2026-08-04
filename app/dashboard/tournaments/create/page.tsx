@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -10,6 +10,7 @@ import {
   Calendar, Globe, Lock, Eye, EyeOff, Crown, Star,
   Flame, Shield, Copy, ChevronRight, Radio,
   User, Mail, Clock,
+  TrendingUp,
 } from "lucide-react";
 import { createTournament } from "@/lib/storage/tournaments";
 import { SCORING_PRESETS } from "@/types/tournament";
