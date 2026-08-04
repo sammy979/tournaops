@@ -1,4 +1,4 @@
-// TournaOps Enhanced Discord Slot List Parser
+﻿// TournaOps Enhanced Discord Slot List Parser
 // Supports: 12+ formats, captain names, Discord IDs, PUBG UIDs, table formats
 
 export interface ParsedSlot {
@@ -11,10 +11,22 @@ export interface ParsedSlot {
   raw: string;
 }
 
+export interface ExistingMatch {
+  slotNumber: number;
+  teamName: string;
+  existingTeamName: string;
+  existingTeamId: string;
+  reason: string;
+}
+
 export interface ValidationResult {
   valid: ParsedSlot[];
   duplicates: Array<{ slot: ParsedSlot; existingTeamName?: string; reason: string }>;
   invalid: Array<{ line: string; reason: string }>;
+  // Extended fields used by DiscordSlotImporter
+  newTeams: ParsedSlot[];
+  existingMatches: ExistingMatch[];
+  message: string;
 }
 
 export interface ParseResult {
@@ -336,3 +348,12 @@ export function isLikelySlotList(rawText: string): boolean {
 
 // Backwards compatibility
 export const checkDuplicates = validateImport;
+
+// -- Missing exports that components reference ------------------
+export type ExistingTeamTypeType = "exact" | "fuzzy" | "new";
+
+export interface ExistingTeam {
+  id: string;
+  name: string;
+  tag?: string;
+}

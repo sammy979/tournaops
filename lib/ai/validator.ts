@@ -240,3 +240,11 @@ export function matchTeamNames(
     return { inputName: input, matchedName: input, confidence: 50, isExactMatch: false };
   });
 }
+
+// -- Missing type that was referenced but not defined ----------
+export interface AITeamMatch {
+  inputName: string;
+  matchedName: string;
+  confidence: number;
+  isExactMatch: boolean;
+}

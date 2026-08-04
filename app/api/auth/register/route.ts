@@ -1,51 +1,131 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { setSessionCookie } from "@/lib/auth/session";
+import { checkRateLimit, getClientIp, RATE_LIMITS, getRateLimitHeaders } from "@/lib/rate-limit";
+import { validateEmail, validatePassword, validateUsername, validateString } from "@/lib/validation";
+import { logError } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
+  // ── Rate limiting ──────────────────────────────────────────
+  const ip = getClientIp(req);
+  const rl = checkRateLimit(`register:${ip}`, RATE_LIMITS.AUTH_REGISTER);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Too many registration attempts. Please wait before trying again." },
+      { status: 429, headers: getRateLimitHeaders(rl, RATE_LIMITS.AUTH_REGISTER) }
+    );
+  }
+
   try {
-    const { email, password, username, displayName } = await req.json();
-
-    if (!email || !password || !username || !displayName) {
-      return NextResponse.json({ error: "All fields required" }, { status: 400 });
+    // ── Parse body ─────────────────────────────────────────────
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
-    if (password.length < 6) {
-      return NextResponse.json({ error: "Password must be 6+ characters" }, { status: 400 });
+
+    const { email, password, username, displayName } = body as Record<string, unknown>;
+
+    // ── Input validation ───────────────────────────────────────
+    const errors: string[] = [];
+
+    if (!validateEmail(email)) {
+      errors.push("Valid email is required");
     }
 
-    const existingEmail = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    const pwResult = validatePassword(password);
+    if (!pwResult.valid) {
+      errors.push(...pwResult.errors);
+    }
+
+    const unResult = validateUsername(username);
+    if (!unResult.valid) {
+      errors.push(...unResult.errors);
+    }
+
+    const dnResult = validateString(displayName, "Display name", { minLength: 2, maxLength: 50 });
+    if (!dnResult.valid) {
+      errors.push(...dnResult.errors);
+    }
+
+    if (errors.length > 0) {
+      return NextResponse.json({ error: errors[0], details: errors }, { status: 400 });
+    }
+
+    // ── Normalize inputs ───────────────────────────────────────
+    const normalizedEmail = (email as string).toLowerCase().trim();
+    const normalizedUsername = (username as string).toLowerCase().trim();
+    const normalizedDisplayName = (displayName as string).trim();
+
+    // ── Check uniqueness ───────────────────────────────────────
+    const [existingEmail, existingUsername] = await Promise.all([
+      prisma.user.findUnique({
+        where: { email: normalizedEmail },
+        select: { id: true },
+      }),
+      prisma.user.findUnique({
+        where: { username: normalizedUsername },
+        select: { id: true },
+      }),
+    ]);
+
     if (existingEmail) {
       return NextResponse.json({ error: "Email already registered" }, { status: 400 });
     }
 
-    const existingUsername = await prisma.user.findUnique({ where: { username: username.toLowerCase() } });
     if (existingUsername) {
       return NextResponse.json({ error: "Username already taken" }, { status: 400 });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    // ── Hash password ──────────────────────────────────────────
+    // bcrypt cost 12 — good balance of security vs speed
+    const passwordHash = await bcrypt.hash(password as string, 12);
+
+    // ── Create user ────────────────────────────────────────────
     const user = await prisma.user.create({
       data: {
-        email: email.toLowerCase(),
-        username: username.toLowerCase(),
-        displayName,
+        email: normalizedEmail,
+        username: normalizedUsername,
+        displayName: normalizedDisplayName,
         password: passwordHash,
+      },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        displayName: true,
+        isAdmin: true,
       },
     });
 
+    // ── Set session cookie ─────────────────────────────────────
     await setSessionCookie({
       userId: user.id,
       email: user.email,
       username: user.username,
+      isAdmin: user.isAdmin,
     });
 
-    return NextResponse.json({
-      success: true,
-      user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName },
-    });
-  } catch (err: any) {
-    console.error("Register error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          displayName: user.displayName,
+          isAdmin: user.isAdmin,
+        },
+      },
+      { status: 201 }
+    );
+  } catch (err) {
+    logError(err, "AUTH_REGISTER");
+    return NextResponse.json(
+      { error: "An error occurred during registration. Please try again." },
+      { status: 500 }
+    );
   }
 }

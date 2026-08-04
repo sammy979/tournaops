@@ -226,3 +226,44 @@ export const TOURNAMENT_PRESETS = {
 export const PLAYER_ROLES: PlayerRole[] = [
   "IGL", "Fragger", "Support", "Entry", "Sniper", "Assaulter", "Scout"
 ];
+
+// ─── BRACKET TYPES (1v1 elimination bracket) ────────────────────────────────
+
+export interface BracketTeam {
+  id: string;
+  name: string;
+  logo?: string;
+  seed?: number;
+  tag?: string;
+}
+
+export interface BracketMatch {
+  id: string;
+  round: number;
+  position: number;
+  bestOf: number;
+  team1?: BracketTeam | null;
+  team2?: BracketTeam | null;
+  score1: number;
+  score2: number;
+  winner?: BracketTeam | null;
+  isComplete: boolean;
+  nextMatchId?: string | null;
+}
+
+export type TournamentFormat = "single_elimination" | "double_elimination" | "round_robin" | "swiss";
+export type BestOf = 1 | 3 | 5;
+export type SeedingType = "random" | "seeded" | "manual";
+
+// ─── STANDINGS ───────────────────────────────────────────────────────────────
+
+export interface Standing {
+  rank: number;
+  teamId: string;
+  teamName: string;
+  wins: number;
+  losses: number;
+  points: number;
+  previousRank?: number;
+}
+

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         stageId: match.stageId,
         action: auditAction,
         reason: auditReason,
-        metadata: { matchId, previousStatus: match.verificationStatus, newStatus: updated.verificationStatus },
+        metadata: { matchId, previousStatus: match.status, newStatus: updated.status },
         performedBy: session.userId,
       },
     });

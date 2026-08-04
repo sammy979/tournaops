@@ -7,61 +7,50 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
-// USER
-// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
-
 model User {
-  id           String       @id @default(cuid())
-  email        String       @unique
-  username     String       @unique
-  displayName  String
-  password     String
-  avatar       String?
-  isAdmin      Boolean      @default(false)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  tournaments  Tournament[]
+  id          String       @id @default(cuid())
+  email       String       @unique
+  username    String       @unique
+  displayName String
+  password    String
+  avatar      String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  isAdmin     Boolean      @default(false)
+  tournaments Tournament[]
 
   @@index([email])
   @@index([username])
 }
 
-// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
-// TOURNAMENT
-// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
-
 model Tournament {
-  id            String   @id @default(cuid())
-  slug          String   @unique
-  name          String
-  description   String?
-  game          String   @default("pubg_mobile")
-  status        String   @default("draft")
-  format        String?
-  prizePool     String?
-  maxTeams      Int      @default(16)
-  scoringRule   Json
-  mapRotation   String[]
-  overlayToken  String   @unique @default(cuid())
-  isPublic      Boolean  @default(true)
-  discord       String?
-  rules         String?
-  bannerImage   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  createdBy     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId        String
-
-  teams         Team[]
-  matches       Match[]
-  rounds        Round[]
-  imports       DiscordImport[]
-
-  stages        Stage[]
-  progressions  TeamProgression[]
-  auditLogs     QualifierAuditLog[]
+  id           String              @id @default(cuid())
+  slug         String              @unique
+  name         String
+  description  String?
+  game         String              @default("pubg_mobile")
+  status       String              @default("draft")
+  format       String?
+  prizePool    String?
+  maxTeams     Int                 @default(16)
+  scoringRule  Json
+  mapRotation  String[]
+  overlayToken String              @unique @default(cuid())
+  isPublic     Boolean             @default(true)
+  discord      String?
+  rules        String?
+  bannerImage  String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  userId       String
+  imports      DiscordImport[]
+  matches      Match[]
+  auditLogs    QualifierAuditLog[]
+  rounds       Round[]
+  stages       Stage[]
+  teams        Team[]
+  progressions TeamProgression[]
+  createdBy    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([slug])
@@ -78,9 +67,8 @@ model Team {
   players      Json
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
-
-  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
 
   @@index([tournamentId])
   @@index([seed])
@@ -94,39 +82,34 @@ model Round {
   advanceTop      Int?
   order           Int
   lobbies         Json
-
-  tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   tournamentId    String
+  tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
 
   @@index([tournamentId])
   @@index([order])
 }
 
 model Match {
-  id                  String     @id @default(cuid())
-  name                String
-  roundId             String
-  lobbyId             String
-  map                 String
-  status              String     @default("pending")
-  matchNumber         Int?
-  results             Json?
-  startTime           DateTime?
-  endTime             DateTime?
-  createdAt           DateTime   @default(now())
-  updatedAt           DateTime   @updatedAt
-
-  stageId             String?
-  groupId             String?
-
-  // NEW: Qualifier extras
-  notes               String?    @db.Text
-  screenshotUrl       String?    @db.Text     // base64 or URL
-  compensationData    Json?      // { teamId: points, ... }
-  penaltyData         Json?      // { teamId: points, reason, ... }
-
-  tournament          Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  tournamentId        String
+  id               String     @id @default(cuid())
+  name             String
+  roundId          String
+  lobbyId          String
+  map              String
+  status           String     @default("pending")
+  matchNumber      Int?
+  results          Json?
+  startTime        DateTime?
+  endTime          DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  tournamentId     String
+  groupId          String?
+  stageId          String?
+  compensationData Json?
+  notes            String?
+  penaltyData      Json?
+  screenshotUrl    String?
+  tournament       Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
 
   @@index([tournamentId])
   @@index([status])
@@ -135,143 +118,117 @@ model Match {
 }
 
 model DiscordImport {
-  id                  String      @id @default(cuid())
-  discordMessageId    String      @unique
-  discordChannelId    String
-  discordChannelName  String
-  discordGuildId      String
-  discordGuildName    String
-  discordUserId       String
-  discordUsername     String
-  discordUserAvatar   String?
-  messageContent      String      @db.Text
-  parseResult         Json
-  status              String      @default("pending")
-  receivedAt          DateTime    @default(now())
-  importedAt          DateTime?
-
-  tournament          Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
-  tournamentId        String?
+  id                 String      @id @default(cuid())
+  discordMessageId   String      @unique
+  discordChannelId   String
+  discordChannelName String
+  discordGuildId     String
+  discordGuildName   String
+  discordUserId      String
+  discordUsername    String
+  discordUserAvatar  String?
+  messageContent     String
+  parseResult        Json
+  status             String      @default("pending")
+  receivedAt         DateTime    @default(now())
+  importedAt         DateTime?
+  tournamentId       String?
+  tournament         Tournament? @relation(fields: [tournamentId], references: [id])
 
   @@index([status])
   @@index([discordGuildId])
   @@index([receivedAt])
 }
 
-// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
-// MULTI-STAGE TOURNAMENT SYSTEM
-// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
-
 model Stage {
-  id                 String   @id @default(cuid())
+  id                 String              @id @default(cuid())
   tournamentId       String
   name               String
   type               String
   order              Int
-  status             String   @default("DRAFT")
-
-  numGroups          Int      @default(1)
-  teamsPerGroup      Int      @default(16)
-  matchesPerGroup    Int      @default(4)
+  status             String              @default("DRAFT")
+  numGroups          Int                 @default(1)
+  teamsPerGroup      Int                 @default(16)
+  matchesPerGroup    Int                 @default(4)
   totalTeams         Int
-
   startDate          DateTime?
   endDate            DateTime?
   registrationOpens  DateTime?
   registrationCloses DateTime?
-
   qualificationRule  Json
-  teamsAdvancing     Int      @default(0)
-  teamsEliminated    Int      @default(0)
-
+  teamsAdvancing     Int                 @default(0)
+  teamsEliminated    Int                 @default(0)
   mapRotation        String[]
   scoringRule        Json
-  tiebreakerOrder    String[] @default(["points", "kills", "damage", "wwcd"])
-
-  isLocked           Boolean  @default(false)
+  tiebreakerOrder    String[]            @default(["points", "kills", "damage", "wwcd"])
+  isLocked           Boolean             @default(false)
   lockedAt           DateTime?
   lockedBy           String?
-
   description        String?
-
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  tournament         Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  auditLogs          QualifierAuditLog[]
+  tournament         Tournament          @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   groups             StageGroup[]
   progressions       TeamProgression[]
-  auditLogs          QualifierAuditLog[]
 
   @@index([tournamentId, order])
   @@index([status])
 }
 
 model StageGroup {
-  id           String   @id @default(cuid())
-  stageId      String
-  name         String
-  order        Int      @default(0)
-  teamIds      String[]
-  matchIds     String[]
-  status       String   @default("PENDING")
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  stage        Stage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  stageId   String
+  name      String
+  order     Int      @default(0)
+  teamIds   String[]
+  matchIds  String[]
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  stage     Stage    @relation(fields: [stageId], references: [id], onDelete: Cascade)
 
   @@index([stageId])
 }
 
 model TeamProgression {
-  id              String    @id @default(cuid())
-  tournamentId    String
-  stageId         String
-  teamId          String
-  teamName        String
-
-  entryPosition   Int?
-  finalPosition   Int?
-  points          Int       @default(0)
-  kills           Int       @default(0)
-  matchesPlayed   Int       @default(0)
-  wwcds           Int       @default(0)
-
-  status          String
+  id                String     @id @default(cuid())
+  tournamentId      String
+  stageId           String
+  teamId            String
+  teamName          String
+  entryPosition     Int?
+  finalPosition     Int?
+  points            Int        @default(0)
+  kills             Int        @default(0)
+  matchesPlayed     Int        @default(0)
+  wwcds             Int        @default(0)
+  status            String
   advancedToStageId String?
-  manualOverride  Boolean   @default(false)
-  overrideNote    String?
-
-  createdAt       DateTime  @default(now())
-
-  tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  stage           Stage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  manualOverride    Boolean    @default(false)
+  overrideNote      String?
+  createdAt         DateTime   @default(now())
+  stage             Stage      @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  tournament        Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
 
   @@unique([stageId, teamId])
   @@index([tournamentId, teamId])
   @@index([stageId])
 }
 
-// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
-// NEW: QUALIFIER AUDIT LOG
-// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
-
 model QualifierAuditLog {
-  id             String   @id @default(cuid())
-  tournamentId   String
-  stageId        String?
-  teamId         String?
-  teamName       String?
-
-  action         String   // MANUAL_ADVANCE, MANUAL_ELIMINATE, EDIT_RESULT, ADD_COMPENSATION, ADD_PENALTY, LOCK_STAGE, UNLOCK_STAGE, RESET_STAGE
-  reason         String   @db.Text
-  metadata       Json?    // Additional context (old value, new value, etc.)
-
-  performedBy    String
-  performedAt    DateTime @default(now())
-
-  tournament     Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  stage          Stage? @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  id           String     @id @default(cuid())
+  tournamentId String
+  stageId      String?
+  teamId       String?
+  teamName     String?
+  action       String
+  reason       String
+  metadata     Json?
+  performedBy  String
+  performedAt  DateTime   @default(now())
+  stage        Stage?     @relation(fields: [stageId], references: [id])
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
 
   @@index([tournamentId])
   @@index([stageId])
@@ -279,37 +236,25 @@ model QualifierAuditLog {
   @@index([performedAt])
 }
 
-// ═══════════════════════════════════════════════════════════
-// USER SCORING PRESETS (Custom scoring systems)
-// ═══════════════════════════════════════════════════════════
-
 model UserScoringPreset {
-  id                String   @id @default(cuid())
-  userId            String
-  name              String
-  description       String?  @db.Text
-
-  // Points
-  placementPoints   Int[]    // Array: [10, 6, 5, 4, 3, 2, 1, 1, 0...]
-  killPoints        Int      @default(1)
-  wwcdBonus         Int      @default(0)
-  top3Bonus         Int      @default(0)
-  perfectMatchBonus Int      @default(0)
-  maxKillPoints     Int?
+  id                   String   @id @default(cuid())
+  userId               String
+  name                 String
+  description          String?
+  placementPoints      Int[]
+  killPoints           Int      @default(1)
+  wwcdBonus            Int      @default(0)
+  top3Bonus            Int      @default(0)
+  perfectMatchBonus    Int      @default(0)
+  maxKillPoints        Int?
   finalMatchMultiplier Float?
-
-  // Tiebreakers (ordered array)
-  tiebreakerOrder   String[] @default(["points", "wwcd", "kills", "damage"])
-
-  // Meta
-  isOfficial        Boolean  @default(false)  // If true, warns user to verify
-  officialSource    String?  // "PMGC 2024" etc — clearly marked as unverified reference
-
-  isPublic          Boolean  @default(false)  // Share with others
-  usageCount        Int      @default(0)
-
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  tiebreakerOrder      String[] @default(["points", "wwcd", "kills", "damage"])
+  isOfficial           Boolean  @default(false)
+  officialSource       String?
+  isPublic             Boolean  @default(false)
+  usageCount           Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   @@index([userId])
   @@index([isPublic])

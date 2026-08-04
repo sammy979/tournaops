@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -9,7 +9,7 @@ import { Tournament, Team, Player } from "@/types/tournament";
 import { saveTournament } from "@/lib/storage/tournaments";
 import {
   parseSlotList, validateImport,
-  type ParseResult, type ParsedSlot, type ExistingTeamTypeType
+  type ParseResult, type ParsedSlot, type ExistingTeamTypeType, type ExistingTeam, type ExistingMatch
 } from "@/lib/discord/slotParser";
 
 interface DiscordSlotImporterProps {

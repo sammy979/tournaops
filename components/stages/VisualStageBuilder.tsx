@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import {
@@ -516,7 +516,7 @@ export default function VisualStageBuilder({ tournament }: VisualStageBuilderPro
         <AddStagePicker
           currentStages={stages}
           insertAt={showAddAt}
-          onSelect={(preset) => createStage(preset, showAddAt)}
+          onSelect={(preset: Record<string, unknown>) => createStage(preset, showAddAt)}
           onClose={() => setShowAddAt(null)}
         />
       )}

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -128,7 +128,7 @@ export default function ScoringPresetsPage() {
               <div key={p.id} className="glass-card rounded-xl p-4 border border-white/10 hover:border-blue-500/30 transition-all">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-white font-bold text-sm">{p.name}</h3>
-                  {p.isPublic && <Globe className="w-3.5 h-3.5 text-blue-400" title="Public preset" />}
+                  {p.isPublic && <Globe className="w-3.5 h-3.5 text-blue-400" />}
                 </div>
                 {p.description && <p className="text-gray-500 text-xs mb-3">{p.description}</p>}
                 <div className="grid grid-cols-3 gap-2 mb-3 text-xs">

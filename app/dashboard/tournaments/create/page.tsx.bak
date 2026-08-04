@@ -1,9 +1,9 @@
 ﻿"use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { TrendingUp, useState, useEffect } from "react";
+import { TrendingUp, useRouter } from "next/navigation";
 import Link from "next/link";
-import {
+import { TrendingUp,
   ArrowLeft, ArrowRight, Check, Trophy, Users, Map,
   Target, Zap, Sparkles, Info, Plus, Minus, Award,
   MessageSquare, DollarSign, FileText, Settings, Upload,
