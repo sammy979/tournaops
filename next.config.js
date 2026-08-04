@@ -27,6 +27,7 @@ const nextConfig = {
       source: "/overlay/:path*",
       headers: [
         { key: "X-Frame-Options", value: "ALLOWALL" },
+        { key: "Content-Security-Policy", value: "frame-ancestors *;" },
         { key: "Cache-Control", value: "no-store" },
       ],
     },

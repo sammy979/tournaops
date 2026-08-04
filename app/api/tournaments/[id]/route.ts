@@ -1,69 +1,119 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
+import { verifyTournamentOwnership } from "@/lib/authorization";
+import { logError } from "@/lib/logger";
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+const VALID_STATUSES = ["draft", "registration", "live", "completed", "cancelled"];
 
-  // Try by ID first, then by slug
-  let tournament = await prisma.tournament.findUnique({
-    where: { id },
-    include: { teams: true, matches: true, rounds: true },
-  });
+// GET tournament by ID
+export async function GET(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await context.params;
+    const session = await getSession();
 
-  if (!tournament) {
-    tournament = await prisma.tournament.findUnique({
-      where: { slug: id },
-      include: { teams: true, matches: true, rounds: true },
+    const tournament = await prisma.tournament.findUnique({
+      where: { id },
+      include: {
+        teams: true,
+        matches: { orderBy: { matchNumber: "asc" } },
+        rounds: { orderBy: { order: "asc" } },
+        stages: { orderBy: { order: "asc" } },
+      },
     });
+
+    if (!tournament) {
+      return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
+    }
+
+    // If not public, must be owner or admin
+    if (!tournament.isPublic) {
+      if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      if (tournament.userId !== session.userId && !session.isAdmin) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
+
+    return NextResponse.json({ tournament });
+  } catch (err) {
+    logError(err, "TOURNAMENT_GET");
+    return NextResponse.json({ error: "Failed to load tournament" }, { status: 500 });
   }
-
-  if (!tournament) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-  return NextResponse.json({ tournament });
 }
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+// PATCH tournament — update status, name, etc.
+export async function PATCH(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
 
-  const { id } = await params;
-  const data = await req.json();
+    const { id } = await context.params;
+    const { authorized, errorResponse } = await verifyTournamentOwnership(id, session);
+    if (!authorized) return errorResponse!;
 
-  // Ownership check
-  const existing = await prisma.tournament.findUnique({ where: { id } });
-  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (existing.userId !== session.userId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const body = await req.json();
+    const updateData: Record<string, unknown> = {};
+
+    // Status change — validate
+    if (body.status !== undefined) {
+      if (!VALID_STATUSES.includes(body.status)) {
+        return NextResponse.json(
+          { error: "Invalid status. Must be: " + VALID_STATUSES.join(", ") },
+          { status: 400 }
+        );
+      }
+      updateData.status = body.status;
+    }
+
+    // Other fields
+    if (body.name !== undefined) updateData.name = String(body.name).substring(0, 100).trim();
+    if (body.description !== undefined) updateData.description = String(body.description).substring(0, 2000);
+    if (body.prizePool !== undefined) updateData.prizePool = String(body.prizePool).substring(0, 100);
+    if (body.rules !== undefined) updateData.rules = String(body.rules).substring(0, 5000);
+    if (body.discord !== undefined) updateData.discord = String(body.discord).substring(0, 200);
+    if (body.isPublic !== undefined) updateData.isPublic = Boolean(body.isPublic);
+    if (body.bannerImage !== undefined) updateData.bannerImage = String(body.bannerImage).substring(0, 500000);
+
+    const updated = await prisma.tournament.update({
+      where: { id },
+      data: updateData,
+      include: {
+        teams: true,
+        matches: true,
+        rounds: true,
+      },
+    });
+
+    return NextResponse.json({ tournament: updated, success: true });
+  } catch (err) {
+    logError(err, "TOURNAMENT_PATCH");
+    return NextResponse.json({ error: "Failed to update tournament" }, { status: 500 });
   }
-
-  const updated = await prisma.tournament.update({
-    where: { id },
-    data: {
-      name: data.name,
-      description: data.description,
-      status: data.status,
-      prizePool: data.prizePool,
-      discord: data.discord,
-      rules: data.rules,
-    },
-    include: { teams: true, matches: true, rounds: true },
-  });
-
-  return NextResponse.json({ tournament: updated });
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+// DELETE tournament
+export async function DELETE(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
 
-  const { id } = await params;
-  const existing = await prisma.tournament.findUnique({ where: { id } });
-  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (existing.userId !== session.userId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const { id } = await context.params;
+    const { authorized, errorResponse } = await verifyTournamentOwnership(id, session);
+    if (!authorized) return errorResponse!;
+
+    await prisma.tournament.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    logError(err, "TOURNAMENT_DELETE");
+    return NextResponse.json({ error: "Failed to delete tournament" }, { status: 500 });
   }
-
-  await prisma.tournament.delete({ where: { id } });
-  return NextResponse.json({ success: true });
 }
