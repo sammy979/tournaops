@@ -2,28 +2,35 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TournaOps  PUBG Mobile Tournament Management Platform",
-  description: "Run professional PUBG Mobile tournaments in minutes. Live leaderboards, OBS overlays, PMGC scoring, squad management, and social media card generation. Free to start.",
-  keywords: "PUBG Mobile tournament, BGMI tournament, esports tournament management, PMGC scoring, tournament leaderboard, OBS overlay, tournament organizer tool, BGMI tournament app",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "TournaOps",
+  metadataBase: new URL("https://www.tournaops.com"),
+  title: {
+    default: "TournaOps — PUBG Mobile Tournament Platform",
+    template: "%s | TournaOps",
   },
+  description: "Free PUBG Mobile tournament management platform. Run qualifiers, track standings, generate results, and broadcast live with OBS overlays.",
+  keywords: ["PUBG Mobile", "tournament", "esports", "PMGC", "PMPL", "organizer", "standings", "bracket"],
+  authors: [{ name: "TournaOps" }],
+  creator: "TournaOps",
   openGraph: {
-    title: "TournaOps  PUBG Mobile Tournament Platform",
-    description: "Stop managing chaos. Start running tournaments. Live leaderboards, OBS overlays, and PMGC scoring  all in one place.",
     type: "website",
-    siteName: "TournaOps",
+    locale: "en_US",
     url: "https://www.tournaops.com",
+    siteName: "TournaOps",
+    title: "TournaOps — PUBG Mobile Tournament Platform",
+    description: "Free PUBG Mobile tournament management. Run qualifiers, track standings, broadcast live.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "TournaOps" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "TournaOps  PUBG Mobile Tournament Platform",
-    description: "Professional tournament management for PUBG Mobile organizers. Free to start.",
+    title: "TournaOps — PUBG Mobile Tournament Platform",
+    description: "Free PUBG Mobile tournament management platform.",
+    images: ["/og-image.png"],
   },
-  robots: { index: true, follow: true },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
+  },
 };
 
 export const viewport: Viewport = {
