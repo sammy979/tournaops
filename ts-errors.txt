@@ -1,0 +1,43 @@
+app/api/chat/history/route.ts(9,33): error TS2339: Property 'chatMessage' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/chat/history/route.ts(10,30): error TS2339: Property 'id' does not exist on type 'SessionPayload'.
+app/api/chat/history/route.ts(28,32): error TS2339: Property 'chatMessage' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/chat/history/route.ts(30,23): error TS2339: Property 'id' does not exist on type 'SessionPayload'.
+app/api/chat/history/route.ts(44,16): error TS2339: Property 'chatMessage' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/chat/history/route.ts(45,30): error TS2339: Property 'id' does not exist on type 'SessionPayload'.
+app/api/stages/[id]/create-next/route.ts(63,7): error TS2322: Type 'JsonValue' is not assignable to type 'JsonNull | InputJsonValue'.
+  Type 'null' is not assignable to type 'JsonNull | InputJsonValue'.
+app/api/stages/[id]/create-next/route.ts(94,15): error TS2339: Property 'groups' does not exist on type '{ status: string; name: string; id: string; createdAt: Date; updatedAt: Date; description: string | null; scoringRule: JsonValue; mapRotation: string[]; tournamentId: string; ... 16 more ...; lockedBy: string | null; }'.
+app/api/stages/[id]/create-next/route.ts(94,28): error TS7006: Parameter 'g' implicitly has an 'any' type.
+app/api/stages/[id]/create-next/route.ts(94,31): error TS7006: Parameter 'i' implicitly has an 'any' type.
+app/api/tournaments/[id]/ai-analysis/route.ts(19,13): error TS7022: 'id' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+app/api/tournaments/[id]/ai-analysis/route.ts(19,26): error TS2448: Block-scoped variable 'context' used before its declaration.
+app/api/tournaments/[id]/ai-analysis/route.ts(25,11): error TS7022: 'tournament' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+app/api/tournaments/[id]/ai-analysis/route.ts(76,11): error TS7022: 'context' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+app/api/tournaments/[id]/ai-analysis/route.ts(90,37): error TS7006: Parameter 's' implicitly has an 'any' type.
+app/dashboard/tournaments/[id]/page.tsx(49,81): error TS2749: 'updated' refers to a value, but is being used as a type here. Did you mean 'typeof updated'?
+app/dashboard/tournaments/[id]/page.tsx(425,42): error TS2339: Property 'then' does not exist on type 'Tournament'.
+app/dashboard/tournaments/[id]/page.tsx(425,97): error TS2749: 'updated' refers to a value, but is being used as a type here. Did you mean 'typeof updated'?
+app/dashboard/tournaments/[id]/page.tsx(435,42): error TS2339: Property 'then' does not exist on type 'Tournament'.
+app/dashboard/tournaments/[id]/page.tsx(435,97): error TS2749: 'updated' refers to a value, but is being used as a type here. Did you mean 'typeof updated'?
+app/overlay/[token]/page.tsx(21,23): error TS2339: Property 'find' does not exist on type 'Promise<Tournament[]>'.
+app/overlay/[token]/page.tsx(21,28): error TS7006: Parameter 't' implicitly has an 'any' type.
+app/tournaments/[slug]/page.tsx(245,10): error TS2367: This comparison appears to be unintentional because the types '"teams"' and '"results"' have no overlap.
+components/discord/DiscordSlotImporter.tsx(116,14): error TS18048: 'm.parsed' is possibly 'undefined'.
+components/discord/DiscordSlotImporter.tsx(116,57): error TS18048: 'm.parsed' is possibly 'undefined'.
+components/discord/DiscordSlotImporter.tsx(124,22): error TS18048: 'existingMatch.existing' is possibly 'undefined'.
+components/discord/DiscordSlotImporter.tsx(323,75): error TS2339: Property 'message' does not exist on type 'string'.
+components/discord/DiscordSlotImporter.tsx(340,26): error TS18048: 'm.parsed' is possibly 'undefined'.
+components/discord/DiscordSlotImporter.tsx(340,69): error TS18048: 'm.parsed' is possibly 'undefined'.
+components/discord/DiscordSlotImporter.tsx(365,36): error TS2339: Property 'matchType' does not exist on type 'ExistingMatch'.
+components/discord/DiscordSlotImporter.tsx(366,36): error TS2339: Property 'matchType' does not exist on type 'ExistingMatch'.
+components/discord/DiscordSlotImporter.tsx(369,37): error TS2339: Property 'matchType' does not exist on type 'ExistingMatch'.
+components/discord/DiscordSlotImporter.tsx(370,37): error TS2339: Property 'matchType' does not exist on type 'ExistingMatch'.
+components/stages/StageManager.tsx(10,8): error TS2300: Duplicate identifier 'StageProgressionTimeline'.
+components/stages/StageManager.tsx(11,8): error TS2300: Duplicate identifier 'StageProgressionTimeline'.
+components/stages/StageManager.tsx(118,33): error TS2322: Type '{ tournamentId: string; compact: boolean; }' is not assignable to type 'IntrinsicAttributes & StageManagerProps'.
+  Property 'tournamentId' does not exist on type 'IntrinsicAttributes & StageManagerProps'. Did you mean 'tournament'?
+components/stages/StageProgressionTimeline.tsx(117,33): error TS2322: Type '{ tournamentId: string; compact: boolean; }' is not assignable to type 'IntrinsicAttributes & StageManagerProps'.
+  Property 'tournamentId' does not exist on type 'IntrinsicAttributes & StageManagerProps'. Did you mean 'tournament'?
+components/stages/VisualStageBuilder.tsx(519,70): error TS2345: Argument of type 'Record<string, unknown>' is not assignable to parameter of type '{ type: string; label: string; shortLabel: string; icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; color: string; gradient: string; description: string; defaults: { ...; }; }'.
+  Type 'Record<string, unknown>' is missing the following properties from type '{ type: string; label: string; shortLabel: string; icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; color: string; gradient: string; description: string; defaults: { ...; }; }': type, label, shortLabel, icon, and 4 more.
+lib/discord/slotParser.ts(328,3): error TS2739: Type '{ valid: ParsedSlot[]; duplicates: { slot: ParsedSlot; existingTeamName?: string | undefined; reason: string; }[]; invalid: { line: string; reason: string; }[]; }' is missing the following properties from type 'ValidationResult': newTeams, existingMatches, message

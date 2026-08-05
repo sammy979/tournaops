@@ -38,3 +38,11 @@ Thumbs.db
 .env*
 
 /lib/generated/prisma
+
+# Debug scripts
+check-db.js
+
+
+# Debug scripts
+check-db.js
+

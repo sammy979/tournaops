@@ -264,3 +264,12 @@ model UserScoringPreset {
   @@index([userId])
   @@index([isPublic])
 }
+model ChatMessage {
+  id           String   @id @default(cuid())
+  userId       String
+  role         String   // "user" or "assistant"
+  content      String
+  tournamentId String?
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

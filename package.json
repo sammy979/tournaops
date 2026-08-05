@@ -1,38 +1,40 @@
 {
-    "name":  "tournaops",
-    "version":  "1.0.0",
-    "description":  "Tournaops - Free tournament operations platform",
-    "private":  true,
-    "scripts":  {
-                    "dev":  "next dev -p 3001",
-                    "build":  "prisma generate \u0026\u0026 next build",
-                    "start":  "next start -p 3001",
-                    "lint":  "next lint",
-                    "postinstall":  "prisma generate"
-                },
-    "dependencies":  {
-                         "@prisma/client":  "^6.19.3",
-                         "bcryptjs":  "^3.0.3",
-                         "html-to-image":  "^1.11.13",
-                         "jsonwebtoken":  "^9.0.3",
-                         "jspdf":  "^2.5.2",
-                         "lucide-react":  "^0.400.0",
-                         "nanoid":  "^5.1.16",
-                         "next":  "^16.2.12",
-                         "react":  "^19.2.8",
-                         "react-dom":  "^19.2.8"
-                     },
-    "devDependencies":  {
-                            "@types/bcryptjs":  "^2.4.6",
-                            "@types/jsonwebtoken":  "^9.0.10",
-                            "@types/node":  "^22.20.1",
-                            "@types/react":  "^18.3.0",
-                            "@types/react-dom":  "^18.3.0",
-                            "autoprefixer":  "^10.4.0",
-                            "postcss":  "^8.4.0",
-                            "prisma":  "^6.19.3",
-                            "tailwindcss":  "^3.4.0",
-                            "tsx":  "^4.23.4",
-                            "typescript":  "^5.5.0"
-                        }
+    "name": "tournaops",
+    "version": "1.0.0",
+    "description": "Tournaops - Free tournament operations platform",
+    "private": true,
+    "scripts": {
+        "dev": "next dev -p 3001",
+        "build": "prisma generate && next build",
+        "start": "next start -p 3001",
+        "lint": "next lint",
+        "postinstall": "prisma generate"
+    },
+    "dependencies": {
+        "@prisma/client": "^6.19.3",
+        "bcryptjs": "^3.0.3",
+        "html-to-image": "^1.11.13",
+        "jsonwebtoken": "^9.0.3",
+        "jspdf": "^2.5.2",
+        "lucide-react": "^0.400.0",
+        "nanoid": "^5.1.16",
+        "next": "^16.2.12",
+        "react": "^19.2.8",
+        "react-dom": "^19.2.8",
+        "resend": "^6.18.1"
+    },
+    "devDependencies": {
+        "@types/bcryptjs": "^2.4.6",
+        "@types/jsonwebtoken": "^9.0.10",
+        "@types/node": "^22.20.1",
+        "@types/react": "^18.3.0",
+        "@types/react-dom": "^18.3.0",
+        "autoprefixer": "^10.4.0",
+        "postcss": "^8.4.0",
+        "prisma": "^6.19.3",
+        "sharp": "^0.35.3",
+        "tailwindcss": "^3.4.0",
+        "tsx": "^4.23.4",
+        "typescript": "^5.5.0"
+    }
 }

@@ -1,110 +1,118 @@
-﻿// TournaOps — PUBG Mobile Tournament Types
+// ============================================================
+// TOURNAOPS — Central Type Definitions
+// ============================================================
 
-export type GameType = "pubg_mobile";
-export type TournamentStatus = "draft" | "live" | "completed" | "cancelled";
-export type MatchStatus = "pending" | "live" | "completed";
-export type PlayerRole = "IGL" | "Fragger" | "Support" | "Entry" | "Sniper" | "Assaulter" | "Scout";
+export type TournamentStatus = "draft" | "registration" | "live" | "completed" | "cancelled";
+export type TournamentFormat = "solo" | "duo" | "squad";
+export type ScoringType = "PMGC" | "PMPL" | "COMMUNITY" | "KILL_HEAVY" | "PLACEMENT_HEAVY" | "CUSTOM";
 
-export interface Player {
-  id: string;
-  name: string;
-  ign?: string;
-  role?: PlayerRole;
-  photo?: string;
-  uid?: string;
+export interface PlacementPoints {
+  [place: number]: number;
+}
+
+export interface ScoringRule {
+  type: ScoringType;
+  killPoints: number;
+  placementPoints: PlacementPoints;
+  wwcdBonus?: number;
+  maxKillPoints?: number;
 }
 
 export interface Team {
   id: string;
   name: string;
-  logo?: string;
   tag?: string;
-  players: Player[];
+  logo?: string;
+  players?: Player[];
   seed?: number;
-  contact?: string;
+  groupId?: string;
+  tournamentId: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export interface PlayerMatchResult {
-  playerId: string;
-  playerName: string;
-  kills: number;
-  damage: number;
-  survived: boolean;
-  assists: number;
-  revives?: number;
-  headshotKills?: number;
-}
-
-export interface TeamMatchResult {
+export interface Player {
+  id: string;
+  name: string;
+  pubgId?: string;
+  role?: string;
   teamId: string;
-  teamName: string;
-  placement: number;
-  placementPoints: number;
-  killPoints: number;
-  totalPoints: number;
-  kills: number;
-  damage: number;
-  wwcd: boolean;
-  playerResults: PlayerMatchResult[];
 }
 
 export interface Match {
   id: string;
-  name: string;
-  roundId: string;
-  lobbyId: string;
-  map: string;
-  status: MatchStatus;
-  results?: TeamMatchResult[];
-  startTime?: string;
-  endTime?: string;
-  matchNumber?: number;
+  matchNumber: number;
+  map?: string;
+  status: "pending" | "live" | "completed";
+  results?: MatchResult[];
+  roundId?: string;
+  stageId?: string;
+  scheduledAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export interface Lobby {
+export interface MatchResult {
   id: string;
-  name: string;
-  teamIds: string[];
-  matchIds: string[];
+  matchId: string;
+  teamId: string;
+  team?: Team;
+  placement: number;
+  kills: number;
+  points?: number;
+  wwcd?: boolean;
 }
 
 export interface Round {
   id: string;
   name: string;
-  type: "qualifier" | "semifinal" | "final" | "grand_final" | "scrim";
-  lobbies: Lobby[];
-  matchesPerLobby: number;
-  advanceTop?: number;
-  order: number;
+  roundNumber: number;
+  matches: Match[];
+  tournamentId: string;
 }
 
-export interface ScoringRule {
+export interface Stage {
+  id: string;
   name: string;
-  placementPoints: number[];
-  killPoints: number;
-  wwcdBonus?: number;
-  maxKillPoints?: number;
+  type: "qualifier" | "semi-final" | "grand-final";
+  status: "pending" | "active" | "completed";
+  order: number;
+  maxAdvancing?: number;
+  tournamentId: string;
+  groups?: StageGroup[];
+  createdAt?: string;
 }
 
-export interface LeaderboardEntry {
+export interface StageGroup {
+  id: string;
+  name: string;
+  stageId: string;
+  teams?: Team[];
+}
+
+export interface Standing {
   rank: number;
   teamId: string;
   teamName: string;
+  teamTag?: string;
   totalPoints: number;
-  placementPoints: number;
-  killPoints: number;
   totalKills: number;
-  totalDamage: number;
   matchesPlayed: number;
-  wwcds: number;
-  matchResults: Record<string, {
-    placement: number;
-    kills: number;
-    placementPoints: number;
-    killPoints: number;
-    totalPoints: number;
-    damage: number;
-  }>;
+  wwcdCount: number;
+  averagePlacement?: number;
+}
+
+export interface BracketMatch {
+  id: string;
+  round: number;
+  position: number;
+  teamA?: Team | null;
+  teamB?: Team | null;
+  winner?: Team | null;
+  score?: {
+    teamA: number;
+    teamB: number;
+  };
 }
 
 export interface Tournament {
@@ -112,158 +120,52 @@ export interface Tournament {
   slug: string;
   name: string;
   description?: string;
-  game: GameType;
+  game: string;
   status: TournamentStatus;
-  format: string;
-  prizePool?: string;
+  format: TournamentFormat;
+  prizePool?: number;
   maxTeams: number;
-  teams: Team[];
-  rounds: Round[];
-  matches: Match[];
-  scoringRule: ScoringRule;
-  mapRotation: string[];
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
+  scoringRule?: ScoringRule;
+  mapRotation?: string[];
   overlayToken?: string;
-  isPublic?: boolean;
+  isPublic: boolean;
   discord?: string;
   rules?: string;
   bannerImage?: string;
+  brandingData?: Record<string, unknown>;
+  scheduleData?: Record<string, unknown>;
+  registrationData?: Record<string, unknown>;
+  userId: string;
+  createdAt?: string;
+  updatedAt?: string;
+  teams?: Team[];
+  rounds?: Round[];
+  stages?: Stage[];
 }
 
-// ─── SCORING PRESETS ────────────────────────────────────────────────────────
-
-export const SCORING_PRESETS: Record<string, ScoringRule> = {
-  pmgc: {
-    name: "PMGC Standard",
-    placementPoints: [15, 12, 10, 8, 6, 4, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0],
-    killPoints: 1,
-  },
-  pmpl: {
-    name: "PMPL South Asia",
-    placementPoints: [10, 6, 5, 4, 3, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-    killPoints: 1,
-    wwcdBonus: 5,
-  },
-  community: {
-    name: "Community Standard",
-    placementPoints: [12, 9, 7, 5, 4, 3, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0],
-    killPoints: 1,
-  },
-  kill_heavy: {
-    name: "Kill Heavy",
-    placementPoints: [10, 6, 5, 4, 3, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-    killPoints: 2,
-  },
-  battlegrounds: {
-    name: "Battlegrounds Mobile",
-    placementPoints: [10, 7, 5, 4, 3, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-    killPoints: 1,
-    maxKillPoints: 6,
-  },
-};
-
-// ─── MAP CONFIG ─────────────────────────────────────────────────────────────
-
-export const PUBG_MAPS = [
-  { id: "erangel", name: "Erangel", size: "8x8", type: "Classic" },
-  { id: "miramar", name: "Miramar", size: "8x8", type: "Classic" },
-  { id: "sanhok", name: "Sanhok", size: "4x4", type: "Classic" },
-  { id: "vikendi", name: "Vikendi", size: "6x6", type: "Classic" },
-  { id: "livik", name: "Livik", size: "2x2", type: "Small" },
-  { id: "karakin", name: "Karakin", size: "2x2", type: "Small" },
-  { id: "nusa", name: "Nusa", size: "1x1", type: "Small" },
-];
-
-// ─── TOURNAMENT PRESETS ──────────────────────────────────────────────────────
-
-export const TOURNAMENT_PRESETS = {
-  scrim_16: {
-    label: "Scrim (16 squads)",
-    maxTeams: 16,
-    lobbiesPerRound: 1,
-    matchesPerLobby: 3,
-    rounds: 1,
-  },
-  small_32: {
-    label: "Small (32 squads)",
-    maxTeams: 32,
-    lobbiesPerRound: 2,
-    matchesPerLobby: 4,
-    rounds: 2,
-  },
-  medium_64: {
-    label: "Medium (64 squads)",
-    maxTeams: 64,
-    lobbiesPerRound: 4,
-    matchesPerLobby: 4,
-    rounds: 2,
-  },
-  large_128: {
-    label: "Large (128 squads)",
-    maxTeams: 128,
-    lobbiesPerRound: 8,
-    matchesPerLobby: 4,
-    rounds: 3,
-  },
-  mega_256: {
-    label: "Mega (256 squads)",
-    maxTeams: 256,
-    lobbiesPerRound: 16,
-    matchesPerLobby: 4,
-    rounds: 4,
-  },
-  massive_400: {
-    label: "Massive (400 squads)",
-    maxTeams: 400,
-    lobbiesPerRound: 25,
-    matchesPerLobby: 4,
-    rounds: 5,
-  },
-};
-
-export const PLAYER_ROLES: PlayerRole[] = [
-  "IGL", "Fragger", "Support", "Entry", "Sniper", "Assaulter", "Scout"
-];
-
-// ─── BRACKET TYPES (1v1 elimination bracket) ────────────────────────────────
-
-export interface BracketTeam {
-  id: string;
-  name: string;
-  logo?: string;
-  seed?: number;
-  tag?: string;
+export interface TournamentWithStats extends Tournament {
+  _count?: {
+    teams: number;
+    rounds: number;
+  };
 }
 
-export interface BracketMatch {
-  id: string;
-  round: number;
-  position: number;
-  bestOf: number;
-  team1?: BracketTeam | null;
-  team2?: BracketTeam | null;
-  score1: number;
-  score2: number;
-  winner?: BracketTeam | null;
-  isComplete: boolean;
-  nextMatchId?: string | null;
+// AI Types
+export interface AIAnalysis {
+  summary: string;
+  topTeams: string[];
+  insights: string[];
+  recommendations: string[];
 }
 
-export type TournamentFormat = "single_elimination" | "double_elimination" | "round_robin" | "swiss";
-export type BestOf = 1 | 3 | 5;
-export type SeedingType = "random" | "seeded" | "manual";
-
-// ─── STANDINGS ───────────────────────────────────────────────────────────────
-
-export interface Standing {
-  rank: number;
-  teamId: string;
-  teamName: string;
-  wins: number;
-  losses: number;
-  points: number;
-  previousRank?: number;
+// Overlay Types
+export interface OverlayData {
+  tournament: Tournament;
+  currentMatch?: Match;
+  standings?: Standing[];
+  topFragger?: {
+    player: string;
+    team: string;
+    kills: number;
+  };
 }
-
