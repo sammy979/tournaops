@@ -1,142 +1,147 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { calculateStandings, parseScoringConfig } from "@/lib/scoring-engine";
-import { logError } from "@/lib/logger";
+
+interface MatchResultItem {
+  teamId: string;
+  placement?: number;
+  kills?: number;
+  wwcd?: boolean;
+}
 
 export async function GET(
   req: NextRequest,
-  context: { params: Promise<{ slug: string }> }
+  { params }: { params: { slug: string } }
 ) {
   try {
-    const { slug } = await context.params;
-
-    const tournament = await prisma.tournament.findUnique({
-      where: { slug },
+    const tournament = await prisma.tournament.findFirst({
+      where: { slug: params.slug },
       select: {
         id: true,
         slug: true,
         name: true,
         description: true,
+        game: true,
         status: true,
+        format: true,
         prizePool: true,
         maxTeams: true,
         scoringRule: true,
         mapRotation: true,
-        isPublic: true,
-        discord: false,
-        rules: true,
         bannerImage: true,
-        brandingData: true,
-        scheduleData: true,
+        rules: true,
+        isPublic: true,
         createdAt: true,
-        updatedAt: true,
-        createdBy: {
-          select: {
-            username: true,
-            displayName: true,
-          },
-        },
         teams: {
           select: {
             id: true,
             name: true,
             tag: true,
             logo: true,
-            seed: true,
+            players: true,
           },
-          orderBy: { seed: "asc" },
+          orderBy: { name: "asc" },
         },
-        matches: {
-          where: { status: "completed" },
+        rounds: {
           select: {
             id: true,
             name: true,
-            map: true,
-            matchNumber: true,
-            results: true,
-            status: true,
-          },
-          orderBy: { matchNumber: "asc" },
-        },
-        stages: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-            status: true,
             order: true,
           },
-          orderBy: { order: "asc" },
+        },
+        matches: {
+          select: {
+            id: true,
+            name: true,
+            status: true,
+            results: true,
+            matchNumber: true,
+            map: true,
+          },
         },
       },
     });
 
-    if (!tournament || !tournament.isPublic) {
-      return NextResponse.json(
-        { error: "Tournament not found" },
-        { status: 404 }
-      );
+    if (!tournament) {
+      return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
 
-    // Calculate official standings
-    const scoringConfig = parseScoringConfig(tournament.scoringRule);
-    const allResults: Array<{
-      teamId: string;
-      teamName: string;
-      matchNumber: number;
-      placement: number;
-      kills: number;
-    }> = [];
-
-    for (const match of tournament.matches) {
-      if (!match.results || !Array.isArray(match.results)) continue;
-      for (const result of match.results as Array<Record<string, unknown>>) {
-        allResults.push({
-          teamId: String(result.teamId || ""),
-          teamName: String(result.teamName || ""),
-          matchNumber: match.matchNumber || 0,
-          placement: Number(result.placement) || 0,
-          kills: Number(result.kills) || 0,
-        });
-      }
+    if (!tournament.isPublic && tournament.status === "draft") {
+      return NextResponse.json({ error: "Tournament is private" }, { status: 403 });
     }
 
-    const standings = calculateStandings(allResults, scoringConfig);
+    // Calculate standings
+    const scoringRule: any = tournament.scoringRule || {
+      killPoints: 1,
+      placementPoints: [10, 6, 5, 4, 3, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+      wwcdBonus: 0,
+    };
+
+    const killPoints = scoringRule.killPoints || 1;
+    const placementPoints: number[] = Array.isArray(scoringRule.placementPoints)
+      ? scoringRule.placementPoints
+      : Object.values(scoringRule.placementPoints || {});
+    const wwcdBonus = scoringRule.wwcdBonus || 0;
+
+    const teamStandings: Record<string, any> = {};
+    
+    tournament.teams.forEach((team) => {
+      teamStandings[team.id] = {
+        teamId: team.id,
+        teamName: team.name,
+        teamTag: team.tag || null,
+        totalPoints: 0,
+        totalKills: 0,
+        matchesPlayed: 0,
+        wwcdCount: 0,
+      };
+    });
+
+    tournament.matches.forEach((match) => {
+      if (!match.results) return;
+      
+      const results = Array.isArray(match.results) 
+        ? match.results as MatchResultItem[]
+        : [];
+      
+      results.forEach((result) => {
+        if (!result.teamId) return;
+        const team = teamStandings[result.teamId];
+        if (!team) return;
+        
+        const kills = Number(result.kills) || 0;
+        const placement = Number(result.placement) || 16;
+        const placeIndex = Math.max(0, placement - 1);
+        const placePoints = placementPoints[placeIndex] || 0;
+        const isWWCD = placement === 1 || result.wwcd === true;
+        const wwcdBonusValue = isWWCD ? wwcdBonus : 0;
+        
+        team.totalKills += kills;
+        team.totalPoints += (kills * killPoints) + placePoints + wwcdBonusValue;
+        team.matchesPlayed += 1;
+        if (isWWCD) team.wwcdCount += 1;
+      });
+    });
+
+    const standings = Object.values(teamStandings)
+      .sort((a: any, b: any) => {
+        if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+        if (b.wwcdCount !== a.wwcdCount) return b.wwcdCount - a.wwcdCount;
+        return b.totalKills - a.totalKills;
+      })
+      .map((s: any, i: number) => ({ ...s, rank: i + 1 }));
 
     return NextResponse.json({
-      tournament: {
-        id: tournament.id,
-        slug: tournament.slug,
-        name: tournament.name,
-        description: tournament.description,
-        status: tournament.status,
-        prizePool: tournament.prizePool,
-        maxTeams: tournament.maxTeams,
-        mapRotation: tournament.mapRotation,
-        rules: tournament.rules,
-        bannerImage: tournament.bannerImage,
-        branding: tournament.brandingData || {},
-        schedule: tournament.scheduleData || [],
-        createdAt: tournament.createdAt,
-        updatedAt: tournament.updatedAt,
-        organizer: tournament.createdBy.displayName || tournament.createdBy.username,
-        teams: tournament.teams,
-        stages: tournament.stages,
-        completedMatches: tournament.matches.length,
-        scoring: {
-          type: scoringConfig.type,
-          killPoints: scoringConfig.killPoints,
-          placementTable: scoringConfig.placementTable,
-        },
+      tournament,
+      standings,
+    }, {
+      headers: {
+        "Cache-Control": "public, max-age=30",
       },
-      standings: standings.slice(0, 50),
-      champion: standings[0] || null,
     });
-  } catch (err) {
-    logError(err, "PUBLIC_TOURNAMENT_GET");
-    return NextResponse.json(
-      { error: "Failed to load tournament" },
-      { status: 500 }
-    );
+  } catch (error: any) {
+    console.error("Public tournament API error:", error);
+    return NextResponse.json({ 
+      error: error?.message || "Failed to load tournament",
+    }, { status: 500 });
   }
 }

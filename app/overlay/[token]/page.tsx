@@ -1,78 +1,206 @@
 "use client";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 
-import { useState, useEffect, useCallback } from "react";
-import { useParams, useSearchParams } from "next/navigation";
-import { getAllTournaments, getLeaderboard } from "@/lib/storage/tournaments";
-import { Tournament } from "@/types/tournament";
+interface Standing {
+  rank: number;
+  teamId: string;
+  teamName: string;
+  teamTag?: string;
+  totalPoints: number;
+  totalKills: number;
+  matchesPlayed: number;
+  wwcdCount: number;
+}
 
-export default function OBSOverlayPage() {
+export default function OverlayPage() {
   const params = useParams();
-  const searchParams = useSearchParams();
-  const [tournament, setTournament] = useState<Tournament | null>(null);
+  const token = params?.token as string;
+  const [standings, setStandings] = useState<Standing[]>([]);
+  const [tournamentName, setTournamentName] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const rows = parseInt(searchParams?.get("rows") || "10");
-  const theme = searchParams?.get("theme") || "dark";
-  const fontSize = searchParams?.get("size") || "md";
-
-  const load = useCallback(() => {
-    const token = params?.token as string;
-    if (!token) return;
-    const all = getAllTournaments();
-    const found = all.find(t => t.id === token || t.slug === token);
-    setTournament(found || null);
-  }, [params?.token]);
+  async function loadData() {
+    try {
+      const res = await fetch(`/api/overlay/${token}`);
+      if (!res.ok) {
+        setError("Overlay not found");
+        setLoading(false);
+        return;
+      }
+      const data = await res.json();
+      setStandings(data.standings || []);
+      setTournamentName(data.tournament?.name || "");
+      setError("");
+    } catch (e) {
+      console.error("Overlay error:", e);
+      setError("Failed to load");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    load();
-    const interval = setInterval(load, 10000);
+    if (!token) return;
+    loadData();
+    const interval = setInterval(loadData, 10000);
     return () => clearInterval(interval);
-  }, [load]);
+  }, [token]);
 
-  if (!tournament) {
+  if (loading) {
     return (
-      <div style={{ background: "transparent", padding: 16 }}>
-        <p style={{ color: "#666", fontFamily: "monospace", fontSize: 12 }}>TournaOps · Waiting...</p>
+      <div style={{ background: "transparent", padding: "20px", color: "white" }}>
+        Loading standings...
       </div>
     );
   }
 
-  const leaderboard = getLeaderboard(tournament).slice(0, rows);
-  const fontSizes: Record<string, string> = { sm: "11px", md: "13px", lg: "16px", xl: "20px" };
-  const themes: Record<string, any> = {
-    dark: { bg: "rgba(10,10,15,0.92)", border: "rgba(255,255,255,0.1)", headerBg: "rgba(255,255,255,0.05)", text: "#ffffff", sub: "#888", accent: "#60a5fa" },
-    blue: { bg: "rgba(0,10,40,0.92)", border: "rgba(96,165,250,0.3)", headerBg: "rgba(96,165,250,0.1)", text: "#e0f2fe", sub: "#7eb8f7", accent: "#38bdf8" },
-    gold: { bg: "rgba(20,10,0,0.92)", border: "rgba(234,179,8,0.3)", headerBg: "rgba(234,179,8,0.1)", text: "#fef9c3", sub: "#ca8a04", accent: "#facc15" },
-    transparent: { bg: "transparent", border: "transparent", headerBg: "rgba(0,0,0,0.5)", text: "#ffffff", sub: "#aaa", accent: "#60a5fa" },
-  };
-
-  const t = themes[theme] || themes.dark;
-  const fs = fontSizes[fontSize] || fontSizes.md;
-  const rankColors: Record<number, string> = { 1: "#facc15", 2: "#d1d5db", 3: "#d97706" };
+  if (error) {
+    return (
+      <div style={{ background: "transparent", padding: "20px", color: "#f87171" }}>
+        {error}
+      </div>
+    );
+  }
 
   return (
-    <div style={{ background: "transparent", padding: 8 }}>
-      <div style={{ background: t.bg, border: `1px solid ${t.border}`, borderRadius: 12, overflow: "hidden", fontFamily: "Inter, sans-serif", fontSize: fs, backdropFilter: "blur(12px)", minWidth: 280, maxWidth: 420 }}>
-        <div style={{ background: t.headerBg, borderBottom: `1px solid ${t.border}`, padding: "8px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ color: t.accent, fontWeight: 700, letterSpacing: 1 }}>{tournament.name.toUpperCase()}</span>
-          <span style={{ color: t.sub, fontSize: "0.8em" }}>LIVE</span>
+    <div style={{ background: "transparent", padding: "20px", minHeight: "100vh" }}>
+      <div style={{
+        maxWidth: "500px",
+        background: "rgba(0, 0, 0, 0.85)",
+        backdropFilter: "blur(12px)",
+        borderRadius: "12px",
+        border: "2px solid #facc15",
+        overflow: "hidden",
+        boxShadow: "0 25px 50px rgba(0,0,0,0.5)",
+      }}>
+        {/* Header */}
+        <div style={{
+          background: "linear-gradient(to right, #eab308, #f97316)",
+          padding: "12px 16px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}>
+          <h1 style={{
+            color: "black",
+            fontWeight: 900,
+            fontSize: "18px",
+            margin: 0,
+            letterSpacing: "-0.02em",
+          }}>
+            {tournamentName || "STANDINGS"}
+          </h1>
+          <span style={{
+            background: "black",
+            color: "#facc15",
+            padding: "2px 8px",
+            fontSize: "10px",
+            fontWeight: 700,
+            borderRadius: "4px",
+          }}>
+            LIVE
+          </span>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 40px 50px", gap: 4, padding: "6px 14px", borderBottom: `1px solid ${t.border}`, background: t.headerBg }}>
-          <span style={{ color: t.sub, fontSize: "0.75em" }}>#</span>
-          <span style={{ color: t.sub, fontSize: "0.75em" }}>SQUAD</span>
-          <span style={{ color: t.sub, fontSize: "0.75em", textAlign: "center" }}>K</span>
-          <span style={{ color: t.accent, fontSize: "0.75em", textAlign: "center" }}>PTS</span>
+
+        {/* Table Header */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "40px 1fr 50px 50px 60px",
+          gap: "8px",
+          padding: "8px 16px",
+          background: "rgba(250, 204, 21, 0.1)",
+          color: "#facc15",
+          fontSize: "11px",
+          fontWeight: 700,
+          borderBottom: "1px solid rgba(250, 204, 21, 0.3)",
+        }}>
+          <div>#</div>
+          <div>TEAM</div>
+          <div style={{ textAlign: "center" }}>WWCD</div>
+          <div style={{ textAlign: "center" }}>KILL</div>
+          <div style={{ textAlign: "right" }}>PTS</div>
         </div>
-        {leaderboard.map((entry) => (
-          <div key={entry.teamId} style={{ display: "grid", gridTemplateColumns: "32px 1fr 40px 50px", gap: 4, padding: "6px 14px", borderBottom: `1px solid ${t.border}`, background: entry.rank === 1 ? "rgba(250,204,21,0.06)" : "transparent", alignItems: "center" }}>
-            <span style={{ color: rankColors[entry.rank] || t.sub, fontWeight: entry.rank <= 3 ? 700 : 400, fontFamily: "monospace", fontSize: "0.85em" }}>#{entry.rank}</span>
-            <span style={{ color: t.text, fontWeight: entry.rank <= 3 ? 700 : 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.teamName}</span>
-            <span style={{ color: "#f97316", textAlign: "center", fontFamily: "monospace", fontSize: "0.85em" }}>{entry.totalKills || 0}</span>
-            <span style={{ color: entry.rank <= 3 ? rankColors[entry.rank] : t.text, fontWeight: 700, textAlign: "center", fontFamily: "monospace" }}>{entry.totalPoints}</span>
-          </div>
-        ))}
-        <div style={{ padding: "5px 14px", background: t.headerBg, display: "flex", justifyContent: "space-between" }}>
-          <span style={{ color: t.sub, fontSize: "0.7em" }}>tournaops.com</span>
-          <span style={{ color: t.sub, fontSize: "0.7em" }}>{new Date().toLocaleTimeString()}</span>
+
+        {/* Standings */}
+        <div>
+          {standings.length === 0 ? (
+            <div style={{
+              padding: "40px 16px",
+              textAlign: "center",
+              color: "#6b7280",
+              fontSize: "14px",
+            }}>
+              No results yet
+            </div>
+          ) : (
+            standings.slice(0, 16).map((team, index) => (
+              <div
+                key={team.teamId}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "40px 1fr 50px 50px 60px",
+                  gap: "8px",
+                  padding: "8px 16px",
+                  fontSize: "13px",
+                  background: index === 0 
+                    ? "rgba(250, 204, 21, 0.2)" 
+                    : index < 3 
+                    ? "rgba(31, 41, 55, 0.5)" 
+                    : "transparent",
+                  color: index === 0 
+                    ? "#fde68a" 
+                    : index < 3 
+                    ? "#ffffff" 
+                    : "#d1d5db",
+                  borderBottom: "1px solid rgba(255,255,255,0.05)",
+                  fontWeight: index < 3 ? 700 : 400,
+                }}
+              >
+                <div style={{ fontWeight: 700 }}>{team.rank}</div>
+                <div style={{ 
+                  overflow: "hidden", 
+                  textOverflow: "ellipsis", 
+                  whiteSpace: "nowrap" 
+                }}>
+                  {team.teamTag && (
+                    <span style={{ color: "#facc15", marginRight: "4px" }}>
+                      [{team.teamTag}]
+                    </span>
+                  )}
+                  {team.teamName}
+                </div>
+                <div style={{ textAlign: "center", color: "#facc15" }}>
+                  {team.wwcdCount || 0}
+                </div>
+                <div style={{ textAlign: "center" }}>{team.totalKills}</div>
+                <div style={{ 
+                  textAlign: "right", 
+                  fontWeight: 700, 
+                  color: "#facc15" 
+                }}>
+                  {team.totalPoints}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          padding: "8px 16px",
+          background: "rgba(0, 0, 0, 0.5)",
+          textAlign: "center",
+        }}>
+          <span style={{
+            color: "#facc15",
+            fontSize: "10px",
+            fontWeight: 600,
+            letterSpacing: "0.1em",
+          }}>
+            TOURNAOPS.COM
+          </span>
         </div>
       </div>
     </div>
