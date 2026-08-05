@@ -5,11 +5,22 @@ import { Check, Crown, Zap, Loader2, Sparkles } from "lucide-react";
 export default function UpgradePage() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<any>(null);
+  const [loadingStatus, setLoadingStatus] = useState(true);
 
   useEffect(() => {
     fetch("/api/payments/status")
-      .then((r) => r.json())
-      .then(setStatus);
+      .then((r) => {
+        if (r.status === 401) {
+          window.location.href = "/login";
+          return null;
+        }
+        return r.json();
+      })
+      .then((d) => {
+        if (d) setStatus(d);
+      })
+      .catch(() => setStatus({ isPro: false }))
+      .finally(() => setLoadingStatus(false));
   }, []);
 
   async function handleUpgrade() {
@@ -21,10 +32,10 @@ export default function UpgradePage() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert(data.error || "Checkout failed");
+        alert(data.error || "Checkout failed. Please try again.");
       }
     } catch (e) {
-      alert("Failed to start checkout");
+      alert("Failed to start checkout. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -44,10 +55,17 @@ export default function UpgradePage() {
     "7-day free trial",
   ];
 
+  if (loadingStatus) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-yellow-400 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-yellow-400/20 text-yellow-400 px-4 py-2 rounded-full text-sm font-medium mb-4">
             <Sparkles className="w-4 h-4" />
@@ -72,7 +90,6 @@ export default function UpgradePage() {
           </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
-            {/* Free Plan */}
             <div className="bg-gray-900 rounded-2xl p-8 border border-gray-700">
               <div className="mb-6">
                 <h2 className="text-2xl font-bold mb-1">Free</h2>
@@ -104,7 +121,6 @@ export default function UpgradePage() {
               </button>
             </div>
 
-            {/* Pro Plan */}
             <div className="bg-gradient-to-br from-yellow-400/10 to-orange-500/10 rounded-2xl p-8 border-2 border-yellow-400 relative overflow-hidden">
               <div className="absolute top-4 right-4 bg-yellow-400 text-black text-xs font-bold px-3 py-1 rounded-full">
                 RECOMMENDED
@@ -120,7 +136,7 @@ export default function UpgradePage() {
                 <span className="text-5xl font-bold">$9.99</span>
                 <span className="text-gray-400">/month</span>
               </div>
-              <p className="text-yellow-400 text-sm mb-6">✨ 7-day free trial</p>
+              <p className="text-yellow-400 text-sm mb-6">7-day free trial</p>
               <ul className="space-y-3 mb-8">
                 {proFeatures.map((feature) => (
                   <li key={feature} className="flex items-start gap-2 text-sm">
@@ -153,10 +169,9 @@ export default function UpgradePage() {
           </div>
         )}
 
-        {/* Trust badges */}
         <div className="mt-12 text-center text-gray-500 text-sm">
           <p>Secure payment powered by Dodo Payments</p>
-          <p className="mt-1">SSL encrypted • Cancel anytime • Made in Nepal 🇳🇵</p>
+          <p className="mt-1">SSL encrypted • Cancel anytime • Made in Nepal</p>
         </div>
       </div>
     </div>

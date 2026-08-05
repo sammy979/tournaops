@@ -8,8 +8,11 @@ export default function ProBadge() {
 
   useEffect(() => {
     fetch("/api/payments/status")
-      .then((r) => r.json())
-      .then((d) => setIsPro(d.isPro))
+      .then((r) => {
+        if (!r.ok) return { isPro: false };
+        return r.json();
+      })
+      .then((d) => setIsPro(d?.isPro || false))
       .catch(() => setIsPro(false));
   }, []);
 
