@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Upload, Image as ImageIcon, Trash2, Trophy, Users, User, Palette, Loader2, Check, X } from "lucide-react";
+import { Upload, Image as ImageIcon, Trash2, Trophy, Users, X, Loader2, Check } from "lucide-react";
 
 interface Tournament {
   id: string;
@@ -18,14 +18,14 @@ interface Team {
   name: string;
   tag?: string;
   logo?: string;
-  banner?: string;
 }
 
 export default function AssetsPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [selectedTournament, setSelectedTournament] = useState<string>("");
   const [teams, setTeams] = useState<Team[]>([]);
-  const [tab, setTab] = useState<"tournament" | "teams" | "players" | "sponsors">("tournament");
+  const [current, setCurrent] = useState<Tournament | null>(null);
+  const [tab, setTab] = useState<"tournament" | "teams" | "sponsors">("tournament");
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
 
@@ -45,11 +45,10 @@ export default function AssetsPage() {
     fetch(`/api/tournaments/${selectedTournament}`)
       .then((r) => r.json())
       .then((data) => {
+        setCurrent(data.tournament);
         setTeams(data.tournament?.teams || []);
       });
   }, [selectedTournament]);
-
-  const current = tournaments.find((t) => t.id === selectedTournament);
 
   async function uploadImage(file: File, type: string): Promise<string | null> {
     setUploading(type);
@@ -79,7 +78,8 @@ export default function AssetsPage() {
       body: JSON.stringify({ [field]: value }),
     });
     if (res.ok) {
-      setTournaments(tournaments.map(t => t.id === selectedTournament ? { ...t, [field]: value } : t));
+      const data = await res.json();
+      setCurrent(data.tournament);
     }
   }
 
@@ -108,9 +108,7 @@ export default function AssetsPage() {
             <ImageIcon className="w-8 h-8 text-yellow-400" />
             Assets & Branding
           </h1>
-          <p className="text-gray-400 mt-1">
-            Upload real logos, banners, and photos for professional broadcasts
-          </p>
+          <p className="text-gray-400 mt-1">Upload real logos, banners, and photos</p>
         </div>
 
         {tournaments.length === 0 ? (
@@ -123,7 +121,6 @@ export default function AssetsPage() {
           </div>
         ) : (
           <>
-            {/* Tournament Selector */}
             <div className="bg-gray-900 rounded-xl p-4 border border-gray-800 mb-6">
               <label className="text-sm font-semibold text-gray-300 mb-2 block">
                 Select Tournament
@@ -139,10 +136,9 @@ export default function AssetsPage() {
               </select>
             </div>
 
-            {/* Tabs */}
             <div className="flex gap-1 mb-6 border-b border-gray-800">
               {[
-                { id: "tournament", label: "Tournament Assets", icon: Trophy },
+                { id: "tournament", label: "Tournament", icon: Trophy },
                 { id: "teams", label: `Teams (${teams.length})`, icon: Users },
                 { id: "sponsors", label: "Sponsors", icon: ImageIcon },
               ].map((t) => {
@@ -162,12 +158,11 @@ export default function AssetsPage() {
               })}
             </div>
 
-            {/* Tournament Assets Tab */}
             {tab === "tournament" && current && (
               <div className="grid md:grid-cols-2 gap-6">
                 <UploadCard
                   title="Tournament Banner"
-                  description="Wide banner at top of tournament page (recommended: 1920x600)"
+                  description="Wide banner at top (1920x600)"
                   currentUrl={current.bannerImage}
                   isUploading={uploading === "banner"}
                   onUpload={async (file) => {
@@ -178,7 +173,7 @@ export default function AssetsPage() {
                 />
                 <UploadCard
                   title="Trophy Image"
-                  description="Trophy displayed in header (transparent PNG recommended)"
+                  description="Transparent PNG recommended"
                   currentUrl={current.trophyImage}
                   aspectRatio="square"
                   isUploading={uploading === "trophy"}
@@ -188,63 +183,36 @@ export default function AssetsPage() {
                   }}
                   onRemove={() => updateTournamentAsset("trophyImage", null)}
                 />
-                <UploadCard
-                  title="Cover / OG Image"
-                  description="Social media preview image (1200x630)"
-                  currentUrl={current.coverImage}
-                  isUploading={uploading === "cover"}
-                  onUpload={async (file) => {
-                    const url = await uploadImage(file, "cover");
-                    if (url) updateTournamentAsset("coverImage", url);
-                  }}
-                  onRemove={() => updateTournamentAsset("coverImage", null)}
-                />
               </div>
             )}
 
-            {/* Teams Tab */}
             {tab === "teams" && (
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-3 gap-4">
                 {teams.length === 0 ? (
-                  <div className="col-span-2 bg-gray-900 rounded-xl p-12 text-center border border-gray-800">
+                  <div className="col-span-3 bg-gray-900 rounded-xl p-12 text-center border border-gray-800">
                     <Users className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                    <h3 className="text-lg font-bold">No Teams Registered</h3>
-                    <p className="text-gray-400 text-sm">Teams need to register first</p>
+                    <h3 className="text-lg font-bold">No Teams</h3>
                   </div>
                 ) : teams.map((team) => (
                   <div key={team.id} className="bg-gray-900 rounded-xl p-4 border border-gray-800">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <div className="font-bold">{team.name}</div>
-                        {team.tag && <div className="text-yellow-400 text-xs">[{team.tag}]</div>}
-                      </div>
+                    <div className="mb-3">
+                      <div className="font-bold">{team.name}</div>
+                      {team.tag && <div className="text-yellow-400 text-xs">[{team.tag}]</div>}
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <MiniUpload
-                        label="Team Logo"
-                        currentUrl={team.logo}
-                        onUpload={async (file) => {
-                          const url = await uploadImage(file, `team-logo`);
-                          if (url) updateTeamAsset(team.id, "logo", url);
-                        }}
-                        onRemove={() => updateTeamAsset(team.id, "logo", null)}
-                      />
-                      <MiniUpload
-                        label="Team Banner"
-                        currentUrl={team.banner}
-                        onUpload={async (file) => {
-                          const url = await uploadImage(file, `team-banner`);
-                          if (url) updateTeamAsset(team.id, "banner", url);
-                        }}
-                        onRemove={() => updateTeamAsset(team.id, "banner", null)}
-                      />
-                    </div>
+                    <MiniUpload
+                      label="Team Logo"
+                      currentUrl={team.logo}
+                      onUpload={async (file) => {
+                        const url = await uploadImage(file, `team-logo`);
+                        if (url) updateTeamAsset(team.id, "logo", url);
+                      }}
+                      onRemove={() => updateTeamAsset(team.id, "logo", null)}
+                    />
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Sponsors Tab */}
             {tab === "sponsors" && current && (
               <SponsorsManager
                 current={current}
@@ -281,34 +249,19 @@ function UploadCard({ title, description, currentUrl, isUploading, onUpload, onR
         {currentUrl ? (
           <>
             <img src={currentUrl} className="w-full h-full object-cover" alt="" />
-            <button
-              onClick={onRemove}
-              className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 rounded-lg text-white"
-            >
+            <button onClick={onRemove} className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 rounded-lg text-white">
               <Trash2 className="w-4 h-4" />
             </button>
           </>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
-            {isUploading ? (
-              <Loader2 className="w-8 h-8 animate-spin" />
-            ) : (
-              <>
-                <Upload className="w-10 h-10 mb-2" />
-                <span className="text-sm">Upload Image</span>
-              </>
-            )}
+            {isUploading ? <Loader2 className="w-8 h-8 animate-spin" /> : <><Upload className="w-10 h-10 mb-2" /><span className="text-sm">Upload Image</span></>}
           </div>
         )}
       </div>
       <label className="mt-3 block">
-        <input
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])}
-        />
-        <span className="block w-full px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-center rounded-lg cursor-pointer transition text-sm">
+        <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])} />
+        <span className="block w-full px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-center rounded-lg cursor-pointer text-sm">
           {currentUrl ? "Change Image" : "Choose File"}
         </span>
       </label>
@@ -324,10 +277,7 @@ function MiniUpload({ label, currentUrl, onUpload, onRemove }: any) {
         {currentUrl ? (
           <>
             <img src={currentUrl} className="w-full h-full object-cover" alt="" />
-            <button
-              onClick={onRemove}
-              className="absolute top-1 right-1 p-1 bg-red-500 hover:bg-red-600 rounded text-white"
-            >
+            <button onClick={onRemove} className="absolute top-1 right-1 p-1 bg-red-500 hover:bg-red-600 rounded text-white">
               <X className="w-3 h-3" />
             </button>
           </>
@@ -338,12 +288,7 @@ function MiniUpload({ label, currentUrl, onUpload, onRemove }: any) {
         )}
       </div>
       <label className="mt-2 block">
-        <input
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])}
-        />
+        <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])} />
         <span className="block w-full px-2 py-1 bg-gray-800 hover:bg-gray-700 text-white text-center rounded cursor-pointer text-xs">
           {currentUrl ? "Change" : "Upload"}
         </span>
@@ -354,43 +299,29 @@ function MiniUpload({ label, currentUrl, onUpload, onRemove }: any) {
 
 function SponsorsManager({ current, onUpload, onRemove }: any) {
   const sponsors = Array.isArray(current.sponsorLogos) ? current.sponsorLogos : [];
-
   return (
     <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
       <div className="mb-4">
         <h3 className="font-bold text-lg">Sponsor Logos</h3>
-        <p className="text-sm text-gray-400">Add up to 5 sponsor logos (transparent PNG recommended)</p>
+        <p className="text-sm text-gray-400">Add up to 5 sponsors</p>
       </div>
-
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
         {sponsors.map((logo: string, i: number) => (
           <div key={i} className="relative bg-gray-800 rounded-lg p-4 aspect-square flex items-center justify-center">
-            <img src={logo} className="max-w-full max-h-full object-contain" alt={`Sponsor ${i + 1}`} />
-            <button
-              onClick={() => onRemove(i)}
-              className="absolute top-1 right-1 p-1 bg-red-500 hover:bg-red-600 rounded text-white"
-            >
+            <img src={logo} className="max-w-full max-h-full object-contain" alt="" />
+            <button onClick={() => onRemove(i)} className="absolute top-1 right-1 p-1 bg-red-500 hover:bg-red-600 rounded text-white">
               <X className="w-3 h-3" />
             </button>
           </div>
         ))}
         {sponsors.length < 5 && (
           <label className="aspect-square bg-gray-800 rounded-lg border-2 border-dashed border-gray-700 flex flex-col items-center justify-center cursor-pointer hover:border-yellow-400 transition">
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])}
-            />
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])} />
             <Upload className="w-8 h-8 text-gray-500 mb-2" />
             <span className="text-xs text-gray-500">Add Sponsor</span>
           </label>
         )}
       </div>
-
-      <p className="text-xs text-gray-500 text-center">
-        Sponsors appear in a strip at the bottom of the tournament banner
-      </p>
     </div>
   );
 }
