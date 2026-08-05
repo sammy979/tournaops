@@ -84,6 +84,10 @@ model Team {
 
   @@index([tournamentId])
   @@index([seed])
+  playersList  Player[]
+  banner       String?
+  country      String?
+  countryFlag  String?
 }
 
 model Round {
@@ -269,4 +273,24 @@ model ChatMessage {
   tournamentId String?
   createdAt    DateTime @default(now())
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+
+model Player {
+  id           String   @id @default(cuid())
+  name         String
+  ign          String?
+  pubgId       String?
+  role         String?
+  photo        String?
+  country      String?
+  countryFlag  String?
+  isCaptain    Boolean  @default(false)
+  isSubstitute Boolean  @default(false)
+  teamId       String
+  team         Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([teamId])
 }
