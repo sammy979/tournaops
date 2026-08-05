@@ -6,6 +6,7 @@ interface MatchResultItem {
   placement?: number;
   kills?: number;
   wwcd?: boolean;
+  players?: Array<{ name: string; kills: number; pubgId?: string; photo?: string }>;
 }
 
 export async function GET(
@@ -14,10 +15,7 @@ export async function GET(
 ) {
   try {
     const { token } = await context.params;
-    
-    if (!token) {
-      return NextResponse.json({ error: "No token" }, { status: 400 });
-    }
+    if (!token) return NextResponse.json({ error: "No token" }, { status: 400 });
 
     const tournament = await prisma.tournament.findFirst({
       where: { overlayToken: token },
@@ -29,28 +27,20 @@ export async function GET(
         bannerImage: true,
         brandingData: true,
         user: {
-          select: {
-            id: true,
-            username: true,
-            displayName: true,
-            avatar: true,
-          },
+          select: { id: true, username: true, displayName: true, avatar: true },
         },
       },
     });
 
     if (!tournament) {
       return NextResponse.json({ 
-        error: "Overlay not found",
-        tournament: null,
-        standings: [],
-        organizer: null,
+        error: "Not found", tournament: null, standings: [], organizer: null,
       }, { status: 404 });
     }
 
     const teams = await prisma.team.findMany({
       where: { tournamentId: tournament.id },
-      select: { id: true, name: true, tag: true, logo: true },
+      select: { id: true, name: true, tag: true, logo: true, players: true },
     });
 
     const matches = await prisma.match.findMany({
@@ -71,6 +61,8 @@ export async function GET(
     const wwcdBonus = scoringRule.wwcdBonus || 0;
 
     const teamStandings: Record<string, any> = {};
+    const playerKills: Record<string, { name: string; teamName: string; teamTag: string; teamLogo: string | null; kills: number; pubgId?: string; photo?: string }> = {};
+
     teams.forEach((team) => {
       teamStandings[team.id] = {
         teamId: team.id,
@@ -81,7 +73,23 @@ export async function GET(
         totalKills: 0,
         matchesPlayed: 0,
         wwcdCount: 0,
+        players: [],
       };
+
+      // Extract player info from team.players JSON
+      const teamPlayers = Array.isArray(team.players) ? team.players as any[] : [];
+      teamPlayers.forEach((p: any) => {
+        const playerKey = `${team.id}-${p.name}`;
+        playerKills[playerKey] = {
+          name: p.name || "Unknown",
+          teamName: team.name,
+          teamTag: team.tag || "",
+          teamLogo: team.logo || null,
+          kills: 0,
+          pubgId: p.pubgId,
+          photo: p.photo,
+        };
+      });
     });
 
     matches.forEach((match) => {
@@ -103,6 +111,16 @@ export async function GET(
         team.totalPoints += (kills * killPoints) + placePoints + (isWWCD ? wwcdBonus : 0);
         team.matchesPlayed += 1;
         if (isWWCD) team.wwcdCount += 1;
+
+        // Track player kills if available
+        if (Array.isArray(result.players)) {
+          result.players.forEach((p) => {
+            const playerKey = `${result.teamId}-${p.name}`;
+            if (playerKills[playerKey]) {
+              playerKills[playerKey].kills += Number(p.kills) || 0;
+            }
+          });
+        }
       });
     });
 
@@ -114,6 +132,15 @@ export async function GET(
       })
       .map((s: any, i: number) => ({ ...s, rank: i + 1 }));
 
+    // Top individual fragger
+    const topFraggers = Object.values(playerKills)
+      .filter((p) => p.kills > 0)
+      .sort((a, b) => b.kills - a.kills)
+      .slice(0, 10);
+
+    // If no player kills tracked, use team with most kills
+    const topFraggerTeam = [...standings].sort((a, b) => b.totalKills - a.totalKills)[0];
+
     return NextResponse.json({
       tournament: { 
         id: tournament.id, 
@@ -124,6 +151,8 @@ export async function GET(
       standings,
       organizer: tournament.user,
       branding: tournament.brandingData || null,
+      topFraggers,
+      topFraggerTeam,
     }, {
       headers: {
         "Cache-Control": "public, max-age=5",
@@ -133,10 +162,7 @@ export async function GET(
   } catch (error: any) {
     console.error("Overlay API error:", error);
     return NextResponse.json({ 
-      error: error?.message,
-      tournament: null,
-      standings: [],
-      organizer: null,
+      error: error?.message, tournament: null, standings: [], organizer: null,
     }, { status: 500 });
   }
 }
