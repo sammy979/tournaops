@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 interface MatchResultItem {
-  teamId: string;
+  teamId?: string;
   placement?: number;
   kills?: number;
   wwcd?: boolean;
-  players?: Array<{ name: string; kills: number; pubgId?: string; photo?: string }>;
+  players?: Array<{ name: string; kills: number }>;
 }
 
 export async function GET(
@@ -15,8 +15,11 @@ export async function GET(
 ) {
   try {
     const { token } = await context.params;
-    if (!token) return NextResponse.json({ error: "No token" }, { status: 400 });
+    if (!token) {
+      return NextResponse.json({ error: "No token", standings: [] }, { status: 400 });
+    }
 
+    // Simple query - only select fields that exist
     const tournament = await prisma.tournament.findFirst({
       where: { overlayToken: token },
       select: {
@@ -26,42 +29,66 @@ export async function GET(
         scoringRule: true,
         bannerImage: true,
         brandingData: true,
-        user: {
-          select: { id: true, username: true, displayName: true, avatar: true },
-        },
+        userId: true,
       },
     });
 
     if (!tournament) {
       return NextResponse.json({ 
-        error: "Not found", tournament: null, standings: [], organizer: null,
+        error: "Overlay not found",
+        tournament: null,
+        standings: [],
+        organizer: null,
       }, { status: 404 });
     }
 
+    // Get organizer
+    let organizer = null;
+    try {
+      organizer = await prisma.user.findUnique({
+        where: { id: tournament.userId },
+        select: { id: true, username: true, displayName: true, avatar: true },
+      });
+    } catch (e) {
+      console.warn("Failed to fetch organizer:", e);
+    }
+
+    // Get teams (only basic fields)
     const teams = await prisma.team.findMany({
       where: { tournamentId: tournament.id },
-      select: { id: true, name: true, tag: true, logo: true, players: true },
+      select: {
+        id: true,
+        name: true,
+        tag: true,
+        logo: true,
+        players: true,
+      },
     });
 
+    // Get matches with results
     const matches = await prisma.match.findMany({
       where: { tournamentId: tournament.id },
-      select: { id: true, status: true, results: true },
+      select: {
+        id: true,
+        status: true,
+        results: true,
+      },
     });
 
-    const scoringRule: any = tournament.scoringRule || {
-      killPoints: 1,
-      placementPoints: [10, 6, 5, 4, 3, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-      wwcdBonus: 0,
-    };
+    // Parse scoring rule
+    const scoringRule: any = tournament.scoringRule || {};
+    const killPoints = Number(scoringRule.killPoints) || 1;
+    let placementPoints: number[] = [10, 6, 5, 4, 3, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0];
+    if (Array.isArray(scoringRule.placementPoints)) {
+      placementPoints = scoringRule.placementPoints;
+    } else if (scoringRule.placementPoints && typeof scoringRule.placementPoints === "object") {
+      placementPoints = Object.values(scoringRule.placementPoints).map(Number);
+    }
+    const wwcdBonus = Number(scoringRule.wwcdBonus) || 0;
 
-    const killPoints = scoringRule.killPoints || 1;
-    const placementPoints: number[] = Array.isArray(scoringRule.placementPoints)
-      ? scoringRule.placementPoints
-      : Object.values(scoringRule.placementPoints || {});
-    const wwcdBonus = scoringRule.wwcdBonus || 0;
-
+    // Build standings
     const teamStandings: Record<string, any> = {};
-    const playerKills: Record<string, { name: string; teamName: string; teamTag: string; teamLogo: string | null; kills: number; pubgId?: string; photo?: string }> = {};
+    const playerKills: Record<string, any> = {};
 
     teams.forEach((team) => {
       teamStandings[team.id] = {
@@ -73,18 +100,21 @@ export async function GET(
         totalKills: 0,
         matchesPlayed: 0,
         wwcdCount: 0,
-        players: [],
       };
 
-      // Extract player info from team.players JSON
-      const teamPlayers = Array.isArray(team.players) ? team.players as any[] : [];
+      // Process team players
+      let teamPlayers: any[] = [];
+      if (Array.isArray(team.players)) {
+        teamPlayers = team.players as any[];
+      }
+      
       teamPlayers.forEach((p: any) => {
-        const playerKey = `${team.id}-${p.name}`;
-        playerKills[playerKey] = {
-          name: p.name || "Unknown",
+        if (!p || !p.name) return;
+        playerKills[`${team.id}-${p.name}`] = {
+          name: p.name,
           teamName: team.name,
-          teamTag: team.tag || "",
-          teamLogo: team.logo || null,
+          teamTag: team.tag,
+          teamLogo: team.logo,
           kills: 0,
           pubgId: p.pubgId,
           photo: p.photo,
@@ -92,12 +122,17 @@ export async function GET(
       });
     });
 
+    // Process matches
     matches.forEach((match) => {
       if (!match.results) return;
-      const results = Array.isArray(match.results) ? match.results as MatchResultItem[] : [];
+      
+      let results: MatchResultItem[] = [];
+      if (Array.isArray(match.results)) {
+        results = match.results as MatchResultItem[];
+      }
       
       results.forEach((result) => {
-        if (!result.teamId) return;
+        if (!result || !result.teamId) return;
         const team = teamStandings[result.teamId];
         if (!team) return;
         
@@ -112,18 +147,20 @@ export async function GET(
         team.matchesPlayed += 1;
         if (isWWCD) team.wwcdCount += 1;
 
-        // Track player kills if available
+        // Process player kills
         if (Array.isArray(result.players)) {
-          result.players.forEach((p) => {
-            const playerKey = `${result.teamId}-${p.name}`;
-            if (playerKills[playerKey]) {
-              playerKills[playerKey].kills += Number(p.kills) || 0;
+          result.players.forEach((p: any) => {
+            if (!p || !p.name) return;
+            const key = `${result.teamId}-${p.name}`;
+            if (playerKills[key]) {
+              playerKills[key].kills += Number(p.kills) || 0;
             }
           });
         }
       });
     });
 
+    // Sort standings
     const standings = Object.values(teamStandings)
       .sort((a: any, b: any) => {
         if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
@@ -132,37 +169,43 @@ export async function GET(
       })
       .map((s: any, i: number) => ({ ...s, rank: i + 1 }));
 
-    // Top individual fragger
+    // Top fraggers (from player kills)
     const topFraggers = Object.values(playerKills)
-      .filter((p) => p.kills > 0)
-      .sort((a, b) => b.kills - a.kills)
+      .filter((p: any) => p.kills > 0)
+      .sort((a: any, b: any) => b.kills - a.kills)
       .slice(0, 10);
 
-    // If no player kills tracked, use team with most kills
-    const topFraggerTeam = [...standings].sort((a, b) => b.totalKills - a.totalKills)[0];
+    // Fallback: use top team by kills
+    const topFraggerTeam = standings.length > 0 
+      ? [...standings].sort((a: any, b: any) => b.totalKills - a.totalKills)[0]
+      : null;
 
     return NextResponse.json({
-      tournament: { 
-        id: tournament.id, 
-        name: tournament.name, 
+      tournament: {
+        id: tournament.id,
+        name: tournament.name,
         status: tournament.status,
         bannerImage: tournament.bannerImage,
       },
       standings,
-      organizer: tournament.user,
+      organizer,
       branding: tournament.brandingData || null,
       topFraggers,
       topFraggerTeam,
     }, {
       headers: {
-        "Cache-Control": "public, max-age=5",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
         "Access-Control-Allow-Origin": "*",
       },
     });
   } catch (error: any) {
-    console.error("Overlay API error:", error);
+    console.error("Overlay API error:", error?.message, error?.stack);
     return NextResponse.json({ 
-      error: error?.message, tournament: null, standings: [], organizer: null,
+      error: error?.message || "Failed to load",
+      details: String(error),
+      tournament: null,
+      standings: [],
+      organizer: null,
     }, { status: 500 });
   }
 }
