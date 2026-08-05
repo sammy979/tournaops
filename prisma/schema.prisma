@@ -8,18 +8,25 @@ datasource db {
 }
 
 model User {
-  id          String       @id @default(cuid())
-  email       String       @unique
-  username    String       @unique
-  displayName String
-  password    String
-  avatar      String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  isAdmin     Boolean      @default(false)
-  theme       String       @default("dark")
-  chatHistory Json?        @default("[]")
-  tournaments Tournament[]
+  id           String              @id @default(cuid())
+  email        String              @unique
+  username     String              @unique
+  displayName  String
+  password     String
+  avatar       String?
+  isAdmin      Boolean             @default(false)
+  isPro        Boolean             @default(false)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  dodoCustomerId       String?
+  dodoSubscriptionId   String?
+  theme        String              @default("dark")
+  chatHistory  Json?               @default("[]")
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  tournaments  Tournament[]
+  chatMessages ChatMessage[]
+  UserScoringPreset UserScoringPreset[]
 
   @@index([email])
   @@index([username])
@@ -242,27 +249,17 @@ model QualifierAuditLog {
 }
 
 model UserScoringPreset {
-  id                   String   @id @default(cuid())
-  userId               String
-  name                 String
-  description          String?
-  placementPoints      Int[]
-  killPoints           Int      @default(1)
-  wwcdBonus            Int      @default(0)
-  top3Bonus            Int      @default(0)
-  perfectMatchBonus    Int      @default(0)
-  maxKillPoints        Int?
-  finalMatchMultiplier Float?
-  tiebreakerOrder      String[] @default(["points", "wwcd", "kills", "damage"])
-  isOfficial           Boolean  @default(false)
-  officialSource       String?
-  isPublic             Boolean  @default(false)
-  usageCount           Int      @default(0)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  scoringRule Json
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([isPublic])
 }
 model ChatMessage {
   id           String   @id @default(cuid())

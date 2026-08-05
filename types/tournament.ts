@@ -150,7 +150,6 @@ export interface TournamentWithStats extends Tournament {
   };
 }
 
-// AI Types
 export interface AIAnalysis {
   summary: string;
   topTeams: string[];
@@ -158,7 +157,6 @@ export interface AIAnalysis {
   recommendations: string[];
 }
 
-// Overlay Types
 export interface OverlayData {
   tournament: Tournament;
   currentMatch?: Match;
@@ -169,3 +167,78 @@ export interface OverlayData {
     kills: number;
   };
 }
+
+// ============================================================
+// SCORING PRESETS
+// ============================================================
+
+export const SCORING_PRESETS = {
+  PMGC: {
+    name: "PMGC (Official)",
+    description: "PUBG Mobile Global Championship scoring",
+    killPoints: 1,
+    wwcdBonus: 0,
+    placementPoints: {
+      1: 10, 2: 6, 3: 5, 4: 4, 5: 3,
+      6: 2, 7: 1, 8: 1, 9: 0, 10: 0,
+      11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0,
+    },
+  },
+  PMPL: {
+    name: "PMPL (Official)",
+    description: "PUBG Mobile Pro League scoring",
+    killPoints: 1,
+    wwcdBonus: 0,
+    placementPoints: {
+      1: 12, 2: 9, 3: 8, 4: 7, 5: 6,
+      6: 5, 7: 4, 8: 3, 9: 2, 10: 1,
+      11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0,
+    },
+  },
+  COMMUNITY: {
+    name: "Community",
+    description: "Balanced scoring for community tournaments",
+    killPoints: 1,
+    wwcdBonus: 3,
+    placementPoints: {
+      1: 15, 2: 12, 3: 10, 4: 8, 5: 6,
+      6: 4, 7: 3, 8: 2, 9: 1, 10: 1,
+      11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0,
+    },
+  },
+  KILL_HEAVY: {
+    name: "Kill Heavy",
+    description: "High kill points — aggressive play rewarded",
+    killPoints: 3,
+    wwcdBonus: 0,
+    placementPoints: {
+      1: 10, 2: 6, 3: 5, 4: 4, 5: 3,
+      6: 2, 7: 1, 8: 1, 9: 0, 10: 0,
+      11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0,
+    },
+  },
+  PLACEMENT_HEAVY: {
+    name: "Placement Heavy",
+    description: "High placement points — survival rewarded",
+    killPoints: 1,
+    wwcdBonus: 5,
+    placementPoints: {
+      1: 25, 2: 20, 3: 16, 4: 13, 5: 11,
+      6: 9, 7: 7, 8: 6, 9: 5, 10: 4,
+      11: 3, 12: 2, 13: 1, 14: 1, 15: 0, 16: 0,
+    },
+  },
+  CUSTOM: {
+    name: "Custom",
+    description: "Define your own scoring rules",
+    killPoints: 1,
+    wwcdBonus: 0,
+    placementPoints: {
+      1: 10, 2: 6, 3: 5, 4: 4, 5: 3,
+      6: 2, 7: 1, 8: 1, 9: 0, 10: 0,
+      11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0,
+    },
+  },
+} as const;
+
+export type ScoringPresetKey = keyof typeof SCORING_PRESETS;
