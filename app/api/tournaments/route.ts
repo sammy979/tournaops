@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { validateTournamentInput } from "@/lib/validation";
@@ -33,6 +33,9 @@ export async function GET() {
         maxTeams: true,
         isPublic: true,
         prizePool: true,
+        overlayToken: true,
+        format: true,
+        game: true,
         createdAt: true,
         updatedAt: true,
         _count: {
@@ -94,7 +97,6 @@ export async function POST(req: NextRequest) {
     const numLobbies = Math.max(1, Math.ceil(maxTeams / teamsPerLobby));
     const roundNames = ["Qualifiers", "Round of 32", "Semi Finals", "Grand Finals", "Super Finals"];
 
-    // Build rounds with properly typed lobbies for Prisma JSON field
     const roundsData: Prisma.RoundCreateWithoutTournamentInput[] = [];
     const matchesData: Prisma.MatchCreateWithoutTournamentInput[] = [];
 
