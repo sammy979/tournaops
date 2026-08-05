@@ -42,7 +42,7 @@ model Tournament {
   format           String?
   prizePool        String?
   maxTeams         Int                 @default(16)
-  scoringRule      Json
+  scoringRule Json @default("{}")
   mapRotation      String[]
   overlayToken     String              @unique @default(cuid())
   isPublic         Boolean             @default(true)
@@ -175,7 +175,7 @@ model Stage {
   teamsAdvancing     Int                 @default(0)
   teamsEliminated    Int                 @default(0)
   mapRotation        String[]
-  scoringRule        Json
+  scoringRule Json @default("{}")
   tiebreakerOrder    String[]            @default(["points", "kills", "damage", "wwcd"])
   isLocked           Boolean             @default(false)
   lockedAt           DateTime?
@@ -257,7 +257,7 @@ model UserScoringPreset {
   userId      String
   name        String
   description String?
-  scoringRule Json
+  scoringRule Json @default("{}")
   isDefault   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
