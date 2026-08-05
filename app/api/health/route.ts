@@ -2,48 +2,54 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const start = Date.now();
+  const results: any = {
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    version: "1.0.0",
+  };
 
   // Check database
-  let dbStatus = "ok";
-  let dbLatency = 0;
+  const dbStart = Date.now();
   try {
-    const dbStart = Date.now();
     await prisma.$queryRaw`SELECT 1`;
-    dbLatency = Date.now() - dbStart;
-  } catch {
-    dbStatus = "error";
+    results.database = {
+      status: "connected",
+      latency: Date.now() - dbStart,
+    };
+  } catch (err) {
+    results.database = {
+      status: "error",
+      error: "Connection failed",
+    };
+    results.status = "degraded";
   }
 
-  // Check AI provider
-  const aiProvider = process.env.AI_PROVIDER || "groq";
-  const hasGroq = !!process.env.GROQ_API_KEY;
-  const hasGemini = !!process.env.GEMINI_API_KEY;
-
-  const totalLatency = Date.now() - start;
-  const healthy = dbStatus === "ok";
-
-  return NextResponse.json(
-    {
-      status: healthy ? "ok" : "degraded",
-      timestamp: new Date().toISOString(),
-      version: "1.0.0",
-      latency: totalLatency,
-      services: {
-        database: {
-          status: dbStatus,
-          latency: dbLatency,
-          provider: "postgresql",
-        },
-        ai: {
-          status: "ok",
-          provider: aiProvider,
-          groq: hasGroq,
-          gemini: hasGemini,
-        },
-      },
-      environment: process.env.NODE_ENV,
+  // Check AI providers
+  results.ai = {
+    provider: process.env.AI_PROVIDER || "groq",
+    status: "configured",
+    providers: {
+      groq: process.env.GROQ_API_KEY ? "configured" : "missing",
+      gemini: process.env.GEMINI_API_KEY ? "configured" : "missing",
+      openai: process.env.OPENAI_API_KEY ? "configured" : "not-set",
     },
-    { status: healthy ? 200 : 503 }
-  );
+  };
+
+  // Check integrations
+  results.integrations = {
+    dodo: process.env.DODO_API_KEY ? "configured" : "missing",
+    dodoWebhook: process.env.DODO_WEBHOOK_SECRET ? "configured" : "missing",
+    resend: process.env.RESEND_API_KEY ? "configured" : "not-set",
+    pusher: process.env.PUSHER_KEY ? "configured" : "not-set",
+  };
+
+  // Environment info
+  results.environment = {
+    node: process.version,
+    nodeEnv: process.env.NODE_ENV || "development",
+    hasJwtSecret: !!process.env.JWT_SECRET,
+  };
+
+  const statusCode = results.status === "ok" ? 200 : 503;
+  return NextResponse.json(results, { status: statusCode });
 }

@@ -5,12 +5,12 @@ import { prisma } from "@/lib/prisma";
 export async function GET(req: NextRequest) {
   try {
     const session = await getSession();
-    if (!session || !session.id) {
+    if (!session || !session.userId) {
       return NextResponse.json({ messages: [] }, { status: 401 });
     }
 
     const messages = await prisma.chatMessage.findMany({
-      where: { userId: session.id },
+      where: { userId: session.userId },
       orderBy: { createdAt: "asc" },
       take: 100,
     });
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
-    if (!session || !session.id) {
+    if (!session || !session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     const message = await prisma.chatMessage.create({
       data: {
-        userId: session.id,
+        userId: session.userId,
         role,
         content,
         tournamentId: tournamentId || null,
@@ -54,12 +54,12 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const session = await getSession();
-    if (!session || !session.id) {
+    if (!session || !session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await prisma.chatMessage.deleteMany({
-      where: { userId: session.id },
+      where: { userId: session.userId },
     });
 
     return NextResponse.json({ success: true });

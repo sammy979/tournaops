@@ -10,7 +10,7 @@ export async function GET(
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const owned = await verifyTournamentOwnership(params.id, session.id);
+  const owned = await verifyTournamentOwnership(params.id, session.userId);
   if (!owned) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const tournament = await prisma.tournament.findUnique({

@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getSession();
     
-    if (!session || !session.id) {
+    if (!session || !session.userId) {
       return NextResponse.json({ 
         error: "Not authenticated",
         isPro: false,
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: session.id },
+      where: { id: session.userId },
       select: {
         id: true,
         isPro: true,
