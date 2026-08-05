@@ -1,99 +1,145 @@
 "use client";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
-import { useParams, useSearchParams } from "next/navigation";
-
-function ChickenDinnerContent() {
+export default function ChickenDinnerOverlay() {
   const params = useParams();
-  const searchParams = useSearchParams();
-  const [data, setData] = useState<any>(null);
+  const token = params?.token as string;
+  const [winner, setWinner] = useState<any>(null);
+  const [tournamentName, setTournamentName] = useState("");
 
-  const theme = searchParams?.get("theme") || "gold";
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch(`/api/overlay/${token}`);
+        if (res.ok) {
+          const data = await res.json();
+          setWinner(data.standings?.[0]);
+          setTournamentName(data.tournament?.name || "");
+        }
+      } catch {}
+    }
+    load();
+    const interval = setInterval(load, 10000);
+    return () => clearInterval(interval);
+  }, [token]);
 
-  const load = useCallback(async () => {
-    const token = params?.token as string;
-    if (!token) return;
-    try {
-      const res = await fetch(`/api/tournaments/${token}`, { cache: "no-store" });
-      if (res.ok) setData((await res.json()).tournament);
-    } catch {}
-  }, [params?.token]);
-
-  useEffect(() => { load(); const i = setInterval(load, 10000); return () => clearInterval(i); }, [load]);
-
-  if (!data) return null;
-
-  const completedMatches = (data.matches || []).filter((m: any) => m.status === "completed" && m.results);
-  const lastMatch = completedMatches[completedMatches.length - 1];
-  if (!lastMatch || !lastMatch.results?.[0]) return null;
-
-  const winner = lastMatch.results[0];
-  const teamMap = Object.fromEntries((data.teams || []).map((t: any) => [t.id, t]));
-  const winnerTeam = teamMap[winner.teamId];
+  const aiBg = `https://image.pollinations.ai/prompt/${encodeURIComponent("PUBG chicken dinner victory, golden trophy, confetti explosion, epic celebration, dark dramatic background")}?width=1920&height=1080&nologo=true&model=flux`;
 
   return (
-    <div style={{ background: "transparent", padding: 12, fontFamily: "Inter, sans-serif" }}>
+    <div style={{
+      background: "transparent",
+      minHeight: "100vh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 40,
+      fontFamily: "Inter, sans-serif",
+    }}>
       <div style={{
-        background: "rgba(30,15,0,0.95)", borderRadius: 24, overflow: "hidden",
-        maxWidth: 480, backdropFilter: "blur(20px)",
-        border: "2px solid rgba(250,204,21,0.5)",
-        boxShadow: "0 0 80px rgba(250,204,21,0.4), 0 0 30px rgba(249,115,22,0.3)",
-        textAlign: "center", padding: "32px 24px",
+        position: "relative",
+        maxWidth: 800,
+        width: "100%",
+        borderRadius: 24,
+        overflow: "hidden",
+        border: "3px solid #facc15",
+        boxShadow: "0 30px 100px rgba(250,204,21,0.5), inset 0 0 60px rgba(250,204,21,0.1)",
       }}>
-        <div style={{ fontSize: 64, marginBottom: 8 }}></div>
-
         <div style={{
-          color: "#facc15", fontSize: 12, fontWeight: 900, letterSpacing: 8,
-          textTransform: "uppercase", marginBottom: 16,
-          textShadow: "0 0 20px rgba(250,204,21,0.5)",
+          background: `url(${aiBg})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          padding: "60px 40px",
+          position: "relative",
         }}>
-          WINNER WINNER CHICKEN DINNER
-        </div>
+          <div style={{
+            position: "absolute",
+            inset: 0,
+            background: "linear-gradient(135deg, rgba(0,0,0,0.75), rgba(30,20,0,0.85))",
+          }}></div>
 
-        {(winnerTeam as any)?.logo && (
-          <img
-            src={(winnerTeam as any).logo}
-            alt=""
-            style={{ width: 80, height: 80, borderRadius: 16, objectFit: "cover", margin: "0 auto 12px", boxShadow: "0 0 30px rgba(250,204,21,0.4)", border: "3px solid rgba(250,204,21,0.6)" }}
-          />
-        )}
-
-        <div style={{
-          color: "#fef3c7", fontSize: 36, fontWeight: 900,
-          textShadow: "0 0 30px rgba(250,204,21,0.4)",
-          marginBottom: 8,
-        }}>
-          {winner.teamName}
-        </div>
-
-        <div style={{ color: "#ca8a04", fontSize: 14, marginBottom: 20 }}>
-          {lastMatch.name}  {lastMatch.map}
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
-          {[
-            { label: "KILLS", value: winner.kills, color: "#fb923c" },
-            { label: "POINTS", value: winner.totalPoints, color: "#facc15" },
-            { label: "DAMAGE", value: (winner.damage || 0).toLocaleString(), color: "#22c55e" },
-          ].map(s => (
-            <div key={s.label} style={{
-              padding: "14px 24px", borderRadius: 14,
-              background: "rgba(255,255,255,0.05)", border: `1px solid ${s.color}30`,
+          <div style={{ position: "relative", textAlign: "center", color: "white" }}>
+            <div style={{ fontSize: 80, marginBottom: 20, animation: "bounce 1s infinite" }}>🏆</div>
+            
+            <div style={{
+              display: "inline-block",
+              background: "linear-gradient(135deg, #facc15, #f97316)",
+              color: "black",
+              padding: "6px 24px",
+              borderRadius: 999,
+              fontSize: 12,
+              fontWeight: 900,
+              letterSpacing: 4,
+              marginBottom: 20,
             }}>
-              <div style={{ color: s.color, fontSize: 28, fontWeight: 900, fontFamily: "monospace" }}>{s.value}</div>
-              <div style={{ color: "#92400e", fontSize: 8, letterSpacing: 3 }}>{s.label}</div>
+              WINNER WINNER
             </div>
-          ))}
-        </div>
+            
+            <h1 style={{
+              fontSize: 72,
+              fontWeight: 900,
+              margin: 0,
+              background: "linear-gradient(135deg, #facc15, #f97316)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              letterSpacing: "-0.03em",
+              lineHeight: 1,
+              textShadow: "0 0 60px rgba(250,204,21,0.5)",
+            }}>
+              CHICKEN DINNER!
+            </h1>
 
-        <div style={{ color: "#78350f", fontSize: 9, marginTop: 20, letterSpacing: 2 }}>
-          {data.name}  tournaops.com
+            {winner ? (
+              <>
+                <div style={{ marginTop: 40 }}>
+                  {winner.teamTag && (
+                    <div style={{ fontSize: 24, color: "#facc15", fontWeight: 700, marginBottom: 8 }}>
+                      [{winner.teamTag}]
+                    </div>
+                  )}
+                  <div style={{ fontSize: 48, fontWeight: 900, color: "white", letterSpacing: "-0.02em" }}>
+                    {winner.teamName}
+                  </div>
+                </div>
+                <div style={{
+                  marginTop: 30,
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: 40,
+                }}>
+                  <Stat label="POINTS" value={winner.totalPoints} />
+                  <Stat label="KILLS" value={winner.totalKills} />
+                  <Stat label="WWCDS" value={winner.wwcdCount} />
+                </div>
+              </>
+            ) : (
+              <div style={{ marginTop: 40, fontSize: 20, color: "#9ca3af" }}>
+                Awaiting champion...
+              </div>
+            )}
+
+            <div style={{ marginTop: 40, fontSize: 14, color: "#facc15", letterSpacing: 3, fontWeight: 700 }}>
+              {tournamentName?.toUpperCase()}
+            </div>
+          </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-15px); }
+        }
+      `}</style>
     </div>
   );
 }
 
-export default function ChickenDinnerPage() {
-  return <Suspense fallback={null}><ChickenDinnerContent /></Suspense>;
+function Stat({ label, value }: { label: string; value: any }) {
+  return (
+    <div style={{ textAlign: "center" }}>
+      <div style={{ fontSize: 36, fontWeight: 900, color: "#facc15" }}>{value}</div>
+      <div style={{ fontSize: 11, color: "#9ca3af", letterSpacing: 2, fontWeight: 700 }}>{label}</div>
+    </div>
+  );
 }

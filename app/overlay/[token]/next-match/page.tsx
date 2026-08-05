@@ -1,76 +1,121 @@
 "use client";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
-import { useParams, useSearchParams } from "next/navigation";
-
-function NextMatchContent() {
+export default function NextMatchOverlay() {
   const params = useParams();
-  const searchParams = useSearchParams();
-  const [data, setData] = useState<any>(null);
-  const theme = searchParams?.get("theme") || "midnight";
+  const token = params?.token as string;
+  const [tournament, setTournament] = useState<any>(null);
+  const [countdown, setCountdown] = useState("--:--");
 
-  const load = useCallback(async () => {
-    const token = params?.token as string;
-    if (!token) return;
-    try {
-      const res = await fetch(`/api/tournaments/${token}`, { cache: "no-store" });
-      if (res.ok) setData((await res.json()).tournament);
-    } catch {}
-  }, [params?.token]);
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch(`/api/overlay/${token}`);
+        if (res.ok) {
+          const data = await res.json();
+          setTournament(data.tournament);
+        }
+      } catch {}
+    }
+    load();
+    
+    // Countdown timer
+    const interval = setInterval(() => {
+      const now = new Date();
+      const minutes = String(15 - (now.getMinutes() % 15) - 1).padStart(2, "0");
+      const seconds = String(60 - now.getSeconds()).padStart(2, "0");
+      setCountdown(`${minutes}:${seconds}`);
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [token]);
 
-  useEffect(() => { load(); const i = setInterval(load, 15000); return () => clearInterval(i); }, [load]);
-
-  if (!data) return null;
-
-  const pendingMatches = (data.matches || []).filter((m: any) => m.status === "pending");
-  const completedCount = (data.matches || []).filter((m: any) => m.status === "completed").length;
-  const nextMatch = pendingMatches[0];
-  const totalMatches = (data.matches || []).length;
-
-  if (!nextMatch) return (
-    <div style={{ background: "transparent", padding: 12, fontFamily: "Inter" }}>
-      <div style={{ background: "rgba(10,10,20,0.9)", borderRadius: 16, padding: 24, textAlign: "center", color: "#22c55e", fontWeight: 700, border: "1px solid rgba(34,197,94,0.3)" }}>
-        All matches completed! 
-      </div>
-    </div>
-  );
-
-  const themes: Record<string, any> = {
-    midnight: { bg: "rgba(10,10,25,0.92)", accent: "#60a5fa", text: "#fff", border: "rgba(96,165,250,0.3)" },
-    inferno: { bg: "rgba(20,5,0,0.92)", accent: "#fb923c", text: "#fff", border: "rgba(249,115,22,0.3)" },
-    royal: { bg: "rgba(20,5,30,0.92)", accent: "#c084fc", text: "#fff", border: "rgba(168,85,247,0.3)" },
-  };
-  const t = themes[theme] || themes.midnight;
+  const aiBg = `https://image.pollinations.ai/prompt/${encodeURIComponent("PUBG game preparation, squad ready for drop, plane in the sky, tactical loadout, epic")}?width=1920&height=1080&nologo=true&model=flux`;
 
   return (
-    <div style={{ background: "transparent", padding: 12, fontFamily: "Inter, sans-serif" }}>
+    <div style={{
+      background: "transparent",
+      minHeight: "100vh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 40,
+      fontFamily: "Inter, sans-serif",
+    }}>
       <div style={{
-        background: t.bg, borderRadius: 16, overflow: "hidden", maxWidth: 400,
-        backdropFilter: "blur(20px)", border: `1.5px solid ${t.border}`,
-        boxShadow: `0 20px 60px -10px ${t.accent}40`,
+        position: "relative",
+        maxWidth: 700,
+        borderRadius: 24,
+        overflow: "hidden",
+        border: "3px solid #3b82f6",
+        boxShadow: "0 30px 100px rgba(59,130,246,0.4)",
       }}>
-        <div style={{ padding: "12px 16px", background: "rgba(0,0,0,0.3)", borderBottom: `1px solid ${t.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ color: t.accent, fontSize: 10, fontWeight: 800, letterSpacing: 3 }}>NEXT MATCH</span>
-          <span style={{ color: "#94a3b8", fontSize: 10, fontFamily: "monospace" }}>{completedCount}/{totalMatches}</span>
-        </div>
+        <div style={{
+          background: `url(${aiBg})`,
+          backgroundSize: "cover",
+          padding: "60px 40px",
+          position: "relative",
+        }}>
+          <div style={{
+            position: "absolute", inset: 0,
+            background: "linear-gradient(135deg, rgba(0,0,20,0.85), rgba(0,20,50,0.9))",
+          }}></div>
 
-        <div style={{ padding: 20, textAlign: "center" }}>
-          <div style={{ color: t.text, fontSize: 32, fontWeight: 900, marginBottom: 8 }}>{nextMatch.name}</div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", borderRadius: 999, background: `${t.accent}15`, border: `1px solid ${t.accent}30` }}>
-            <span style={{ fontSize: 16 }}></span>
-            <span style={{ color: t.accent, fontSize: 14, fontWeight: 700 }}>{nextMatch.map}</span>
+          <div style={{ position: "relative", textAlign: "center", color: "white" }}>
+            <div style={{
+              display: "inline-block",
+              background: "#3b82f6",
+              color: "white",
+              padding: "6px 24px",
+              borderRadius: 999,
+              fontSize: 12,
+              fontWeight: 900,
+              letterSpacing: 4,
+              marginBottom: 20,
+            }}>
+              📅 NEXT MATCH
+            </div>
+
+            <h1 style={{
+              fontSize: 48,
+              fontWeight: 900,
+              margin: 0,
+              color: "white",
+              letterSpacing: "-0.02em",
+            }}>
+              STARTING SOON
+            </h1>
+
+            <div style={{
+              marginTop: 40,
+              padding: 30,
+              background: "rgba(59,130,246,0.15)",
+              border: "2px solid rgba(59,130,246,0.5)",
+              borderRadius: 16,
+            }}>
+              <div style={{ fontSize: 12, color: "#93c5fd", letterSpacing: 3, fontWeight: 700 }}>
+                COUNTDOWN
+              </div>
+              <div style={{ 
+                fontSize: 96, 
+                fontWeight: 900, 
+                color: "#3b82f6", 
+                fontFamily: "monospace",
+                lineHeight: 1,
+                marginTop: 10,
+                textShadow: "0 0 40px rgba(59,130,246,0.8)",
+              }}>
+                {countdown}
+              </div>
+            </div>
+
+            <div style={{ marginTop: 30, fontSize: 14, color: "#93c5fd", letterSpacing: 3, fontWeight: 700 }}>
+              {tournament?.name?.toUpperCase() || "TOURNAMENT"}
+            </div>
           </div>
-        </div>
-
-        <div style={{ padding: "8px 16px", background: "rgba(0,0,0,0.2)", display: "flex", justifyContent: "space-between" }}>
-          <span style={{ color: "#4b5563", fontSize: 9 }}>{data.name}</span>
-          <span style={{ color: t.accent, fontSize: 9, fontWeight: 700, letterSpacing: 1.5 }}>tournaops.com</span>
         </div>
       </div>
     </div>
   );
-}
-
-export default function NextMatchPage() {
-  return <Suspense fallback={null}><NextMatchContent /></Suspense>;
 }
