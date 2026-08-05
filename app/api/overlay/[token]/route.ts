@@ -10,13 +10,18 @@ interface MatchResultItem {
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { token: string } }
+  context: { params: Promise<{ token: string }> }
 ) {
   try {
-    const token = params.token;
+    const { token } = await context.params;
     
-    if (!token) {
-      return NextResponse.json({ error: "No token provided" }, { status: 400 });
+    console.log("[Overlay API] Token received:", token);
+    
+    if (!token || token.length < 5) {
+      return NextResponse.json({ 
+        error: "Invalid token",
+        received: token,
+      }, { status: 400 });
     }
 
     const tournament = await prisma.tournament.findFirst({
@@ -30,6 +35,7 @@ export async function GET(
     });
 
     if (!tournament) {
+      console.log("[Overlay API] Tournament not found for token:", token);
       return NextResponse.json({ 
         error: "Overlay not found",
         tournament: null,
@@ -37,7 +43,8 @@ export async function GET(
       }, { status: 404 });
     }
 
-    // Get teams
+    console.log("[Overlay API] Found tournament:", tournament.name);
+
     const teams = await prisma.team.findMany({
       where: { tournamentId: tournament.id },
       select: {
@@ -47,11 +54,8 @@ export async function GET(
       },
     });
 
-    // Get matches with results
     const matches = await prisma.match.findMany({
-      where: { 
-        tournamentId: tournament.id,
-      },
+      where: { tournamentId: tournament.id },
       select: {
         id: true,
         status: true,
@@ -59,7 +63,6 @@ export async function GET(
       },
     });
 
-    // Parse scoring rule
     const scoringRule: any = tournament.scoringRule || {
       killPoints: 1,
       placementPoints: [10, 6, 5, 4, 3, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -72,7 +75,6 @@ export async function GET(
       : Object.values(scoringRule.placementPoints || {});
     const wwcdBonus = scoringRule.wwcdBonus || 0;
 
-    // Build initial standings for all teams
     const teamStandings: Record<string, any> = {};
     
     teams.forEach((team) => {
@@ -87,11 +89,9 @@ export async function GET(
       };
     });
 
-    // Process each match's JSON results
     matches.forEach((match) => {
       if (!match.results) return;
       
-      // results can be an array of team results
       const results = Array.isArray(match.results) 
         ? match.results as MatchResultItem[]
         : [];
@@ -115,7 +115,6 @@ export async function GET(
       });
     });
 
-    // Sort and rank
     const standings = Object.values(teamStandings)
       .sort((a: any, b: any) => {
         if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
@@ -139,9 +138,10 @@ export async function GET(
       },
     });
   } catch (error: any) {
-    console.error("Overlay API error:", error);
+    console.error("[Overlay API] Error:", error);
     return NextResponse.json({ 
       error: error?.message || "Failed to load overlay",
+      stack: error?.stack,
       tournament: null,
       standings: [],
     }, { status: 500 });

@@ -10,11 +10,13 @@ interface MatchResultItem {
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { slug: string } }
+  context: { params: Promise<{ slug: string }> }
 ) {
   try {
+    const { slug } = await context.params;
+
     const tournament = await prisma.tournament.findFirst({
-      where: { slug: params.slug },
+      where: { slug },
       select: {
         id: true,
         slug: true,
@@ -65,11 +67,6 @@ export async function GET(
       return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
 
-    if (!tournament.isPublic && tournament.status === "draft") {
-      return NextResponse.json({ error: "Tournament is private" }, { status: 403 });
-    }
-
-    // Calculate standings
     const scoringRule: any = tournament.scoringRule || {
       killPoints: 1,
       placementPoints: [10, 6, 5, 4, 3, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
