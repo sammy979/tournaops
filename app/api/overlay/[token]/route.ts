@@ -15,13 +15,8 @@ export async function GET(
   try {
     const { token } = await context.params;
     
-    console.log("[Overlay API] Token received:", token);
-    
-    if (!token || token.length < 5) {
-      return NextResponse.json({ 
-        error: "Invalid token",
-        received: token,
-      }, { status: 400 });
+    if (!token) {
+      return NextResponse.json({ error: "No token" }, { status: 400 });
     }
 
     const tournament = await prisma.tournament.findFirst({
@@ -35,7 +30,6 @@ export async function GET(
     });
 
     if (!tournament) {
-      console.log("[Overlay API] Tournament not found for token:", token);
       return NextResponse.json({ 
         error: "Overlay not found",
         tournament: null,
@@ -43,24 +37,14 @@ export async function GET(
       }, { status: 404 });
     }
 
-    console.log("[Overlay API] Found tournament:", tournament.name);
-
     const teams = await prisma.team.findMany({
       where: { tournamentId: tournament.id },
-      select: {
-        id: true,
-        name: true,
-        tag: true,
-      },
+      select: { id: true, name: true, tag: true },
     });
 
     const matches = await prisma.match.findMany({
       where: { tournamentId: tournament.id },
-      select: {
-        id: true,
-        status: true,
-        results: true,
-      },
+      select: { id: true, status: true, results: true },
     });
 
     const scoringRule: any = tournament.scoringRule || {
@@ -76,7 +60,6 @@ export async function GET(
     const wwcdBonus = scoringRule.wwcdBonus || 0;
 
     const teamStandings: Record<string, any> = {};
-    
     teams.forEach((team) => {
       teamStandings[team.id] = {
         teamId: team.id,
@@ -91,10 +74,7 @@ export async function GET(
 
     matches.forEach((match) => {
       if (!match.results) return;
-      
-      const results = Array.isArray(match.results) 
-        ? match.results as MatchResultItem[]
-        : [];
+      const results = Array.isArray(match.results) ? match.results as MatchResultItem[] : [];
       
       results.forEach((result) => {
         if (!result.teamId) return;
@@ -106,10 +86,9 @@ export async function GET(
         const placeIndex = Math.max(0, placement - 1);
         const placePoints = placementPoints[placeIndex] || 0;
         const isWWCD = placement === 1 || result.wwcd === true;
-        const wwcdBonusValue = isWWCD ? wwcdBonus : 0;
         
         team.totalKills += kills;
-        team.totalPoints += (kills * killPoints) + placePoints + wwcdBonusValue;
+        team.totalPoints += (kills * killPoints) + placePoints + (isWWCD ? wwcdBonus : 0);
         team.matchesPlayed += 1;
         if (isWWCD) team.wwcdCount += 1;
       });
@@ -124,13 +103,8 @@ export async function GET(
       .map((s: any, i: number) => ({ ...s, rank: i + 1 }));
 
     return NextResponse.json({
-      tournament: {
-        id: tournament.id,
-        name: tournament.name,
-        status: tournament.status,
-      },
+      tournament: { id: tournament.id, name: tournament.name, status: tournament.status },
       standings,
-      totalMatches: matches.filter(m => m.status === "completed").length,
     }, {
       headers: {
         "Cache-Control": "public, max-age=5",
@@ -138,10 +112,9 @@ export async function GET(
       },
     });
   } catch (error: any) {
-    console.error("[Overlay API] Error:", error);
+    console.error("Overlay API error:", error);
     return NextResponse.json({ 
-      error: error?.message || "Failed to load overlay",
-      stack: error?.stack,
+      error: error?.message,
       tournament: null,
       standings: [],
     }, { status: 500 });
