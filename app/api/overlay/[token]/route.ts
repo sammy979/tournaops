@@ -26,6 +26,16 @@ export async function GET(
         name: true,
         status: true,
         scoringRule: true,
+        bannerImage: true,
+        brandingData: true,
+        user: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            avatar: true,
+          },
+        },
       },
     });
 
@@ -34,12 +44,13 @@ export async function GET(
         error: "Overlay not found",
         tournament: null,
         standings: [],
+        organizer: null,
       }, { status: 404 });
     }
 
     const teams = await prisma.team.findMany({
       where: { tournamentId: tournament.id },
-      select: { id: true, name: true, tag: true },
+      select: { id: true, name: true, tag: true, logo: true },
     });
 
     const matches = await prisma.match.findMany({
@@ -65,6 +76,7 @@ export async function GET(
         teamId: team.id,
         teamName: team.name,
         teamTag: team.tag || null,
+        teamLogo: team.logo || null,
         totalPoints: 0,
         totalKills: 0,
         matchesPlayed: 0,
@@ -103,8 +115,15 @@ export async function GET(
       .map((s: any, i: number) => ({ ...s, rank: i + 1 }));
 
     return NextResponse.json({
-      tournament: { id: tournament.id, name: tournament.name, status: tournament.status },
+      tournament: { 
+        id: tournament.id, 
+        name: tournament.name, 
+        status: tournament.status,
+        bannerImage: tournament.bannerImage,
+      },
       standings,
+      organizer: tournament.user,
+      branding: tournament.brandingData || null,
     }, {
       headers: {
         "Cache-Control": "public, max-age=5",
@@ -117,6 +136,7 @@ export async function GET(
       error: error?.message,
       tournament: null,
       standings: [],
+      organizer: null,
     }, { status: 500 });
   }
 }

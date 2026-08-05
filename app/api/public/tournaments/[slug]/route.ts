@@ -32,7 +32,16 @@ export async function GET(
         bannerImage: true,
         rules: true,
         isPublic: true,
+        brandingData: true,
         createdAt: true,
+        user: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            avatar: true,
+          },
+        },
         teams: {
           select: {
             id: true,
@@ -86,6 +95,7 @@ export async function GET(
         teamId: team.id,
         teamName: team.name,
         teamTag: team.tag || null,
+        teamLogo: team.logo || null,
         totalPoints: 0,
         totalKills: 0,
         matchesPlayed: 0,
@@ -95,10 +105,7 @@ export async function GET(
 
     tournament.matches.forEach((match) => {
       if (!match.results) return;
-      
-      const results = Array.isArray(match.results) 
-        ? match.results as MatchResultItem[]
-        : [];
+      const results = Array.isArray(match.results) ? match.results as MatchResultItem[] : [];
       
       results.forEach((result) => {
         if (!result.teamId) return;
@@ -110,10 +117,9 @@ export async function GET(
         const placeIndex = Math.max(0, placement - 1);
         const placePoints = placementPoints[placeIndex] || 0;
         const isWWCD = placement === 1 || result.wwcd === true;
-        const wwcdBonusValue = isWWCD ? wwcdBonus : 0;
         
         team.totalKills += kills;
-        team.totalPoints += (kills * killPoints) + placePoints + wwcdBonusValue;
+        team.totalPoints += (kills * killPoints) + placePoints + (isWWCD ? wwcdBonus : 0);
         team.matchesPlayed += 1;
         if (isWWCD) team.wwcdCount += 1;
       });
@@ -130,15 +136,13 @@ export async function GET(
     return NextResponse.json({
       tournament,
       standings,
+      organizer: tournament.user,
+      branding: tournament.brandingData || null,
     }, {
-      headers: {
-        "Cache-Control": "public, max-age=30",
-      },
+      headers: { "Cache-Control": "public, max-age=30" },
     });
   } catch (error: any) {
     console.error("Public tournament API error:", error);
-    return NextResponse.json({ 
-      error: error?.message || "Failed to load tournament",
-    }, { status: 500 });
+    return NextResponse.json({ error: error?.message }, { status: 500 });
   }
 }
