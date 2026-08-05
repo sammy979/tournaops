@@ -5,16 +5,16 @@ import { verifyTournamentOwnership } from "@/lib/authorization";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const owned = await verifyTournamentOwnership(params.id, session.userId);
+  const owned = await verifyTournamentOwnership((await context.params).id, session.userId);
   if (!owned) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const tournament = await prisma.tournament.findUnique({
-    where: { id: params.id },
+    where: { id: (await context.params).id },
     include: {
       teams: true,
       rounds: {
