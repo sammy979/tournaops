@@ -422,7 +422,7 @@ export default function TournamentDetailPage() {
         <TeamEditor
           tournament={tournament}
           onClose={() => setShowTeamEditor(false)}
-          onSave={(updated) => { updated.then((r: typeof updated extends Promise<infer U> ? U : updated) => setTournament((r as any) ?? null)); setShowTeamEditor(false); }}
+          onSave={(updated) => { const handle = (r: any) => setTournament(r ?? null); if (updated && typeof (updated as any).then === "function") { (updated as any).then(handle); } else { handle(updated); } setShowTeamEditor(false); }}
         />
       )}
 
@@ -432,7 +432,7 @@ export default function TournamentDetailPage() {
           match={selectedMatch}
           teams={selectedMatchTeams}
           onClose={() => { setShowMatchEntry(false); setSelectedMatch(null); }}
-          onSave={(updated) => { updated.then((r: typeof updated extends Promise<infer U> ? U : updated) => setTournament((r as any) ?? null)); setShowMatchEntry(false); setSelectedMatch(null); }}
+          onSave={(updated) => { const handle = (r: any) => setTournament(r ?? null); if (updated && typeof (updated as any).then === "function") { (updated as any).then(handle); } else { handle(updated); } setShowMatchEntry(false); setSelectedMatch(null); }}
         />
       )}
 

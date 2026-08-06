@@ -103,3 +103,9 @@ export async function DELETE(
     return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
   }
 }
+export async function PUT(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  return PATCH(req, context);
+}

@@ -67,6 +67,9 @@ model Tournament {
   @@index([userId])
   @@index([slug])
   @@index([status])
+  trophyImage   String?
+  coverImage    String?
+  sponsorLogos  Json?
 }
 
 model Team {
