@@ -158,7 +158,7 @@ export default function ExportPage({ params }: { params: Promise<{ id: string }>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto overflow-x-auto">
+      <div className="max-w-7xl mx-auto overflow-hidden">
         <div
           ref={cardRef}
           style={{ width: "1920px", background: "linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%)" }}
