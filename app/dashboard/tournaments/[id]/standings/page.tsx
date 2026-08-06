@@ -161,6 +161,8 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
           <button onClick={() => router.push("/dashboard/tournaments/" + id)} className="flex items-center gap-2 text-neutral-400 hover:text-white mb-4 text-sm">
             <ArrowLeft className="w-4 h-4" /> Back to Tournament
           </button>
+
+        <TournamentNav tournamentId={id} />
           
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
