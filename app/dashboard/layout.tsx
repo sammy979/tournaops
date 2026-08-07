@@ -1,219 +1,427 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard, Trophy, Plus, Settings,
-  LogOut, Menu, X, Monitor, ChevronRight,
-  Zap, BarChart3, Users, Clock, DollarSign,
-  Calendar, MessageSquare, Palette, Crown, Shield,
-  Sparkles, Bot
+  Trophy, LayoutDashboard, Settings, LogOut,
+  ChevronLeft, ChevronRight, Menu, X,
+  BarChart3, Users, Calendar, Palette,
+  MessageSquare, Radio, Zap, Crown,
+  Image, DollarSign, Bell, Shield,
+  Bot, Clock
 } from "lucide-react";
-import { fetchCurrentUser, logoutUser } from "@/lib/auth/auth";
 
-const NAV_SECTIONS = [
-  { label: "Main", items: [
-    { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { href: "/dashboard/analytics", icon: BarChart3, label: "Analytics" },
-  ]},
-  { label: "Tournaments", items: [
-    { href: "/dashboard/tournaments", icon: Trophy, label: "My Tournaments" },
-    { href: "/dashboard/tournaments/create", icon: Plus, label: "Create New" },
-    { href: "/dashboard/registrations", icon: Users, label: "Registrations" },
-  ]},
-  { label: "Broadcast", items: [
-    { href: "/dashboard/overlay", icon: Monitor, label: "OBS Overlay" },
-    { href: "/dashboard/timer", icon: Clock, label: "Match Timer" },
-    { href: "/dashboard/discord", icon: MessageSquare, label: "Discord" },
-  ]},
-  { label: "Manage", items: [
-    { href: "/dashboard/schedule", icon: Calendar, label: "Schedule" },
-    { href: "/dashboard/prizes", icon: DollarSign, label: "Prize Tracker" },
-    { href: "/dashboard/branding", icon: Palette, label: "Branding" },
-      { href: "/dashboard/scoring", icon: Sparkles, label: "Scoring Systems" },
-      { href: "/dashboard/ai", icon: Bot, label: "TournaOps AI" },
-  ]},
-  { label: "Account", items: [
-    { href: "/dashboard/settings", icon: Settings, label: "Settings" },
-  ]},
+const NAV_ITEMS = [
+  {
+    label: "Main",
+    items: [
+      { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+      { icon: Trophy, label: "Tournaments", href: "/dashboard/tournaments" },
+      { icon: BarChart3, label: "Analytics", href: "/dashboard/analytics" },
+    ],
+  },
+  {
+    label: "Tools",
+    items: [
+      { icon: Calendar, label: "Schedule", href: "/dashboard/schedule" },
+      { icon: Users, label: "Registrations", href: "/dashboard/registrations" },
+      { icon: DollarSign, label: "Prizes", href: "/dashboard/prizes" },
+      { icon: Clock, label: "Timer", href: "/dashboard/timer" },
+    ],
+  },
+  {
+    label: "Broadcast",
+    items: [
+      { icon: Radio, label: "OBS Overlay", href: "/dashboard/overlay" },
+      { icon: Bot, label: "AI Assistant", href: "/dashboard/ai" },
+      { icon: Image, label: "AI Images", href: "/dashboard/ai-images" },
+    ],
+  },
+  {
+    label: "Setup",
+    items: [
+      { icon: Palette, label: "Branding", href: "/dashboard/branding" },
+      { icon: Image, label: "Assets", href: "/dashboard/assets" },
+      { icon: MessageSquare, label: "Discord", href: "/dashboard/discord" },
+      { icon: Zap, label: "Scoring", href: "/dashboard/scoring" },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { icon: Settings, label: "Settings", href: "/dashboard/settings" },
+      { icon: Crown, label: "Upgrade Pro", href: "/dashboard/upgrade" },
+    ],
+  },
 ];
 
-// Admin-only section (only shown to admins)
-const ADMIN_SECTION = {
-  label: "Admin",
-  items: [
-    { href: "/admin", icon: Crown, label: "Admin Panel" },
-  ],
-};
-
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const pathname = usePathname();
+  const router = useRouter();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const check = async () => {
-      const u = await fetchCurrentUser();
-      if (!u) { router.replace("/login"); return; }
-      setUser(u);
-      setLoading(false);
-    };
-    check();
-  }, [router]);
+    fetch("/api/auth/me")
+      .then(r => r.json())
+      .then(d => { if (d.user) setUser(d.user); })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   const handleLogout = async () => {
-    await logoutUser();
-    router.replace("/login");
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
-        <div className="space-y-3 text-center">
-          <div className="w-10 h-10 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-gray-500 text-sm">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
-    return pathname?.startsWith(href);
+    return pathname.startsWith(href);
   };
 
-  const isAdmin = user?.isAdmin === true;
-
-  return (
-    <div className="min-h-screen bg-[#0a0a0f] flex">
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />
-      )}
-
-      <aside className={`fixed top-0 left-0 h-full z-50 w-64 flex flex-col bg-[#08080e] border-r border-white/8 transition-transform duration-300 lg:translate-x-0 lg:static lg:z-auto ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
-          <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <Zap className="w-4 h-4 text-white" />
+  const SidebarContent = () => (
+    <div style={{
+      display: "flex",
+      flexDirection: "column",
+      height: "100%",
+      overflow: "hidden",
+    }}>
+      {/* Logo */}
+      <div style={{
+        padding: collapsed ? "1.25rem 0.75rem" : "1.25rem 1.25rem",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: collapsed ? "center" : "space-between",
+        flexShrink: 0,
+      }}>
+        {!collapsed && (
+          <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: "0.625rem", textDecoration: "none" }}>
+            <div style={{
+              width: "2rem", height: "2rem",
+              background: "linear-gradient(135deg, #f59e0b, #f97316)",
+              borderRadius: "0.5rem",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0,
+            }}>
+              <Trophy style={{ width: "1rem", height: "1rem", color: "#000" }} />
             </div>
-            <span className="font-bold text-white text-base">TournaOps</span>
+            <span style={{ fontWeight: 800, color: "#fff", fontSize: "1rem", whiteSpace: "nowrap" }}>TournaOps</span>
           </Link>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1.5 rounded-lg hover:bg-white/10 text-gray-500">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-4">
-          {NAV_SECTIONS.map(section => (
-            <div key={section.label}>
-              <p className="text-[10px] font-bold text-gray-700 uppercase tracking-widest px-3 mb-1">{section.label}</p>
-              <div className="space-y-0.5">
-                {section.items.map(item => {
-                  const Icon = item.icon;
-                  const active = isActive(item.href);
-                  return (
-                    <Link key={item.href} href={item.href} onClick={() => setSidebarOpen(false)} className={`sidebar-link ${active ? "active" : ""}`}>
-                      <Icon className="w-4 h-4 flex-shrink-0" />
-                      <span className="flex-1 text-sm">{item.label}</span>
-                      {active && <ChevronRight className="w-3 h-3 opacity-30" />}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-
-          {/* ADMIN SECTION - Only visible to admins */}
-          {isAdmin && (
-            <div>
-              <div className="flex items-center gap-2 px-3 mb-1">
-                <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-widest">{ADMIN_SECTION.label}</p>
-                <div className="flex-1 h-px bg-gradient-to-r from-yellow-500/30 to-transparent" />
-              </div>
-              <div className="space-y-0.5">
-                {ADMIN_SECTION.items.map(item => {
-                  const Icon = item.icon;
-                  const active = isActive(item.href);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setSidebarOpen(false)}
-                      className={`sidebar-link ${active ? "active-admin" : ""} relative`}
-                      style={active ? {
-                        background: "linear-gradient(135deg, rgba(234,179,8,0.15), rgba(249,115,22,0.15))",
-                        borderColor: "rgba(234,179,8,0.3)",
-                        color: "#fbbf24",
-                      } : {
-                        color: "#eab308",
-                      }}
-                    >
-                      <Icon className="w-4 h-4 flex-shrink-0" />
-                      <span className="flex-1 text-sm font-medium">{item.label}</span>
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 font-bold">ADMIN</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </nav>
-
-        <div className="p-3 border-t border-white/8">
-          <div className={`flex items-center gap-3 p-3 rounded-xl border mb-2 ${
-            isAdmin
-              ? "bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/30"
-              : "bg-white/4 border-white/8"
-          }`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm ${
-              isAdmin
-                ? "bg-gradient-to-br from-yellow-500 to-orange-500"
-                : "bg-gradient-to-br from-blue-500 to-purple-600"
-            }`}>
-              {isAdmin ? <Crown className="w-4 h-4" /> : (user?.displayName || user?.username || "U").charAt(0).toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <p className="text-white text-sm font-semibold truncate">{user?.displayName || user?.username}</p>
-                {isAdmin && (
-                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 font-bold">
-                    ADMIN
-                  </span>
-                )}
-              </div>
-              <p className="text-gray-600 text-xs truncate">{user?.email}</p>
-            </div>
+        )}
+        {collapsed && (
+          <div style={{
+            width: "2rem", height: "2rem",
+            background: "linear-gradient(135deg, #f59e0b, #f97316)",
+            borderRadius: "0.5rem",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Trophy style={{ width: "1rem", height: "1rem", color: "#000" }} />
           </div>
-          <button onClick={handleLogout} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-gray-600 hover:text-red-400 hover:bg-red-500/8 transition-all text-sm font-medium">
-            <LogOut className="w-4 h-4" />Sign Out
-          </button>
-        </div>
-      </aside>
+        )}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="hidden lg:flex"
+          style={{
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "0.5rem",
+            width: "1.75rem", height: "1.75rem",
+            alignItems: "center", justifyContent: "center",
+            cursor: "pointer",
+            color: "#6b7280",
+            flexShrink: 0,
+          }}
+        >
+          {collapsed
+            ? <ChevronRight style={{ width: "0.875rem", height: "0.875rem" }} />
+            : <ChevronLeft style={{ width: "0.875rem", height: "0.875rem" }} />
+          }
+        </button>
+      </div>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-white/8 bg-[#08080e]">
-          <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-lg hover:bg-white/10 text-gray-500">
-            <Menu className="w-5 h-5" />
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-              <Zap className="w-3 h-3 text-white" />
+      {/* Nav */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "0.75rem", scrollbarWidth: "none" }}>
+        {NAV_ITEMS.map(group => (
+          <div key={group.label} style={{ marginBottom: "1.25rem" }}>
+            {!collapsed && (
+              <div style={{
+                fontSize: "0.65rem",
+                fontWeight: 600,
+                color: "#4b5563",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                padding: "0 0.5rem",
+                marginBottom: "0.375rem",
+              }}>
+                {group.label}
+              </div>
+            )}
+            {group.items.map(item => {
+              const Icon = item.icon;
+              const active = isActive(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  title={collapsed ? item.label : undefined}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.625rem",
+                    padding: collapsed ? "0.625rem" : "0.625rem 0.75rem",
+                    borderRadius: "0.625rem",
+                    marginBottom: "0.125rem",
+                    textDecoration: "none",
+                    justifyContent: collapsed ? "center" : "flex-start",
+                    background: active ? "rgba(245,158,11,0.12)" : "transparent",
+                    color: active ? "#f59e0b" : "#9ca3af",
+                    fontWeight: active ? 600 : 500,
+                    fontSize: "0.875rem",
+                    transition: "all 0.15s ease",
+                    borderLeft: active ? "2px solid #f59e0b" : "2px solid transparent",
+                  }}
+                  onMouseEnter={e => {
+                    if (!active) {
+                      e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                      e.currentTarget.style.color = "#fff";
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!active) {
+                      e.currentTarget.style.background = "transparent";
+                      e.currentTarget.style.color = "#9ca3af";
+                    }
+                  }}
+                >
+                  <Icon style={{ width: "1rem", height: "1rem", flexShrink: 0 }} />
+                  {!collapsed && <span style={{ whiteSpace: "nowrap" }}>{item.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* User Footer */}
+      <div style={{
+        borderTop: "1px solid rgba(255,255,255,0.06)",
+        padding: collapsed ? "0.75rem" : "0.75rem 1rem",
+        flexShrink: 0,
+      }}>
+        {!collapsed && user && (
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.625rem",
+            padding: "0.625rem",
+            borderRadius: "0.75rem",
+            background: "rgba(255,255,255,0.04)",
+            marginBottom: "0.5rem",
+          }}>
+            <div style={{
+              width: "2rem", height: "2rem",
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "0.75rem", fontWeight: 700, color: "#fff",
+              flexShrink: 0,
+            }}>
+              {(user.displayName || user.username || "U").charAt(0).toUpperCase()}
             </div>
-            <span className="font-bold text-white text-sm">TournaOps</span>
-            {isAdmin && (
-              <Crown className="w-3.5 h-3.5 text-yellow-400" />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {user.displayName || user.username}
+              </div>
+              <div style={{ fontSize: "0.7rem", color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {user.isPro ? "Pro Plan" : "Free Plan"}
+              </div>
+            </div>
+            {user.isPro && (
+              <Crown style={{ width: "0.875rem", height: "0.875rem", color: "#f59e0b", flexShrink: 0 }} />
             )}
           </div>
-          <div className="w-9" />
+        )}
+        <button
+          onClick={handleLogout}
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: collapsed ? "center" : "flex-start",
+            gap: "0.5rem",
+            padding: "0.5rem 0.75rem",
+            borderRadius: "0.625rem",
+            background: "transparent",
+            border: "none",
+            color: "#6b7280",
+            fontSize: "0.875rem",
+            cursor: "pointer",
+            transition: "all 0.15s",
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = "rgba(239,68,68,0.08)";
+            e.currentTarget.style.color = "#f87171";
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = "#6b7280";
+          }}
+        >
+          <LogOut style={{ width: "1rem", height: "1rem", flexShrink: 0 }} />
+          {!collapsed && <span>Sign Out</span>}
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ display: "flex", minHeight: "100vh", background: "#0a0a0f" }}>
+
+      {/* Desktop Sidebar */}
+      <aside
+        className="hidden lg:flex"
+        style={{
+          width: collapsed ? "4rem" : "14rem",
+          flexDirection: "column",
+          background: "rgba(255,255,255,0.02)",
+          borderRight: "1px solid rgba(255,255,255,0.06)",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          bottom: 0,
+          zIndex: 40,
+          transition: "width 0.2s ease",
+          overflow: "hidden",
+        }}
+      >
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile Overlay */}
+      {mobileOpen && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 50,
+            background: "rgba(0,0,0,0.7)",
+            backdropFilter: "blur(4px)",
+          }}
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Mobile Sidebar */}
+      <aside
+        className="lg:hidden"
+        style={{
+          position: "fixed",
+          top: 0, left: 0, bottom: 0,
+          width: "16rem",
+          zIndex: 60,
+          background: "#0d0d14",
+          borderRight: "1px solid rgba(255,255,255,0.08)",
+          transform: mobileOpen ? "translateX(0)" : "translateX(-100%)",
+          transition: "transform 0.25s ease",
+        }}
+      >
+        <SidebarContent />
+      </aside>
+
+      {/* Main Content */}
+      <main style={{
+        flex: 1,
+        marginLeft: 0,
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh",
+      }}
+      className="lg:ml-56"
+      >
+        {/* Top Bar */}
+        <header style={{
+          height: "3.5rem",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 1.25rem",
+          background: "rgba(10,10,15,0.8)",
+          backdropFilter: "blur(20px)",
+          position: "sticky",
+          top: 0,
+          zIndex: 30,
+          flexShrink: 0,
+        }}>
+          <button
+            className="lg:hidden"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: "0.5rem",
+              width: "2.25rem", height: "2.25rem",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer",
+              color: "#9ca3af",
+            }}
+          >
+            {mobileOpen ? <X style={{ width: "1rem", height: "1rem" }} /> : <Menu style={{ width: "1rem", height: "1rem" }} />}
+          </button>
+
+          <div className="hidden lg:block" />
+
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            {user && !user.isPro && (
+              <Link
+                href="/dashboard/upgrade"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.375rem",
+                  background: "rgba(245,158,11,0.1)",
+                  border: "1px solid rgba(245,158,11,0.2)",
+                  borderRadius: "0.625rem",
+                  padding: "0.375rem 0.75rem",
+                  color: "#f59e0b",
+                  fontSize: "0.75rem",
+                  fontWeight: 600,
+                  textDecoration: "none",
+                  transition: "all 0.2s",
+                }}
+              >
+                <Crown style={{ width: "0.875rem", height: "0.875rem" }} />
+                Upgrade Pro
+              </Link>
+            )}
+            <Link
+              href="/"
+              style={{
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "0.625rem",
+                padding: "0.375rem 0.75rem",
+                color: "#9ca3af",
+                fontSize: "0.75rem",
+                fontWeight: 500,
+                textDecoration: "none",
+              }}
+            >
+              View Site
+            </Link>
+          </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
-          <div className="max-w-7xl mx-auto">{children}</div>
-        </main>
-      </div>
+        {/* Page Content */}
+        <div style={{ flex: 1, padding: "1.5rem" }}>
+          {children}
+        </div>
+      </main>
     </div>
   );
 }
