@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
@@ -67,8 +67,8 @@ export default function PublicGrandFinalPage() {
   const shareTwitter = () => {
     const champion = leaderboard?.rows?.[0];
     const text = champion
-      ? ` ${champion.teamName} wins ${tournament?.name}! Congrats to all finalists.`
-      : ` Watch ${tournament?.name} Grand Final live!`;
+      ? `${champion.teamName} wins ${tournament?.name}! Congrats to all finalists.`
+      : `Watch ${tournament?.name} Grand Final live!`;
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(publicUrl)}`,
       "_blank"
@@ -157,7 +157,7 @@ export default function PublicGrandFinalPage() {
         <div className="relative max-w-7xl mx-auto px-4 py-16 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs font-bold mb-6 uppercase tracking-widest">
             <Crown className="w-3 h-3" />Grand Final
-            {stage.isLocked && <span className="ml-1">  LOCKED</span>}
+            {stage.isLocked && <span className="ml-1"> LOCKED</span>}
           </div>
 
           <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-white mb-4 tracking-tight">
@@ -194,7 +194,7 @@ export default function PublicGrandFinalPage() {
 
               {/* Champion label */}
               <div className="text-xs font-black text-yellow-400 uppercase tracking-[0.3em] mb-2">
-                 Tournament Champion 
+                CHAMPION 
               </div>
 
               {/* Team logo (huge) */}
@@ -231,7 +231,7 @@ export default function PublicGrandFinalPage() {
 
               {/* TournaOps watermark */}
               <div className="mt-8 pt-6 border-t border-yellow-500/20 text-yellow-500/50 text-xs font-mono">
-                TournaOps  tournaops.com  {new Date().toLocaleDateString()}
+                TournaOps - tournaops.com  {new Date().toLocaleDateString()}
               </div>
             </div>
           </div>
@@ -246,7 +246,7 @@ export default function PublicGrandFinalPage() {
         </div>
       )}
 
-      {/* PODIUM (if not locked yet or additional showcase) */}
+      {/* PODIUM (if notLOCKED yet or additional showcase) */}
       {rows.length >= 3 && (
         <div className="max-w-6xl mx-auto px-4 py-8">
           <h2 className="text-3xl font-black text-white text-center mb-8">Top 3 Podium</h2>
@@ -263,7 +263,7 @@ export default function PublicGrandFinalPage() {
                   "border-amber-700/30 bg-gradient-to-b from-amber-700/5 to-transparent"
                 }`}>
                   <div className="text-5xl mb-3">
-                    {rank === 1 ? "" : rank === 2 ? "" : ""}
+                    {rank === 1 ? <Crown style={{ width: "2.5rem", height: "2.5rem", color: "#f59e0b", margin: "0 auto" }} /> : rank === 2 ? <Trophy style={{ width: "2rem", height: "2rem", color: "#d1d5db", margin: "0 auto" }} /> : <Award style={{ width: "2rem", height: "2rem", color: "#f97316", margin: "0 auto" }} />}
                   </div>
                   {r.teamLogo && (
                     <img src={r.teamLogo} alt="" className="w-16 h-16 rounded-xl mx-auto mb-3" />
@@ -321,7 +321,7 @@ export default function PublicGrandFinalPage() {
                         r.rank === 2 ? "text-gray-300" :
                         r.rank === 3 ? "text-amber-600" : "text-gray-500"
                       }`}>
-                        {r.rank <= 3 ? ["","",""][r.rank-1] : `#${r.rank}`}
+                        {r.rank <= 3 ? ["1st","2nd","3rd"][r.rank-1] : `#${r.rank}`}
                       </span>
                     </td>
                     <td className="py-3 px-3 text-white font-semibold">
