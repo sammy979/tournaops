@@ -1,9 +1,15 @@
-"use client";
+﻿"use client";
 import { useEffect, useState, use, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Trophy, Search, X, ExternalLink, Filter as FilterIcon, Download, ChevronDown, FileText, FileSpreadsheet, FileImage, File, Sparkles } from "lucide-react";
+import {
+  ArrowLeft, Loader2, Trophy, Search, X, ExternalLink,
+  Download, ChevronDown, FileText, FileSpreadsheet,
+  FileImage, File as FileIcon, Sparkles, Radio, Users,
+  Target, Crosshair, TrendingUp, Award
+} from "lucide-react";
 import { exportToCSV, exportToExcel, exportToPDF } from "@/lib/export-standings";
 import TeamDetailModal from "@/components/tournament/TeamDetailModal";
+import TournamentNav from "@/components/tournament/TournamentNav";
 
 const PLACEMENT_POINTS: Record<number, number> = {
   1: 15, 2: 12, 3: 10, 4: 8, 5: 6, 6: 4, 7: 2, 8: 1,
@@ -12,7 +18,7 @@ const PLACEMENT_POINTS: Record<number, number> = {
 function calculateStandings(teams: any[], matches: any[]) {
   const map = new Map<string, any>();
   const matchHistory = new Map<string, any[]>();
-  
+
   teams.forEach((t: any) => {
     map.set(t.id, {
       id: t.id, name: t.name || "", tag: t.tag || "", logo: t.logo || "",
@@ -23,9 +29,9 @@ function calculateStandings(teams: any[], matches: any[]) {
     });
     matchHistory.set(t.id, []);
   });
-  
+
   const placementSums = new Map<string, number>();
-  
+
   matches.forEach((m: any, mIdx: number) => {
     const results = Array.isArray(m.results) ? m.results : [];
     results.forEach((r: any) => {
@@ -35,13 +41,13 @@ function calculateStandings(teams: any[], matches: any[]) {
       const placement = Number(r.placement) || 0;
       const pts = PLACEMENT_POINTS[placement] || 0;
       const totalPts = kills + pts;
-      
+
       s.totalKills += kills;
       s.placementPoints += pts;
       s.totalPoints += totalPts;
       if (r.wwcd || placement === 1) s.wwcdCount += 1;
       s.matchesPlayed += 1;
-      
+
       if (placement > 0 && placement < s.bestPlacement) s.bestPlacement = placement;
       if (kills > s.highestKills) {
         s.highestKills = kills;
@@ -51,10 +57,10 @@ function calculateStandings(teams: any[], matches: any[]) {
           wwcd: !!r.wwcd || placement === 1, startTime: m.startTime,
         };
       }
-      
+
       const currentSum = placementSums.get(r.teamId) || 0;
       placementSums.set(r.teamId, currentSum + (placement || 16));
-      
+
       matchHistory.get(r.teamId)!.push({
         matchId: m.id, matchNumber: m.matchNumber || mIdx + 1,
         map: m.map || "", placement, kills, points: totalPts,
@@ -62,7 +68,7 @@ function calculateStandings(teams: any[], matches: any[]) {
       });
     });
   });
-  
+
   map.forEach((s, teamId) => {
     if (s.matchesPlayed > 0) {
       s.avgKills = s.totalKills / s.matchesPlayed;
@@ -70,7 +76,7 @@ function calculateStandings(teams: any[], matches: any[]) {
     }
     s.matchHistory = (matchHistory.get(teamId) || []).sort((a: any, b: any) => a.matchNumber - b.matchNumber);
   });
-  
+
   return Array.from(map.values())
     .filter((s: any) => s.matchesPlayed > 0)
     .sort((a: any, b: any) => {
@@ -107,7 +113,7 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
   const filtered = useMemo(() => {
     if (!search) return standings;
     const q = search.toLowerCase();
-    return standings.filter((s: any) => 
+    return standings.filter((s: any) =>
       s.name.toLowerCase().includes(q) || s.tag.toLowerCase().includes(q)
     );
   }, [standings, search]);
@@ -140,208 +146,431 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
       else if (format === "excel") exportToExcel(exportRows, exportOpts);
       else if (format === "pdf") exportToPDF(exportRows, exportOpts);
       else if (format === "png") {
-        const params = new URLSearchParams({ top: String(filtered.length), subtitle: "Overall Standings", format: "youtube", advanced: "1", sponsors: "1", social: "1" });
-        window.open("/preview/" + id + "?" + params.toString(), "_blank");
+        const p = new URLSearchParams({ top: String(filtered.length), subtitle: "Overall Standings", format: "youtube", advanced: "1", sponsors: "1", social: "1" });
+        window.open("/preview/" + id + "?" + p.toString(), "_blank");
       }
     } catch (e: any) {
       alert("Export failed: " + e?.message);
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-yellow-400" /></div>;
-  if (!tournament) return <div className="min-h-screen bg-black flex items-center justify-center text-white">Not found</div>;
+  if (loading) {
+    return (
+      <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Loader2 style={{ width: "2rem", height: "2rem", color: "#f59e0b", animation: "spin 0.8s linear infinite" }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
-  const primaryColor = tournament.brandingData?.primaryColor || "#FFD700";
+  if (!tournament) {
+    return (
+      <div style={{ textAlign: "center", padding: "4rem 1rem" }}>
+        <Trophy style={{ width: "3rem", height: "3rem", color: "#374151", margin: "0 auto 1rem" }} />
+        <p style={{ color: "#9ca3af" }}>Tournament not found</p>
+      </div>
+    );
+  }
+
+  const primaryColor = tournament.brandingData?.primaryColor || "#f59e0b";
+  const totalKills = filtered.reduce((sum: number, s: any) => sum + s.totalKills, 0);
+  const totalWwcd = filtered.reduce((sum: number, s: any) => sum + s.wwcdCount, 0);
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white p-4 sm:p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <button onClick={() => router.push("/dashboard/tournaments/" + id)} className="flex items-center gap-2 text-neutral-400 hover:text-white mb-4 text-sm">
-            <ArrowLeft className="w-4 h-4" /> Back to Tournament
-          </button>
+    <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
 
+      {/* Back Link */}
+      <button
+        onClick={() => router.push("/dashboard/tournaments/" + id)}
+        style={{
+          display: "inline-flex", alignItems: "center", gap: "0.375rem",
+          color: "#9ca3af", fontSize: "0.75rem", fontWeight: 500,
+          background: "transparent", border: "none",
+          cursor: "pointer", marginBottom: "1rem",
+        }}
+      >
+        <ArrowLeft style={{ width: "0.875rem", height: "0.875rem" }} />
+        Back to Tournament
+      </button>
+
+      {/* Nav */}
+      <div style={{ marginBottom: "1.5rem" }}>
         <TournamentNav tournamentId={id} />
-          
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div>
-              <h1 className="text-3xl sm:text-4xl font-black text-white flex items-center gap-3">
-                <Trophy className="w-8 h-8" style={{ color: primaryColor }} />
-                Standings
-              </h1>
-              <p className="text-neutral-400 mt-1">{tournament.name} · Click any team to view details</p>
-            </div>
-            
-            <div className="flex gap-2 items-center">
-              {/* Export Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setExportOpen(!exportOpen)}
-                  className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-white font-bold px-4 py-2.5 rounded-lg text-sm border border-neutral-700"
-                >
-                  <Download className="w-4 h-4" /> Export
-                  <ChevronDown className={"w-4 h-4 transition-transform " + (exportOpen ? "rotate-180" : "")} />
-                </button>
-                {exportOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setExportOpen(false)} />
-                    <div className="absolute right-0 mt-2 w-56 bg-neutral-800 border border-neutral-700 rounded-lg shadow-2xl z-50 overflow-hidden">
-                      <button onClick={() => handleExport("csv")} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-700 text-left text-sm border-b border-neutral-700">
-                        <FileText className="w-4 h-4 text-blue-400" />
-                        <div>
-                          <div className="font-bold text-white">CSV</div>
-                          <div className="text-xs text-neutral-400">Spreadsheet format</div>
-                        </div>
-                      </button>
-                      <button onClick={() => handleExport("excel")} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-700 text-left text-sm border-b border-neutral-700">
-                        <FileSpreadsheet className="w-4 h-4 text-green-400" />
-                        <div>
-                          <div className="font-bold text-white">Excel (.xlsx)</div>
-                          <div className="text-xs text-neutral-400">Full formatting</div>
-                        </div>
-                      </button>
-                      <button onClick={() => handleExport("pdf")} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-700 text-left text-sm border-b border-neutral-700">
-                        <File className="w-4 h-4 text-red-400" />
-                        <div>
-                          <div className="font-bold text-white">PDF</div>
-                          <div className="text-xs text-neutral-400">Print-ready document</div>
-                        </div>
-                      </button>
-                      <button onClick={() => handleExport("png")} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-700 text-left text-sm">
-                        <FileImage className="w-4 h-4 text-yellow-400" />
-                        <div>
-                          <div className="font-bold text-white">PNG Image</div>
-                          <div className="text-xs text-neutral-400">Opens broadcast preview</div>
-                        </div>
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
+      </div>
 
-              <button
-                onClick={() => router.push("/dashboard/tournaments/" + id + "/insights")}
-                className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold px-4 py-2.5 rounded-lg text-sm"
-              >
-                <Sparkles className="w-4 h-4" /> AI Insights
-              </button>
-              
-              <button
-                onClick={() => router.push("/dashboard/tournaments/" + id + "/broadcast")}
-                className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-4 py-2.5 rounded-lg text-sm"
-              >
-                <ExternalLink className="w-4 h-4" /> Broadcast
-              </button>
-            </div>
-          </div>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div>
+          <h1 style={{
+            fontSize: "clamp(1.75rem, 4vw, 2.25rem)",
+            fontWeight: 800,
+            color: "#fff",
+            display: "flex", alignItems: "center", gap: "0.75rem",
+          }}>
+            <Trophy style={{ width: "2rem", height: "2rem", color: primaryColor }} />
+            Live Standings
+          </h1>
+          <p style={{ color: "#6b7280", fontSize: "0.85rem", marginTop: "0.25rem" }}>
+            {tournament.name} • Click any team for detailed match history
+          </p>
         </div>
 
-        {/* Search */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search team name or tag..."
-              className="w-full bg-neutral-900 border border-neutral-800 rounded-lg pl-10 pr-4 py-3 text-white text-sm placeholder:text-neutral-600"
-            />
-            {search && (
-              <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white">
-                <X className="w-4 h-4" />
-              </button>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+
+          {/* Export Dropdown */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => setExportOpen(!exportOpen)}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: "0.5rem",
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                color: "#fff",
+                padding: "0.5rem 0.875rem",
+                borderRadius: "0.625rem",
+                fontSize: "0.75rem", fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              <Download style={{ width: "0.875rem", height: "0.875rem" }} />
+              Export
+              <ChevronDown style={{
+                width: "0.75rem", height: "0.75rem",
+                transform: exportOpen ? "rotate(180deg)" : "rotate(0)",
+                transition: "transform 0.2s",
+              }} />
+            </button>
+            {exportOpen && (
+              <>
+                <div
+                  style={{ position: "fixed", inset: 0, zIndex: 40 }}
+                  onClick={() => setExportOpen(false)}
+                />
+                <div style={{
+                  position: "absolute", right: 0, top: "calc(100% + 0.5rem)",
+                  width: "15rem",
+                  background: "#111116",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "0.75rem",
+                  boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
+                  zIndex: 50,
+                  overflow: "hidden",
+                }}>
+                  {[
+                    { format: "csv", label: "CSV", desc: "Spreadsheet", icon: FileText, color: "#60a5fa" },
+                    { format: "excel", label: "Excel (.xlsx)", desc: "Full formatting", icon: FileSpreadsheet, color: "#4ade80" },
+                    { format: "pdf", label: "PDF", desc: "Print-ready", icon: FileIcon, color: "#f87171" },
+                    { format: "png", label: "PNG Broadcast", desc: "Opens preview", icon: FileImage, color: "#fbbf24" },
+                  ].map(opt => {
+                    const Icon = opt.icon;
+                    return (
+                      <button
+                        key={opt.format}
+                        onClick={() => handleExport(opt.format)}
+                        style={{
+                          width: "100%",
+                          display: "flex", alignItems: "center", gap: "0.75rem",
+                          padding: "0.75rem 1rem",
+                          background: "transparent",
+                          border: "none",
+                          borderBottom: "1px solid rgba(255,255,255,0.05)",
+                          color: "#fff",
+                          textAlign: "left",
+                          cursor: "pointer",
+                          transition: "background 0.15s",
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                      >
+                        <Icon style={{ width: "1rem", height: "1rem", color: opt.color, flexShrink: 0 }} />
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: "0.8rem" }}>{opt.label}</div>
+                          <div style={{ fontSize: "0.65rem", color: "#6b7280" }}>{opt.desc}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </div>
+
+          <button
+            onClick={() => router.push("/dashboard/tournaments/" + id + "/insights")}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: "0.375rem",
+              background: "linear-gradient(to right, #a855f7, #ec4899)",
+              color: "#fff",
+              padding: "0.5rem 0.875rem",
+              borderRadius: "0.625rem",
+              fontSize: "0.75rem", fontWeight: 700,
+              border: "none",
+              cursor: "pointer",
+              boxShadow: "0 4px 20px rgba(168,85,247,0.3)",
+            }}
+          >
+            <Sparkles style={{ width: "0.875rem", height: "0.875rem" }} />
+            AI Insights
+          </button>
+
+          <button
+            onClick={() => router.push("/dashboard/tournaments/" + id + "/broadcast")}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: "0.375rem",
+              background: "#f59e0b",
+              color: "#000",
+              padding: "0.5rem 0.875rem",
+              borderRadius: "0.625rem",
+              fontSize: "0.75rem", fontWeight: 700,
+              border: "none",
+              cursor: "pointer",
+              boxShadow: "0 4px 20px rgba(245,158,11,0.3)",
+            }}
+          >
+            <Radio style={{ width: "0.875rem", height: "0.875rem" }} />
+            Broadcast
+          </button>
         </div>
+      </div>
 
-        {/* Stats Summary */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <div className="bg-neutral-900 rounded-xl p-3 border border-neutral-800">
-            <div className="text-xs text-neutral-400 font-bold">TEAMS</div>
-            <div className="text-2xl font-black text-white">{filtered.length}</div>
-          </div>
-          <div className="bg-neutral-900 rounded-xl p-3 border border-neutral-800">
-            <div className="text-xs text-neutral-400 font-bold">MATCHES</div>
-            <div className="text-2xl font-black text-white">{(tournament.matches || []).length}</div>
-          </div>
-          <div className="bg-neutral-900 rounded-xl p-3 border border-neutral-800">
-            <div className="text-xs text-neutral-400 font-bold">TOTAL KILLS</div>
-            <div className="text-2xl font-black text-red-400">{filtered.reduce((sum: number, s: any) => sum + s.totalKills, 0)}</div>
-          </div>
-          <div className="bg-neutral-900 rounded-xl p-3 border border-neutral-800">
-            <div className="text-xs text-neutral-400 font-bold">WWCD</div>
-            <div className="text-2xl font-black" style={{ color: primaryColor }}>{filtered.reduce((sum: number, s: any) => sum + s.wwcdCount, 0)}</div>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="bg-neutral-900 rounded-xl border border-neutral-800 overflow-hidden">
-          {/* Header */}
-          <div className="grid grid-cols-[60px_1fr_60px_70px_70px_70px_70px_100px] gap-2 items-center p-3 border-b border-neutral-800 text-xs font-black text-neutral-400 tracking-widest uppercase">
-            <div className="text-center">Rank</div>
-            <div>Team</div>
-            <div className="text-center">M</div>
-            <div className="text-center">WWCD</div>
-            <div className="text-center">Kills</div>
-            <div className="text-center hidden sm:block">Avg K</div>
-            <div className="text-center hidden md:block">Place</div>
-            <div className="text-center">Total</div>
-          </div>
-
-          {/* Rows */}
-          {filtered.length === 0 ? (
-            <div className="p-8 text-center text-neutral-500">
-              <Search className="w-12 h-12 mx-auto mb-2 opacity-30" />
-              <div>No teams found</div>
+      {/* Stats Summary */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+        gap: "0.75rem",
+        marginBottom: "1.25rem",
+      }}>
+        {[
+          { icon: Users, label: "Teams", value: filtered.length, color: "#60a5fa", bg: "rgba(59,130,246,0.1)" },
+          { icon: Target, label: "Matches", value: (tournament.matches || []).length, color: "#c084fc", bg: "rgba(168,85,247,0.1)" },
+          { icon: Crosshair, label: "Total Kills", value: totalKills, color: "#f87171", bg: "rgba(239,68,68,0.1)" },
+          { icon: Award, label: "WWCD", value: totalWwcd, color: primaryColor, bg: `${primaryColor}15` },
+        ].map(stat => {
+          const Icon = stat.icon;
+          return (
+            <div key={stat.label} style={{
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: "0.875rem",
+              padding: "1rem",
+            }}>
+              <div style={{
+                width: "1.75rem", height: "1.75rem",
+                borderRadius: "0.5rem",
+                background: stat.bg,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                marginBottom: "0.625rem",
+              }}>
+                <Icon style={{ width: "0.875rem", height: "0.875rem", color: stat.color }} />
+              </div>
+              <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#fff", lineHeight: 1 }}>
+                {stat.value}
+              </div>
+              <div style={{ fontSize: "0.65rem", color: "#6b7280", marginTop: "0.375rem", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>
+                {stat.label}
+              </div>
             </div>
-          ) : (
-            filtered.map((s: any) => {
-              const isFirst = s.currentRank === 1;
-              const isSecond = s.currentRank === 2;
-              const isThird = s.currentRank === 3;
-              const rankColor = isFirst ? "#FFD700" : isSecond ? "#C0C0C0" : isThird ? "#CD7F32" : "#ffffff";
-              const rowBg = isFirst ? "bg-yellow-500/10" : isSecond ? "bg-gray-400/5" : isThird ? "bg-orange-600/5" : "";
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => setSelectedTeam(s)}
-                  className={"w-full grid grid-cols-[60px_1fr_60px_70px_70px_70px_70px_100px] gap-2 items-center p-3 border-b border-neutral-800 hover:bg-neutral-800/50 transition-all cursor-pointer " + rowBg}
-                >
-                  <div className="text-center font-black text-xl" style={{ color: rankColor }}>#{s.currentRank}</div>
-                  <div className="flex items-center gap-3 min-w-0">
-                    {s.logo ? (
-                      <img src={s.logo} alt="" className="w-9 h-9 rounded-lg object-cover border border-neutral-700 flex-shrink-0" />
-                    ) : (
-                      <div className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-xs flex-shrink-0" style={{ background: primaryColor + "30", color: primaryColor }}>
-                        {(s.tag || s.name).slice(0, 2).toUpperCase()}
-                      </div>
+          );
+        })}
+      </div>
+
+      {/* Search */}
+      <div style={{ position: "relative", marginBottom: "1rem" }}>
+        <Search style={{
+          position: "absolute", left: "0.875rem", top: "50%", transform: "translateY(-50%)",
+          width: "1rem", height: "1rem", color: "#6b7280",
+        }} />
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search team name or tag..."
+          style={{
+            width: "100%",
+            background: "rgba(255,255,255,0.03)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "0.75rem",
+            padding: "0.75rem 2.75rem",
+            color: "#fff",
+            fontSize: "0.875rem",
+            outline: "none",
+            boxSizing: "border-box",
+          }}
+        />
+        {search && (
+          <button
+            onClick={() => setSearch("")}
+            style={{
+              position: "absolute", right: "0.875rem", top: "50%", transform: "translateY(-50%)",
+              background: "transparent", border: "none",
+              color: "#6b7280", cursor: "pointer",
+              display: "flex", alignItems: "center",
+            }}
+          >
+            <X style={{ width: "1rem", height: "1rem" }} />
+          </button>
+        )}
+      </div>
+
+      {/* Table */}
+      <div style={{
+        background: "rgba(255,255,255,0.03)",
+        border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: "1rem",
+        overflow: "hidden",
+      }}>
+        {/* Table Header */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "60px 1fr 55px 65px 65px 65px 65px 90px",
+          gap: "0.5rem",
+          alignItems: "center",
+          padding: "0.875rem",
+          borderBottom: "1px solid rgba(255,255,255,0.08)",
+          background: "rgba(255,255,255,0.02)",
+          fontSize: "0.65rem",
+          fontWeight: 700,
+          color: "#6b7280",
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+        }}>
+          <div style={{ textAlign: "center" }}>Rank</div>
+          <div>Team</div>
+          <div style={{ textAlign: "center" }}>M</div>
+          <div style={{ textAlign: "center" }}>WWCD</div>
+          <div style={{ textAlign: "center" }}>Kills</div>
+          <div style={{ textAlign: "center" }} className="hidden sm:block">Avg K</div>
+          <div style={{ textAlign: "center" }} className="hidden md:block">Place</div>
+          <div style={{ textAlign: "center", color: primaryColor }}>TOTAL</div>
+        </div>
+
+        {/* Rows */}
+        {filtered.length === 0 ? (
+          <div style={{ padding: "3rem", textAlign: "center" }}>
+            <Search style={{ width: "2.5rem", height: "2.5rem", color: "#374151", margin: "0 auto 0.75rem" }} />
+            <div style={{ color: "#9ca3af", fontWeight: 600 }}>No teams found</div>
+            <div style={{ color: "#6b7280", fontSize: "0.75rem", marginTop: "0.25rem" }}>
+              {search ? "Try a different search term" : "Enter match results to see standings"}
+            </div>
+          </div>
+        ) : (
+          filtered.map((s: any) => {
+            const isFirst = s.currentRank === 1;
+            const isSecond = s.currentRank === 2;
+            const isThird = s.currentRank === 3;
+            const rankColor = isFirst ? primaryColor : isSecond ? "#d1d5db" : isThird ? "#f97316" : "#6b7280";
+            const rowBg = isFirst ? `${primaryColor}08` : isSecond ? "rgba(209,213,219,0.03)" : isThird ? "rgba(249,115,22,0.03)" : "transparent";
+            return (
+              <button
+                key={s.id}
+                onClick={() => setSelectedTeam(s)}
+                style={{
+                  width: "100%",
+                  display: "grid",
+                  gridTemplateColumns: "60px 1fr 55px 65px 65px 65px 65px 90px",
+                  gap: "0.5rem",
+                  alignItems: "center",
+                  padding: "0.875rem",
+                  borderBottom: "1px solid rgba(255,255,255,0.04)",
+                  background: rowBg,
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "background 0.15s",
+                  color: "#fff",
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                onMouseLeave={e => e.currentTarget.style.background = rowBg}
+              >
+                <div style={{ textAlign: "center", fontWeight: 800, fontSize: "1.125rem", color: rankColor }}>
+                  #{s.currentRank}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", minWidth: 0 }}>
+                  {s.logo ? (
+                    <img
+                      src={s.logo}
+                      alt=""
+                      style={{
+                        width: "2.25rem", height: "2.25rem",
+                        borderRadius: "0.5rem",
+                        objectFit: "cover",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        flexShrink: 0,
+                      }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: "2.25rem", height: "2.25rem",
+                      borderRadius: "0.5rem",
+                      background: `${primaryColor}20`,
+                      color: primaryColor,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontWeight: 700, fontSize: "0.7rem",
+                      flexShrink: 0,
+                    }}>
+                      {(s.tag || s.name).slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                  <div style={{ minWidth: 0, textAlign: "left" }}>
+                    {s.tag && (
+                      <div style={{ fontSize: "0.65rem", fontWeight: 700, color: primaryColor }}>[{s.tag}]</div>
                     )}
-                    <div className="min-w-0 text-left">
-                      {s.tag && <div className="text-xs font-bold" style={{ color: primaryColor }}>[{s.tag}]</div>}
-                      <div className="text-white font-bold truncate">{s.name}</div>
+                    <div style={{
+                      color: "#fff", fontWeight: 700, fontSize: "0.85rem",
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    }}>
+                      {s.name}
                     </div>
                   </div>
-                  <div className="text-center text-neutral-300 font-bold">{s.matchesPlayed}</div>
-                  <div className="text-center">
-                    <span className={"inline-block px-2 py-0.5 rounded font-black text-sm " + (s.wwcdCount > 0 ? "bg-yellow-500 text-black" : "bg-neutral-800 text-neutral-500")}>{s.wwcdCount}</span>
-                  </div>
-                  <div className="text-center text-red-400 font-black">{s.totalKills}</div>
-                  <div className="text-center text-orange-400 font-bold hidden sm:block">{s.avgKills.toFixed(1)}</div>
-                  <div className="text-center text-cyan-400 font-bold hidden md:block">{s.placementPoints}</div>
-                  <div className="text-center font-black text-2xl" style={{ color: primaryColor }}>{s.totalPoints}</div>
-                </button>
-              );
-            })
-          )}
-        </div>
+                </div>
+                <div style={{ textAlign: "center", color: "#d1d5db", fontWeight: 600, fontSize: "0.85rem" }}>
+                  {s.matchesPlayed}
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <span style={{
+                    display: "inline-block",
+                    padding: "0.15rem 0.5rem",
+                    borderRadius: "0.375rem",
+                    fontWeight: 700,
+                    fontSize: "0.8rem",
+                    background: s.wwcdCount > 0 ? primaryColor : "rgba(255,255,255,0.06)",
+                    color: s.wwcdCount > 0 ? "#000" : "#6b7280",
+                  }}>
+                    {s.wwcdCount}
+                  </span>
+                </div>
+                <div style={{ textAlign: "center", color: "#f87171", fontWeight: 800, fontSize: "0.85rem" }}>
+                  {s.totalKills}
+                </div>
+                <div style={{ textAlign: "center", color: "#fb923c", fontWeight: 600, fontSize: "0.8rem" }} className="hidden sm:block">
+                  {s.avgKills.toFixed(1)}
+                </div>
+                <div style={{ textAlign: "center", color: "#22d3ee", fontWeight: 600, fontSize: "0.8rem" }} className="hidden md:block">
+                  {s.placementPoints}
+                </div>
+                <div style={{
+                  textAlign: "center",
+                  fontWeight: 900,
+                  fontSize: "1.5rem",
+                  color: primaryColor,
+                }}>
+                  {s.totalPoints}
+                </div>
+              </button>
+            );
+          })
+        )}
       </div>
 
       {/* Modal */}
       {selectedTeam && (
-        <TeamDetailModal team={selectedTeam} primaryColor={primaryColor} onClose={() => setSelectedTeam(null)} />
+        <TeamDetailModal
+          team={selectedTeam}
+          primaryColor={primaryColor}
+          onClose={() => setSelectedTeam(null)}
+        />
       )}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
