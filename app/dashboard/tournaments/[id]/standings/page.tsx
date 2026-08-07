@@ -11,41 +11,74 @@ import { exportToCSV, exportToExcel, exportToPDF } from "@/lib/export-standings"
 import TeamDetailModal from "@/components/tournament/TeamDetailModal";
 import TournamentNav from "@/components/tournament/TournamentNav";
 
-const PLACEMENT_POINTS: Record<number, number> = {
-  1: 15, 2: 12, 3: 10, 4: 8, 5: 6, 6: 4, 7: 2, 8: 1,
-};
+// ─── Scoring helpers ──────────────────────────────────────────────────────────
+// Uses the tournament's scoringRule JSON field as the single source of truth.
+// Falls back to PMGC defaults only when the field is absent or malformed.
 
-function calculateStandings(teams: any[], matches: any[]) {
+const DEFAULT_PLACEMENT_POINTS = [15, 12, 10, 8, 6, 4, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0];
+const DEFAULT_KILL_POINTS = 1;
+const DEFAULT_WWCD_BONUS = 0;
+
+function parseScoringRule(scoringRule: any) {
+  const raw = scoringRule || {};
+  const killPoints = Number(raw.killPoints ?? DEFAULT_KILL_POINTS);
+  const wwcdBonus = Number(raw.wwcdBonus ?? DEFAULT_WWCD_BONUS);
+
+  let placementPoints: number[] = DEFAULT_PLACEMENT_POINTS;
+  if (Array.isArray(raw.placementPoints) && raw.placementPoints.length > 0) {
+    placementPoints = raw.placementPoints.map(Number);
+  } else if (raw.placementPoints && typeof raw.placementPoints === "object") {
+    placementPoints = Object.values(raw.placementPoints).map(Number);
+  }
+
+  return { killPoints, wwcdBonus, placementPoints };
+}
+
+function getPlacementPoints(placement: number, placementPoints: number[]): number {
+  if (placement < 1) return 0;
+  return placementPoints[placement - 1] ?? 0;
+}
+
+function calculateStandings(teams: any[], matches: any[], scoringRule: any) {
+  const { killPoints, wwcdBonus, placementPoints } = parseScoringRule(scoringRule);
+
   const map = new Map<string, any>();
   const matchHistory = new Map<string, any[]>();
+  const placementSums = new Map<string, number>();
 
   teams.forEach((t: any) => {
     map.set(t.id, {
       id: t.id, name: t.name || "", tag: t.tag || "", logo: t.logo || "",
       players: t.players || t.playersList || [],
-      totalPoints: 0, placementPoints: 0, totalKills: 0, wwcdCount: 0, matchesPlayed: 0,
-      avgKills: 0, avgPlacement: 0, bestPlacement: 999, highestKills: 0,
-      highestKillsMatch: null,
+      totalPoints: 0, placementPoints: 0, killPointsTotal: 0, totalKills: 0,
+      wwcdCount: 0, matchesPlayed: 0,
+      avgKills: 0, avgPlacement: 0, bestPlacement: 999,
+      highestKills: 0, highestKillsMatch: null,
     });
     matchHistory.set(t.id, []);
+    placementSums.set(t.id, 0);
   });
-
-  const placementSums = new Map<string, number>();
 
   matches.forEach((m: any, mIdx: number) => {
     const results = Array.isArray(m.results) ? m.results : [];
     results.forEach((r: any) => {
       const s = map.get(r.teamId);
       if (!s) return;
+
       const kills = Number(r.kills) || 0;
       const placement = Number(r.placement) || 0;
-      const pts = PLACEMENT_POINTS[placement] || 0;
-      const totalPts = kills + pts;
+      const isWWCD = r.wwcd === true || placement === 1;
+
+      const pPts = getPlacementPoints(placement, placementPoints);
+      const kPts = kills * killPoints;
+      const bonus = isWWCD ? wwcdBonus : 0;
+      const matchTotal = pPts + kPts + bonus;
 
       s.totalKills += kills;
-      s.placementPoints += pts;
-      s.totalPoints += totalPts;
-      if (r.wwcd || placement === 1) s.wwcdCount += 1;
+      s.placementPoints += pPts;
+      s.killPointsTotal += kPts;
+      s.totalPoints += matchTotal;
+      if (isWWCD) s.wwcdCount += 1;
       s.matchesPlayed += 1;
 
       if (placement > 0 && placement < s.bestPlacement) s.bestPlacement = placement;
@@ -53,18 +86,17 @@ function calculateStandings(teams: any[], matches: any[]) {
         s.highestKills = kills;
         s.highestKillsMatch = {
           matchId: m.id, matchNumber: m.matchNumber || mIdx + 1,
-          map: m.map || "", placement, kills, points: totalPts,
-          wwcd: !!r.wwcd || placement === 1, startTime: m.startTime,
+          map: m.map || "", placement, kills, points: matchTotal,
+          wwcd: isWWCD, startTime: m.startTime,
         };
       }
 
-      const currentSum = placementSums.get(r.teamId) || 0;
-      placementSums.set(r.teamId, currentSum + (placement || 16));
+      placementSums.set(r.teamId, (placementSums.get(r.teamId) || 0) + (placement || 16));
 
       matchHistory.get(r.teamId)!.push({
         matchId: m.id, matchNumber: m.matchNumber || mIdx + 1,
-        map: m.map || "", placement, kills, points: totalPts,
-        wwcd: !!r.wwcd || placement === 1, startTime: m.startTime,
+        map: m.map || "", placement, kills, points: matchTotal,
+        wwcd: isWWCD, startTime: m.startTime,
       });
     });
   });
@@ -74,7 +106,9 @@ function calculateStandings(teams: any[], matches: any[]) {
       s.avgKills = s.totalKills / s.matchesPlayed;
       s.avgPlacement = (placementSums.get(teamId) || 0) / s.matchesPlayed;
     }
-    s.matchHistory = (matchHistory.get(teamId) || []).sort((a: any, b: any) => a.matchNumber - b.matchNumber);
+    s.matchHistory = (matchHistory.get(teamId) || []).sort(
+      (a: any, b: any) => a.matchNumber - b.matchNumber
+    );
   });
 
   return Array.from(map.values())
@@ -107,7 +141,11 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
 
   const standings = useMemo(() => {
     if (!tournament) return [];
-    return calculateStandings(tournament.teams || [], tournament.matches || []);
+    return calculateStandings(
+      tournament.teams || [],
+      tournament.matches || [],
+      tournament.scoringRule
+    );
   }, [tournament]);
 
   const filtered = useMemo(() => {
@@ -136,7 +174,10 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
   const exportOpts = {
     tournamentName: tournament?.name || "Tournament",
     subtitle: "Overall Standings",
-    organizerName: tournament?.brandingData?.orgName || tournament?.brandingData?.organizerName || "Tournament Organizer",
+    organizerName:
+      tournament?.brandingData?.orgName ||
+      tournament?.brandingData?.organizerName ||
+      "Tournament Organizer",
   };
 
   const handleExport = (format: string) => {
@@ -146,7 +187,14 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
       else if (format === "excel") exportToExcel(exportRows, exportOpts);
       else if (format === "pdf") exportToPDF(exportRows, exportOpts);
       else if (format === "png") {
-        const p = new URLSearchParams({ top: String(filtered.length), subtitle: "Overall Standings", format: "youtube", advanced: "1", sponsors: "1", social: "1" });
+        const p = new URLSearchParams({
+          top: String(filtered.length),
+          subtitle: "Overall Standings",
+          format: "youtube",
+          advanced: "1",
+          sponsors: "1",
+          social: "1",
+        });
         window.open("/preview/" + id + "?" + p.toString(), "_blank");
       }
     } catch (e: any) {
@@ -175,87 +223,57 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
   const primaryColor = tournament.brandingData?.primaryColor || "#f59e0b";
   const totalKills = filtered.reduce((sum: number, s: any) => sum + s.totalKills, 0);
   const totalWwcd = filtered.reduce((sum: number, s: any) => sum + s.wwcdCount, 0);
+  const { killPoints: kp, wwcdBonus: wb } = parseScoringRule(tournament.scoringRule);
 
   return (
     <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
 
-      {/* Back Link */}
       <button
         onClick={() => router.push("/dashboard/tournaments/" + id)}
         style={{
           display: "inline-flex", alignItems: "center", gap: "0.375rem",
           color: "#9ca3af", fontSize: "0.75rem", fontWeight: 500,
-          background: "transparent", border: "none",
-          cursor: "pointer", marginBottom: "1rem",
+          background: "transparent", border: "none", cursor: "pointer", marginBottom: "1rem",
         }}
       >
         <ArrowLeft style={{ width: "0.875rem", height: "0.875rem" }} />
         Back to Tournament
       </button>
 
-      {/* Nav */}
       <div style={{ marginBottom: "1.5rem" }}>
         <TournamentNav tournamentId={id} />
       </div>
 
-      {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem", marginBottom: "1.5rem" }}>
         <div>
-          <h1 style={{
-            fontSize: "clamp(1.75rem, 4vw, 2.25rem)",
-            fontWeight: 800,
-            color: "#fff",
-            display: "flex", alignItems: "center", gap: "0.75rem",
-          }}>
+          <h1 style={{ fontSize: "clamp(1.75rem, 4vw, 2.25rem)", fontWeight: 800, color: "#fff", display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <Trophy style={{ width: "2rem", height: "2rem", color: primaryColor }} />
             Live Standings
           </h1>
           <p style={{ color: "#6b7280", fontSize: "0.85rem", marginTop: "0.25rem" }}>
-            {tournament.name} • Click any team for detailed match history
+            {tournament.name} • {kp} kill pt{kp !== 1 ? "s" : ""}{wb > 0 ? ` • +${wb} WWCD bonus` : ""} • Click any team for history
           </p>
         </div>
 
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
-
-          {/* Export Dropdown */}
           <div style={{ position: "relative" }}>
             <button
               onClick={() => setExportOpen(!exportOpen)}
               style={{
                 display: "inline-flex", alignItems: "center", gap: "0.5rem",
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                color: "#fff",
-                padding: "0.5rem 0.875rem",
-                borderRadius: "0.625rem",
-                fontSize: "0.75rem", fontWeight: 600,
-                cursor: "pointer",
+                background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+                color: "#fff", padding: "0.5rem 0.875rem", borderRadius: "0.625rem",
+                fontSize: "0.75rem", fontWeight: 600, cursor: "pointer",
               }}
             >
               <Download style={{ width: "0.875rem", height: "0.875rem" }} />
               Export
-              <ChevronDown style={{
-                width: "0.75rem", height: "0.75rem",
-                transform: exportOpen ? "rotate(180deg)" : "rotate(0)",
-                transition: "transform 0.2s",
-              }} />
+              <ChevronDown style={{ width: "0.75rem", height: "0.75rem", transform: exportOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }} />
             </button>
             {exportOpen && (
               <>
-                <div
-                  style={{ position: "fixed", inset: 0, zIndex: 40 }}
-                  onClick={() => setExportOpen(false)}
-                />
-                <div style={{
-                  position: "absolute", right: 0, top: "calc(100% + 0.5rem)",
-                  width: "15rem",
-                  background: "#111116",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: "0.75rem",
-                  boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
-                  zIndex: 50,
-                  overflow: "hidden",
-                }}>
+                <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setExportOpen(false)} />
+                <div style={{ position: "absolute", right: 0, top: "calc(100% + 0.5rem)", width: "15rem", background: "#111116", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.75rem", boxShadow: "0 20px 40px rgba(0,0,0,0.4)", zIndex: 50, overflow: "hidden" }}>
                   {[
                     { format: "csv", label: "CSV", desc: "Spreadsheet", icon: FileText, color: "#60a5fa" },
                     { format: "excel", label: "Excel (.xlsx)", desc: "Full formatting", icon: FileSpreadsheet, color: "#4ade80" },
@@ -267,18 +285,7 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
                       <button
                         key={opt.format}
                         onClick={() => handleExport(opt.format)}
-                        style={{
-                          width: "100%",
-                          display: "flex", alignItems: "center", gap: "0.75rem",
-                          padding: "0.75rem 1rem",
-                          background: "transparent",
-                          border: "none",
-                          borderBottom: "1px solid rgba(255,255,255,0.05)",
-                          color: "#fff",
-                          textAlign: "left",
-                          cursor: "pointer",
-                          transition: "background 0.15s",
-                        }}
+                        style={{ width: "100%", display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem 1rem", background: "transparent", border: "none", borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#fff", textAlign: "left", cursor: "pointer" }}
                         onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
                         onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                       >
@@ -297,17 +304,7 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
 
           <button
             onClick={() => router.push("/dashboard/tournaments/" + id + "/insights")}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: "0.375rem",
-              background: "linear-gradient(to right, #a855f7, #ec4899)",
-              color: "#fff",
-              padding: "0.5rem 0.875rem",
-              borderRadius: "0.625rem",
-              fontSize: "0.75rem", fontWeight: 700,
-              border: "none",
-              cursor: "pointer",
-              boxShadow: "0 4px 20px rgba(168,85,247,0.3)",
-            }}
+            style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", background: "linear-gradient(to right, #a855f7, #ec4899)", color: "#fff", padding: "0.5rem 0.875rem", borderRadius: "0.625rem", fontSize: "0.75rem", fontWeight: 700, border: "none", cursor: "pointer" }}
           >
             <Sparkles style={{ width: "0.875rem", height: "0.875rem" }} />
             AI Insights
@@ -315,17 +312,7 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
 
           <button
             onClick={() => router.push("/dashboard/tournaments/" + id + "/broadcast")}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: "0.375rem",
-              background: "#f59e0b",
-              color: "#000",
-              padding: "0.5rem 0.875rem",
-              borderRadius: "0.625rem",
-              fontSize: "0.75rem", fontWeight: 700,
-              border: "none",
-              cursor: "pointer",
-              boxShadow: "0 4px 20px rgba(245,158,11,0.3)",
-            }}
+            style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", background: "#f59e0b", color: "#000", padding: "0.5rem 0.875rem", borderRadius: "0.625rem", fontSize: "0.75rem", fontWeight: 700, border: "none", cursor: "pointer" }}
           >
             <Radio style={{ width: "0.875rem", height: "0.875rem" }} />
             Broadcast
@@ -333,13 +320,7 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
         </div>
       </div>
 
-      {/* Stats Summary */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-        gap: "0.75rem",
-        marginBottom: "1.25rem",
-      }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "0.75rem", marginBottom: "1.25rem" }}>
         {[
           { icon: Users, label: "Teams", value: filtered.length, color: "#60a5fa", bg: "rgba(59,130,246,0.1)" },
           { icon: Target, label: "Matches", value: (tournament.matches || []).length, color: "#c084fc", bg: "rgba(168,85,247,0.1)" },
@@ -348,103 +329,45 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
         ].map(stat => {
           const Icon = stat.icon;
           return (
-            <div key={stat.label} style={{
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "0.875rem",
-              padding: "1rem",
-            }}>
-              <div style={{
-                width: "1.75rem", height: "1.75rem",
-                borderRadius: "0.5rem",
-                background: stat.bg,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                marginBottom: "0.625rem",
-              }}>
+            <div key={stat.label} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.875rem", padding: "1rem" }}>
+              <div style={{ width: "1.75rem", height: "1.75rem", borderRadius: "0.5rem", background: stat.bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "0.625rem" }}>
                 <Icon style={{ width: "0.875rem", height: "0.875rem", color: stat.color }} />
               </div>
-              <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#fff", lineHeight: 1 }}>
-                {stat.value}
-              </div>
-              <div style={{ fontSize: "0.65rem", color: "#6b7280", marginTop: "0.375rem", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>
-                {stat.label}
-              </div>
+              <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#fff", lineHeight: 1 }}>{stat.value}</div>
+              <div style={{ fontSize: "0.65rem", color: "#6b7280", marginTop: "0.375rem", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>{stat.label}</div>
             </div>
           );
         })}
       </div>
 
-      {/* Search */}
       <div style={{ position: "relative", marginBottom: "1rem" }}>
-        <Search style={{
-          position: "absolute", left: "0.875rem", top: "50%", transform: "translateY(-50%)",
-          width: "1rem", height: "1rem", color: "#6b7280",
-        }} />
+        <Search style={{ position: "absolute", left: "0.875rem", top: "50%", transform: "translateY(-50%)", width: "1rem", height: "1rem", color: "#6b7280" }} />
         <input
           type="text"
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search team name or tag..."
-          style={{
-            width: "100%",
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: "0.75rem",
-            padding: "0.75rem 2.75rem",
-            color: "#fff",
-            fontSize: "0.875rem",
-            outline: "none",
-            boxSizing: "border-box",
-          }}
+          style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "0.75rem 2.75rem", color: "#fff", fontSize: "0.875rem", outline: "none", boxSizing: "border-box" }}
         />
         {search && (
-          <button
-            onClick={() => setSearch("")}
-            style={{
-              position: "absolute", right: "0.875rem", top: "50%", transform: "translateY(-50%)",
-              background: "transparent", border: "none",
-              color: "#6b7280", cursor: "pointer",
-              display: "flex", alignItems: "center",
-            }}
-          >
+          <button onClick={() => setSearch("")} style={{ position: "absolute", right: "0.875rem", top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center" }}>
             <X style={{ width: "1rem", height: "1rem" }} />
           </button>
         )}
       </div>
 
-      {/* Table */}
-      <div style={{
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: "1rem",
-        overflow: "hidden",
-      }}>
-        {/* Table Header */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "60px 1fr 55px 65px 65px 65px 65px 90px",
-          gap: "0.5rem",
-          alignItems: "center",
-          padding: "0.875rem",
-          borderBottom: "1px solid rgba(255,255,255,0.08)",
-          background: "rgba(255,255,255,0.02)",
-          fontSize: "0.65rem",
-          fontWeight: 700,
-          color: "#6b7280",
-          letterSpacing: "0.1em",
-          textTransform: "uppercase",
-        }}>
+      <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 55px 65px 65px 65px 65px 90px", gap: "0.5rem", alignItems: "center", padding: "0.875rem", borderBottom: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)", fontSize: "0.65rem", fontWeight: 700, color: "#6b7280", letterSpacing: "0.1em", textTransform: "uppercase" }}>
           <div style={{ textAlign: "center" }}>Rank</div>
           <div>Team</div>
           <div style={{ textAlign: "center" }}>M</div>
           <div style={{ textAlign: "center" }}>WWCD</div>
           <div style={{ textAlign: "center" }}>Kills</div>
-          <div style={{ textAlign: "center" }} className="hidden sm:block">Avg K</div>
-          <div style={{ textAlign: "center" }} className="hidden md:block">Place</div>
+          <div style={{ textAlign: "center" }}>Avg K</div>
+          <div style={{ textAlign: "center" }}>Pl.Pts</div>
           <div style={{ textAlign: "center", color: primaryColor }}>TOTAL</div>
         </div>
 
-        {/* Rows */}
         {filtered.length === 0 ? (
           <div style={{ padding: "3rem", textAlign: "center" }}>
             <Search style={{ width: "2.5rem", height: "2.5rem", color: "#374151", margin: "0 auto 0.75rem" }} />
@@ -464,110 +387,42 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
               <button
                 key={s.id}
                 onClick={() => setSelectedTeam(s)}
-                style={{
-                  width: "100%",
-                  display: "grid",
-                  gridTemplateColumns: "60px 1fr 55px 65px 65px 65px 65px 90px",
-                  gap: "0.5rem",
-                  alignItems: "center",
-                  padding: "0.875rem",
-                  borderBottom: "1px solid rgba(255,255,255,0.04)",
-                  background: rowBg,
-                  border: "none",
-                  cursor: "pointer",
-                  transition: "background 0.15s",
-                  color: "#fff",
-                }}
+                style={{ width: "100%", display: "grid", gridTemplateColumns: "60px 1fr 55px 65px 65px 65px 65px 90px", gap: "0.5rem", alignItems: "center", padding: "0.875rem", borderBottom: "1px solid rgba(255,255,255,0.04)", background: rowBg, border: "none", cursor: "pointer", color: "#fff" }}
                 onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
                 onMouseLeave={e => e.currentTarget.style.background = rowBg}
               >
-                <div style={{ textAlign: "center", fontWeight: 800, fontSize: "1.125rem", color: rankColor }}>
-                  #{s.currentRank}
-                </div>
+                <div style={{ textAlign: "center", fontWeight: 800, fontSize: "1.125rem", color: rankColor }}>#{s.currentRank}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", minWidth: 0 }}>
                   {s.logo ? (
-                    <img
-                      src={s.logo}
-                      alt=""
-                      style={{
-                        width: "2.25rem", height: "2.25rem",
-                        borderRadius: "0.5rem",
-                        objectFit: "cover",
-                        border: "1px solid rgba(255,255,255,0.08)",
-                        flexShrink: 0,
-                      }}
-                    />
+                    <img src={s.logo} alt="" style={{ width: "2.25rem", height: "2.25rem", borderRadius: "0.5rem", objectFit: "cover", border: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }} />
                   ) : (
-                    <div style={{
-                      width: "2.25rem", height: "2.25rem",
-                      borderRadius: "0.5rem",
-                      background: `${primaryColor}20`,
-                      color: primaryColor,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontWeight: 700, fontSize: "0.7rem",
-                      flexShrink: 0,
-                    }}>
+                    <div style={{ width: "2.25rem", height: "2.25rem", borderRadius: "0.5rem", background: `${primaryColor}20`, color: primaryColor, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "0.7rem", flexShrink: 0 }}>
                       {(s.tag || s.name).slice(0, 2).toUpperCase()}
                     </div>
                   )}
                   <div style={{ minWidth: 0, textAlign: "left" }}>
-                    {s.tag && (
-                      <div style={{ fontSize: "0.65rem", fontWeight: 700, color: primaryColor }}>[{s.tag}]</div>
-                    )}
-                    <div style={{
-                      color: "#fff", fontWeight: 700, fontSize: "0.85rem",
-                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                    }}>
-                      {s.name}
-                    </div>
+                    {s.tag && <div style={{ fontSize: "0.65rem", fontWeight: 700, color: primaryColor }}>[{s.tag}]</div>}
+                    <div style={{ color: "#fff", fontWeight: 700, fontSize: "0.85rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</div>
                   </div>
                 </div>
-                <div style={{ textAlign: "center", color: "#d1d5db", fontWeight: 600, fontSize: "0.85rem" }}>
-                  {s.matchesPlayed}
-                </div>
+                <div style={{ textAlign: "center", color: "#d1d5db", fontWeight: 600, fontSize: "0.85rem" }}>{s.matchesPlayed}</div>
                 <div style={{ textAlign: "center" }}>
-                  <span style={{
-                    display: "inline-block",
-                    padding: "0.15rem 0.5rem",
-                    borderRadius: "0.375rem",
-                    fontWeight: 700,
-                    fontSize: "0.8rem",
-                    background: s.wwcdCount > 0 ? primaryColor : "rgba(255,255,255,0.06)",
-                    color: s.wwcdCount > 0 ? "#000" : "#6b7280",
-                  }}>
+                  <span style={{ display: "inline-block", padding: "0.15rem 0.5rem", borderRadius: "0.375rem", fontWeight: 700, fontSize: "0.8rem", background: s.wwcdCount > 0 ? primaryColor : "rgba(255,255,255,0.06)", color: s.wwcdCount > 0 ? "#000" : "#6b7280" }}>
                     {s.wwcdCount}
                   </span>
                 </div>
-                <div style={{ textAlign: "center", color: "#f87171", fontWeight: 800, fontSize: "0.85rem" }}>
-                  {s.totalKills}
-                </div>
-                <div style={{ textAlign: "center", color: "#fb923c", fontWeight: 600, fontSize: "0.8rem" }} className="hidden sm:block">
-                  {s.avgKills.toFixed(1)}
-                </div>
-                <div style={{ textAlign: "center", color: "#22d3ee", fontWeight: 600, fontSize: "0.8rem" }} className="hidden md:block">
-                  {s.placementPoints}
-                </div>
-                <div style={{
-                  textAlign: "center",
-                  fontWeight: 900,
-                  fontSize: "1.5rem",
-                  color: primaryColor,
-                }}>
-                  {s.totalPoints}
-                </div>
+                <div style={{ textAlign: "center", color: "#f87171", fontWeight: 800, fontSize: "0.85rem" }}>{s.totalKills}</div>
+                <div style={{ textAlign: "center", color: "#fb923c", fontWeight: 600, fontSize: "0.8rem" }}>{s.avgKills.toFixed(1)}</div>
+                <div style={{ textAlign: "center", color: "#22d3ee", fontWeight: 600, fontSize: "0.8rem" }}>{s.placementPoints}</div>
+                <div style={{ textAlign: "center", fontWeight: 900, fontSize: "1.5rem", color: primaryColor }}>{s.totalPoints}</div>
               </button>
             );
           })
         )}
       </div>
 
-      {/* Modal */}
       {selectedTeam && (
-        <TeamDetailModal
-          team={selectedTeam}
-          primaryColor={primaryColor}
-          onClose={() => setSelectedTeam(null)}
-        />
+        <TeamDetailModal team={selectedTeam} primaryColor={primaryColor} onClose={() => setSelectedTeam(null)} />
       )}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
