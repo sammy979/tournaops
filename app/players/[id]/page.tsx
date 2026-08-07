@@ -1,112 +1,43 @@
-"use client";
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import { User, Shield, Trophy, Target } from "lucide-react";
+﻿"use client";
+import { useEffect, useState, use } from "react";
+import { Trophy, Shield, Target, Crosshair, ArrowLeft, Flame, Globe } from "lucide-react";
+import Link from "next/link";
 
-interface Player {
-  id: string;
-  name: string;
-  pubgId?: string;
-  role?: string;
-  team: {
-    id: string;
-    name: string;
-    tag?: string;
-    tournament: {
-      id: string;
-      name: string;
-      slug: string;
-      status: string;
-    };
-  };
-}
-
-export default function PlayerProfilePage() {
-  const params = useParams();
-  const [player, setPlayer] = useState<Player | null>(null);
+export default function PlayerProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const [player, setPlayer] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/players/${params.id}`)
-      .then((r) => r.json())
-      .then((d) => setPlayer(d.player))
-      .finally(() => setLoading(false));
-  }, [params.id]);
+    fetch(`/api/players/${id}`).then(r => r.json()).then(d => setPlayer(d.player)).finally(() => setLoading(false));
+  }, [id]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
-  if (!player) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-400 text-xl">Player not found</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ width: "2rem", height: "2rem", border: "2px solid #f59e0b", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }}/></div>;
+  if (!player) return <div style={{ textAlign: "center", padding: "5rem" }}>Player not found</div>;
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <div className="max-w-2xl mx-auto px-4 py-16">
-        {/* Profile Header */}
-        <div className="bg-gray-900 rounded-2xl p-8 border border-gray-700 text-center mb-6">
-          <div className="w-24 h-24 bg-yellow-400/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <User className="w-12 h-12 text-yellow-400" />
-          </div>
-          <h1 className="text-3xl font-bold">{player.name}</h1>
-          {player.pubgId && (
-            <p className="text-gray-400 mt-1">PUBG ID: {player.pubgId}</p>
-          )}
-          {player.role && (
-            <span className="inline-block mt-2 px-3 py-1 bg-yellow-400/20 text-yellow-400 rounded-full text-sm">
-              {player.role}
-            </span>
-          )}
-        </div>
-
-        {/* Team Info */}
-        <div className="bg-gray-900 rounded-2xl p-6 border border-gray-700 mb-6">
-          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-            <Shield className="w-5 h-5 text-yellow-400" />
-            Team
-          </h2>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-semibold">{player.team.name}</p>
-              {player.team.tag && (
-                <p className="text-gray-400 text-sm">[{player.team.tag}]</p>
-              )}
-            </div>
+    <div style={{ minHeight: "100vh", background: "#0a0a0f", color: "#fff" }}>
+      <div style={{ maxWidth: "800px", margin: "0 auto", padding: "4rem 1.5rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "2rem", marginBottom: "3rem", background: "rgba(255,255,255,0.03)", padding: "2rem", borderRadius: "1.5rem", border: "1px solid rgba(255,255,255,0.08)" }}>
+          <div style={{ width: "6rem", height: "6rem", borderRadius: "50%", background: "linear-gradient(135deg, #3b82f6, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2.5rem", fontWeight: 900 }}>{player.name[0]}</div>
+          <div>
+            <h1 style={{ fontSize: "2.5rem", fontWeight: 900, marginBottom: "0.25rem" }}>{player.ign || player.name}</h1>
+            <p style={{ color: "#6b7280" }}>{player.team?.name} • {player.role || "Player"}</p>
+            {player.country && <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.5rem", color: "#9ca3af", fontSize: "0.9rem" }}><Globe size={14}/> {player.country}</div>}
           </div>
         </div>
 
-        {/* Tournament Info */}
-        <div className="bg-gray-900 rounded-2xl p-6 border border-gray-700">
-          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-yellow-400" />
-            Tournament
-          </h2>
-          <a
-            href={`/tournaments/${player.team.tournament.slug}`}
-            className="block hover:bg-gray-800 rounded-lg p-3 transition-colors"
-          >
-            <p className="font-semibold">{player.team.tournament.name}</p>
-            <span className={`text-sm px-2 py-0.5 rounded-full ${
-              player.team.tournament.status === "live"
-                ? "bg-green-500/20 text-green-400"
-                : player.team.tournament.status === "completed"
-                ? "bg-gray-500/20 text-gray-400"
-                : "bg-blue-500/20 text-blue-400"
-            }`}>
-              {player.team.tournament.status}
-            </span>
-          </a>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <div style={{ background: "rgba(255,255,255,0.03)", padding: "1.5rem", borderRadius: "1rem", textAlign: "center" }}>
+            <Crosshair color="#f87171" style={{ margin: "0 auto 0.5rem" }}/>
+            <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>{player.stats?.totalKills || 0}</div>
+            <div style={{ color: "#6b7280", fontSize: "0.75rem" }}>TOTAL KILLS</div>
+          </div>
+          <div style={{ background: "rgba(255,255,255,0.03)", padding: "1.5rem", borderRadius: "1rem", textAlign: "center" }}>
+            <Flame color="#fb923c" style={{ margin: "0 auto 0.5rem" }}/>
+            <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>{player.stats?.avgKills || "0.0"}</div>
+            <div style={{ color: "#6b7280", fontSize: "0.75rem" }}>AVG KILLS</div>
+          </div>
         </div>
       </div>
     </div>
