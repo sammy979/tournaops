@@ -1,121 +1,220 @@
-"use client";
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+﻿"use client";
+import { useEffect, useState, use } from "react";
 
-export default function NextMatchOverlay() {
-  const params = useParams();
-  const token = params?.token as string;
-  const [tournament, setTournament] = useState<any>(null);
-  const [countdown, setCountdown] = useState("--:--");
+interface Branding {
+  primaryColor?: string;
+  organizerName?: string;
+  logoUrl?: string;
+}
+
+interface Organizer {
+  displayName?: string;
+  username?: string;
+  avatar?: string;
+}
+
+interface Standing {
+  teamId: string;
+  teamName: string;
+  teamTag: string | null;
+  teamLogo: string | null;
+  totalPoints: number;
+  totalKills: number;
+  rank: number;
+}
+
+interface OverlayData {
+  tournament: { id: string; name: string; status: string } | null;
+  standings: Standing[];
+  organizer: Organizer | null;
+  branding: Branding | null;
+}
+
+export default function NextMatchOverlay({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
+  const { token } = use(params);
+  const [data, setData] = useState<OverlayData | null>(null);
+  const [now, setNow] = useState(new Date());
 
   useEffect(() => {
+    let mounted = true;
     async function load() {
       try {
         const res = await fetch(`/api/overlay/${token}`);
-        if (res.ok) {
-          const data = await res.json();
-          setTournament(data.tournament);
-        }
+        if (!res.ok) return;
+        const json = await res.json();
+        if (mounted) setData(json);
       } catch {}
     }
     load();
-    
-    // Countdown timer
-    const interval = setInterval(() => {
-      const now = new Date();
-      const minutes = String(15 - (now.getMinutes() % 15) - 1).padStart(2, "0");
-      const seconds = String(60 - now.getSeconds()).padStart(2, "0");
-      setCountdown(`${minutes}:${seconds}`);
-    }, 1000);
-    
-    return () => clearInterval(interval);
+    const dataInterval = setInterval(load, 5000);
+    const clockInterval = setInterval(() => setNow(new Date()), 1000);
+    return () => {
+      mounted = false;
+      clearInterval(dataInterval);
+      clearInterval(clockInterval);
+    };
   }, [token]);
 
-  const aiBg = `https://image.pollinations.ai/prompt/${encodeURIComponent("PUBG game preparation, squad ready for drop, plane in the sky, tactical loadout, epic")}?width=1920&height=1080&nologo=true&model=flux`;
+  const primaryColor = data?.branding?.primaryColor || "#f59e0b";
+  const accentColor = "#3b82f6";
+  const organizerName =
+    data?.branding?.organizerName ||
+    data?.organizer?.displayName ||
+    data?.organizer?.username ||
+    "TournaOps";
+  const organizerLogo = data?.branding?.logoUrl || data?.organizer?.avatar || null;
+  const tournamentName = data?.tournament?.name || "";
+  const standings = data?.standings || [];
+
+  const timeStr = now.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
 
   return (
-    <div style={{
-      background: "transparent",
-      minHeight: "100vh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: 40,
-      fontFamily: "Inter, sans-serif",
-    }}>
-      <div style={{
-        position: "relative",
-        maxWidth: 700,
-        borderRadius: 24,
-        overflow: "hidden",
-        border: "3px solid #3b82f6",
-        boxShadow: "0 30px 100px rgba(59,130,246,0.4)",
-      }}>
-        <div style={{
-          background: `url(${aiBg})`,
-          backgroundSize: "cover",
-          padding: "60px 40px",
+    <>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700;900&display=swap"
+        rel="stylesheet"
+      />
+      <style>{`
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: transparent !important; overflow: hidden; }
+        @keyframes fadeUp {
+          0% { transform: translateY(30px); opacity: 0; }
+          100% { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes clockPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+        @keyframes shimmer {
+          0% { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+        @keyframes borderGlow {
+          0%, 100% { box-shadow: 0 0 30px ${accentColor}30, 0 20px 60px rgba(0,0,0,0.5); }
+          50% { box-shadow: 0 0 50px ${accentColor}50, 0 20px 60px rgba(0,0,0,0.5); }
+        }
+      `}</style>
+
+      <div
+        style={{
+          width: "1920px",
+          height: "1080px",
           position: "relative",
-        }}>
-          <div style={{
-            position: "absolute", inset: 0,
-            background: "linear-gradient(135deg, rgba(0,0,20,0.85), rgba(0,20,50,0.9))",
-          }}></div>
+          overflow: "hidden",
+          background: "transparent",
+          fontFamily: "Rajdhani, sans-serif",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {/* Background glow */}
+        <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse 900px 600px at 50% 50%, ${accentColor}10 0%, transparent 70%)`, pointerEvents: "none" }} />
 
-          <div style={{ position: "relative", textAlign: "center", color: "white" }}>
-            <div style={{
-              display: "inline-block",
-              background: "#3b82f6",
-              color: "white",
-              padding: "6px 24px",
-              borderRadius: 999,
-              fontSize: 12,
-              fontWeight: 900,
-              letterSpacing: 4,
-              marginBottom: 20,
-            }}>
-              📅 NEXT MATCH
+        {/* Organizer badge */}
+        {(organizerLogo || organizerName) && (
+          <div style={{ position: "absolute", top: "48px", right: "60px", display: "flex", alignItems: "center", gap: "10px", background: "rgba(0,0,0,0.65)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: "999px", padding: "8px 20px" }}>
+            {organizerLogo && <img src={organizerLogo} alt="" style={{ width: "28px", height: "28px", borderRadius: "50%", objectFit: "cover" }} />}
+            <span style={{ color: "rgba(255,255,255,0.8)", fontSize: "16px", fontWeight: 700, letterSpacing: "0.08em" }}>{organizerName}</span>
+          </div>
+        )}
+
+        {/* Watermark */}
+        <div style={{ position: "absolute", bottom: "40px", right: "60px", color: "rgba(255,255,255,0.18)", fontSize: "13px", fontWeight: 700, letterSpacing: "0.15em" }}>TOURNAOPS.COM</div>
+
+        {/* Main card */}
+        <div
+          style={{
+            width: "840px",
+            background: "linear-gradient(135deg, rgba(0,0,0,0.95), rgba(10,15,30,0.92))",
+            borderRadius: "24px",
+            border: `2px solid ${accentColor}60`,
+            overflow: "hidden",
+            animation: "borderGlow 3s ease-in-out infinite",
+          }}
+        >
+          {/* Header bar */}
+          <div style={{ background: `linear-gradient(90deg, ${accentColor}, ${accentColor}cc)`, padding: "14px 28px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <span style={{ fontSize: "22px" }}>&#x1F3AE;</span>
+              <span style={{ color: "#fff", fontSize: "16px", fontWeight: 900, letterSpacing: "0.25em", textTransform: "uppercase" }}>NEXT MATCH</span>
             </div>
-
-            <h1 style={{
-              fontSize: 48,
-              fontWeight: 900,
-              margin: 0,
-              color: "white",
-              letterSpacing: "-0.02em",
-            }}>
+            <div style={{ color: "rgba(255,255,255,0.9)", fontSize: "13px", fontWeight: 700, letterSpacing: "0.08em" }}>
               STARTING SOON
-            </h1>
+            </div>
+          </div>
 
-            <div style={{
-              marginTop: 40,
-              padding: 30,
-              background: "rgba(59,130,246,0.15)",
-              border: "2px solid rgba(59,130,246,0.5)",
-              borderRadius: 16,
-            }}>
-              <div style={{ fontSize: 12, color: "#93c5fd", letterSpacing: 3, fontWeight: 700 }}>
-                COUNTDOWN
-              </div>
-              <div style={{ 
-                fontSize: 96, 
-                fontWeight: 900, 
-                color: "#3b82f6", 
-                fontFamily: "monospace",
-                lineHeight: 1,
-                marginTop: 10,
-                textShadow: "0 0 40px rgba(59,130,246,0.8)",
-              }}>
-                {countdown}
+          {/* Content */}
+          <div style={{ padding: "40px 36px", textAlign: "center" }}>
+            {/* Tournament name */}
+            <div style={{ fontSize: "36px", fontWeight: 900, color: "#ffffff", letterSpacing: "-0.02em", lineHeight: 1, marginBottom: "8px", textTransform: "uppercase" }}>
+              {tournamentName || "TOURNAMENT"}
+            </div>
+            <div style={{ fontSize: "13px", fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.3em", marginBottom: "36px" }}>
+              GET READY FOR THE NEXT MATCH
+            </div>
+
+            {/* Clock */}
+            <div style={{ background: `${accentColor}12`, border: `2px solid ${accentColor}35`, borderRadius: "16px", padding: "28px", marginBottom: "36px" }}>
+              <div style={{ fontSize: "11px", fontWeight: 700, color: `${accentColor}bb`, letterSpacing: "0.3em", marginBottom: "8px" }}>CURRENT TIME</div>
+              <div style={{ fontSize: "72px", fontWeight: 900, color: accentColor, fontFamily: "Rajdhani, monospace", lineHeight: 1, letterSpacing: "0.05em", animation: "clockPulse 2s ease-in-out infinite" }}>
+                {timeStr}
               </div>
             </div>
 
-            <div style={{ marginTop: 30, fontSize: 14, color: "#93c5fd", letterSpacing: 3, fontWeight: 700 }}>
-              {tournament?.name?.toUpperCase() || "TOURNAMENT"}
-            </div>
+            {/* Participating teams preview */}
+            {standings.length > 0 && (
+              <div style={{ animation: "fadeUp 0.6s ease 0.3s forwards", opacity: 0 }}>
+                <div style={{ fontSize: "11px", fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.25em", marginBottom: "16px" }}>
+                  {standings.length} TEAMS COMPETING
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", justifyContent: "center" }}>
+                  {standings.slice(0, 16).map((team) => (
+                    <div
+                      key={team.teamId}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        borderRadius: "8px",
+                        padding: "6px 12px",
+                      }}
+                    >
+                      {team.teamLogo && (
+                        <img src={team.teamLogo} alt="" style={{ width: "18px", height: "18px", borderRadius: "3px", objectFit: "cover" }} />
+                      )}
+                      <span style={{ fontSize: "12px", fontWeight: 700, color: "rgba(255,255,255,0.75)" }}>
+                        {team.teamTag ? `[${team.teamTag}]` : team.teamName}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!data && (
+              <div style={{ color: "rgba(255,255,255,0.25)", fontSize: "16px", fontWeight: 700, letterSpacing: "0.15em" }}>LOADING...</div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div style={{ padding: "8px 28px", background: "rgba(0,0,0,0.4)", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ color: "rgba(255,255,255,0.25)", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em" }}>MATCH WILL BEGIN SHORTLY</div>
+            <div style={{ color: primaryColor, fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em" }}>TOURNAOPS.COM</div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

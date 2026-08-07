@@ -1,211 +1,257 @@
-"use client";
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+﻿"use client";
+import { useEffect, useState, use } from "react";
 
-export default function TopFraggerOverlay() {
-  const params = useParams();
-  const token = params?.token as string;
-  const [topFragger, setTopFragger] = useState<any>(null);
-  const [topTeam, setTopTeam] = useState<any>(null);
-  const [tournamentName, setTournamentName] = useState("");
-  const [organizer, setOrganizer] = useState<any>(null);
-  const [branding, setBranding] = useState<any>(null);
+interface TopFragger {
+  name: string;
+  teamName: string;
+  teamTag: string | null;
+  teamLogo: string | null;
+  kills: number;
+  pubgId?: string;
+  photo?: string;
+}
+
+interface Standing {
+  teamId: string;
+  teamName: string;
+  teamTag: string | null;
+  teamLogo: string | null;
+  totalPoints: number;
+  totalKills: number;
+  rank: number;
+}
+
+interface Branding {
+  primaryColor?: string;
+  organizerName?: string;
+  logoUrl?: string;
+}
+
+interface Organizer {
+  displayName?: string;
+  username?: string;
+  avatar?: string;
+}
+
+interface OverlayData {
+  tournament: { id: string; name: string; status: string } | null;
+  standings: Standing[];
+  topFraggers: TopFragger[];
+  topFraggerTeam: Standing | null;
+  organizer: Organizer | null;
+  branding: Branding | null;
+}
+
+export default function TopFraggerOverlay({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
+  const { token } = use(params);
+  const [data, setData] = useState<OverlayData | null>(null);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (!token) return;
+    let mounted = true;
     async function load() {
       try {
         const res = await fetch(`/api/overlay/${token}`);
-        if (res.ok) {
-          const data = await res.json();
-          setTopFragger(data.topFraggers?.[0]);
-          setTopTeam(data.topFraggerTeam);
-          setTournamentName(data.tournament?.name || "");
-          setOrganizer(data.organizer);
-          setBranding(data.branding);
+        if (!res.ok) return;
+        const json = await res.json();
+        if (mounted) {
+          setData(json);
+          setVisible(true);
         }
       } catch {}
     }
     load();
-    const interval = setInterval(load, 8000);
-    return () => clearInterval(interval);
+    const interval = setInterval(load, 5000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
   }, [token]);
 
-  const primaryColor = branding?.primaryColor || "#ef4444";
-  const organizerName = branding?.organizerName || organizer?.displayName || organizer?.username || "TournaOps";
-  const organizerLogo = branding?.logoUrl || organizer?.avatar;
+  const primaryColor = data?.branding?.primaryColor || "#ef4444";
+  const organizerName =
+    data?.branding?.organizerName ||
+    data?.organizer?.displayName ||
+    data?.organizer?.username ||
+    "TournaOps";
+  const organizerLogo = data?.branding?.logoUrl || data?.organizer?.avatar || null;
+  const tournamentName = data?.tournament?.name || "";
 
-  // Use existing player photo OR generate AI avatar
-  const getPlayerPhoto = (playerName: string, existingPhoto?: string) => {
-    if (existingPhoto) return existingPhoto;
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(`PUBG player character portrait, tactical gear, helmet, intense expression, cinematic lighting, esports style, "${playerName}"`)}?width=512&height=512&nologo=true&model=flux&seed=${playerName?.length || 1}`;
-  };
+  const topFragger = data?.topFraggers?.[0] || null;
+  const topFraggerTeam = data?.topFraggerTeam || null;
 
-  const getTeamLogo = (teamName: string, existingLogo?: string | null) => {
-    if (existingLogo) return existingLogo;
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(`esports team logo "${teamName}", minimalist, professional`)}?width=200&height=200&nologo=true&model=flux&seed=${teamName?.length || 1}`;
-  };
+  const displayName = topFragger?.name || topFraggerTeam?.teamName || "TBA";
+  const displayTeam = topFragger?.teamName || topFraggerTeam?.teamName || "";
+  const displayTag = topFragger?.teamTag || topFraggerTeam?.teamTag || null;
+  const displayKills = topFragger?.kills ?? topFraggerTeam?.totalKills ?? 0;
+  const displayLogo = topFragger?.teamLogo || topFraggerTeam?.teamLogo || null;
+  const displayPhoto = topFragger?.photo || null;
+  const displayPoints = topFraggerTeam?.totalPoints ?? 0;
 
-  const displayName = topFragger?.name || topTeam?.teamName || "TBA";
-  const displayTeam = topFragger?.teamName || topTeam?.teamName || "";
-  const displayTag = topFragger?.teamTag || topTeam?.teamTag;
-  const displayKills = topFragger?.kills || topTeam?.totalKills || 0;
-  const displayPhoto = topFragger 
-    ? getPlayerPhoto(topFragger.name, topFragger.photo)
-    : `https://image.pollinations.ai/prompt/${encodeURIComponent(`PUBG top killer champion, epic sniper aim, muzzle flash, red lighting`)}?width=512&height=512&nologo=true&model=flux`;
-
-  const bgImage = `https://image.pollinations.ai/prompt/${encodeURIComponent(`PUBG battle scene, muzzle flashes, tactical warfare, red neon lighting, cinematic action`)}?width=1920&height=1080&nologo=true&model=flux`;
+  const isPlayerMode = !!topFragger;
 
   return (
-    <div style={{
-      background: "transparent",
-      minHeight: "100vh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: 40,
-      fontFamily: "Inter, sans-serif",
-    }}>
-      <div style={{
-        position: "relative",
-        maxWidth: 800,
-        width: "100%",
-        borderRadius: 24,
-        overflow: "hidden",
-        border: `3px solid ${primaryColor}`,
-        boxShadow: `0 30px 100px ${primaryColor}80`,
-      }}>
-        {/* Background */}
-        <div style={{
-          background: `url(${bgImage}) center/cover`,
-          padding: "40px",
+    <>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700;900&display=swap"
+        rel="stylesheet"
+      />
+      <style>{`
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: transparent !important; overflow: hidden; }
+        @keyframes slideIn {
+          0% { transform: translateX(-40px); opacity: 0; }
+          100% { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideInRight {
+          0% { transform: translateX(40px); opacity: 0; }
+          100% { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes fadeUp {
+          0% { transform: translateY(20px); opacity: 0; }
+          100% { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes glowPulse {
+          0%, 100% { box-shadow: 0 0 40px ${primaryColor}60, 0 0 80px ${primaryColor}30; }
+          50% { box-shadow: 0 0 70px ${primaryColor}90, 0 0 140px ${primaryColor}50; }
+        }
+        @keyframes numberCount {
+          0% { transform: scale(0.7); opacity: 0; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
+
+      <div
+        style={{
+          width: "1920px",
+          height: "1080px",
           position: "relative",
-          minHeight: 400,
-        }}>
-          <div style={{
-            position: "absolute", inset: 0,
-            background: "linear-gradient(135deg, rgba(0,0,0,0.85), rgba(50,0,0,0.9))",
-          }}></div>
+          overflow: "hidden",
+          background: "transparent",
+          fontFamily: "Rajdhani, sans-serif",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {/* Background glow */}
+        <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse 1000px 700px at 50% 50%, ${primaryColor}12 0%, transparent 70%)`, pointerEvents: "none" }} />
 
-          {/* Organizer badge */}
-          <div style={{
-            position: "absolute", top: 20, right: 20,
-            display: "flex", alignItems: "center", gap: 8,
-            background: "rgba(0,0,0,0.7)",
-            padding: "6px 12px", borderRadius: 999,
-            border: "1px solid rgba(255,255,255,0.2)",
-          }}>
-            {organizerLogo && (
-              <img src={organizerLogo} style={{ width: 20, height: 20, borderRadius: "50%" }} alt="" />
-            )}
-            <span style={{ color: "white", fontSize: 10, fontWeight: 700 }}>{organizerName}</span>
+        {/* Organizer badge */}
+        {(organizerLogo || organizerName) && (
+          <div style={{ position: "absolute", top: "48px", right: "60px", display: "flex", alignItems: "center", gap: "10px", background: "rgba(0,0,0,0.65)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: "999px", padding: "8px 20px" }}>
+            {organizerLogo && <img src={organizerLogo} alt="" style={{ width: "28px", height: "28px", borderRadius: "50%", objectFit: "cover" }} />}
+            <span style={{ color: "rgba(255,255,255,0.8)", fontSize: "16px", fontWeight: 700, letterSpacing: "0.08em" }}>{organizerName}</span>
           </div>
+        )}
 
-          <div style={{ position: "relative", display: "flex", gap: 30, alignItems: "center" }}>
-            {/* Player Photo */}
-            <div style={{
-              width: 220,
-              height: 220,
-              borderRadius: "50%",
-              overflow: "hidden",
-              border: `4px solid ${primaryColor}`,
-              boxShadow: `0 0 60px ${primaryColor}`,
-              flexShrink: 0,
-            }}>
-              <img 
-                src={displayPhoto}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                alt={displayName}
-              />
+        {/* Tournament name */}
+        {tournamentName && (
+          <div style={{ position: "absolute", top: "54px", left: "60px", color: "rgba(255,255,255,0.4)", fontSize: "16px", fontWeight: 700, letterSpacing: "0.25em", textTransform: "uppercase" }}>
+            {tournamentName}
+          </div>
+        )}
+
+        {/* Watermark */}
+        <div style={{ position: "absolute", bottom: "40px", right: "60px", color: "rgba(255,255,255,0.18)", fontSize: "13px", fontWeight: 700, letterSpacing: "0.15em" }}>TOURNAOPS.COM</div>
+
+        {/* Loading */}
+        {!data && (
+          <div style={{ color: "rgba(255,255,255,0.25)", fontSize: "24px", fontWeight: 700, letterSpacing: "0.2em" }}>LOADING...</div>
+        )}
+
+        {/* No data */}
+        {data && !topFragger && !topFraggerTeam && (
+          <div style={{ color: "rgba(255,255,255,0.25)", fontSize: "24px", fontWeight: 700, letterSpacing: "0.2em" }}>NO MATCH DATA YET</div>
+        )}
+
+        {/* Main card */}
+        {data && (topFragger || topFraggerTeam) && (
+          <div
+            style={{
+              display: "flex",
+              gap: "48px",
+              alignItems: "center",
+              background: "linear-gradient(135deg, rgba(0,0,0,0.95), rgba(20,5,5,0.92))",
+              borderRadius: "24px",
+              border: `2px solid ${primaryColor}50`,
+              padding: "48px 52px",
+              animation: "glowPulse 3s ease-in-out infinite",
+              maxWidth: "1100px",
+              width: "100%",
+            }}
+          >
+            {/* Left: Photo or logo */}
+            <div style={{ flexShrink: 0, animation: visible ? "slideIn 0.7s ease forwards" : "none", opacity: 0 }}>
+              {displayPhoto ? (
+                <div style={{ width: "240px", height: "240px", borderRadius: "50%", overflow: "hidden", border: `4px solid ${primaryColor}`, boxShadow: `0 0 50px ${primaryColor}80` }}>
+                  <img src={displayPhoto} alt={displayName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </div>
+              ) : displayLogo ? (
+                <div style={{ width: "200px", height: "200px", borderRadius: "20px", overflow: "hidden", border: `4px solid ${primaryColor}`, boxShadow: `0 0 50px ${primaryColor}80` }}>
+                  <img src={displayLogo} alt={displayTeam} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </div>
+              ) : (
+                <div style={{ width: "200px", height: "200px", borderRadius: "20px", background: `${primaryColor}20`, border: `4px solid ${primaryColor}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "72px", fontWeight: 900, color: primaryColor, boxShadow: `0 0 50px ${primaryColor}80` }}>
+                  {displayName.charAt(0)}
+                </div>
+              )}
             </div>
 
-            {/* Info */}
-            <div style={{ flex: 1, color: "white" }}>
-              <div style={{
-                display: "inline-block",
-                background: `linear-gradient(135deg, ${primaryColor}, #dc2626)`,
-                color: "white",
-                padding: "6px 20px",
-                borderRadius: 999,
-                fontSize: 12,
-                fontWeight: 900,
-                letterSpacing: 4,
-                marginBottom: 15,
-                boxShadow: `0 0 30px ${primaryColor}80`,
-              }}>
-                🎯 TOP FRAGGER
+            {/* Right: Info */}
+            <div style={{ flex: 1, animation: visible ? "slideInRight 0.7s ease 0.1s forwards" : "none", opacity: 0 }}>
+              {/* Badge */}
+              <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: `linear-gradient(135deg, ${primaryColor}, #dc2626)`, color: "#fff", padding: "6px 20px", borderRadius: "999px", fontSize: "13px", fontWeight: 900, letterSpacing: "0.3em", marginBottom: "20px" }}>
+                <span>&#x1F3AF;</span>
+                <span>{isPlayerMode ? "TOP FRAGGER" : "TOP KILL TEAM"}</span>
               </div>
 
-              <div style={{
-                fontSize: 42,
-                fontWeight: 900,
-                color: "white",
-                letterSpacing: "-0.02em",
-                lineHeight: 1,
-                marginBottom: 10,
-                textShadow: "0 0 30px rgba(0,0,0,0.8)",
-              }}>
-                {displayName}
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-                {(topFragger?.teamLogo || topTeam?.teamLogo) && (
-                  <img 
-                    src={getTeamLogo(displayTeam, topFragger?.teamLogo || topTeam?.teamLogo)}
-                    style={{ width: 30, height: 30, borderRadius: 4 }}
-                    alt=""
-                  />
+              {/* Team info */}
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                {displayLogo && !displayPhoto && (
+                  <img src={displayLogo} alt="" style={{ width: "32px", height: "32px", borderRadius: "6px", objectFit: "cover" }} />
                 )}
                 <div>
                   {displayTag && (
-                    <span style={{ color: primaryColor, fontSize: 16, fontWeight: 700, marginRight: 8 }}>
-                      [{displayTag}]
-                    </span>
+                    <span style={{ fontSize: "18px", color: primaryColor, fontWeight: 700, marginRight: "8px" }}>[{displayTag}]</span>
                   )}
-                  <span style={{ color: "#d1d5db", fontSize: 16, fontWeight: 600 }}>
-                    {displayTeam}
-                  </span>
+                  <span style={{ fontSize: "18px", color: "rgba(255,255,255,0.6)", fontWeight: 600 }}>{displayTeam}</span>
                 </div>
               </div>
 
-              {/* Kills Counter */}
-              <div style={{
-                padding: 20,
-                background: `${primaryColor}15`,
-                border: `2px solid ${primaryColor}40`,
-                borderRadius: 16,
-                textAlign: "center",
-              }}>
-                <div style={{ fontSize: 11, color: "#fca5a5", letterSpacing: 3, fontWeight: 700 }}>
-                  TOTAL KILLS
+              {/* Player / team name */}
+              <div style={{ fontSize: "80px", fontWeight: 900, color: "#ffffff", lineHeight: 1, letterSpacing: "-0.02em", textTransform: "uppercase", marginBottom: "28px" }}>
+                {displayName}
+              </div>
+
+              {/* Stats */}
+              <div style={{ display: "flex", gap: "32px", alignItems: "center", animation: visible ? "fadeUp 0.5s ease 0.4s forwards" : "none", opacity: 0 }}>
+                {/* Kills */}
+                <div style={{ background: `${primaryColor}15`, border: `2px solid ${primaryColor}40`, borderRadius: "14px", padding: "20px 28px", textAlign: "center" }}>
+                  <div style={{ fontSize: "11px", fontWeight: 700, color: `${primaryColor}bb`, letterSpacing: "0.25em", marginBottom: "6px" }}>TOTAL KILLS</div>
+                  <div style={{ fontSize: "72px", fontWeight: 900, color: primaryColor, lineHeight: 1, animation: visible ? "numberCount 0.5s ease 0.5s forwards" : "none", opacity: 0 }}>
+                    {displayKills}
+                  </div>
                 </div>
-                <div style={{ 
-                  fontSize: 80, 
-                  fontWeight: 900, 
-                  color: primaryColor, 
-                  lineHeight: 1,
-                  marginTop: 5,
-                  textShadow: `0 0 40px ${primaryColor}80`,
-                }}>
-                  {displayKills}
-                </div>
+
+                {/* Points — only show if we have team data */}
+                {displayPoints > 0 && (
+                  <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: "14px", padding: "20px 28px", textAlign: "center" }}>
+                    <div style={{ fontSize: "11px", fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: "0.25em", marginBottom: "6px" }}>TEAM POINTS</div>
+                    <div style={{ fontSize: "72px", fontWeight: 900, color: "#ffffff", lineHeight: 1, animation: visible ? "numberCount 0.5s ease 0.6s forwards" : "none", opacity: 0 }}>
+                      {displayPoints}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-
-          {/* Bottom bar */}
-          <div style={{ 
-            marginTop: 30, 
-            textAlign: "center",
-            fontSize: 12, 
-            color: primaryColor, 
-            letterSpacing: 3, 
-            fontWeight: 700 
-          }}>
-            {tournamentName?.toUpperCase()}
-          </div>
-        </div>
+        )}
       </div>
-    </div>
+    </>
   );
 }
