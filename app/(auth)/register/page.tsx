@@ -1,207 +1,318 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle2, AtSign, Eye, EyeOff } from "lucide-react";
-import { registerUser } from "@/lib/auth/auth";
+import { useRouter } from "next/navigation";
+import { Trophy, Eye, EyeOff, ArrowRight, Loader2, Check } from "lucide-react";
+
+const PERKS = [
+  "Free forever — no credit card",
+  "Run unlimited tournaments (free plan)",
+  "OBS overlays included",
+  "Discord bot integration",
+];
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [password, setPassword] = useState("");
+  const [form, setForm] = useState({
+    email: "",
+    username: "",
+    displayName: "",
+    password: "",
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (form.password.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
+
     setLoading(true);
+
     try {
-      const result = await registerUser(email, password, username, displayName);
-      if (result.success) {
-        setSuccess(true);
-        setTimeout(() => router.push("/dashboard"), 1000);
-      } else {
-        setError(result.error || "Registration failed");
-        setLoading(false);
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Registration failed");
+        return;
       }
-    } catch (err: any) {
-      setError(err.message || "Network error");
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4 py-12 relative overflow-hidden">
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-500/12 rounded-full blur-3xl animate-blob" />
-        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-blue-500/12 rounded-full blur-3xl animate-blob-delay" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-pink-500/8 rounded-full blur-3xl animate-blob-slow" />
-      </div>
-
-      <div className="w-full max-w-md relative z-10">
-        <Link href="/" className="flex flex-col items-center gap-4 mb-8 group">
-          <div className="relative w-20 h-20 rounded-2xl overflow-hidden logo-glow shadow-2xl shadow-blue-500/50 bg-gradient-to-br from-blue-500 to-purple-600 group-hover:scale-105 transition-transform animate-pulse-glow">
-            <img src="/logo.png" alt="TournaOps" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />
-            <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent" />
+    <div style={{
+      minHeight: "100vh",
+      background: "#0a0a0f",
+      display: "flex",
+      alignItems: "stretch",
+      position: "relative",
+      overflow: "hidden",
+    }}>
+      {/* Left Panel — desktop only */}
+      <div
+        className="hidden lg:flex"
+        style={{
+          width: "45%",
+          background: "linear-gradient(135deg, rgba(245,158,11,0.08), rgba(249,115,22,0.04))",
+          borderRight: "1px solid rgba(255,255,255,0.06)",
+          flexDirection: "column",
+          justifyContent: "center",
+          padding: "4rem",
+        }}
+      >
+        <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", textDecoration: "none", marginBottom: "3rem" }}>
+          <div style={{
+            width: "2.5rem", height: "2.5rem",
+            background: "linear-gradient(135deg, #f59e0b, #f97316)",
+            borderRadius: "0.75rem",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Trophy style={{ width: "1.25rem", height: "1.25rem", color: "#000" }} />
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-black text-white tracking-tight">TournaOps</div>
-            <div className="text-[10px] text-blue-400 uppercase tracking-[0.25em] font-semibold">Tournament OS</div>
-          </div>
+          <span style={{ fontWeight: 800, fontSize: "1.25rem", color: "#fff" }}>TournaOps</span>
         </Link>
 
-        <div className="glass-heavy rounded-3xl p-8 border border-white/10 shadow-2xl">
-          {success ? (
-            <div className="flex flex-col items-center justify-center py-8 gap-4">
-              <div className="w-16 h-16 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center animate-pulse-glow">
-                <CheckCircle2 className="w-8 h-8 text-green-400" />
-              </div>
-              <p className="text-xl font-bold text-green-400">Account Created!</p>
-              <p className="text-gray-500 text-sm">Welcome to TournaOps!</p>
-            </div>
-          ) : (
-            <>
-              <div className="mb-6 text-center">
-                <h1 className="text-2xl font-bold text-white mb-1">Create account</h1>
-                <p className="text-gray-500 text-sm">Free forever. No credit card.</p>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-gray-400 flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5" /> Display Name
-                  </label>
-                  <input
-                    type="text"
-                    value={displayName}
-                    onChange={e => setDisplayName(e.target.value)}
-                    placeholder="Your full name"
-                    className="input-field"
-                    required
-                    autoFocus
-                    disabled={loading}
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-gray-400 flex items-center gap-1.5">
-                    <AtSign className="w-3.5 h-3.5" /> Username
-                  </label>
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
-                    placeholder="johndoe"
-                    className="input-field"
-                    required
-                    minLength={3}
-                    maxLength={20}
-                    disabled={loading}
-                  />
-                  <p className="text-xs text-gray-600">Lowercase, numbers, underscores - 3-20 chars</p>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-gray-400 flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5" /> Email
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="input-field"
-                    required
-                    disabled={loading}
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-gray-400 flex items-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5" /> Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      placeholder="Minimum 6 characters"
-                      className="input-field pr-10"
-                      required
-                      minLength={6}
-                      disabled={loading}
-                    />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  {password.length > 0 && (
-                    <div className="flex gap-1 mt-1.5">
-                      {[1,2,3,4].map(i => (
-                        <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${
-                          password.length >= i * 3
-                            ? i <= 1 ? "bg-red-500" : i <= 2 ? "bg-yellow-500" : i <= 3 ? "bg-blue-500" : "bg-green-500"
-                            : "bg-white/10"
-                        }`} />
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {error && (
-                  <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                <button type="submit" disabled={loading} className="btn-primary w-full py-3 mt-2">
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Creating account...
-                    </>
-                  ) : (
-                    <>Create Free Account<ArrowRight className="w-4 h-4" /></>
-                  )}
-                </button>
-
-                <p className="text-xs text-gray-600 text-center">
-                  By signing up you agree to our Terms of Service
-                </p>
-
-                <div className="relative my-2">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-white/8" />
-                  </div>
-                  <div className="relative flex justify-center">
-                    <span className="px-3 bg-[#0f0f18] text-gray-600 text-xs">or</span>
-                  </div>
-                </div>
-
-                <p className="text-center text-sm text-gray-500">
-                  Already have an account?{" "}
-                  <Link href="/login" className="text-blue-400 hover:text-blue-300 font-semibold">
-                    Sign in
-                  </Link>
-                </p>
-              </form>
-            </>
-          )}
-        </div>
-
-        <p className="text-center mt-6">
-          <Link href="/" className="text-gray-600 hover:text-gray-400 text-sm">
-             Back to home
-          </Link>
+        <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "#fff", lineHeight: 1.2, marginBottom: "1rem" }}>
+          Start running pro tournaments today
+        </h2>
+        <p style={{ color: "#6b7280", fontSize: "1rem", lineHeight: 1.6, marginBottom: "2.5rem" }}>
+          Join 1,000+ PUBG Mobile organizers who trust TournaOps to run their events.
         </p>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          {PERKS.map(perk => (
+            <div key={perk} style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <div style={{
+                width: "1.5rem", height: "1.5rem",
+                background: "rgba(245,158,11,0.15)",
+                borderRadius: "50%",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0,
+              }}>
+                <Check style={{ width: "0.875rem", height: "0.875rem", color: "#f59e0b" }} />
+              </div>
+              <span style={{ color: "#d1d5db", fontSize: "0.9375rem" }}>{perk}</span>
+            </div>
+          ))}
+        </div>
       </div>
+
+      {/* Right Panel — Form */}
+      <div style={{
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "2rem 1.5rem",
+      }}>
+        <div style={{ width: "100%", maxWidth: "420px" }}>
+
+          {/* Mobile Logo */}
+          <div style={{ textAlign: "center", marginBottom: "2rem" }} className="lg:hidden">
+            <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
+              <div style={{
+                width: "2rem", height: "2rem",
+                background: "linear-gradient(135deg, #f59e0b, #f97316)",
+                borderRadius: "0.5rem",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Trophy style={{ width: "1rem", height: "1rem", color: "#000" }} />
+              </div>
+              <span style={{ fontWeight: 800, color: "#fff" }}>TournaOps</span>
+            </Link>
+          </div>
+
+          <div style={{ marginBottom: "2rem" }}>
+            <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#fff", marginBottom: "0.5rem" }}>
+              Create your account
+            </h1>
+            <p style={{ color: "#6b7280", fontSize: "0.875rem" }}>
+              Free forever. No credit card required.
+            </p>
+          </div>
+
+          {error && (
+            <div style={{
+              background: "rgba(239,68,68,0.1)",
+              border: "1px solid rgba(239,68,68,0.2)",
+              borderRadius: "0.75rem",
+              padding: "0.75rem 1rem",
+              marginBottom: "1.25rem",
+              color: "#f87171",
+              fontSize: "0.875rem",
+            }}>
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+
+            {[
+              { key: "displayName", label: "Display Name", type: "text", placeholder: "Your name", autoComplete: "name" },
+              { key: "username", label: "Username", type: "text", placeholder: "yourhandle", autoComplete: "username" },
+              { key: "email", label: "Email", type: "email", placeholder: "you@example.com", autoComplete: "email" },
+            ].map(field => (
+              <div key={field.key}>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#d1d5db", marginBottom: "0.5rem" }}>
+                  {field.label}
+                </label>
+                <input
+                  type={field.type}
+                  value={form[field.key as keyof typeof form]}
+                  onChange={e => setForm(f => ({ ...f, [field.key]: e.target.value }))}
+                  placeholder={field.placeholder}
+                  required
+                  autoComplete={field.autoComplete}
+                  style={{
+                    width: "100%",
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.10)",
+                    borderRadius: "0.75rem",
+                    padding: "0.75rem 1rem",
+                    color: "#fff",
+                    fontSize: "0.875rem",
+                    outline: "none",
+                    boxSizing: "border-box",
+                    transition: "border-color 0.2s",
+                  }}
+                  onFocus={e => e.target.style.borderColor = "rgba(245,158,11,0.5)"}
+                  onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.10)"}
+                />
+              </div>
+            ))}
+
+            <div>
+              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#d1d5db", marginBottom: "0.5rem" }}>
+                Password
+              </label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={form.password}
+                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                  placeholder="Min 8 characters"
+                  required
+                  autoComplete="new-password"
+                  style={{
+                    width: "100%",
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.10)",
+                    borderRadius: "0.75rem",
+                    padding: "0.75rem 3rem 0.75rem 1rem",
+                    color: "#fff",
+                    fontSize: "0.875rem",
+                    outline: "none",
+                    boxSizing: "border-box",
+                    transition: "border-color 0.2s",
+                  }}
+                  onFocus={e => e.target.style.borderColor = "rgba(245,158,11,0.5)"}
+                  onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.10)"}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: "absolute",
+                    right: "0.875rem",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    color: "#6b7280",
+                    cursor: "pointer",
+                    padding: 0,
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  {showPassword
+                    ? <EyeOff style={{ width: "1rem", height: "1rem" }} />
+                    : <Eye style={{ width: "1rem", height: "1rem" }} />
+                  }
+                </button>
+              </div>
+              {form.password.length > 0 && (
+                <div style={{ marginTop: "0.375rem", fontSize: "0.75rem", color: form.password.length >= 8 ? "#4ade80" : "#f87171" }}>
+                  {form.password.length >= 8 ? "✓ Strong enough" : `${8 - form.password.length} more characters needed`}
+                </div>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: "100%",
+                background: loading ? "rgba(245,158,11,0.6)" : "#f59e0b",
+                color: "#000",
+                border: "none",
+                borderRadius: "0.875rem",
+                padding: "0.875rem",
+                fontWeight: 700,
+                fontSize: "0.9375rem",
+                cursor: loading ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                transition: "all 0.2s",
+                marginTop: "0.5rem",
+              }}
+            >
+              {loading ? (
+                <><Loader2 style={{ width: "1rem", height: "1rem", animation: "spin 1s linear infinite" }} />Creating account...</>
+              ) : (
+                <>Create Free Account<ArrowRight style={{ width: "1rem", height: "1rem" }} /></>
+              )}
+            </button>
+          </form>
+
+          <p style={{
+            textAlign: "center",
+            marginTop: "1.5rem",
+            fontSize: "0.875rem",
+            color: "#6b7280",
+          }}>
+            Already have an account?{" "}
+            <Link href="/login" style={{ color: "#f59e0b", fontWeight: 600, textDecoration: "none" }}>
+              Sign in
+            </Link>
+          </p>
+
+          <p style={{ textAlign: "center", marginTop: "1rem", fontSize: "0.75rem", color: "#4b5563" }}>
+            By registering you agree to our{" "}
+            <Link href="/terms" style={{ color: "#6b7280", textDecoration: "underline" }}>Terms</Link>
+            {" "}and{" "}
+            <Link href="/privacy" style={{ color: "#6b7280", textDecoration: "underline" }}>Privacy Policy</Link>
+          </p>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

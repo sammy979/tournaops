@@ -1,159 +1,266 @@
-"use client";
+﻿"use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { Mail, Lock, ArrowRight, AlertCircle, CheckCircle2, Eye, EyeOff } from "lucide-react";
-import { loginUser } from "@/lib/auth/auth";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Trophy, Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const searchParams = useSearchParams();
+  const from = searchParams.get("from") || "/dashboard";
+
+  const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
+
     try {
-      const result = await loginUser(email, password);
-      if (result.success) {
-        setSuccess(true);
-        setTimeout(() => router.push("/dashboard"), 500);
-      } else {
-        setError(result.error || "Login failed");
-        setLoading(false);
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Invalid credentials");
+        return;
       }
-    } catch (err: any) {
-      setError(err.message || "Network error");
+
+      router.push(from);
+      router.refresh();
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4 py-12 relative overflow-hidden">
-      {/* Background orbs */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/12 rounded-full blur-3xl animate-blob" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/12 rounded-full blur-3xl animate-blob-delay" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-pink-500/8 rounded-full blur-3xl animate-blob-slow" />
-      </div>
+    <div style={{
+      minHeight: "100vh",
+      background: "#0a0a0f",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "1.5rem",
+      position: "relative",
+      overflow: "hidden",
+    }}>
+      {/* Background */}
+      <div style={{
+        position: "absolute", inset: 0,
+        background: "radial-gradient(ellipse 60% 40% at 50% 0%, rgba(245,158,11,0.08), transparent)",
+        pointerEvents: "none",
+      }} />
 
-      <div className="w-full max-w-md relative z-10">
-        {/* LOGO */}
-        <Link href="/" className="flex flex-col items-center gap-4 mb-8 group">
-          <div className="relative w-20 h-20 rounded-2xl overflow-hidden logo-glow shadow-2xl shadow-blue-500/50 bg-gradient-to-br from-blue-500 to-purple-600 group-hover:scale-105 transition-transform animate-pulse-glow">
-            <img src="/logo.png" alt="TournaOps" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />
-            <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent" />
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-black text-white tracking-tight">TournaOps</div>
-            <div className="text-[10px] text-blue-400 uppercase tracking-[0.25em] font-semibold">Tournament OS</div>
-          </div>
-        </Link>
+      <div style={{ width: "100%", maxWidth: "420px", position: "relative" }}>
 
-        {/* Login Card */}
-        <div className="glass-heavy rounded-3xl p-8 border border-white/10 shadow-2xl">
-          {success ? (
-            <div className="flex flex-col items-center justify-center py-8 gap-4">
-              <div className="w-16 h-16 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center animate-pulse-glow">
-                <CheckCircle2 className="w-8 h-8 text-green-400" />
-              </div>
-              <p className="text-xl font-bold text-green-400">Login Successful!</p>
-              <p className="text-gray-500 text-sm">Redirecting to dashboard...</p>
+        {/* Logo */}
+        <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+          <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
+            <div style={{
+              width: "2.5rem", height: "2.5rem",
+              background: "linear-gradient(135deg, #f59e0b, #f97316)",
+              borderRadius: "0.75rem",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <Trophy style={{ width: "1.25rem", height: "1.25rem", color: "#000" }} />
             </div>
-          ) : (
-            <>
-              <div className="mb-6 text-center">
-                <h1 className="text-2xl font-bold text-white mb-1">Welcome back</h1>
-                <p className="text-gray-500 text-sm">Sign in to continue</p>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-gray-400 flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5" /> Email
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="input-field"
-                    required
-                    autoFocus
-                    disabled={loading}
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-gray-400 flex items-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5" /> Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      placeholder="Your password"
-                      className="input-field pr-10"
-                      required
-                      disabled={loading}
-                    />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                <button type="submit" disabled={loading} className="btn-primary w-full py-3 mt-2">
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Signing in...
-                    </>
-                  ) : (
-                    <>Sign In<ArrowRight className="w-4 h-4" /></>
-                  )}
-                </button>
-
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-white/8" />
-                  </div>
-                  <div className="relative flex justify-center">
-                    <span className="px-3 bg-[#0f0f18] text-gray-600 text-xs">or</span>
-                  </div>
-                </div>
-
-                <p className="text-center text-sm text-gray-500">
-                  No account?{" "}
-                  <Link href="/register" className="text-blue-400 hover:text-blue-300 font-semibold">
-                    Create one free
-                  </Link>
-                </p>
-              </form>
-            </>
-          )}
+            <span style={{ fontWeight: 800, fontSize: "1.25rem", color: "#fff" }}>TournaOps</span>
+          </Link>
         </div>
 
-        <p className="text-center mt-6">
-          <Link href="/" className="text-gray-600 hover:text-gray-400 text-sm">
-             Back to home
-          </Link>
+        {/* Card */}
+        <div style={{
+          background: "rgba(255,255,255,0.03)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: "1.5rem",
+          padding: "2rem",
+          backdropFilter: "blur(20px)",
+        }}>
+          <div style={{ marginBottom: "1.75rem" }}>
+            <h1 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#fff", marginBottom: "0.375rem" }}>
+              Welcome back
+            </h1>
+            <p style={{ color: "#6b7280", fontSize: "0.875rem" }}>
+              Sign in to your TournaOps account
+            </p>
+          </div>
+
+          {error && (
+            <div style={{
+              background: "rgba(239,68,68,0.1)",
+              border: "1px solid rgba(239,68,68,0.2)",
+              borderRadius: "0.75rem",
+              padding: "0.75rem 1rem",
+              marginBottom: "1.25rem",
+              color: "#f87171",
+              fontSize: "0.875rem",
+            }}>
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+
+            <div>
+              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#d1d5db", marginBottom: "0.5rem" }}>
+                Email
+              </label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                placeholder="you@example.com"
+                required
+                autoComplete="email"
+                style={{
+                  width: "100%",
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  borderRadius: "0.75rem",
+                  padding: "0.75rem 1rem",
+                  color: "#fff",
+                  fontSize: "0.875rem",
+                  outline: "none",
+                  boxSizing: "border-box",
+                  transition: "border-color 0.2s",
+                }}
+                onFocus={e => e.target.style.borderColor = "rgba(245,158,11,0.5)"}
+                onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.10)"}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#d1d5db", marginBottom: "0.5rem" }}>
+                Password
+              </label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={form.password}
+                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                  placeholder="Enter your password"
+                  required
+                  autoComplete="current-password"
+                  style={{
+                    width: "100%",
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.10)",
+                    borderRadius: "0.75rem",
+                    padding: "0.75rem 3rem 0.75rem 1rem",
+                    color: "#fff",
+                    fontSize: "0.875rem",
+                    outline: "none",
+                    boxSizing: "border-box",
+                    transition: "border-color 0.2s",
+                  }}
+                  onFocus={e => e.target.style.borderColor = "rgba(245,158,11,0.5)"}
+                  onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.10)"}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: "absolute",
+                    right: "0.875rem",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    color: "#6b7280",
+                    cursor: "pointer",
+                    padding: 0,
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  {showPassword
+                    ? <EyeOff style={{ width: "1rem", height: "1rem" }} />
+                    : <Eye style={{ width: "1rem", height: "1rem" }} />
+                  }
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: "100%",
+                background: loading ? "rgba(245,158,11,0.6)" : "#f59e0b",
+                color: "#000",
+                border: "none",
+                borderRadius: "0.875rem",
+                padding: "0.875rem",
+                fontWeight: 700,
+                fontSize: "0.9375rem",
+                cursor: loading ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                transition: "all 0.2s",
+                marginTop: "0.5rem",
+              }}
+            >
+              {loading ? (
+                <><Loader2 style={{ width: "1rem", height: "1rem", animation: "spin 1s linear infinite" }} />Signing in...</>
+              ) : (
+                <>Sign In<ArrowRight style={{ width: "1rem", height: "1rem" }} /></>
+              )}
+            </button>
+          </form>
+
+          <div style={{
+            borderTop: "1px solid rgba(255,255,255,0.08)",
+            marginTop: "1.5rem",
+            paddingTop: "1.5rem",
+            textAlign: "center",
+            fontSize: "0.875rem",
+            color: "#6b7280",
+          }}>
+            Do not have an account?{" "}
+            <Link href="/register" style={{ color: "#f59e0b", fontWeight: 600, textDecoration: "none" }}>
+              Create one free
+            </Link>
+          </div>
+        </div>
+
+        <p style={{ textAlign: "center", marginTop: "1.5rem", fontSize: "0.75rem", color: "#4b5563" }}>
+          By signing in you agree to our{" "}
+          <Link href="/terms" style={{ color: "#6b7280", textDecoration: "underline" }}>Terms</Link>
+          {" "}and{" "}
+          <Link href="/privacy" style={{ color: "#6b7280", textDecoration: "underline" }}>Privacy Policy</Link>
         </p>
       </div>
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Loader2 style={{ width: "2rem", height: "2rem", color: "#f59e0b", animation: "spin 1s linear infinite" }} />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
