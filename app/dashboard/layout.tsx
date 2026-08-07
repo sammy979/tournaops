@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronRight, Menu, X,
   BarChart3, Users, Calendar, Palette,
   MessageSquare, Radio, Zap, Crown,
-  Image, DollarSign, Bell, Shield,
+  Image as ImageIcon, DollarSign,
   Bot, Clock
 } from "lucide-react";
 
@@ -35,14 +35,14 @@ const NAV_ITEMS = [
     items: [
       { icon: Radio, label: "OBS Overlay", href: "/dashboard/overlay" },
       { icon: Bot, label: "AI Assistant", href: "/dashboard/ai" },
-      { icon: Image, label: "AI Images", href: "/dashboard/ai-images" },
+      { icon: ImageIcon, label: "AI Images", href: "/dashboard/ai-images" },
     ],
   },
   {
     label: "Setup",
     items: [
       { icon: Palette, label: "Branding", href: "/dashboard/branding" },
-      { icon: Image, label: "Assets", href: "/dashboard/assets" },
+      { icon: ImageIcon, label: "Assets", href: "/dashboard/assets" },
       { icon: MessageSquare, label: "Discord", href: "/dashboard/discord" },
       { icon: Zap, label: "Scoring", href: "/dashboard/scoring" },
     ],
@@ -62,6 +62,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= 1024);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -85,6 +93,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return pathname.startsWith(href);
   };
 
+  const sidebarWidth = collapsed ? "4rem" : "14rem";
+
   const SidebarContent = () => (
     <div style={{
       display: "flex",
@@ -94,28 +104,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }}>
       {/* Logo */}
       <div style={{
-        padding: collapsed ? "1.25rem 0.75rem" : "1.25rem 1.25rem",
+        padding: collapsed ? "1.25rem 0.75rem" : "1.25rem",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
         display: "flex",
         alignItems: "center",
         justifyContent: collapsed ? "center" : "space-between",
         flexShrink: 0,
+        minHeight: "4rem",
       }}>
-        {!collapsed && (
-          <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: "0.625rem", textDecoration: "none" }}>
-            <div style={{
-              width: "2rem", height: "2rem",
-              background: "linear-gradient(135deg, #f59e0b, #f97316)",
-              borderRadius: "0.5rem",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              flexShrink: 0,
-            }}>
-              <Trophy style={{ width: "1rem", height: "1rem", color: "#000" }} />
-            </div>
-            <span style={{ fontWeight: 800, color: "#fff", fontSize: "1rem", whiteSpace: "nowrap" }}>TournaOps</span>
-          </Link>
-        )}
-        {collapsed && (
+        {collapsed ? (
           <div style={{
             width: "2rem", height: "2rem",
             background: "linear-gradient(135deg, #f59e0b, #f97316)",
@@ -124,30 +121,68 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           }}>
             <Trophy style={{ width: "1rem", height: "1rem", color: "#000" }} />
           </div>
+        ) : (
+          <>
+            <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: "0.625rem", textDecoration: "none" }}>
+              <div style={{
+                width: "2rem", height: "2rem",
+                background: "linear-gradient(135deg, #f59e0b, #f97316)",
+                borderRadius: "0.5rem",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0,
+              }}>
+                <Trophy style={{ width: "1rem", height: "1rem", color: "#000" }} />
+              </div>
+              <span style={{ fontWeight: 800, color: "#fff", fontSize: "1rem", whiteSpace: "nowrap" }}>TournaOps</span>
+            </Link>
+            {isDesktop && (
+              <button
+                onClick={() => setCollapsed(!collapsed)}
+                style={{
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: "0.5rem",
+                  width: "1.75rem", height: "1.75rem",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer",
+                  color: "#6b7280",
+                  flexShrink: 0,
+                }}
+              >
+                <ChevronLeft style={{ width: "0.875rem", height: "0.875rem" }} />
+              </button>
+            )}
+          </>
         )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="hidden lg:flex"
-          style={{
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: "0.5rem",
-            width: "1.75rem", height: "1.75rem",
-            alignItems: "center", justifyContent: "center",
-            cursor: "pointer",
-            color: "#6b7280",
-            flexShrink: 0,
-          }}
-        >
-          {collapsed
-            ? <ChevronRight style={{ width: "0.875rem", height: "0.875rem" }} />
-            : <ChevronLeft style={{ width: "0.875rem", height: "0.875rem" }} />
-          }
-        </button>
+        {collapsed && isDesktop && (
+          <button
+            onClick={() => setCollapsed(false)}
+            style={{
+              position: "absolute",
+              right: "-0.75rem",
+              top: "1.375rem",
+              background: "#0d0d14",
+              border: "1px solid rgba(255,255,255,0.15)",
+              borderRadius: "50%",
+              width: "1.5rem", height: "1.5rem",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer",
+              color: "#9ca3af",
+              zIndex: 45,
+            }}
+          >
+            <ChevronRight style={{ width: "0.75rem", height: "0.75rem" }} />
+          </button>
+        )}
       </div>
 
       {/* Nav */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "0.75rem", scrollbarWidth: "none" }}>
+      <div style={{
+        flex: 1,
+        overflowY: "auto",
+        padding: "0.75rem",
+        scrollbarWidth: "none",
+      }} className="scrollbar-hide">
         {NAV_ITEMS.map(group => (
           <div key={group.label} style={{ marginBottom: "1.25rem" }}>
             {!collapsed && (
@@ -185,7 +220,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     fontWeight: active ? 600 : 500,
                     fontSize: "0.875rem",
                     transition: "all 0.15s ease",
-                    borderLeft: active ? "2px solid #f59e0b" : "2px solid transparent",
                   }}
                   onMouseEnter={e => {
                     if (!active) {
@@ -282,30 +316,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   );
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#0a0a0f" }}>
+    <div style={{ minHeight: "100vh", background: "#0a0a0f", position: "relative" }}>
 
       {/* Desktop Sidebar */}
-      <aside
-        className="hidden lg:flex"
-        style={{
-          width: collapsed ? "4rem" : "14rem",
-          flexDirection: "column",
-          background: "rgba(255,255,255,0.02)",
-          borderRight: "1px solid rgba(255,255,255,0.06)",
-          position: "fixed",
-          top: 0,
-          left: 0,
-          bottom: 0,
-          zIndex: 40,
-          transition: "width 0.2s ease",
-          overflow: "hidden",
-        }}
-      >
-        <SidebarContent />
-      </aside>
+      {isDesktop && (
+        <aside
+          style={{
+            width: sidebarWidth,
+            background: "rgba(255,255,255,0.02)",
+            borderRight: "1px solid rgba(255,255,255,0.06)",
+            position: "fixed",
+            top: 0,
+            left: 0,
+            bottom: 0,
+            zIndex: 40,
+            transition: "width 0.2s ease",
+          }}
+        >
+          <SidebarContent />
+        </aside>
+      )}
 
       {/* Mobile Overlay */}
-      {mobileOpen && (
+      {!isDesktop && mobileOpen && (
         <div
           style={{
             position: "fixed", inset: 0, zIndex: 50,
@@ -317,32 +350,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {/* Mobile Sidebar */}
-      <aside
-        className="lg:hidden"
-        style={{
-          position: "fixed",
-          top: 0, left: 0, bottom: 0,
-          width: "16rem",
-          zIndex: 60,
-          background: "#0d0d14",
-          borderRight: "1px solid rgba(255,255,255,0.08)",
-          transform: mobileOpen ? "translateX(0)" : "translateX(-100%)",
-          transition: "transform 0.25s ease",
-        }}
-      >
-        <SidebarContent />
-      </aside>
+      {!isDesktop && (
+        <aside
+          style={{
+            position: "fixed",
+            top: 0, left: 0, bottom: 0,
+            width: "16rem",
+            zIndex: 60,
+            background: "#0d0d14",
+            borderRight: "1px solid rgba(255,255,255,0.08)",
+            transform: mobileOpen ? "translateX(0)" : "translateX(-100%)",
+            transition: "transform 0.25s ease",
+          }}
+        >
+          <SidebarContent />
+        </aside>
+      )}
 
-      {/* Main Content */}
-      <main style={{
-        flex: 1,
-        marginLeft: 0,
+      {/* Main Content Area */}
+      <div style={{
+        marginLeft: isDesktop ? sidebarWidth : 0,
+        transition: "margin-left 0.2s ease",
         display: "flex",
         flexDirection: "column",
         minHeight: "100vh",
-      }}
-      className="lg:ml-56"
-      >
+      }}>
+
         {/* Top Bar */}
         <header style={{
           height: "3.5rem",
@@ -358,23 +391,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           zIndex: 30,
           flexShrink: 0,
         }}>
-          <button
-            className="lg:hidden"
-            onClick={() => setMobileOpen(!mobileOpen)}
-            style={{
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "0.5rem",
-              width: "2.25rem", height: "2.25rem",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              cursor: "pointer",
-              color: "#9ca3af",
-            }}
-          >
-            {mobileOpen ? <X style={{ width: "1rem", height: "1rem" }} /> : <Menu style={{ width: "1rem", height: "1rem" }} />}
-          </button>
-
-          <div className="hidden lg:block" />
+          {!isDesktop ? (
+            <button
+              onClick={() => setMobileOpen(!mobileOpen)}
+              style={{
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "0.5rem",
+                width: "2.25rem", height: "2.25rem",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer",
+                color: "#9ca3af",
+              }}
+            >
+              {mobileOpen
+                ? <X style={{ width: "1rem", height: "1rem" }} />
+                : <Menu style={{ width: "1rem", height: "1rem" }} />
+              }
+            </button>
+          ) : <div />}
 
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             {user && !user.isPro && (
@@ -392,7 +427,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   fontSize: "0.75rem",
                   fontWeight: 600,
                   textDecoration: "none",
-                  transition: "all 0.2s",
                 }}
               >
                 <Crown style={{ width: "0.875rem", height: "0.875rem" }} />
@@ -421,7 +455,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div style={{ flex: 1, padding: "1.5rem" }}>
           {children}
         </div>
-      </main>
+      </div>
     </div>
   );
 }
