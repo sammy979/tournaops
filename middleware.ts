@@ -14,7 +14,11 @@ const PUBLIC_ROUTES = [
 const PUBLIC_PREFIXES = [
   "/tournaments/",
   "/api/public/",
+  "/api/auth/",
   "/api/health",
+  "/api/discord/incoming",
+  "/api/payments/webhook",
+  "/api/overlay/",
   "/overlay/",
   "/preview/",
   "/players/",
@@ -37,11 +41,12 @@ export function middleware(req: NextRequest) {
 
   if (isPublic) return NextResponse.next();
 
-  const token =
-    req.cookies.get("tournaops_token")?.value ||
-    req.cookies.get("auth_token")?.value;
+  const token = req.cookies.get("tournaops_session")?.value;
 
   if (!token) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("from", pathname);
     return NextResponse.redirect(loginUrl);
