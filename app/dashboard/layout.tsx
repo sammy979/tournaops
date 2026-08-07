@@ -82,6 +82,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setMobileOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileOpen]);
+
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
@@ -102,15 +111,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       height: "100%",
       overflow: "hidden",
     }}>
-      {/* Logo */}
       <div style={{
-        padding: collapsed ? "1.25rem 0.75rem" : "1.25rem",
+        padding: collapsed ? "1rem 0.75rem" : "1rem 1.25rem",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
         display: "flex",
         alignItems: "center",
         justifyContent: collapsed ? "center" : "space-between",
         flexShrink: 0,
-        minHeight: "4rem",
+        minHeight: "3.5rem",
       }}>
         {collapsed ? (
           <div style={{
@@ -152,6 +160,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <ChevronLeft style={{ width: "0.875rem", height: "0.875rem" }} />
               </button>
             )}
+            {!isDesktop && (
+              <button
+                onClick={() => setMobileOpen(false)}
+                style={{
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: "0.5rem",
+                  width: "2rem", height: "2rem",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer",
+                  color: "#fff",
+                  flexShrink: 0,
+                }}
+              >
+                <X style={{ width: "1rem", height: "1rem" }} />
+              </button>
+            )}
           </>
         )}
         {collapsed && isDesktop && (
@@ -160,7 +185,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             style={{
               position: "absolute",
               right: "-0.75rem",
-              top: "1.375rem",
+              top: "1.25rem",
               background: "#0d0d14",
               border: "1px solid rgba(255,255,255,0.15)",
               borderRadius: "50%",
@@ -176,12 +201,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       </div>
 
-      {/* Nav */}
       <div style={{
         flex: 1,
         overflowY: "auto",
+        WebkitOverflowScrolling: "touch",
         padding: "0.75rem",
-        scrollbarWidth: "none",
       }} className="scrollbar-hide">
         {NAV_ITEMS.map(group => (
           <div key={group.label} style={{ marginBottom: "1.25rem" }}>
@@ -210,7 +234,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     display: "flex",
                     alignItems: "center",
                     gap: "0.625rem",
-                    padding: collapsed ? "0.625rem" : "0.625rem 0.75rem",
+                    padding: collapsed ? "0.75rem" : "0.75rem 0.75rem",
                     borderRadius: "0.625rem",
                     marginBottom: "0.125rem",
                     textDecoration: "none",
@@ -218,23 +242,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     background: active ? "rgba(245,158,11,0.12)" : "transparent",
                     color: active ? "#f59e0b" : "#9ca3af",
                     fontWeight: active ? 600 : 500,
-                    fontSize: "0.875rem",
+                    fontSize: "0.9rem",
                     transition: "all 0.15s ease",
-                  }}
-                  onMouseEnter={e => {
-                    if (!active) {
-                      e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-                      e.currentTarget.style.color = "#fff";
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (!active) {
-                      e.currentTarget.style.background = "transparent";
-                      e.currentTarget.style.color = "#9ca3af";
-                    }
+                    minHeight: "44px",
                   }}
                 >
-                  <Icon style={{ width: "1rem", height: "1rem", flexShrink: 0 }} />
+                  <Icon style={{ width: "1.125rem", height: "1.125rem", flexShrink: 0 }} />
                   {!collapsed && <span style={{ whiteSpace: "nowrap" }}>{item.label}</span>}
                 </Link>
               );
@@ -243,7 +256,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         ))}
       </div>
 
-      {/* User Footer */}
       <div style={{
         borderTop: "1px solid rgba(255,255,255,0.06)",
         padding: collapsed ? "0.75rem" : "0.75rem 1rem",
@@ -290,7 +302,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             alignItems: "center",
             justifyContent: collapsed ? "center" : "flex-start",
             gap: "0.5rem",
-            padding: "0.5rem 0.75rem",
+            padding: "0.75rem",
             borderRadius: "0.625rem",
             background: "transparent",
             border: "none",
@@ -298,14 +310,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             fontSize: "0.875rem",
             cursor: "pointer",
             transition: "all 0.15s",
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = "rgba(239,68,68,0.08)";
-            e.currentTarget.style.color = "#f87171";
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.color = "#6b7280";
+            minHeight: "44px",
           }}
         >
           <LogOut style={{ width: "1rem", height: "1rem", flexShrink: 0 }} />
@@ -318,7 +323,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div style={{ minHeight: "100vh", background: "#0a0a0f", position: "relative" }}>
 
-      {/* Desktop Sidebar */}
       {isDesktop && (
         <aside
           style={{
@@ -337,7 +341,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </aside>
       )}
 
-      {/* Mobile Overlay */}
       {!isDesktop && mobileOpen && (
         <div
           style={{
@@ -349,25 +352,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         />
       )}
 
-      {/* Mobile Sidebar */}
       {!isDesktop && (
         <aside
           style={{
             position: "fixed",
             top: 0, left: 0, bottom: 0,
-            width: "16rem",
+            width: "80%",
+            maxWidth: "18rem",
             zIndex: 60,
             background: "#0d0d14",
             borderRight: "1px solid rgba(255,255,255,0.08)",
             transform: mobileOpen ? "translateX(0)" : "translateX(-100%)",
             transition: "transform 0.25s ease",
+            boxShadow: mobileOpen ? "0 20px 60px rgba(0,0,0,0.5)" : "none",
           }}
         >
           <SidebarContent />
         </aside>
       )}
 
-      {/* Main Content Area */}
       <div style={{
         marginLeft: isDesktop ? sidebarWidth : 0,
         transition: "margin-left 0.2s ease",
@@ -376,15 +379,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         minHeight: "100vh",
       }}>
 
-        {/* Top Bar */}
         <header style={{
           height: "3.5rem",
           borderBottom: "1px solid rgba(255,255,255,0.06)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "0 1.25rem",
-          background: "rgba(10,10,15,0.8)",
+          padding: "0 1rem",
+          background: "rgba(10,10,15,0.9)",
           backdropFilter: "blur(20px)",
           position: "sticky",
           top: 0,
@@ -398,39 +400,51 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 background: "rgba(255,255,255,0.06)",
                 border: "1px solid rgba(255,255,255,0.08)",
                 borderRadius: "0.5rem",
-                width: "2.25rem", height: "2.25rem",
+                width: "2.5rem", height: "2.5rem",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 cursor: "pointer",
                 color: "#9ca3af",
               }}
             >
-              {mobileOpen
-                ? <X style={{ width: "1rem", height: "1rem" }} />
-                : <Menu style={{ width: "1rem", height: "1rem" }} />
-              }
+              <Menu style={{ width: "1.125rem", height: "1.125rem" }} />
             </button>
           ) : <div />}
 
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          {!isDesktop && (
+            <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
+              <div style={{
+                width: "1.75rem", height: "1.75rem",
+                background: "linear-gradient(135deg, #f59e0b, #f97316)",
+                borderRadius: "0.375rem",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Trophy style={{ width: "0.875rem", height: "0.875rem", color: "#000" }} />
+              </div>
+              <span style={{ fontWeight: 800, color: "#fff", fontSize: "0.9rem" }}>TournaOps</span>
+            </Link>
+          )}
+
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             {user && !user.isPro && (
               <Link
                 href="/dashboard/upgrade"
                 style={{
-                  display: "flex",
+                  display: "inline-flex",
                   alignItems: "center",
-                  gap: "0.375rem",
+                  gap: "0.25rem",
                   background: "rgba(245,158,11,0.1)",
                   border: "1px solid rgba(245,158,11,0.2)",
-                  borderRadius: "0.625rem",
-                  padding: "0.375rem 0.75rem",
+                  borderRadius: "0.5rem",
+                  padding: "0.375rem 0.625rem",
                   color: "#f59e0b",
-                  fontSize: "0.75rem",
+                  fontSize: "0.7rem",
                   fontWeight: 600,
                   textDecoration: "none",
+                  minHeight: "36px",
                 }}
               >
-                <Crown style={{ width: "0.875rem", height: "0.875rem" }} />
-                Upgrade Pro
+                <Crown style={{ width: "0.75rem", height: "0.75rem" }} />
+                <span className="hidden sm:inline">Upgrade</span>
               </Link>
             )}
             <Link
@@ -438,12 +452,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               style={{
                 background: "rgba(255,255,255,0.06)",
                 border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: "0.625rem",
-                padding: "0.375rem 0.75rem",
+                borderRadius: "0.5rem",
+                padding: "0.375rem 0.625rem",
                 color: "#9ca3af",
-                fontSize: "0.75rem",
+                fontSize: "0.7rem",
                 fontWeight: 500,
                 textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                minHeight: "36px",
               }}
             >
               View Site
@@ -451,11 +468,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        {/* Page Content */}
-        <div style={{ flex: 1, padding: "1.5rem" }}>
+        <div style={{ flex: 1, padding: "1rem" }} className="dashboard-content">
           {children}
         </div>
       </div>
+
+      <style>{`
+        @media (min-width: 640px) {
+          .dashboard-content { padding: 1.5rem !important; }
+        }
+      `}</style>
     </div>
   );
 }
