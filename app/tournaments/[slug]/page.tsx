@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import LiveRegistrationCounter from "@/components/tournament/LiveRegistrationCounter";
 import {
   Trophy, Users, Share2, Loader2, Target, ChevronLeft,
   Shield, User, Crown, Flame, Crosshair, Calendar,
@@ -71,7 +72,7 @@ export default function PublicTournamentPage() {
     );
   }
 
-  const { tournament, standings = [], organizer, branding, topFraggers = [] } = data;
+  const { tournament, standings = [], organizer, branding, topFraggers = [], slotsInfo } = data;
   const primaryColor = branding?.primaryColor || "#f59e0b";
   const accentColor = branding?.accentColor || "#f97316";
   const orgName = branding?.orgName || organizer?.displayName || organizer?.username || "Organizer";
@@ -371,6 +372,17 @@ export default function PublicTournamentPage() {
         {/* OVERVIEW */}
         {tab === "overview" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+
+            {/* Live Registration Counter */}
+            {slotsInfo && (
+              <LiveRegistrationCounter
+                slug={slug}
+                tournamentName={tournament.name}
+                status={tournament.status}
+                slotsInfo={slotsInfo}
+                primaryColor={primaryColor}
+              />
+            )}
 
             {/* Stats Row */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem" }}>
