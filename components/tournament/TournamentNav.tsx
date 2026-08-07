@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Trophy, Sparkles, Radio, ClipboardList, Home, Palette, ImageIcon } from "lucide-react";
+import { Trophy, Sparkles, Radio, ClipboardList, Home, Palette, Users } from "lucide-react";
 
 interface TournamentNavProps {
   tournamentId: string;
@@ -27,16 +27,16 @@ export default function TournamentNav({ tournamentId }: TournamentNavProps) {
         {NAV_ITEMS.map(item => {
           const Icon = item.icon;
           const fullPath = basePath + item.href;
-          const isActive = pathname === fullPath || 
+          const isActive = pathname === fullPath ||
             (item.href === "" && pathname === basePath);
-          
+
           return (
             <Link
               key={item.href}
               href={fullPath}
               className={"flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold whitespace-nowrap transition-all " +
-                (isActive 
-                  ? "bg-yellow-500 text-black" 
+                (isActive
+                  ? "bg-yellow-500 text-black"
                   : "text-neutral-400 hover:text-white hover:bg-neutral-800"
                 )
               }

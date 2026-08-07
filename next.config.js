@@ -1,17 +1,23 @@
-/** @type {import('next').NextConfig} */
+﻿/** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: true,
+
   typescript: {
     ignoreBuildErrors: true,
   },
+
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**" },
     ],
   },
+
+  poweredByHeader: false,
+  compress: true,
+
   async headers() {
     return [
       {
-        // Allow overlay pages to be embedded in iframes (for OBS + dashboard preview)
         source: "/overlay/:path*",
         headers: [
           { key: "X-Frame-Options", value: "ALLOWALL" },
@@ -20,12 +26,12 @@ const nextConfig = {
         ],
       },
       {
-        // Default security for all other pages
         source: "/((?!overlay).*)",
         headers: [
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
         ],
       },
     ];

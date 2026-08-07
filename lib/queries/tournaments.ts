@@ -1,37 +1,24 @@
-import { prisma } from "@/lib/prisma";
+﻿import { prisma } from "@/lib/prisma";
 
-// ✅ Single query with all relations — replaces multiple queries
 export async function getTournamentFull(id: string, userId: string) {
   return prisma.tournament.findFirst({
     where: { id, userId },
     include: {
       teams: {
         include: {
-          players: true,
+          playersList: true,
         },
         orderBy: { name: "asc" },
       },
       rounds: {
-        include: {
-          matches: {
-            include: {
-              results: {
-                include: {
-                  team: true,
-                },
-              },
-            },
-          },
-        },
-        orderBy: { roundNumber: "asc" },
+        orderBy: { order: "asc" },
+      },
+      matches: {
+        orderBy: { matchNumber: "asc" },
       },
       stages: {
         include: {
-          groups: {
-            include: {
-              teams: true,
-            },
-          },
+          groups: true,
         },
         orderBy: { order: "asc" },
       },
@@ -39,7 +26,6 @@ export async function getTournamentFull(id: string, userId: string) {
   });
 }
 
-// ✅ Lightweight list query — for dashboard list
 export async function getTournamentList(userId: string) {
   return prisma.tournament.findMany({
     where: { userId },
@@ -64,7 +50,6 @@ export async function getTournamentList(userId: string) {
   });
 }
 
-// ✅ Public tournament query — for public pages
 export async function getTournamentPublic(slug: string) {
   return prisma.tournament.findFirst({
     where: { slug, isPublic: true },
@@ -96,51 +81,27 @@ export async function getTournamentPublic(slug: string) {
         select: {
           id: true,
           name: true,
-          roundNumber: true,
-          matches: {
-            select: {
-              id: true,
-              matchNumber: true,
-              map: true,
-              status: true,
-              results: {
-                select: {
-                  id: true,
-                  placement: true,
-                  kills: true,
-                  wwcd: true,
-                  team: {
-                    select: {
-                      id: true,
-                      name: true,
-                      tag: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
+          order: true,
+        },
+      },
+      matches: {
+        select: {
+          id: true,
+          matchNumber: true,
+          map: true,
+          status: true,
+          results: true,
         },
       },
     },
   });
 }
 
-// ✅ Match with results — replaces N+1 in match routes
 export async function getMatchWithResults(matchId: string) {
   return prisma.match.findUnique({
     where: { id: matchId },
     include: {
-      results: {
-        include: {
-          team: true,
-        },
-      },
-      round: {
-        include: {
-          tournament: true,
-        },
-      },
+      tournament: true,
     },
   });
 }

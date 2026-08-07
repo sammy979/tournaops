@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 
@@ -15,19 +15,23 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const scoringRule = {
+    placementPoints: data.placementPoints,
+    killPoints: data.killPoints,
+    wwcdBonus: data.wwcdBonus,
+    top3Bonus: data.top3Bonus,
+    perfectMatchBonus: data.perfectMatchBonus,
+    maxKillPoints: data.maxKillPoints,
+    tiebreakerOrder: data.tiebreakerOrder,
+  };
+
   const updated = await prisma.userScoringPreset.update({
     where: { id },
     data: {
       name: data.name,
       description: data.description,
-      placementPoints: data.placementPoints,
-      killPoints: data.killPoints,
-      wwcdBonus: data.wwcdBonus,
-      top3Bonus: data.top3Bonus,
-      perfectMatchBonus: data.perfectMatchBonus,
-      maxKillPoints: data.maxKillPoints,
-      tiebreakerOrder: data.tiebreakerOrder,
-      isPublic: data.isPublic,
+      scoringRule,
+      isDefault: data.isDefault ?? preset.isDefault,
     },
   });
 

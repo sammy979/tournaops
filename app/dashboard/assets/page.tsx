@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 import { useState, useEffect } from "react";
-import { Upload, Image as ImageIcon, Trash2, Trophy, Users, X, Loader2, Check } from "lucide-react";
+import { Upload, Image as ImageIcon, Trash2, Trophy, Users, X, Loader2 } from "lucide-react";
 
 interface Tournament {
   id: string;
@@ -55,14 +55,13 @@ export default function AssetsPage() {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("type", type);
-    
     try {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
       if (data.url) return data.url;
       alert(data.error || "Upload failed");
       return null;
-    } catch (e) {
+    } catch {
       alert("Upload failed");
       return null;
     } finally {
@@ -70,7 +69,7 @@ export default function AssetsPage() {
     }
   }
 
-  async function updateTournamentAsset(field: string, value: any) {
+  async function updateTournamentAsset(field: string, value: string | string[] | null) {
     if (!selectedTournament) return;
     const res = await fetch(`/api/tournaments/${selectedTournament}`, {
       method: "PATCH",
@@ -83,7 +82,7 @@ export default function AssetsPage() {
     }
   }
 
-  async function updateTeamAsset(teamId: string, field: string, value: any) {
+  async function updateTeamAsset(teamId: string, field: string, value: string | null) {
     const res = await fetch(`/api/tournaments/${selectedTournament}/teams/${teamId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -122,9 +121,7 @@ export default function AssetsPage() {
         ) : (
           <>
             <div className="bg-gray-900 rounded-xl p-4 border border-gray-800 mb-6">
-              <label className="text-sm font-semibold text-gray-300 mb-2 block">
-                Select Tournament
-              </label>
+              <label className="text-sm font-semibold text-gray-300 mb-2 block">Select Tournament</label>
               <select
                 value={selectedTournament}
                 onChange={(e) => setSelectedTournament(e.target.value)}
@@ -146,7 +143,7 @@ export default function AssetsPage() {
                 return (
                   <button
                     key={t.id}
-                    onClick={() => setTab(t.id as any)}
+                    onClick={() => setTab(t.id as "tournament" | "teams" | "sponsors")}
                     className={`px-4 py-2 flex items-center gap-2 text-sm font-semibold border-b-2 transition ${
                       tab === t.id ? "border-yellow-400 text-yellow-400" : "border-transparent text-gray-400 hover:text-white"
                     }`}
@@ -165,7 +162,7 @@ export default function AssetsPage() {
                   description="Wide banner at top (1920x600)"
                   currentUrl={current.bannerImage}
                   isUploading={uploading === "banner"}
-                  onUpload={async (file) => {
+                  onUpload={async (file: File) => {
                     const url = await uploadImage(file, "banner");
                     if (url) updateTournamentAsset("bannerImage", url);
                   }}
@@ -177,7 +174,7 @@ export default function AssetsPage() {
                   currentUrl={current.trophyImage}
                   aspectRatio="square"
                   isUploading={uploading === "trophy"}
-                  onUpload={async (file) => {
+                  onUpload={async (file: File) => {
                     const url = await uploadImage(file, "trophy");
                     if (url) updateTournamentAsset("trophyImage", url);
                   }}
@@ -202,8 +199,8 @@ export default function AssetsPage() {
                     <MiniUpload
                       label="Team Logo"
                       currentUrl={team.logo}
-                      onUpload={async (file) => {
-                        const url = await uploadImage(file, `team-logo`);
+                      onUpload={async (file: File) => {
+                        const url = await uploadImage(file, "team-logo");
                         if (url) updateTeamAsset(team.id, "logo", url);
                       }}
                       onRemove={() => updateTeamAsset(team.id, "logo", null)}
@@ -216,16 +213,16 @@ export default function AssetsPage() {
             {tab === "sponsors" && current && (
               <SponsorsManager
                 current={current}
-                onUpload={async (file) => {
+                onUpload={async (file: File) => {
                   const url = await uploadImage(file, "sponsor");
                   if (url) {
                     const existing = Array.isArray(current.sponsorLogos) ? current.sponsorLogos : [];
                     updateTournamentAsset("sponsorLogos", [...existing, url]);
                   }
                 }}
-                onRemove={(index) => {
+                onRemove={(index: number) => {
                   const existing = Array.isArray(current.sponsorLogos) ? current.sponsorLogos : [];
-                  updateTournamentAsset("sponsorLogos", existing.filter((_, i) => i !== index));
+                  updateTournamentAsset("sponsorLogos", existing.filter((_: string, i: number) => i !== index));
                 }}
               />
             )}
@@ -236,7 +233,17 @@ export default function AssetsPage() {
   );
 }
 
-function UploadCard({ title, description, currentUrl, isUploading, onUpload, onRemove, aspectRatio }: any) {
+interface UploadCardProps {
+  title: string;
+  description: string;
+  currentUrl?: string;
+  isUploading: boolean;
+  onUpload: (file: File) => void;
+  onRemove: () => void;
+  aspectRatio?: string;
+}
+
+function UploadCard({ title, description, currentUrl, isUploading, onUpload, onRemove, aspectRatio }: UploadCardProps) {
   return (
     <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
       <div className="mb-3">
@@ -255,12 +262,20 @@ function UploadCard({ title, description, currentUrl, isUploading, onUpload, onR
           </>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
-            {isUploading ? <Loader2 className="w-8 h-8 animate-spin" /> : <><Upload className="w-10 h-10 mb-2" /><span className="text-sm">Upload Image</span></>}
+            {isUploading
+              ? <Loader2 className="w-8 h-8 animate-spin" />
+              : <><Upload className="w-10 h-10 mb-2" /><span className="text-sm">Upload Image</span></>
+            }
           </div>
         )}
       </div>
       <label className="mt-3 block">
-        <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])} />
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])}
+        />
         <span className="block w-full px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-center rounded-lg cursor-pointer text-sm">
           {currentUrl ? "Change Image" : "Choose File"}
         </span>
@@ -269,7 +284,14 @@ function UploadCard({ title, description, currentUrl, isUploading, onUpload, onR
   );
 }
 
-function MiniUpload({ label, currentUrl, onUpload, onRemove }: any) {
+interface MiniUploadProps {
+  label: string;
+  currentUrl?: string;
+  onUpload: (file: File) => void;
+  onRemove: () => void;
+}
+
+function MiniUpload({ label, currentUrl, onUpload, onRemove }: MiniUploadProps) {
   return (
     <div>
       <div className="text-xs font-semibold text-gray-400 mb-1">{label}</div>
@@ -288,7 +310,12 @@ function MiniUpload({ label, currentUrl, onUpload, onRemove }: any) {
         )}
       </div>
       <label className="mt-2 block">
-        <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])} />
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])}
+        />
         <span className="block w-full px-2 py-1 bg-gray-800 hover:bg-gray-700 text-white text-center rounded cursor-pointer text-xs">
           {currentUrl ? "Change" : "Upload"}
         </span>
@@ -297,7 +324,13 @@ function MiniUpload({ label, currentUrl, onUpload, onRemove }: any) {
   );
 }
 
-function SponsorsManager({ current, onUpload, onRemove }: any) {
+interface SponsorsManagerProps {
+  current: Tournament;
+  onUpload: (file: File) => void;
+  onRemove: (index: number) => void;
+}
+
+function SponsorsManager({ current, onUpload, onRemove }: SponsorsManagerProps) {
   const sponsors = Array.isArray(current.sponsorLogos) ? current.sponsorLogos : [];
   return (
     <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
@@ -316,7 +349,12 @@ function SponsorsManager({ current, onUpload, onRemove }: any) {
         ))}
         {sponsors.length < 5 && (
           <label className="aspect-square bg-gray-800 rounded-lg border-2 border-dashed border-gray-700 flex flex-col items-center justify-center cursor-pointer hover:border-yellow-400 transition">
-            <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])} />
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])}
+            />
             <Upload className="w-8 h-8 text-gray-500 mb-2" />
             <span className="text-xs text-gray-500">Add Sponsor</span>
           </label>

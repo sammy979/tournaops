@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
+import { Prisma } from "@prisma/client";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
@@ -10,10 +11,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const body = await req.json();
 
   const {
-    nextStageName,       // "Grand Final"
-    nextStageType,       // "GRAND_FINAL"
-    matchesPerGroup,     // 6
-    numGroups,           // 1
+    nextStageName,
+    nextStageType,
+    matchesPerGroup,
+    numGroups,
     mapRotation,
   } = body;
 
@@ -27,7 +28,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Get qualified teams
   const qualified = currentStage.progressions.filter(p =>
     ["QUALIFIED", "WILDCARD", "MANUAL_ADVANCE"].includes(p.status)
   );
@@ -36,12 +36,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "No qualified teams. Advance teams first." }, { status: 400 });
   }
 
-  // Sort by final position
   qualified.sort((a, b) => (a.finalPosition || 999) - (b.finalPosition || 999));
 
   const teamsPerGroup = Math.ceil(qualified.length / (numGroups || 1));
 
-  // Create next stage
   const nextStage = await prisma.stage.create({
     data: {
       tournamentId: currentStage.tournamentId,
@@ -60,7 +58,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       teamsAdvancing: 0,
       teamsEliminated: 0,
       mapRotation: mapRotation || currentStage.mapRotation,
-      scoringRule: currentStage.scoringRule,
+      scoringRule: (currentStage.scoringRule ?? Prisma.JsonNull) as Prisma.InputJsonValue,
       tiebreakerOrder: currentStage.tiebreakerOrder,
       description: `Auto-created from ${currentStage.name}`,
       groups: {
@@ -75,7 +73,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     include: { groups: { orderBy: { order: "asc" } } },
   });
 
-  // Snake distribute qualified teams
   const groupAssignments: string[][] = Array.from({ length: numGroups || 1 }, () => []);
   let direction = 1;
   let groupIdx = 0;
@@ -99,7 +96,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     )
   );
 
-  // Update previous stage — mark that qualifying teams advanced HERE
   await prisma.teamProgression.updateMany({
     where: {
       stageId,
@@ -108,7 +104,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     data: { advancedToStageId: nextStage.id },
   });
 
-  // Lock the current stage (finalize it)
   await prisma.stage.update({
     where: { id: stageId },
     data: {
@@ -119,7 +114,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     },
   });
 
-  // Audit log
   await prisma.qualifierAuditLog.create({
     data: {
       tournamentId: currentStage.tournamentId,

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { generateAI } from "@/lib/ai";
@@ -8,7 +8,7 @@ import { calculateStandings, parseScoringConfig } from "@/lib/scoring-engine";
 
 export async function GET(
   req: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -16,12 +16,11 @@ export async function GET(
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 
-    const { id } = await context.params;
+    const { id } = await params;
 
     const { authorized, errorResponse } = await verifyTournamentOwnership(id, session);
     if (!authorized) return errorResponse!;
 
-    // Fetch tournament data for AI context
     const tournament = await prisma.tournament.findUnique({
       where: { id },
       include: {
@@ -45,7 +44,6 @@ export async function GET(
       return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
 
-    // Calculate standings using official scoring engine
     const scoringConfig = parseScoringConfig(tournament.scoringRule);
     const allResults: Array<{
       teamId: string;
@@ -72,8 +70,7 @@ export async function GET(
     const leader = standings[0];
     const completedMatches = tournament.matches.length;
 
-    // Build AI context from VERIFIED database data
-    const context = {
+    const tournamentContext = {
       name: tournament.name,
       status: tournament.status,
       teams: tournament.teams.length,
@@ -91,9 +88,9 @@ export async function GET(
     };
 
     const prompt = `You are TournaOps AI analyzing a PUBG Mobile tournament.
-    
-TOURNAMENT DATA (verified from database — do NOT modify these numbers):
-${JSON.stringify(context, null, 2)}
+
+TOURNAMENT DATA (verified from database - do NOT modify these numbers):
+${JSON.stringify(tournamentContext, null, 2)}
 
 Generate a professional esports analysis including:
 1. Current tournament summary (2-3 sentences)

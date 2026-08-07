@@ -1,10 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
-import { MessageSquare, Zap, Check, RefreshCw, Users, X, ArrowRight } from "lucide-react";
-import { getMyTournaments, saveTournament } from "@/lib/storage/tournaments";
-import { Tournament, Team } from "@/types/tournament";
+import { MessageSquare, Zap, Check, Users, X, ArrowRight } from "lucide-react";
+import { getMyTournaments } from "@/lib/storage/tournaments";
+import { Tournament } from "@/types/tournament";
 
 interface PendingImport {
   id: string;
@@ -56,34 +55,33 @@ export default function DiscordPage() {
 
     setImporting(true);
 
-    const newTeams: Team[] = selectedImport.parseResult.slots.map(slot => ({
-      id: Math.random().toString(36).substring(2, 10),
-      name: slot.teamName,
-      tag: slot.teamName.substring(0, 4).toUpperCase(),
-      seed: slot.slotNumber,
-      players: Array.from({ length: 4 }, (_, i) => ({
-        id: Math.random().toString(36).substring(2, 10),
-        name: `Player ${i + 1}`,
-        ign: "",
-        role: (["IGL", "Fragger", "Support", "Entry"] as const)[i],
-      })),
-    }));
+    try {
+      const teamsPayload = selectedImport.parseResult.slots.map((slot, idx) => ({
+        name: slot.teamName,
+        tag: slot.teamName.substring(0, 4).toUpperCase(),
+        seed: slot.slotNumber,
+        players: Array.from({ length: 4 }, (_, i) => ({
+          name: `Player ${i + 1}`,
+          ign: "",
+          role: (["IGL", "Fragger", "Support", "Entry"])[i],
+        })),
+      }));
 
-    let merged = [...tournament.teams];
-    for (const nt of newTeams) {
-      const existing = merged.findIndex(t => t.seed === nt.seed);
-      if (existing >= 0) merged[existing] = { ...merged[existing], name: nt.name };
-      else merged.push(nt);
+      await fetch(`/api/tournaments/${importTarget}/teams/bulk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teams: teamsPayload }),
+      });
+
+      await fetch(`/api/discord/pending?id=${selectedImport.id}`, { method: "DELETE" });
+      alert(`Imported ${teamsPayload.length} teams!`);
+    } catch {
+      alert("Import failed");
+    } finally {
+      setImporting(false);
+      setSelectedImport(null);
+      fetchPending();
     }
-    merged.sort((a, b) => (a.seed || 999) - (b.seed || 999));
-
-    await saveTournament({ ...tournament, teams: merged });
-    await fetch(`/api/discord/pending?id=${selectedImport.id}`, { method: "DELETE" });
-
-    setImporting(false);
-    setSelectedImport(null);
-    fetchPending();
-    alert(`Imported ${newTeams.length} teams!`);
   };
 
   return (
@@ -108,7 +106,9 @@ export default function DiscordPage() {
         </div>
         <div className="p-5">
           {loading ? (
-            <div className="text-center py-8"><div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" /></div>
+            <div className="text-center py-8">
+              <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
+            </div>
           ) : pendingImports.length === 0 ? (
             <div className="text-center py-10 text-gray-500">
               <MessageSquare className="w-10 h-10 mx-auto mb-3 text-gray-700" />
@@ -123,7 +123,13 @@ export default function DiscordPage() {
                     <p className="text-white font-semibold text-sm">{imp.parseResult.totalDetected} teams from #{imp.discordChannelName}</p>
                     <p className="text-gray-500 text-xs">by {imp.discordUsername} in {imp.discordGuildName}</p>
                   </div>
-                  <button onClick={() => { setSelectedImport(imp); if (tournaments.length) setImportTarget(tournaments[0].id); }} className="btn-primary text-xs px-4 py-1.5">
+                  <button
+                    onClick={() => {
+                      setSelectedImport(imp);
+                      if (tournaments.length) setImportTarget(tournaments[0].id);
+                    }}
+                    className="btn-primary text-xs px-4 py-1.5 flex items-center gap-1"
+                  >
                     Import<ArrowRight className="w-3 h-3" />
                   </button>
                 </div>
@@ -144,16 +150,24 @@ export default function DiscordPage() {
             </div>
             <div>
               <label className="text-sm text-gray-400 block mb-1.5">Import into</label>
-              <select value={importTarget} onChange={e => setImportTarget(e.target.value)} className="input-field">
+              <select
+                value={importTarget}
+                onChange={e => setImportTarget(e.target.value)}
+                className="input-field w-full"
+              >
                 {tournaments.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </div>
-            <div className="max-h-40 overflow-y-auto bg-black/30 rounded-xl p-3">
+            <div className="max-h-40 overflow-y-auto bg-black/30 rounded-xl p-3 space-y-1">
               {selectedImport.parseResult.slots.map(s => (
-                <div key={s.slotNumber} className="text-sm">#{s.slotNumber} {s.teamName}</div>
+                <div key={s.slotNumber} className="text-sm text-gray-300">#{s.slotNumber} {s.teamName}</div>
               ))}
             </div>
-            <button onClick={handleImport} disabled={importing || !importTarget} className="btn-primary w-full py-2.5">
+            <button
+              onClick={handleImport}
+              disabled={importing || !importTarget}
+              className="btn-primary w-full py-2.5 flex items-center justify-center gap-2"
+            >
               {importing ? "Importing..." : <><Check className="w-4 h-4" />Import Teams</>}
             </button>
           </div>

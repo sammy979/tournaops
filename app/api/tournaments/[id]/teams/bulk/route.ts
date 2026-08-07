@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { verifyTournamentOwnership } from "@/lib/authorization";
@@ -9,40 +9,40 @@ export const maxDuration = 60;
 
 export async function POST(
   req: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    
-    const { id } = await context.params;
-    const owned = await verifyTournamentOwnership(id, session.userId);
-    if (!owned) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    
+
+    const { id } = await params;
+    const { authorized, errorResponse } = await verifyTournamentOwnership(id, session);
+    if (!authorized) return errorResponse!;
+
     const body = await req.json();
     const teams = Array.isArray(body?.teams) ? body.teams : [];
-    
+
     if (teams.length === 0) {
       return NextResponse.json({ error: "No teams to import" }, { status: 400 });
     }
-    
+
     if (teams.length > 400) {
       return NextResponse.json({ error: "Max 400 teams" }, { status: 400 });
     }
-    
+
     const tournament = await prisma.tournament.findUnique({
       where: { id },
       include: { teams: true },
     });
-    
+
     if (!tournament) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    
+
     if (tournament.teams.length + teams.length > tournament.maxTeams) {
-      return NextResponse.json({ 
-        error: "Would exceed max teams (" + tournament.maxTeams + "). Currently have " + tournament.teams.length 
+      return NextResponse.json({
+        error: "Would exceed max teams (" + tournament.maxTeams + "). Currently have " + tournament.teams.length
       }, { status: 400 });
     }
-    
+
     const validTeams = teams
       .filter((t: any) => t.name && typeof t.name === "string" && t.name.trim().length > 0)
       .map((t: any, idx: number) => ({
@@ -53,16 +53,15 @@ export async function POST(
         players: t.players || [],
         tournamentId: id,
       }));
-    
+
     if (validTeams.length === 0) {
       return NextResponse.json({ error: "No valid teams (name required)" }, { status: 400 });
     }
-    
-    // Bulk create
+
     const created = await prisma.$transaction(
       validTeams.map((team: any) => prisma.team.create({ data: team }))
     );
-    
+
     return NextResponse.json({
       success: true,
       imported: created.length,

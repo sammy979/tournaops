@@ -1,93 +1,88 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { verifyTournamentOwnership } from "@/lib/authorization";
 
 export async function GET(
   req: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const owned = await verifyTournamentOwnership((await context.params).id, session.userId);
-  if (!owned) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const { id } = await params;
+
+  const { authorized, errorResponse } = await verifyTournamentOwnership(id, session);
+  if (!authorized) return errorResponse!;
 
   const tournament = await prisma.tournament.findUnique({
-    where: { id: (await context.params).id },
+    where: { id },
     include: {
       teams: true,
-      rounds: {
-        include: {
-          matches: {
-            include: {
-              results: {
-                include: { team: true },
-              },
-            },
-          },
-        },
+      matches: {
+        orderBy: { matchNumber: "asc" },
       },
     },
   });
 
   if (!tournament) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Build stats
-  const allResults = tournament.rounds.flatMap((r) =>
-    r.matches.flatMap((m) => m.results)
-  );
+  const completedMatches = tournament.matches.filter(m => m.status === "completed");
 
-  const completedMatches = tournament.rounds.flatMap((r) =>
-    r.matches.filter((m) => m.status === "completed")
-  );
-
-  // Per-team stats
   const teamStats = tournament.teams.map((team) => {
-    const results = allResults.filter((r) => r.teamId === team.id);
-    const kills = results.reduce((sum, r) => sum + (r.kills || 0), 0);
-    const placements = results.map((r) => r.placement).filter(Boolean);
-    const avgPlacement = placements.length
-      ? placements.reduce((a, b) => a + b, 0) / placements.length
-      : 0;
-    const wwcds = results.filter((r) => r.wwcd).length;
-    const top3 = results.filter((r) => r.placement <= 3).length;
+    let totalKills = 0;
+    let matchesPlayed = 0;
+    let wwcds = 0;
+    let top3 = 0;
+    let placementSum = 0;
+    let bestPlacement = 999;
+
+    for (const match of completedMatches) {
+      if (!Array.isArray(match.results)) continue;
+      const result = (match.results as any[]).find((r: any) => r.teamId === team.id);
+      if (!result) continue;
+
+      const kills = Number(result.kills) || 0;
+      const placement = Number(result.placement) || 0;
+
+      totalKills += kills;
+      matchesPlayed += 1;
+      placementSum += placement || 16;
+
+      if (placement === 1 || result.wwcd) wwcds += 1;
+      if (placement > 0 && placement <= 3) top3 += 1;
+      if (placement > 0 && placement < bestPlacement) bestPlacement = placement;
+    }
 
     return {
       teamId: team.id,
       teamName: team.name,
       teamTag: team.tag,
-      matchesPlayed: results.length,
-      totalKills: kills,
-      avgKillsPerMatch: results.length ? kills / results.length : 0,
-      avgPlacement: Math.round(avgPlacement * 10) / 10,
+      matchesPlayed,
+      totalKills,
+      avgKillsPerMatch: matchesPlayed ? Math.round((totalKills / matchesPlayed) * 10) / 10 : 0,
+      avgPlacement: matchesPlayed ? Math.round((placementSum / matchesPlayed) * 10) / 10 : 0,
+      bestPlacement: bestPlacement === 999 ? null : bestPlacement,
       wwcds,
       top3Finishes: top3,
     };
   });
 
-  // Sort by kills
   const topFraggers = [...teamStats].sort((a, b) => b.totalKills - a.totalKills);
 
-  // Match stats
-  const matchStats = {
-    total: completedMatches.length,
-    avgKillsPerMatch:
-      completedMatches.length
-        ? allResults.reduce((s, r) => s + (r.kills || 0), 0) / completedMatches.length
-        : 0,
-    highestKillMatch: completedMatches.reduce((best, match) => {
-      const kills = match.results.reduce((s, r) => s + (r.kills || 0), 0);
-      return kills > (best?.kills || 0) ? { id: match.id, kills } : best;
-    }, null as { id: string; kills: number } | null),
-  };
+  const totalKills = teamStats.reduce((s, t) => s + t.totalKills, 0);
 
   return NextResponse.json({
     teamStats,
     topFraggers: topFraggers.slice(0, 10),
-    matchStats,
+    matchStats: {
+      total: completedMatches.length,
+      avgKillsPerMatch: completedMatches.length
+        ? Math.round((totalKills / completedMatches.length) * 10) / 10
+        : 0,
+    },
     totalTeams: tournament.teams.length,
     totalMatches: completedMatches.length,
-    totalKills: allResults.reduce((s, r) => s + (r.kills || 0), 0),
+    totalKills,
   });
 }
