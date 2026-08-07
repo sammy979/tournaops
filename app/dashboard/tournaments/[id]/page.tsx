@@ -1,5 +1,6 @@
 ﻿"use client";
 import TournamentStatusManager from "@/components/tournament/TournamentStatusManager";
+import RegistrationSharePanel from "@/components/tournament/RegistrationSharePanel";
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
@@ -35,6 +36,8 @@ export default function TournamentDetailPage() {
   const [selectedMatchTeams, setSelectedMatchTeams] = useState<Team[]>([]);
   const [generatingDemo, setGeneratingDemo] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [regCopied, setRegCopied] = useState(false);
+  const [pendingRegs, setPendingRegs] = useState(0);
 
   const refreshData = async () => {
     const id = params?.id as string;
@@ -75,6 +78,41 @@ export default function TournamentDetailPage() {
     setSelectedMatchTeams(matchTeams);
     setShowMatchEntry(true);
   };
+
+  const copyRegistrationLink = () => {
+    if (!tournament?.slug) return;
+    const url = `${window.location.origin}/tournaments/${tournament.slug}/register`;
+    navigator.clipboard.writeText(url);
+    setRegCopied(true);
+    setTimeout(() => setRegCopied(false), 2000);
+  };
+
+  const shareRegistrationLink = () => {
+    if (!tournament?.slug) return;
+    const url = `${window.location.origin}/tournaments/${tournament.slug}/register`;
+    const text = `Register your team for ${tournament.name}!`;
+    if (navigator.share) {
+      navigator.share({ title: tournament.name, text, url });
+    } else {
+      copyRegistrationLink();
+    }
+  };
+
+  useEffect(() => {
+    if (!tournament?.id) return;
+    const fetchPending = () => {
+      fetch(`/api/tournaments/${tournament.id}/registrations`)
+        .then(r => r.json())
+        .then(d => {
+          const regs = Array.isArray(d.registrations) ? d.registrations : [];
+          setPendingRegs(regs.filter((r: any) => r.status === "pending").length);
+        })
+        .catch(() => {});
+    };
+    fetchPending();
+    const i = setInterval(fetchPending, 10000);
+    return () => clearInterval(i);
+  }, [tournament?.id]);
 
   const copyPublicLink = () => {
     if (!tournament?.slug) return;
@@ -329,6 +367,16 @@ export default function TournamentDetailPage() {
             onUpdate={refreshData}
           />
         </div>
+      )}
+
+      {/* Registration Share Panel */}
+      {tournament.slug && (
+        <RegistrationSharePanel
+          tournamentId={tournament.id}
+          tournamentSlug={tournament.slug}
+          tournamentName={tournament.name}
+          status={tournament.status}
+        />
       )}
 
       {/* ── QUICK TOOLS TOOLBAR ──────────────────────────── */}
