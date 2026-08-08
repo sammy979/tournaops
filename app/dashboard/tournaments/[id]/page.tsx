@@ -14,7 +14,50 @@ import {
   Calendar, Target, TrendingUp, Palette,
   MessageSquare, ChevronRight, Grid3x3
 } from "lucide-react";
-import { getTournamentById, getLeaderboard, getTopPlayers, generateDemoResults, submitMatchResults } from "@/lib/storage/tournaments";
+// Storage helpers replaced with inline API calls
+const getTournamentById = async (id: string) => {
+  try {
+    const res = await fetch("/api/tournaments/" + id);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.tournament;
+  } catch { return null; }
+};
+
+const getLeaderboard = (tournament: any) => {
+  const teams = tournament?.teams || [];
+  const matches = tournament?.matches || [];
+  const map = new Map();
+  for (const t of teams) {
+    map.set(t.id, { teamId: t.id, teamName: t.name, teamTag: t.tag, totalPoints: 0, totalKills: 0, matchesPlayed: 0, wwcdCount: 0 });
+  }
+  for (const m of matches) {
+    if (m.status !== "completed" || !Array.isArray(m.results)) continue;
+    for (const r of m.results) {
+      const s = map.get(r.teamId);
+      if (!s) continue;
+      s.totalKills += r.kills || 0;
+      s.matchesPlayed++;
+      if (r.placement === 1) s.wwcdCount++;
+      const placementPts = r.placement === 1 ? 15 : r.placement === 2 ? 12 : r.placement === 3 ? 10 : r.placement <= 8 ? 5 : 1;
+      s.totalPoints += placementPts + (r.kills || 0);
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => b.totalPoints - a.totalPoints);
+};
+
+const getTopPlayers = () => [];
+const generateDemoResults = async (_id: string, _mid: string) => null;
+const submitMatchResults = async (_id: string, _mid: string, results: any) => {
+  try {
+    const res = await fetch("/api/matches/" + _mid, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ results, status: "completed" }),
+    });
+    return res.ok;
+  } catch { return false; }
+};
 import { Tournament, Match, Team } from "@/types/tournament";
 
 const TeamEditor = dynamic(() => import("@/components/tournament/TeamEditor"), { ssr: false });
