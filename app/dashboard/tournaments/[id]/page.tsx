@@ -1,6 +1,7 @@
 "use client";
 import TournamentStatusManager from "@/components/tournament/TournamentStatusManager";
 import RegistrationSharePanel from "@/components/tournament/RegistrationSharePanel";
+import TournamentNav from "@/components/tournament/TournamentNav";
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
@@ -228,6 +229,7 @@ export default function TournamentDetailPage() {
 
   return (
     <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
+      <TournamentNav tournamentId={tournament.id} />
 
       {/* ── HERO HEADER ────────────────────────────── */}
       <div style={{
