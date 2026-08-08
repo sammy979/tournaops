@@ -46,7 +46,7 @@ const getLeaderboard = (tournament: any) => {
   return Array.from(map.values()).sort((a, b) => b.totalPoints - a.totalPoints);
 };
 
-const getTopPlayers = () => [];
+const getTopPlayers = (t?: any) => { return { topKillers: [], topDamage: [] }; };
 const generateDemoResults = async (_id: string, _mid: string) => null;
 const submitMatchResults = async (_id: string, _mid: string, results: any) => {
   try {
@@ -562,8 +562,8 @@ export default function TournamentDetailPage() {
           {/* Top Players */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1rem" }}>
             {[
-              { title: "Top Fraggers", icon: Crosshair, color: "#f87171", data: topKillers, valueKey: "kills", suffix: "K" },
-              { title: "Top Damage", icon: Flame, color: "#fb923c", data: topDamage, valueKey: "damage", suffix: "", format: (v: number) => v?.toLocaleString() },
+              { title: "Top Fraggers", icon: Crosshair, color: "#f87171", data: topKillers || [], valueKey: "kills", suffix: "K" },
+              { title: "Top Damage", icon: Flame, color: "#fb923c", data: topDamage || [], valueKey: "damage", suffix: "", format: (v: number) => v?.toLocaleString() },
             ].map(section => {
               const Icon = section.icon;
               return (
