@@ -1,5 +1,4 @@
 "use client";
-import TournamentNav from "@/components/tournament/TournamentNav";
 import TournamentStatusManager from "@/components/tournament/TournamentStatusManager";
 import RegistrationSharePanel from "@/components/tournament/RegistrationSharePanel";
 
