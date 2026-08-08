@@ -231,7 +231,7 @@ export default function TournamentDetailPage() {
     <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
       <TournamentNav tournamentId={tournament.id} />
 
-      {/* ── HERO HEADER ────────────────────────────── */}
+      {/* -- HERO HEADER --- */}
       <div style={{
         background: tournament.bannerImage
           ? `linear-gradient(180deg, rgba(10,10,15,0.6), rgba(10,10,15,0.95)), url(${tournament.bannerImage})`
@@ -258,7 +258,7 @@ export default function TournamentDetailPage() {
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
 
-          {/* Left — Tournament Info */}
+          {/* Left - Tournament Info */}
           <div style={{ flex: 1, minWidth: "260px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.375rem", flexWrap: "wrap" }}>
               <span style={{
@@ -324,7 +324,7 @@ export default function TournamentDetailPage() {
             </div>
           </div>
 
-          {/* Right — Actions */}
+          {/* Right - Actions */}
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
             {tournament.slug && (
               <>
@@ -402,7 +402,7 @@ export default function TournamentDetailPage() {
         )}
       </div>
 
-      {/* ── STATUS MANAGER (Collapsible) ─────────────────── */}
+      {/* -- STATUS MANAGER (Collapsible) --- */}
       {showStatusManager && (
         <div style={{ marginBottom: "1.5rem" }}>
           <TournamentStatusManager
@@ -424,7 +424,7 @@ export default function TournamentDetailPage() {
         />
       )}
 
-      {/* ── QUICK TOOLS TOOLBAR ──────────────────────────── */}
+      {/* -- QUICK TOOLS TOOLBAR --- */}
       <div style={{
         display: "grid",
         gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
@@ -473,7 +473,7 @@ export default function TournamentDetailPage() {
         })}
       </div>
 
-      {/* ── TABS ─────────────────────────────────────────── */}
+      {/* -- TABS --- */}
       <div style={{
         display: "flex", gap: "0.25rem",
         padding: "0.25rem",
@@ -521,7 +521,7 @@ export default function TournamentDetailPage() {
         })}
       </div>
 
-      {/* ── OVERVIEW TAB ─────────────────────────────────── */}
+      {/* -- OVERVIEW TAB --- */}
       {activeTab === "overview" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
 
@@ -662,7 +662,7 @@ export default function TournamentDetailPage() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ color: "#fff", fontWeight: 600, fontSize: "0.85rem" }}>{round.name}</div>
                         <div style={{ color: "#6b7280", fontSize: "0.65rem", marginTop: "0.125rem" }}>
-                          {lobbies.length} lobbies • {round.matchesPerLobby || 0} matches each
+                          {lobbies.length} lobbies - {round.matchesPerLobby || 0} matches each
                         </div>
                       </div>
                       <div style={{ textAlign: "right", minWidth: "60px" }}>
@@ -687,7 +687,7 @@ export default function TournamentDetailPage() {
         </div>
       )}
 
-      {/* ── MATCHES TAB ──────────────────────────────────── */}
+      {/* -- MATCHES TAB --- */}
       {activeTab === "matches" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
           {rounds.length === 0 ? (
@@ -821,7 +821,7 @@ export default function TournamentDetailPage() {
         </div>
       )}
 
-      {/* ── STANDINGS TAB ────────────────────────────────── */}
+      {/* -- STANDINGS TAB --- */}
       {activeTab === "standings" && (
         <div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
@@ -903,7 +903,7 @@ export default function TournamentDetailPage() {
         </div>
       )}
 
-      {/* ── TEAMS TAB ────────────────────────────────────── */}
+      {/* -- TEAMS TAB --- */}
       {activeTab === "teams" && (
         <div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
@@ -1023,7 +1023,7 @@ export default function TournamentDetailPage() {
         </div>
       )}
 
-      {/* ── MODALS ───────────────────────────────────────── */}
+      {/* -- MODALS --- */}
       {showTeamEditor && (
         <TeamEditor
           tournament={tournament}
