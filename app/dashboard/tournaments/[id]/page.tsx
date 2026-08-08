@@ -228,7 +228,6 @@ export default function TournamentDetailPage() {
 
   return (
     <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
-      {tournament?.id && <TournamentNav tournamentId={tournament.id} />}
 
       {/* ── HERO HEADER ────────────────────────────── */}
       <div style={{
