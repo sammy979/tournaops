@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import { Tournament } from "@/types/tournament";
 import StageProgressionTimeline from "@/components/stages/StageProgressionTimeline";
-import StageProgressionTimeline from "@/components/stages/StageProgressionTimeline";
 
 interface Stage {
   id: string;

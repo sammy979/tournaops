@@ -1,7 +1,7 @@
-﻿"use client";
+"use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Trophy, Sparkles, Radio, ClipboardList, Home, Palette, Users } from "lucide-react";
+import { Trophy, Sparkles, Radio, ClipboardList, Home, Palette, Users, Layers } from "lucide-react";
 
 interface TournamentNavProps {
   tournamentId: string;
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { icon: Trophy, label: "Standings", href: "/standings" },
   { icon: ClipboardList, label: "Match Results", href: "/match-results" },
   { icon: Users, label: "Bulk Import", href: "/bulk-import" },
+  { icon: Layers, label: "Stages", href: "/stages" },
   { icon: Radio, label: "Broadcast", href: "/broadcast" },
   { icon: Sparkles, label: "AI Insights", href: "/insights" },
   { icon: Palette, label: "Branding", href: "/branding" },
