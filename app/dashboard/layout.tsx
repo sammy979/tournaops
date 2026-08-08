@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   Trophy, LayoutDashboard, Settings, LogOut,
   ChevronLeft, ChevronRight, Menu, X,
@@ -127,7 +128,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             borderRadius: "0.5rem",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            <Trophy style={{ width: "1rem", height: "1rem", color: "#000" }} />
+            <Image src="/logo.png" alt="TournaOps" width={28} height={28} style={{ objectFit: "contain" }} />
           </div>
         ) : (
           <>
@@ -139,7 +140,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 display: "flex", alignItems: "center", justifyContent: "center",
                 flexShrink: 0,
               }}>
-                <Trophy style={{ width: "1rem", height: "1rem", color: "#000" }} />
+                <Image src="/logo.png" alt="TournaOps" width={28} height={28} style={{ objectFit: "contain" }} />
               </div>
               <span style={{ fontWeight: 800, color: "#fff", fontSize: "1rem", whiteSpace: "nowrap" }}>TournaOps</span>
             </Link>
@@ -418,7 +419,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 borderRadius: "0.375rem",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <Trophy style={{ width: "0.875rem", height: "0.875rem", color: "#000" }} />
+                <Image src="/logo.png" alt="TournaOps" width={24} height={24} style={{ objectFit: "contain" }} />
               </div>
               <span style={{ fontWeight: 800, color: "#fff", fontSize: "0.9rem" }}>TournaOps</span>
             </Link>
