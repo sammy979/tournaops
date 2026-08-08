@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -42,6 +42,7 @@ export default function MatchResultsPage() {
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [extracting, setExtracting] = useState(false);
   const [savedMsg, setSavedMsg] = useState(false);
   const [matchFilter, setMatchFilter] = useState<"all" | "pending" | "completed">("all");
   const [matchSearch, setMatchSearch] = useState("");
@@ -143,6 +144,92 @@ export default function MatchResultsPage() {
         wwcd: i === 0,
       }))
     );
+  }
+
+  async function extractFromScreenshot(file: File) {
+    if (!selectedMatch) return;
+    setExtracting(true);
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const res = await fetch(`/api/matches/${selectedMatch.id}/extract-screenshot`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64: base64,
+          teams: teams.map(t => t.name),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Extraction failed");
+
+      if (!Array.isArray(data.results) || data.results.length === 0) {
+        alert("AI could not find any team results in that screenshot. Try a clearer image.");
+        return;
+      }
+
+      // Match extracted team names to our teams (fuzzy match)
+      const teamsByName = new Map(teams.map(t => [t.name.toLowerCase().trim(), t]));
+      const teamsByTag = new Map(teams.filter(t => t.tag).map(t => [t.tag!.toLowerCase().trim(), t]));
+
+      const newResults = results.map(r => ({ ...r, placement: 0, kills: 0, wwcd: false }));
+      let matched = 0;
+      let unmatched: string[] = [];
+
+      for (const ext of data.results) {
+        const extName = String(ext.teamName || "").toLowerCase().trim();
+        if (!extName) continue;
+
+        let team = teamsByName.get(extName) || teamsByTag.get(extName);
+
+        // Fuzzy: partial match
+        if (!team) {
+          team = teams.find(t =>
+            t.name.toLowerCase().includes(extName) ||
+            extName.includes(t.name.toLowerCase()) ||
+            (t.tag && (t.tag.toLowerCase().includes(extName) || extName.includes(t.tag.toLowerCase())))
+          );
+        }
+
+        if (team) {
+          const idx = newResults.findIndex(r => r.teamId === team!.id);
+          if (idx !== -1) {
+            newResults[idx] = {
+              teamId: team.id,
+              placement: Number(ext.placement) || 0,
+              kills: Number(ext.kills) || 0,
+              wwcd: Number(ext.placement) === 1,
+            };
+            matched++;
+          }
+        } else {
+          unmatched.push(ext.teamName);
+        }
+      }
+
+      setResults(newResults);
+
+      if (data.map && selectedMatch) {
+        setSelectedMatch({ ...selectedMatch, map: data.map });
+      }
+
+      let msg = `Extracted ${matched} team result${matched === 1 ? "" : "s"}`;
+      if (unmatched.length > 0) {
+        msg += `\n\nCould not match: ${unmatched.slice(0, 5).join(", ")}`;
+      }
+      msg += "\n\nReview and click Save Results when ready.";
+      alert(msg);
+    } catch (err: any) {
+      alert("Failed: " + (err?.message || "Unknown error"));
+    } finally {
+      setExtracting(false);
+    }
   }
 
   function clearResults() {

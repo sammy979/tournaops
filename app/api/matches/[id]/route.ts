@@ -28,6 +28,75 @@ export async function GET(
   }
 }
 
+async function postToDiscord(webhookUrl: string, match: any, tournament: any) {
+  try {
+    const results = Array.isArray(match.results) ? match.results : [];
+    const teams = tournament.teams || [];
+    const teamMap = new Map(teams.map((t: any) => [t.id, t]));
+
+    const sorted = [...results].sort((a: any, b: any) => (a.placement || 999) - (b.placement || 999));
+    const top5 = sorted.slice(0, 5);
+
+    const winner = sorted.find((r: any) => r.placement === 1);
+    const winnerTeam = winner ? teamMap.get(winner.teamId) as any : null;
+    const topFragger = [...results].sort((a: any, b: any) => (b.kills || 0) - (a.kills || 0))[0];
+    const topFraggerTeam = topFragger ? teamMap.get(topFragger.teamId) as any : null;
+
+    const embed: any = {
+      title: "🏆 " + (match.name || "Match " + match.matchNumber) + " Results",
+      description: "**" + tournament.name + "**" + (match.map ? " • " + match.map : ""),
+      color: 0xf59e0b,
+      fields: [],
+      footer: { text: "TournaOps.com" },
+      timestamp: new Date().toISOString(),
+    };
+
+    if (winnerTeam) {
+      embed.fields.push({
+        name: "🥇 WWCD",
+        value: "**" + winnerTeam.name + "**" + (winner.kills ? " · " + winner.kills + " kills" : ""),
+        inline: true,
+      });
+    }
+
+    if (topFraggerTeam && topFragger.kills > 0) {
+      embed.fields.push({
+        name: "💀 Top Fragger",
+        value: "**" + topFraggerTeam.name + "** · " + topFragger.kills + " kills",
+        inline: true,
+      });
+    }
+
+    if (top5.length > 0) {
+      const leaderboard = top5.map((r: any) => {
+        const t = teamMap.get(r.teamId) as any;
+        if (!t) return null;
+        const medal = r.placement === 1 ? "🥇" : r.placement === 2 ? "🥈" : r.placement === 3 ? "🥉" : "#" + r.placement;
+        return medal + " " + t.name + " · " + (r.kills || 0) + " kills";
+      }).filter(Boolean).join("\n");
+
+      if (leaderboard) {
+        embed.fields.push({
+          name: "📊 Top " + top5.length,
+          value: leaderboard,
+          inline: false,
+        });
+      }
+    }
+
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ embeds: [embed] }),
+    });
+
+    return res.ok || res.status === 204;
+  } catch (e) {
+    console.warn("[DISCORD_AUTOPOST] Failed:", e);
+    return false;
+  }
+}
+
 export async function PATCH(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -39,7 +108,6 @@ export async function PATCH(
     const { id } = await context.params;
     const body = await req.json();
 
-    // Verify ownership
     const existing = await prisma.match.findUnique({
       where: { id },
       include: { tournament: true },
@@ -62,10 +130,29 @@ export async function PATCH(
       data: updates,
     });
 
+    // Auto-post to Discord if match just completed and webhook is set
+    const wasNotCompleted = existing.status !== "completed";
+    const nowCompleted = updates.status === "completed" || (updates.results && !updates.status && existing.status === "completed");
+    const shouldPost = wasNotCompleted && (updates.status === "completed" || (updates.results && Array.isArray(updates.results) && updates.results.length > 0));
+
+    if (shouldPost && existing.tournament.discord) {
+      const webhookUrl = existing.tournament.discord;
+      if (webhookUrl.startsWith("https://discord.com/api/webhooks/")) {
+        const fullTournament = await prisma.tournament.findUnique({
+          where: { id: existing.tournamentId },
+          include: { teams: true },
+        });
+        if (fullTournament) {
+          // Fire and forget — don't block response
+          postToDiscord(webhookUrl, { ...match, name: existing.name, matchNumber: existing.matchNumber }, fullTournament).catch(() => {});
+        }
+      }
+    }
+
     return NextResponse.json({ match });
   } catch (error: any) {
     console.error("Match update error:", error);
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: error?.message || "Failed to update",
     }, { status: 500 });
   }
