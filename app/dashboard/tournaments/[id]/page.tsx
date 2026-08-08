@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import TournamentStatusManager from "@/components/tournament/TournamentStatusManager";
 import RegistrationSharePanel from "@/components/tournament/RegistrationSharePanel";
 
@@ -185,6 +185,7 @@ export default function TournamentDetailPage() {
 
   return (
     <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
+      <TournamentNav tournamentId={tournament.id} />
 
       {/* ── HERO HEADER ────────────────────────────── */}
       <div style={{
