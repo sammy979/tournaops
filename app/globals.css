@@ -420,3 +420,15 @@
 @media (max-width: 480px) {
   .btn-primary, .btn-secondary, .btn-danger { padding: 0.625rem 0.875rem; font-size: 0.8125rem; }
 }
+
+/* Mobile nav responsive helpers */
+.hidden { display: none !important; }
+@media (min-width: 768px) {
+  .md\:flex { display: flex !important; }
+  .md\:block { display: block !important; }
+  .md\:hidden { display: none !important; }
+  .md\:inline { display: inline !important; }
+}
+@media (max-width: 767px) {
+  .md\:flex, .md\:block, .md\:inline { display: none !important; }
+}
