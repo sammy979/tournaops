@@ -1,6 +1,6 @@
 "use client";
-import TournamentStatusManager from "@/components/tournament/TournamentStatusManager";
 import TournamentNav from "@/components/tournament/TournamentNav";
+import TournamentStatusManager from "@/components/tournament/TournamentStatusManager";
 import RegistrationSharePanel from "@/components/tournament/RegistrationSharePanel";
 
 import { useState, useEffect } from "react";
