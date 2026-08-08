@@ -1,12 +1,13 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Trophy, Eye, EyeOff, ArrowRight, Loader2, Check } from "lucide-react";
 
 const PERKS = [
-  "Free forever — no credit card",
+  "Free forever Ã¢â‚¬â€ no credit card",
   "Run unlimited tournaments (free plan)",
   "OBS overlays included",
   "Discord bot integration",
@@ -67,7 +68,7 @@ export default function RegisterPage() {
       position: "relative",
       overflow: "hidden",
     }}>
-      {/* Left Panel — desktop only */}
+      {/* Left Panel Ã¢â‚¬â€ desktop only */}
       <div
         className="hidden lg:flex"
         style={{
@@ -80,15 +81,7 @@ export default function RegisterPage() {
         }}
       >
         <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", textDecoration: "none", marginBottom: "3rem" }}>
-          <div style={{
-            width: "2.5rem", height: "2.5rem",
-            background: "linear-gradient(135deg, #f59e0b, #f97316)",
-            borderRadius: "0.75rem",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <Trophy style={{ width: "1.25rem", height: "1.25rem", color: "#000" }} />
-          </div>
-          <span style={{ fontWeight: 800, fontSize: "1.25rem", color: "#fff" }}>TournaOps</span>
+            <Image src="/logo.png" alt="TournaOps" width={48} height={48} style={{ objectFit: "contain", borderRadius: "0.5rem" }} priority />
         </Link>
 
         <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "#fff", lineHeight: 1.2, marginBottom: "1rem" }}>
@@ -116,7 +109,7 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* Right Panel — Form */}
+      {/* Right Panel Ã¢â‚¬â€ Form */}
       <div style={{
         flex: 1,
         display: "flex",
@@ -129,15 +122,7 @@ export default function RegisterPage() {
           {/* Mobile Logo */}
           <div style={{ textAlign: "center", marginBottom: "2rem" }} className="lg:hidden">
             <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
-              <div style={{
-                width: "2rem", height: "2rem",
-                background: "linear-gradient(135deg, #f59e0b, #f97316)",
-                borderRadius: "0.5rem",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <Trophy style={{ width: "1rem", height: "1rem", color: "#000" }} />
-              </div>
-              <span style={{ fontWeight: 800, color: "#fff" }}>TournaOps</span>
+            <Image src="/logo.png" alt="TournaOps" width={48} height={48} style={{ objectFit: "contain", borderRadius: "0.5rem" }} priority />
             </Link>
           </div>
 
@@ -252,7 +237,7 @@ export default function RegisterPage() {
               </div>
               {form.password.length > 0 && (
                 <div style={{ marginTop: "0.375rem", fontSize: "0.75rem", color: form.password.length >= 8 ? "#4ade80" : "#f87171" }}>
-                  {form.password.length >= 8 ? "✓ Strong enough" : `${8 - form.password.length} more characters needed`}
+                  {form.password.length >= 8 ? "Ã¢Å“â€œ Strong enough" : `${8 - form.password.length} more characters needed`}
                 </div>
               )}
             </div>

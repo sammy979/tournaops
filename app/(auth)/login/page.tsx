@@ -1,7 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useState, Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Trophy, Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
 
@@ -66,15 +67,7 @@ function LoginForm() {
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
           <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
-            <div style={{
-              width: "2.5rem", height: "2.5rem",
-              background: "linear-gradient(135deg, #f59e0b, #f97316)",
-              borderRadius: "0.75rem",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <Trophy style={{ width: "1.25rem", height: "1.25rem", color: "#000" }} />
-            </div>
-            <span style={{ fontWeight: 800, fontSize: "1.25rem", color: "#fff" }}>TournaOps</span>
+            <Image src="/logo.png" alt="TournaOps" width={48} height={48} style={{ objectFit: "contain", borderRadius: "0.5rem" }} priority />
           </Link>
         </div>
 

@@ -123,24 +123,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }}>
         {collapsed ? (
           <div style={{
-            width: "2rem", height: "2rem",
-            background: "linear-gradient(135deg, #f59e0b, #f97316)",
+            width: "2.75rem", height: "2.75rem",
+            background: "transparent",
             borderRadius: "0.5rem",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            <Image src="/logo.png" alt="TournaOps" width={28} height={28} style={{ objectFit: "contain" }} />
+            <Image src="/logo.png" alt="TournaOps" width={44} height={44} style={{ objectFit: "contain" }} />
           </div>
         ) : (
           <>
             <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: "0.625rem", textDecoration: "none" }}>
               <div style={{
-                width: "2rem", height: "2rem",
-                background: "linear-gradient(135deg, #f59e0b, #f97316)",
+                width: "2.75rem", height: "2.75rem",
+                background: "transparent",
                 borderRadius: "0.5rem",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 flexShrink: 0,
               }}>
-                <Image src="/logo.png" alt="TournaOps" width={28} height={28} style={{ objectFit: "contain" }} />
+                <Image src="/logo.png" alt="TournaOps" width={44} height={44} style={{ objectFit: "contain" }} />
               </div>
               <span style={{ fontWeight: 800, color: "#fff", fontSize: "1rem", whiteSpace: "nowrap" }}>TournaOps</span>
             </Link>
@@ -168,7 +168,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   background: "rgba(255,255,255,0.06)",
                   border: "1px solid rgba(255,255,255,0.08)",
                   borderRadius: "0.5rem",
-                  width: "2rem", height: "2rem",
+                  width: "2.75rem", height: "2.75rem",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   cursor: "pointer",
                   color: "#fff",
@@ -273,7 +273,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             marginBottom: "0.5rem",
           }}>
             <div style={{
-              width: "2rem", height: "2rem",
+              width: "2.75rem", height: "2.75rem",
               borderRadius: "50%",
               background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -414,12 +414,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {!isDesktop && (
             <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
               <div style={{
-                width: "1.75rem", height: "1.75rem",
-                background: "linear-gradient(135deg, #f59e0b, #f97316)",
+                width: "2.5rem", height: "2.5rem",
+                background: "transparent",
                 borderRadius: "0.375rem",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <Image src="/logo.png" alt="TournaOps" width={24} height={24} style={{ objectFit: "contain" }} />
+                <Image src="/logo.png" alt="TournaOps" width={40} height={40} style={{ objectFit: "contain" }} />
               </div>
               <span style={{ fontWeight: 800, color: "#fff", fontSize: "0.9rem" }}>TournaOps</span>
             </Link>
