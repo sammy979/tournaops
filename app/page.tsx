@@ -185,7 +185,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white overflow-x-hidden">
 
-      {/* --- NAVBAR --- */}
+      {/*  NAVBAR  */}
       <nav
         style={{
           position: "fixed",
@@ -205,14 +205,13 @@ export default function LandingPage() {
             {/* Logo */}
             <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
               <div style={{
-                width: "3.5rem", height: "3.5rem",
+                width: "5rem", height: "5rem",
                 background: "transparent",
                 borderRadius: "0.5rem",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <Image src="/logo.png" alt="TournaOps" width={56} height={56} style={{ objectFit: "contain" }} />
+                <Image src="/logo.png" alt="TournaOps" width={90} height={90} style={{ objectFit: "contain" }} />
               </div>
-              <span style={{ fontWeight: 800, fontSize: "1.125rem", color: "#fff" }}>TournaOps</span>
             </Link>
 
             {/* Desktop Nav */}
@@ -322,7 +321,7 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* --- HERO --- */}
+      {/*  HERO  */}
       <section style={{
         minHeight: "100vh",
         display: "flex",
@@ -412,7 +411,7 @@ export default function LandingPage() {
                   transition: "all 0.2s",
                 }}
               >
-                Start Free --- No Credit Card
+                Start Free - No Credit Card
                 <ArrowRight style={{ width: "1.125rem", height: "1.125rem" }} />
               </Link>
               <a
@@ -466,14 +465,14 @@ export default function LandingPage() {
               <div style={{ width: "0.75rem", height: "0.75rem", borderRadius: "50%", background: "#ef4444" }} />
               <div style={{ width: "0.75rem", height: "0.75rem", borderRadius: "50%", background: "#f59e0b" }} />
               <div style={{ width: "0.75rem", height: "0.75rem", borderRadius: "50%", background: "#22c55e" }} />
-              <span style={{ marginLeft: "0.75rem", fontSize: "0.75rem", color: "#6b7280" }}>TournaOps --- Live Dashboard</span>
+              <span style={{ marginLeft: "0.75rem", fontSize: "0.75rem", color: "#6b7280" }}>TournaOps  Live Dashboard</span>
             </div>
             <div style={{ padding: "2rem" }}>
               {/* Mock standings table */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
                 <div>
-                  <div style={{ fontSize: "1rem", fontWeight: 700, color: "#fff" }}>PMGC Nepal Qualifier --- Match 4/6</div>
-                  <div style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>16 Teams --- Erangel, Rondo --- Live</div>
+                  <div style={{ fontSize: "1rem", fontWeight: 700, color: "#fff" }}>PMGC Nepal Qualifier  Match 4/6</div>
+                  <div style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>16 Teams  Erangel, Rondo  Live</div>
                 </div>
                 <div style={{ background: "rgba(34,197,94,0.1)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)", borderRadius: "9999px", padding: "0.25rem 0.875rem", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.375rem" }}>
                   <div style={{ width: "0.375rem", height: "0.375rem", borderRadius: "50%", background: "#4ade80" }} />
@@ -523,7 +522,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- STATS --- */}
+      {/*  STATS  */}
       <section style={{ padding: "4rem 1.5rem", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "2rem", textAlign: "center" }}>
@@ -539,7 +538,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- FEATURES --- */}
+      {/*  FEATURES  */}
       <section id="features" style={{ padding: "6rem 1.5rem" }}>
         <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: "4rem" }}>
@@ -550,7 +549,7 @@ export default function LandingPage() {
               Built for PUBG Mobile Organizers
             </h2>
             <p style={{ color: "#6b7280", marginTop: "1rem", fontSize: "1.125rem", maxWidth: "500px", margin: "1rem auto 0" }}>
-              Every feature you need to run professional tournaments --- for free.
+              Every feature you need to run professional tournaments  for free.
             </p>
           </div>
 
@@ -594,7 +593,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- HOW IT WORKS --- */}
+      {/*  HOW IT WORKS  */}
       <section id="how-it-works" style={{ padding: "6rem 1.5rem", background: "rgba(255,255,255,0.01)" }}>
         <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: "4rem" }}>
@@ -631,7 +630,7 @@ export default function LandingPage() {
                     fontSize: "1.5rem",
                     display: "none",
                   }} className="hidden lg:block">
-                    ---
+                    
                   </div>
                 )}
               </div>
@@ -640,7 +639,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- TESTIMONIALS --- */}
+      {/*  TESTIMONIALS  */}
       <section style={{ padding: "6rem 1.5rem" }}>
         <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: "4rem" }}>
@@ -674,7 +673,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- PRICING --- */}
+      {/*  PRICING  */}
       <section id="pricing" style={{ padding: "6rem 1.5rem", background: "rgba(255,255,255,0.01)" }}>
         <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: "4rem" }}>
@@ -758,7 +757,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- CTA BANNER --- */}
+      {/*  CTA BANNER  */}
       <section style={{ padding: "6rem 1.5rem" }}>
         <div style={{ maxWidth: "800px", margin: "0 auto", textAlign: "center" }}>
           <div style={{
@@ -797,7 +796,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- FOOTER --- */}
+      {/*  FOOTER  */}
       <footer style={{
         borderTop: "1px solid rgba(255,255,255,0.08)",
         padding: "3rem 1.5rem",
@@ -814,7 +813,6 @@ export default function LandingPage() {
                 }}>
                   <Image src="/logo.png" alt="TournaOps" width={48} height={48} style={{ objectFit: "contain" }} />
                 </div>
-                <span style={{ fontWeight: 800, color: "#fff" }}>TournaOps</span>
               </div>
               <p style={{ color: "#6b7280", fontSize: "0.875rem", lineHeight: 1.6 }}>
                 The free PUBG Mobile tournament platform built for organizers who care about quality.
