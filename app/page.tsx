@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -473,7 +473,7 @@ export default function LandingPage() {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
                 <div>
                   <div style={{ fontSize: "1rem", fontWeight: 700, color: "#fff" }}>PMGC Nepal Qualifier — Match 4/6</div>
-                  <div style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>16 Teams • Erangel • Live</div>
+                  <div style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>16 Teams • Erangel, Rondo • Live</div>
                 </div>
                 <div style={{ background: "rgba(34,197,94,0.1)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)", borderRadius: "9999px", padding: "0.25rem 0.875rem", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.375rem" }}>
                   <div style={{ width: "0.375rem", height: "0.375rem", borderRadius: "50%", background: "#4ade80" }} />

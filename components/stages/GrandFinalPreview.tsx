@@ -25,7 +25,7 @@ export default function GrandFinalPreview({ stageId, currentStageName, onClose, 
     type: "GRAND_FINAL",
     numGroups: 1,
     matchesPerGroup: 6,
-    mapRotation: ["Erangel", "Miramar", "Sanhok", "Erangel", "Miramar", "Sanhok"],
+    mapRotation: ["Erangel", "Miramar", "Sanhok", "Rondo", "Erangel", "Miramar"],
   });
 
   useEffect(() => {

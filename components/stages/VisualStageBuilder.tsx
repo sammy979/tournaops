@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import {
@@ -142,7 +142,7 @@ export default function VisualStageBuilder({ tournament }: VisualStageBuilderPro
       teamsPerGroup: preset.defaults.teamsPerGroup,
       matchesPerGroup: preset.defaults.matchesPerGroup,
       totalTeams: preset.defaults.numGroups * preset.defaults.teamsPerGroup,
-      mapRotation: tournament.mapRotation || ["Erangel"],
+      mapRotation: tournament.mapRotation || ["Erangel", "Miramar", "Sanhok", "Rondo"],
       scoringRule: tournament.scoringRule,
       qualificationRule: {
         type: preset.defaults.ruleType,

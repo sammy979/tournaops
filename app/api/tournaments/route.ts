@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     const mapRotation: string[] =
       Array.isArray(data.mapRotation) && data.mapRotation.length > 0
         ? (data.mapRotation as string[]).slice(0, 10)
-        : ["Erangel"];
+        : ["Erangel", "Miramar", "Sanhok", "Rondo"];
 
     const scoringRule: Prisma.InputJsonValue =
       data.scoringRule && typeof data.scoringRule === "object"

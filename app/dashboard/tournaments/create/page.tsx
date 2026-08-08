@@ -24,6 +24,7 @@ const MAPS = [
   { name: "Livik", type: "2x2 Fast", flag: "L" },
   { name: "Karakin", type: "2x2 Small", flag: "K" },
   { name: "Nusa", type: "1x1 Mini", flag: "N" },
+  { name: "Rondo", type: "1x1 Fast", flag: "R" },
 ];
 
 const STRUCTURE_TEMPLATES = [

@@ -60,7 +60,7 @@ Extract match results and return ONLY valid JSON in this exact format:
     }
   ],
   "matchNumber": 1,
-  "map": "Erangel",
+  "map": "Erangel",  // Also supports: Miramar, Sanhok, Vikendi, Livik, Nusa, Rondo
   "extractionMethod": "ai_text",
   "confidence": 85
 }

@@ -54,7 +54,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       qualificationRule: data.qualificationRule || { type: "TOP_N_PER_GROUP", count: 8 },
       teamsAdvancing: data.teamsAdvancing || 0,
       teamsEliminated: data.teamsEliminated || 0,
-      mapRotation: data.mapRotation || ["Erangel", "Miramar", "Sanhok"],
+      mapRotation: data.mapRotation || ["Erangel", "Miramar", "Sanhok", "Rondo"],
       scoringRule: data.scoringRule || tournament.scoringRule,
       tiebreakerOrder: data.tiebreakerOrder || ["points", "kills", "damage", "wwcds"],
       description: data.description || "",

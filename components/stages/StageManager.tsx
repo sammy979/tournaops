@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import {
@@ -376,7 +376,7 @@ function StageBuilder({ tournament, stage, onClose, onSave }: any) {
     ruleCount: stage?.qualificationRule?.count || 8,
     wildcardCount: stage?.qualificationRule?.wildcardCount || 0,
     description: stage?.description || "",
-    mapRotation: stage?.mapRotation || ["Erangel", "Miramar", "Sanhok"],
+    mapRotation: stage?.mapRotation || ["Erangel", "Miramar", "Sanhok", "Rondo"],
   });
   const [saving, setSaving] = useState(false);
 
