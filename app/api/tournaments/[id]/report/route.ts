@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { generateAI } from "@/lib/ai";
@@ -44,7 +44,7 @@ export async function GET(
       return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
 
-    // Official scoring — single source of truth
+    // Official scoring â€” single source of truth
     const scoringConfig = parseScoringConfig(tournament.scoringRule);
     const allResults: Array<{
       teamId: string;
@@ -129,6 +129,12 @@ Rules:
       provider: result.provider,
       data: reportData,
       standings: standings.slice(0, 10),
+      branding: tournament.brandingData || {},
+      tournament: {
+        id: tournament.id,
+        name: tournament.name,
+        slug: tournament.slug,
+      },
     });
   } catch (err) {
     logError(err, "TOURNAMENT_REPORT");

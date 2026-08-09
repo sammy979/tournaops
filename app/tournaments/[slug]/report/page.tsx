@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import SponsorsBar from "@/components/tournament/SponsorsBar";
 import {
   Trophy, Crown, Star, Crosshair, Flame, Award,
   Download, Share2, Twitter, Copy, Check, Users,
@@ -359,6 +360,10 @@ export default function TournamentReportPage() {
           </p>
         </div>
       </div>
-    </div>
+    
+      {data?.branding?.sponsors && data.branding.sponsors.length > 0 && (
+        <SponsorsBar sponsors={data.branding.sponsors} primaryColor="#f59e0b" />
+      )}
+      </div>
   );
 }
