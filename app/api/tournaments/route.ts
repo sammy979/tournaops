@@ -140,6 +140,9 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const stagesConfigCheck = Array.isArray(data.stages) ? data.stages : [];
+    const useStageMode = stagesConfigCheck.length > 0;
+
     const tournament = await prisma.tournament.create({
       data: {
         slug: generateSlug(name),
@@ -152,8 +155,11 @@ export async function POST(req: NextRequest) {
         scoringRule,
         mapRotation,
         userId: session.userId,
-        rounds: { create: roundsData },
-        matches: { create: matchesData },
+        // Only create legacy rounds/matches if NOT using stage mode
+        ...(useStageMode ? {} : {
+          rounds: { create: roundsData },
+          matches: { create: matchesData },
+        }),
       },
       include: {
         teams: true,
@@ -209,7 +215,7 @@ export async function POST(req: NextRequest) {
               tournamentId: tournament.id,
               stageId: stage.id,
               groupId: group.id,
-              roundId: tournament.rounds[0]?.id || "",
+              roundId: tournament.rounds[0]?.id || "no-round",
               lobbyId: `stage_${stage.id}_group_${group.id}`,
               name: `${stageName} - Match ${mIdx + 1}`,
               map: mapRotation[mIdx % mapRotation.length],

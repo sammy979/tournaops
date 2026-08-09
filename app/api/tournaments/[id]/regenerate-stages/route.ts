@@ -85,7 +85,7 @@ export async function POST(
             tournamentId: id,
             stageId: stage.id,
             groupId: group.id,
-            roundId: "",
+            roundId: "no-round",
             lobbyId: `stage_${stage.id}_group_${group.id}`,
             name: `${stageName} - Match ${mIdx + 1}`,
             map: tournament.mapRotation[mIdx % Math.max(1, tournament.mapRotation.length)] || "Erangel",
