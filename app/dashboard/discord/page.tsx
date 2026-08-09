@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { MessageSquare, Zap, Check, Users, X, ArrowRight, Loader2, Bot, AlertCircle } from "lucide-react";
@@ -78,7 +78,12 @@ export default function DiscordPage() {
         body: JSON.stringify({ teams: teamsPayload }),
       });
 
-      if (!res.ok) throw new Error("Bulk import failed");
+      if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || "Bulk import failed (status " + res.status + ")");
+        }
+        const importResult = await res.json();
+        console.log("Import result:", importResult);
 
       await fetch(`/api/discord/pending?id=${selectedImport.id}`, { method: "DELETE" });
 
