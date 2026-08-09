@@ -240,7 +240,7 @@ export async function broadcastStandingsImage(webhookUrl: string, tournament: an
   const embed: DiscordEmbed = {
     ...baseEmbed(tournament),
     title: "\uD83D\uDCCA LIVE STANDINGS",
-    description: "**" + tournament.name + "**\n\n\uD83D\uDCCA Top 20 teams updated in real-time\n\uD83D\uDD17 [View Full Standings](" + urls.results + ")",
+    description: "**" + tournament.name + "**\n\n\uD83D\uDCCA All competing teams updated in real-time\n\uD83D\uDD17 [View Full Standings](" + urls.results + ")",
     url: urls.results,
     image: { url: imageUrl },
   };
