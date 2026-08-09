@@ -62,66 +62,133 @@ async function postToDiscord(webhookUrl: string, match: any, tournament: any) {
     const sponsors: any[] = Array.isArray(branding.sponsors) ? branding.sponsors : [];
     const titleSponsor = sponsors.find((s: any) => s.tier === "title");
     const otherSponsors = sponsors.filter((s: any) => s.tier !== "title");
+    const primaryColor = branding.primaryColor || "#f59e0b";
+    const colorInt = parseInt(primaryColor.replace("#", ""), 16) || 0xf59e0b;
+
     const sorted = [...results].sort((a: any, b: any) => (a.placement || 999) - (b.placement || 999));
     const top5 = sorted.slice(0, 5);
     const winner = sorted.find((r: any) => r.placement === 1);
     const winnerTeam = winner ? teamMap.get(winner.teamId) as any : null;
     const topFragger = [...results].sort((a: any, b: any) => (b.kills || 0) - (a.kills || 0))[0];
     const topFraggerTeam = topFragger ? teamMap.get(topFragger.teamId) as any : null;
+    const totalKills = results.reduce((s: number, r: any) => s + (Number(r.kills) || 0), 0);
+    const publicUrl = "https://www.tournaops.com/tournaments/" + tournament.slug;
+    const standingsUrl = publicUrl + "/results";
+
+    // Build description with tournament + sponsor
+    const descParts: string[] = [];
+    if (match.map) descParts.push("\uD83D\uDDFA\uFE0F **Map:** " + match.map);
+    if (titleSponsor) descParts.push("\u2B50 **Title Sponsor:** " + titleSponsor.name);
+    descParts.push("\uD83D\uDC65 **" + teams.length + " Teams** \u2022 \uD83D\uDCA5 **" + totalKills + " Total Kills**");
 
     const embed: any = {
-      title: "\uD83C\uDFC6 " + (match.name || "Match " + match.matchNumber) + " Results",
-      description: "**" + tournament.name + "**" +
-        (match.map ? " \u2022 " + match.map : "") +
-        (titleSponsor ? "\n\u2B50 Presented by **" + titleSponsor.name + "**" : ""),
-      color: 0xf59e0b,
+      author: {
+        name: tournament.name,
+        url: publicUrl,
+        icon_url: branding.orgLogo || undefined,
+      },
+      title: "\uD83C\uDFC6 " + (match.name || "Match " + match.matchNumber) + " \u2014 Results",
+      url: standingsUrl,
+      description: descParts.join("\n"),
+      color: colorInt,
       fields: [] as any[],
-      footer: { text: "TournaOps.com" },
+      footer: {
+        text: "TournaOps \u2022 Live tournament management for PUBG Mobile",
+        icon_url: "https://www.tournaops.com/logo.png",
+      },
       timestamp: new Date().toISOString(),
     };
 
+    // WWCD spotlight
     if (winnerTeam) {
+      const tag = winnerTeam.tag ? "[" + winnerTeam.tag + "] " : "";
       embed.fields.push({
-        name: "\uD83E\uDD47 WWCD",
-        value: "**" + winnerTeam.name + "**" + (winner.kills ? " \u00B7 " + winner.kills + " kills" : "") + " \u00B7 " + (winner.totalPoints || 0) + " pts",
+        name: "\uD83E\uDD47 CHICKEN DINNER",
+        value: "**" + tag + winnerTeam.name + "**\n" +
+          "\uD83D\uDD2B `" + (winner.kills || 0) + " kills` \u2022 \uD83C\uDFAF `" + (winner.totalPoints || 0) + " pts`",
         inline: true,
       });
     }
 
+    // Top fragger spotlight
     if (topFraggerTeam && topFragger?.kills > 0) {
+      const tag = topFraggerTeam.tag ? "[" + topFraggerTeam.tag + "] " : "";
       embed.fields.push({
-        name: "\uD83D\uDC80 Top Fragger",
-        value: "**" + topFraggerTeam.name + "** \u00B7 " + topFragger.kills + " kills",
+        name: "\uD83D\uDC80 TOP FRAGGER",
+        value: "**" + tag + topFraggerTeam.name + "**\n" +
+          "\uD83D\uDD2B `" + topFragger.kills + " eliminations`",
         inline: true,
       });
     }
 
+    // Match stats spacer
+    if (winnerTeam || topFraggerTeam) {
+      embed.fields.push({ name: "\u200B", value: "\u200B", inline: true });
+    }
+
+    // Top 5 leaderboard
     if (top5.length > 0) {
       const medals = ["\uD83E\uDD47", "\uD83E\uDD48", "\uD83E\uDD49"];
       const leaderboard = top5.map((r: any) => {
         const t = teamMap.get(r.teamId) as any;
         if (!t) return null;
-        const prefix = r.placement <= 3 ? medals[r.placement - 1] : "#" + r.placement;
-        return prefix + " **" + t.name + "** \u00B7 " + (r.kills || 0) + "K \u00B7 " + (r.totalPoints || 0) + "pts";
+        const prefix = r.placement <= 3 ? medals[r.placement - 1] : "`#" + String(r.placement).padStart(2, " ") + "`";
+        const tag = t.tag ? "[" + t.tag + "] " : "";
+        const kills = String(r.kills || 0).padStart(2, " ");
+        const pts = String(r.totalPoints || 0).padStart(3, " ");
+        return prefix + " **" + tag + t.name + "** \u2014 `" + kills + "K` \u2022 `" + pts + " pts`";
       }).filter(Boolean).join("\n");
 
       if (leaderboard) {
-        embed.fields.push({ name: "\uD83D\uDCCA Top " + top5.length, value: leaderboard, inline: false });
+        embed.fields.push({
+          name: "\uD83D\uDCCA MATCH LEADERBOARD",
+          value: leaderboard,
+          inline: false,
+        });
       }
     }
 
+    // Sponsors
     if (otherSponsors.length > 0) {
+      const tierEmoji: Record<string, string> = {
+        platinum: "\uD83D\uDCA0",
+        gold: "\uD83E\uDD47",
+        silver: "\uD83E\uDD48",
+      };
+      const sponsorLines = otherSponsors.slice(0, 10).map((s: any) => {
+        const e = tierEmoji[s.tier] || "\u2B50";
+        return e + " " + s.name;
+      }).join("  \u2022  ");
       embed.fields.push({
-        name: "\uD83E\uDD1D Sponsors",
-        value: otherSponsors.slice(0, 8).map((s: any) => s.name).join(" \u00B7 "),
+        name: "\uD83E\uDD1D SPONSORED BY",
+        value: sponsorLines,
         inline: false,
       });
+    }
+
+    // Links footer field
+    embed.fields.push({
+      name: "\uD83D\uDD17 LINKS",
+      value: "\uD83D\uDCCA [Live Standings](" + standingsUrl + ") \u2022 \uD83C\uDFC6 [Tournament Page](" + publicUrl + ")",
+      inline: false,
+    });
+
+    const payload: any = { embeds: [embed] };
+
+    // Add tournament banner thumbnail if available
+    if (tournament.bannerImage) {
+      embed.thumbnail = { url: tournament.bannerImage };
+    }
+
+    // Optional: add content ping for really big wins
+    if (winner && winner.kills >= 15) {
+      payload.content = "\uD83D\uDD25 **HUGE WIN!** " + (winnerTeam?.name || "") + " just dropped " + winner.kills + " kills!";
     }
 
     const res = await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ embeds: [embed] }),
+      body: JSON.stringify(payload),
     });
     return res.ok || res.status === 204;
   } catch (e) {
