@@ -24,7 +24,7 @@ export async function POST(
 
     const tournament = await prisma.tournament.findUnique({
       where: { id },
-      include: { teams: true, matches: true, stages: { include: { groups: true } } },
+      include: { teams: true, matches: true, stages: { include: { groups: true }, orderBy: { order: "asc" } } },
     });
     if (!tournament) return NextResponse.json({ error: "Not found" }, { status: 404 });
 

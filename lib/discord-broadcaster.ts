@@ -72,15 +72,93 @@ export async function broadcastSlotList(webhookUrl: string, tournament: any) {
   if (teams.length === 0) return false;
   const urls = tournamentUrls(tournament);
   const branding = tournament.brandingData || {};
+  const stages = tournament.stages || [];
 
+  // Find the first (active) stage with groups that have teams
+  const activeStage = stages.find((s: any) =>
+    s.groups && s.groups.length > 0 && s.groups.some((g: any) => g.teamIds && g.teamIds.length > 0)
+  );
+
+  const teamMap = new Map(teams.map((t: any) => [t.id, t]));
+
+  // ── MODE 1: Grouped slot list (if stage has groups with teams) ──
+  if (activeStage && activeStage.groups.length > 1) {
+    const embeds: DiscordEmbed[] = [];
+
+    // Header embed
+    const headerEmbed: DiscordEmbed = {
+      ...baseEmbed(tournament),
+      title: "\uD83D\uDCCB SLOT LIST \u2014 " + activeStage.name.toUpperCase(),
+      description: "**" + tournament.name + "**" +
+        (tournament.prizePool ? "\n\uD83D\uDCB0 **Prize Pool:** " + tournament.prizePool : "") +
+        "\n\uD83C\uDFC6 **Format:** " + (tournament.format || "Squad").toUpperCase() +
+        "\n\uD83D\uDC65 **Total Teams:** " + teams.length + "/" + tournament.maxTeams +
+        "\n\uD83D\uDD37 **Groups:** " + activeStage.groups.length,
+      url: urls.public,
+      fields: [],
+    };
+    if (tournament.bannerImage) headerEmbed.thumbnail = { url: tournament.bannerImage };
+    embeds.push(headerEmbed);
+
+    // One embed per group (Discord allows up to 10 embeds per message)
+    for (const group of activeStage.groups.slice(0, 9)) {
+      const groupTeams = (group.teamIds || [])
+        .map((id: string, i: number) => {
+          const team = teamMap.get(id) as any;
+          if (!team) return null;
+          const tag = team.tag ? "[" + team.tag + "] " : "";
+          const slot = String(i + 1).padStart(2, "0");
+          return "\u0060Slot " + slot + "\u0060 \u2014 **" + tag + team.name + "**";
+        })
+        .filter(Boolean);
+
+      // Split if group has more than 20 teams (Discord field limit)
+      const chunks: string[][] = [];
+      for (let i = 0; i < groupTeams.length; i += 20) {
+        chunks.push(groupTeams.slice(i, i + 20));
+      }
+
+      const groupEmbed: DiscordEmbed = {
+        title: "\uD83D\uDD37 " + group.name.toUpperCase() + " \u2014 " + groupTeams.length + " Teams",
+        color: colorFromBranding(branding),
+        fields: chunks.length > 0 ? chunks.map((chunk, i) => ({
+          name: chunks.length > 1 ? "Teams " + (i * 20 + 1) + "-" + Math.min((i + 1) * 20, groupTeams.length) : "\u200B",
+          value: chunk.join("\n"),
+          inline: false,
+        })) : [{ name: "\u200B", value: "_No teams assigned yet_", inline: false }],
+      };
+      embeds.push(groupEmbed);
+    }
+
+    // Footer embed with links
+    const footerEmbed: DiscordEmbed = {
+      color: colorFromBranding(branding),
+      fields: [{
+        name: "\uD83D\uDD17 LINKS",
+        value: "\uD83C\uDFC6 [Tournament Page](" + urls.public + ")" +
+          " \u2022 \uD83D\uDCCA [Live Standings](" + urls.results + ")" +
+          (tournament.status === "registration" ? " \u2022 \uD83D\uDCDD [Register](" + urls.register + ")" : ""),
+        inline: false,
+      }],
+      footer: {
+        text: "TournaOps \u2022 " + activeStage.name + " group draw",
+        icon_url: "https://www.tournaops.com/logo.png",
+      },
+      timestamp: new Date().toISOString(),
+    };
+    embeds.push(footerEmbed);
+
+    return sendToWebhook(webhookUrl, { embeds });
+  }
+
+  // ── MODE 2: Flat slot list (no groups yet) ──
   const sortedTeams = [...teams].sort((a: any, b: any) => (a.seed || 999) - (b.seed || 999));
   const slotLines = sortedTeams.map((t: any, i: number) => {
     const slot = t.seed || i + 1;
     const tag = t.tag ? "[" + t.tag + "] " : "";
-    return "`Slot " + String(slot).padStart(2, "0") + "` \u2014 **" + tag + t.name + "**";
+    return "\u0060Slot " + String(slot).padStart(2, "0") + "\u0060 \u2014 **" + tag + t.name + "**";
   });
 
-  // Split into chunks of 20 slots per field (Discord field limit)
   const chunks: string[][] = [];
   for (let i = 0; i < slotLines.length; i += 20) {
     chunks.push(slotLines.slice(i, i + 20));
@@ -95,7 +173,7 @@ export async function broadcastSlotList(webhookUrl: string, tournament: any) {
       "\n\uD83D\uDCCA **Max Teams:** " + tournament.maxTeams,
     url: urls.public,
     fields: chunks.map((chunk, i) => ({
-      name: chunks.length > 1 ? "Slots " + (i * 20 + 1) + "\u2013" + Math.min((i + 1) * 20, slotLines.length) : "Teams",
+      name: chunks.length > 1 ? "Slots " + (i * 20 + 1) + "-" + Math.min((i + 1) * 20, slotLines.length) : "Teams",
       value: chunk.join("\n"),
       inline: false,
     })),
