@@ -1,9 +1,8 @@
 ﻿import { NextRequest } from "next/server";
-import { ImageResponse } from "@vercel/og";
+import { ImageResponse } from "next/og";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
-export const revalidate = 0;
 
 export async function GET(
   req: NextRequest,
@@ -18,10 +17,10 @@ export async function GET(
     });
 
     if (!tournament) {
-      return new Response("Not found", { status: 404 });
+      return new Response("Tournament not found", { status: 404 });
     }
 
-    // Calculate standings
+    // Calculate standings inline
     const scoringRule: any = tournament.scoringRule || {};
     const killPoints = Number(scoringRule.killPoints) || 1;
     const wwcdBonus = Number(scoringRule.wwcdBonus) || 0;
@@ -36,8 +35,8 @@ export async function GET(
     for (const team of tournament.teams) {
       teamStats.set(team.id, {
         id: team.id,
-        name: team.name,
-        tag: team.tag,
+        name: team.name || "Team",
+        tag: team.tag || "",
         points: 0,
         kills: 0,
         wwcds: 0,
@@ -79,107 +78,103 @@ export async function GET(
     return new ImageResponse(
       (
         <div style={{
-          width: "1200px",
-          height: "1600px",
+          width: "100%",
+          height: "100%",
           display: "flex",
           flexDirection: "column",
-          background: "linear-gradient(180deg, #0a0a0f 0%, #111116 100%)",
-          padding: "60px",
-          fontFamily: "sans-serif",
+          background: "#0a0a0f",
+          padding: "50px",
         }}>
-          {/* Header */}
-          <div style={{ display: "flex", flexDirection: "column", marginBottom: "40px", borderBottom: `4px solid ${primaryColor}`, paddingBottom: "24px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-              <span style={{ color: primaryColor, fontSize: "24px", fontWeight: 700, letterSpacing: "8px", textTransform: "uppercase" }}>
-                LIVE STANDINGS
-              </span>
-              <span style={{ color: "#6b7280", fontSize: "18px" }}>
-                {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-              </span>
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            marginBottom: "30px",
+            borderBottom: "4px solid " + primaryColor,
+            paddingBottom: "20px",
+          }}>
+            <div style={{ color: primaryColor, fontSize: "20px", fontWeight: 700, marginBottom: "8px" }}>
+              LIVE STANDINGS
             </div>
-            <div style={{ color: "#fff", fontSize: "56px", fontWeight: 900, lineHeight: 1.1 }}>
+            <div style={{ color: "#ffffff", fontSize: "48px", fontWeight: 900 }}>
               {tournament.name}
             </div>
-            <div style={{ display: "flex", gap: "32px", marginTop: "16px", color: "#9ca3af", fontSize: "20px" }}>
-              <span>👥 {tournament.teams.length} Teams</span>
-              <span>🎯 {totalMatches}/{tournament.matches.length} Matches</span>
-              <span>💥 {totalKills.toLocaleString()} Total Kills</span>
+            <div style={{ display: "flex", color: "#9ca3af", fontSize: "18px", marginTop: "12px" }}>
+              <span style={{ marginRight: "24px" }}>{tournament.teams.length} Teams</span>
+              <span style={{ marginRight: "24px" }}>{totalMatches}/{tournament.matches.length} Matches</span>
+              <span>{totalKills} Total Kills</span>
             </div>
           </div>
 
-          {/* Standings */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
-            {/* Header row */}
-            <div style={{ display: "flex", padding: "16px 24px", color: "#6b7280", fontSize: "14px", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" }}>
-              <span style={{ width: "80px" }}>RANK</span>
-              <span style={{ flex: 1 }}>TEAM</span>
-              <span style={{ width: "100px", textAlign: "center" }}>WWCD</span>
-              <span style={{ width: "100px", textAlign: "center" }}>KILLS</span>
-              <span style={{ width: "140px", textAlign: "right" }}>POINTS</span>
-            </div>
-
-            {top10.map((s: any, i: number) => {
-              const isTop3 = s.rank <= 3;
-              const rankColors = ["#fbbf24", "#e5e7eb", "#f97316"];
-              const rankColor = isTop3 ? rankColors[s.rank - 1] : "#6b7280";
+          <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+            {top10.length === 0 ? (
+              <div style={{ display: "flex", color: "#6b7280", fontSize: "24px", justifyContent: "center", marginTop: "100px" }}>
+                No results yet
+              </div>
+            ) : top10.map((s: any, i: number) => {
+              const isFirst = s.rank === 1;
+              const isSecond = s.rank === 2;
+              const isThird = s.rank === 3;
+              const rankColor = isFirst ? "#fbbf24" : isSecond ? "#e5e7eb" : isThird ? "#f97316" : "#6b7280";
               return (
                 <div key={s.id} style={{
                   display: "flex",
                   alignItems: "center",
-                  padding: "20px 24px",
-                  background: isTop3 ? `${rankColor}15` : (i % 2 === 0 ? "rgba(255,255,255,0.03)" : "transparent"),
-                  borderLeft: isTop3 ? `6px solid ${rankColor}` : "6px solid transparent",
-                  borderRadius: "12px",
+                  padding: "18px 20px",
+                  marginBottom: "6px",
+                  background: isFirst || isSecond || isThird ? rankColor + "15" : (i % 2 === 0 ? "rgba(255,255,255,0.03)" : "transparent"),
+                  borderLeft: "6px solid " + (isFirst || isSecond || isThird ? rankColor : "transparent"),
+                  borderRadius: "10px",
                 }}>
-                  <span style={{ width: "80px", color: rankColor, fontSize: "32px", fontWeight: 900 }}>
+                  <div style={{
+                    width: "70px",
+                    color: rankColor,
+                    fontSize: "30px",
+                    fontWeight: 900,
+                    display: "flex",
+                  }}>
                     #{s.rank}
-                  </span>
-                  <span style={{ flex: 1, color: "#fff", fontSize: "24px", fontWeight: 700, display: "flex", alignItems: "center", gap: "12px" }}>
-                    {s.tag && <span style={{ color: primaryColor, fontSize: "18px" }}>[{s.tag}]</span>}
-                    {s.name}
-                  </span>
-                  <span style={{ width: "100px", textAlign: "center", color: s.wwcds > 0 ? primaryColor : "#4b5563", fontSize: "22px", fontWeight: 800 }}>
-                    {s.wwcds}
-                  </span>
-                  <span style={{ width: "100px", textAlign: "center", color: "#f87171", fontSize: "22px", fontWeight: 700 }}>
-                    {s.kills}
-                  </span>
-                  <span style={{ width: "140px", textAlign: "right", color: isTop3 ? rankColor : "#fff", fontSize: "32px", fontWeight: 900 }}>
+                  </div>
+                  <div style={{ flex: 1, color: "#ffffff", fontSize: "22px", fontWeight: 700, display: "flex" }}>
+                    {s.tag ? "[" + s.tag + "] " + s.name : s.name}
+                  </div>
+                  <div style={{ width: "100px", textAlign: "center", color: s.wwcds > 0 ? primaryColor : "#4b5563", fontSize: "20px", fontWeight: 800, display: "flex", justifyContent: "center" }}>
+                    {s.wwcds}W
+                  </div>
+                  <div style={{ width: "100px", textAlign: "center", color: "#f87171", fontSize: "20px", fontWeight: 700, display: "flex", justifyContent: "center" }}>
+                    {s.kills}K
+                  </div>
+                  <div style={{ width: "130px", textAlign: "right", color: isFirst || isSecond || isThird ? rankColor : "#ffffff", fontSize: "28px", fontWeight: 900, display: "flex", justifyContent: "flex-end" }}>
                     {s.points}
-                  </span>
+                  </div>
                 </div>
               );
             })}
           </div>
 
-          {/* Footer */}
           <div style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginTop: "40px",
-            paddingTop: "24px",
+            marginTop: "30px",
+            paddingTop: "20px",
             borderTop: "2px solid rgba(255,255,255,0.08)",
           }}>
-            <span style={{ color: "#6b7280", fontSize: "18px" }}>
+            <div style={{ color: "#6b7280", fontSize: "16px", display: "flex" }}>
               {orgName}
-            </span>
-            <span style={{ color: primaryColor, fontSize: "18px", fontWeight: 700, letterSpacing: "4px" }}>
+            </div>
+            <div style={{ color: primaryColor, fontSize: "16px", fontWeight: 700, display: "flex" }}>
               TOURNAOPS.COM
-            </span>
+            </div>
           </div>
         </div>
       ),
       {
         width: 1200,
-        height: 1600,
-        headers: {
-          "Cache-Control": "public, max-age=60, s-maxage=60",
-        },
+        height: 1200,
       }
     );
   } catch (e: any) {
-    console.error("[STANDINGS_IMAGE]", e);
-    return new Response("Error: " + e.message, { status: 500 });
+    console.error("[STANDINGS_IMAGE] Error:", e?.message, e?.stack);
+    return new Response("Image generation failed: " + (e?.message || "unknown"), { status: 500 });
   }
 }
