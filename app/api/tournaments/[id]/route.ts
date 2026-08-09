@@ -63,7 +63,7 @@ export async function PATCH(
 
     const updates = await req.json();
     const allowedFields = [
-      "name", "description", "status", "prizePool", "rules", "discord",
+      "name", "description", "status", "prizePool", "rules", "discord", "maxTeams", "format", "game",
       "isPublic", "bannerImage", "trophyImage", "coverImage",
       "brandingData", "scheduleData", "sponsorLogos", "mapRotation",
     ];
