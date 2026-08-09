@@ -31,6 +31,7 @@ export async function GET(
           orderBy: { matchNumber: "asc" },
         },
         stages: {
+          include: { groups: { orderBy: { order: "asc" } } },
           orderBy: { order: "asc" },
         },
       },
