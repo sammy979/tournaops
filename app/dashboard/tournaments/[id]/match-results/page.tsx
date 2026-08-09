@@ -113,15 +113,21 @@ export default function MatchResultsPage() {
   function getEligibleTeams(match: Match | null): Team[] {
     if (!match) return teams;
 
+    // Match has stage + group: use only that group's teams
     if (match.stageId && match.groupId) {
       const stage = stages.find(s => s.id === match.stageId);
       const group = stage?.groups.find(g => g.id === match.groupId);
-      if (group && group.teamIds.length > 0) {
-        return teams.filter(t => group.teamIds.includes(t.id));
+      if (group) {
+        // If group has teams, use them
+        if (group.teamIds.length > 0) {
+          return teams.filter(t => group.teamIds.includes(t.id));
+        }
+        // Group has no teams assigned yet - return empty (blocks entry)
+        return [];
       }
     }
 
-    // Fallback: if stage but no group, use all teams in the stage
+    // Match has stage but no group: use all teams across the stage's groups
     if (match.stageId) {
       const stage = stages.find(s => s.id === match.stageId);
       if (stage) {
@@ -130,9 +136,12 @@ export default function MatchResultsPage() {
         if (stageTeamIds.size > 0) {
           return teams.filter(t => stageTeamIds.has(t.id));
         }
+        // Stage has no teams assigned - return empty (blocks entry)
+        return [];
       }
     }
 
+    // Legacy match with no stage: allow all teams (old tournaments)
     return teams;
   }
 
@@ -517,7 +526,7 @@ export default function MatchResultsPage() {
                     <tbody>
                       {results.length === 0 ? (
                         <tr><td colSpan={4} style={{ padding: "2rem", textAlign: "center", color: "#6b7280" }}>
-                          No teams eligible for this match. Assign teams in Stages page.
+                          No teams assigned to this stage yet. Go to Stages page → advance teams from previous stage, or use Stage 1 first.
                         </td></tr>
                       ) : results.map(result => {
                         const team = teams.find(t => t.id === result.teamId);
