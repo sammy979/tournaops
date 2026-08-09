@@ -1,21 +1,26 @@
-"use client";
+﻿"use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Trophy, Sparkles, Radio, ClipboardList, Home, Palette, Users, Layers } from "lucide-react";
+import {
+  Trophy, Sparkles, Radio, ClipboardList, Home,
+  Palette, Users, Layers, Play, Monitor
+} from "lucide-react";
 
 interface TournamentNavProps {
   tournamentId: string;
 }
 
 const NAV_ITEMS = [
-  { icon: Home, label: "Overview", href: "" },
-  { icon: Trophy, label: "Standings", href: "/standings" },
-  { icon: ClipboardList, label: "Match Results", href: "/match-results" },
-  { icon: Users, label: "Bulk Import", href: "/bulk-import" },
-  { icon: Layers, label: "Stages", href: "/stages" },
-  { icon: Radio, label: "Broadcast", href: "/broadcast" },
-  { icon: Sparkles, label: "AI Insights", href: "/insights" },
-  { icon: Palette, label: "Branding", href: "/branding" },
+  { icon: Home,        label: "Overview",      href: "/overview" },
+  { icon: Trophy,      label: "Standings",     href: "/standings" },
+  { icon: ClipboardList, label: "Results",     href: "/match-results" },
+  { icon: Play,        label: "Matches",       href: "/matches" },
+  { icon: Users,       label: "Teams",         href: "/teams" },
+  { icon: Layers,      label: "Stages",        href: "/stages" },
+  { icon: Monitor,     label: "Overlays",      href: "/overlays" },
+  { icon: Radio,       label: "Broadcast",     href: "/broadcast" },
+  { icon: Sparkles,    label: "AI Insights",   href: "/insights" },
+  { icon: Palette,     label: "Branding",      href: "/branding" },
 ];
 
 export default function TournamentNav({ tournamentId }: TournamentNavProps) {
@@ -23,31 +28,57 @@ export default function TournamentNav({ tournamentId }: TournamentNavProps) {
   const basePath = "/dashboard/tournaments/" + tournamentId;
 
   return (
-    <nav className="mb-6 bg-neutral-900 rounded-xl p-2 border border-neutral-800 sticky top-4 z-40 backdrop-blur">
-      <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+    <nav style={{
+      marginBottom: "1.5rem",
+      background: "rgba(255,255,255,0.02)",
+      borderRadius: "0.875rem",
+      padding: "0.375rem",
+      border: "1px solid rgba(255,255,255,0.08)",
+      position: "sticky",
+      top: "3.5rem",
+      zIndex: 30,
+      backdropFilter: "blur(20px)",
+    }}>
+      <div style={{ display: "flex", gap: "0.125rem", overflowX: "auto" }} className="scrollbar-hide">
         {NAV_ITEMS.map(item => {
           const Icon = item.icon;
           const fullPath = basePath + item.href;
           const isActive = pathname === fullPath ||
-            (item.href === "" && pathname === basePath);
+            (item.href === "/overview" && pathname === basePath);
 
           return (
             <Link
               key={item.href}
               href={fullPath}
-              className={"flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold whitespace-nowrap transition-all " +
-                (isActive
-                  ? "bg-yellow-500 text-black"
-                  : "text-neutral-400 hover:text-white hover:bg-neutral-800"
-                )
-              }
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.375rem",
+                padding: "0.5rem 0.75rem",
+                borderRadius: "0.625rem",
+                fontSize: "0.8rem",
+                fontWeight: isActive ? 700 : 500,
+                whiteSpace: "nowrap",
+                textDecoration: "none",
+                background: isActive ? "rgba(245,158,11,0.15)" : "transparent",
+                color: isActive ? "#f59e0b" : "#6b7280",
+                transition: "all 0.15s",
+                minHeight: "2.25rem",
+              }}
             >
-              <Icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{item.label}</span>
+              <Icon style={{ width: "0.875rem", height: "0.875rem", flexShrink: 0 }} />
+              <span className="nav-label">{item.label}</span>
             </Link>
           );
         })}
       </div>
+      <style>{`
+        @media (max-width: 768px) {
+          .nav-label { display: none; }
+        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
     </nav>
   );
 }
