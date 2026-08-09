@@ -109,6 +109,11 @@ export async function POST(req: NextRequest) {
       isAdmin: user.isAdmin,
     });
 
+
+    // ── Send welcome email (fire and forget) ──────────────────
+    void sendWelcomeEmail(user.email, user.displayName || user.username).catch((e) => {
+      console.error("[REGISTER] Welcome email failed:", e);
+    });
     return NextResponse.json(
       {
         success: true,
