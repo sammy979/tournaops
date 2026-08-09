@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 
@@ -34,6 +34,11 @@ async function postToDiscord(webhookUrl: string, match: any, tournament: any) {
     const teams = tournament.teams || [];
     const teamMap = new Map(teams.map((t: any) => [t.id, t]));
 
+    const branding = tournament.brandingData || {};
+    const sponsors: any[] = Array.isArray(branding.sponsors) ? branding.sponsors : [];
+    const titleSponsor = sponsors.find((s: any) => s.tier === "title");
+    const otherSponsors = sponsors.filter((s: any) => s.tier !== "title");
+
     const sorted = [...results].sort((a: any, b: any) => (a.placement || 999) - (b.placement || 999));
     const top5 = sorted.slice(0, 5);
 
@@ -43,8 +48,8 @@ async function postToDiscord(webhookUrl: string, match: any, tournament: any) {
     const topFraggerTeam = topFragger ? teamMap.get(topFragger.teamId) as any : null;
 
     const embed: any = {
-      title: "🏆 " + (match.name || "Match " + match.matchNumber) + " Results",
-      description: "**" + tournament.name + "**" + (match.map ? " • " + match.map : ""),
+      title: "ðŸ† " + (match.name || "Match " + match.matchNumber) + " Results",
+      description: "**" + tournament.name + "**" + (match.map ? " â€¢ " + match.map : "") + (titleSponsor ? "\nâ­ Presented by **" + titleSponsor.name + "**" : ""),
       color: 0xf59e0b,
       fields: [],
       footer: { text: "TournaOps.com" },
@@ -53,16 +58,16 @@ async function postToDiscord(webhookUrl: string, match: any, tournament: any) {
 
     if (winnerTeam) {
       embed.fields.push({
-        name: "🥇 WWCD",
-        value: "**" + winnerTeam.name + "**" + (winner.kills ? " · " + winner.kills + " kills" : ""),
+        name: "ðŸ¥‡ WWCD",
+        value: "**" + winnerTeam.name + "**" + (winner.kills ? " Â· " + winner.kills + " kills" : ""),
         inline: true,
       });
     }
 
     if (topFraggerTeam && topFragger.kills > 0) {
       embed.fields.push({
-        name: "💀 Top Fragger",
-        value: "**" + topFraggerTeam.name + "** · " + topFragger.kills + " kills",
+        name: "ðŸ’€ Top Fragger",
+        value: "**" + topFraggerTeam.name + "** Â· " + topFragger.kills + " kills",
         inline: true,
       });
     }
@@ -71,17 +76,25 @@ async function postToDiscord(webhookUrl: string, match: any, tournament: any) {
       const leaderboard = top5.map((r: any) => {
         const t = teamMap.get(r.teamId) as any;
         if (!t) return null;
-        const medal = r.placement === 1 ? "🥇" : r.placement === 2 ? "🥈" : r.placement === 3 ? "🥉" : "#" + r.placement;
-        return medal + " " + t.name + " · " + (r.kills || 0) + " kills";
+        const medal = r.placement === 1 ? "ðŸ¥‡" : r.placement === 2 ? "ðŸ¥ˆ" : r.placement === 3 ? "ðŸ¥‰" : "#" + r.placement;
+        return medal + " " + t.name + " Â· " + (r.kills || 0) + " kills";
       }).filter(Boolean).join("\n");
 
       if (leaderboard) {
         embed.fields.push({
-          name: "📊 Top " + top5.length,
+          name: "ðŸ“Š Top " + top5.length,
           value: leaderboard,
           inline: false,
         });
       }
+    }
+
+    if (otherSponsors.length > 0) {
+      embed.fields.push({
+        name: "ðŸ¤ Sponsors",
+        value: otherSponsors.slice(0, 8).map((s: any) => s.name).join(" â€¢ "),
+        inline: false,
+      });
     }
 
     const res = await fetch(webhookUrl, {
@@ -143,7 +156,7 @@ export async function PATCH(
           include: { teams: true },
         });
         if (fullTournament) {
-          // Fire and forget — don't block response
+          // Fire and forget â€” don't block response
           postToDiscord(webhookUrl, { ...match, name: existing.name, matchNumber: existing.matchNumber }, fullTournament).catch(() => {});
         }
       }
