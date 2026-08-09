@@ -307,6 +307,60 @@ export default function SettingsPage() {
             : <><Save style={{ width: "1.125rem", height: "1.125rem" }} />Save All Changes</>}
         </button>
 
+        {/* Auto-Fill Demo Data */}
+        <div style={{ background: "rgba(59,130,246,0.05)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: "1rem", padding: "1.5rem" }}>
+          <h3 style={{ color: "#60a5fa", fontWeight: 700, fontSize: "0.95rem", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            🎯 Auto-Fill Demo Data
+          </h3>
+          <p style={{ color: "#93c5fd", fontSize: "0.8rem", marginBottom: "1rem", lineHeight: 1.5 }}>
+            Instantly fill this tournament with realistic demo data for testing.
+            Creates teams (up to max), assigns them to Stage 1 groups, adds sponsors, and simulates match results.
+          </p>
+          <button
+            onClick={async () => {
+              if (!confirm("Auto-fill this tournament with demo data?\n\nThis will:\n- Fill teams up to max\n- Add demo sponsors (13 total across 4 tiers)\n- Assign teams to Stage 1 groups\n- Simulate all Stage 1 match results\n\nExisting data will NOT be deleted.")) return;
+              const btn = event?.target as HTMLButtonElement;
+              if (btn) { btn.disabled = true; btn.innerText = "Filling..."; }
+              try {
+                const res = await fetch(`/api/tournaments/${id}/autofill-demo`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    fillTeams: true,
+                    fillSponsors: true,
+                    fillBranding: true,
+                    simulateMatches: true,
+                  }),
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                  alert("✅ Demo data filled!\n\n" + (data.report?.actions || []).join("\n"));
+                  window.location.reload();
+                } else {
+                  alert("Failed: " + (data.error || "Unknown"));
+                }
+              } catch (e: any) {
+                alert("Error: " + e.message);
+              } finally {
+                if (btn) { btn.disabled = false; btn.innerText = "🎯 Auto-Fill Everything"; }
+              }
+            }}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: "0.5rem",
+              background: "#3b82f6", color: "#fff",
+              padding: "0.75rem 1.5rem",
+              borderRadius: "0.625rem", border: "none",
+              fontSize: "0.9rem", fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            🎯 Auto-Fill Everything
+          </button>
+          <p style={{ fontSize: "0.7rem", color: "#6b7280", marginTop: "0.75rem" }}>
+            💡 Perfect for demoing to organizers, testing Discord/OBS, or preparing screenshots
+          </p>
+        </div>
+
         {/* Danger Zone */}
         <div style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "1rem", padding: "1.5rem" }}>
           <h3 style={{ color: "#f87171", fontWeight: 700, fontSize: "0.95rem", marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
