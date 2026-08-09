@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, Layers, RefreshCw, AlertTriangle, Check, X, Calendar } from "lucide-react";
@@ -158,8 +158,8 @@ export default function StagesPage({ params }: { params: Promise<{ id: string }>
           </h1>
           <p style={{ color: "#6b7280", fontSize: "0.85rem", marginTop: "0.375rem" }}>
             {stageCount === 0
-              ? `No stages yet — click Regenerate to create stages for your ${teamCount} teams`
-              : `${stageCount} stages configured · ${teamCount} teams`}
+              ? `No stages yet â€” click Regenerate to create stages for your ${teamCount} teams`
+              : `${stageCount} stages configured Â· ${teamCount} teams`}
           </p>
         </div>
         <button
@@ -186,9 +186,9 @@ export default function StagesPage({ params }: { params: Promise<{ id: string }>
 
           <div style={{ marginBottom: "1rem" }}>
             <h4 style={{ color: "#fff", fontWeight: 700, fontSize: "0.9rem", marginBottom: "0.75rem" }}>Stage Configuration</h4>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem", overflowX: "auto" }}>
               {stageConfigs.map((cfg, idx) => (
-                <div key={idx} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1.2fr auto", gap: "0.5rem", alignItems: "center", padding: "0.75rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.625rem" }}>
+                <div key={idx} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1.2fr auto", gap: "0.5rem", alignItems: "center", padding: "0.75rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.625rem", minWidth: "420px" }}>
                   <div>
                     <label style={{ fontSize: "0.65rem", color: "#6b7280", display: "block", marginBottom: "0.25rem" }}>Stage Name</label>
                     <input value={cfg.name} onChange={e => updateConfig(idx, "name", e.target.value)} style={inputStyle} />
