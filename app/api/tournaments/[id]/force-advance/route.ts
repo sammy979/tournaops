@@ -1,7 +1,8 @@
-﻿import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { verifyTournamentOwnership } from "@/lib/authorization";
+import { advanceStage } from "@/lib/stage-advancement-engine";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(
   req: NextRequest,
@@ -9,202 +10,262 @@ export async function POST(
 ) {
   try {
     const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const { id } = await params;
-    const { authorized, errorResponse } = await verifyTournamentOwnership(id, session);
+
+    const { authorized, errorResponse } = await verifyTournamentOwnership(
+      id,
+      session
+    );
     if (!authorized) return errorResponse!;
 
-    const body = await req.json();
-    const stageId = body.stageId;
-    if (!stageId) return NextResponse.json({ error: "stageId required" }, { status: 400 });
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 }
+      );
+    }
 
-    const fresh = await prisma.tournament.findUnique({
+    const stageId = body?.stageId;
+    if (!stageId || typeof stageId !== "string") {
+      return NextResponse.json(
+        { error: "stageId is required" },
+        { status: 400 }
+      );
+    }
+
+    // Require a reason for force advance
+    const reason =
+      typeof body?.reason === "string" ? body.reason.trim() : "";
+    if (!reason || reason.length < 5) {
+      return NextResponse.json(
+        {
+          error:
+            "A reason is required for force advance (minimum 5 characters). This action is logged.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Fetch tournament + discord for post-advance announcement
+    const tournament = await prisma.tournament.findUnique({
       where: { id },
       include: {
-        stages: { include: { groups: true }, orderBy: { order: "asc" } },
-        matches: true,
+        stages: {
+          include: { groups: { orderBy: { order: "asc" } } },
+          orderBy: { order: "asc" },
+        },
         teams: true,
       },
     });
-    if (!fresh) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    const currentStage = fresh.stages.find(s => s.id === stageId);
-    if (!currentStage) return NextResponse.json({ error: "Stage not found" }, { status: 404 });
-
-    const nextStage = fresh.stages.find(s => s.order === currentStage.order + 1);
-    if (!nextStage) return NextResponse.json({ error: "No next stage" }, { status: 400 });
-
-    // Calculate standings for current stage
-    const scoringRule: any = currentStage.scoringRule || fresh.scoringRule || {};
-    const killPoints = Number(scoringRule.killPoints) || 1;
-    const wwcdBonus = Number(scoringRule.wwcdBonus) || 0;
-    let placementPoints: number[] = [10,6,5,4,3,2,1,1,0,0,0,0,0,0,0,0];
-    if (Array.isArray(scoringRule.placementPoints)) placementPoints = scoringRule.placementPoints;
-    else if (scoringRule.placementPoints && typeof scoringRule.placementPoints === "object") {
-      placementPoints = Object.values(scoringRule.placementPoints).map(Number);
+    if (!tournament) {
+      return NextResponse.json(
+        { error: "Tournament not found" },
+        { status: 404 }
+      );
     }
 
-    const stageTeamIds = new Set<string>();
-    for (const g of currentStage.groups) (g.teamIds || []).forEach((tid: string) => stageTeamIds.add(tid));
+    const result = await advanceStage(id, stageId, {
+      isForced: true,
+      performedBy: session.userId,
+      reason,
+    });
 
-    const stageMatches = fresh.matches.filter(m => m.stageId === stageId && m.status === "completed" && Array.isArray(m.results));
+    // Post Discord announcement if webhook configured
+    if (result.success && !result.alreadyAdvanced && tournament.discord) {
+      const wh = tournament.discord;
+      if (
+        wh.startsWith("https://discord.com/api/webhooks/") ||
+        wh.startsWith("https://discordapp.com/api/webhooks/")
+      ) {
+        const branding = (tournament.brandingData as any) || {};
+        const primaryColor =
+          parseInt(
+            (branding.primaryColor || "#f59e0b").replace("#", ""),
+            16
+          ) || 0xf59e0b;
+        const publicUrl =
+          "https://www.tournaops.com/tournaments/" + tournament.slug;
 
-    const teamStats = new Map<string, any>();
-    for (const tid of stageTeamIds) {
-      const t = fresh.teams.find(x => x.id === tid);
-      if (t) teamStats.set(tid, { teamId: tid, teamName: t.name, teamTag: t.tag, points: 0, kills: 0, wwcds: 0 });
-    }
+        const progressions = await prisma.teamProgression.findMany({
+          where: { stageId, status: "QUALIFIED" },
+          orderBy: { finalPosition: "asc" },
+        });
 
-    for (const match of stageMatches) {
-      for (const r of match.results as any[]) {
-        const s = teamStats.get(r.teamId);
-        if (!s) continue;
-        const kills = Number(r.kills) || 0;
-        const placement = Number(r.placement) || 16;
-        const isWWCD = placement === 1 || r.wwcd === true;
-        s.points += (placementPoints[Math.max(0, placement - 1)] || 0) + kills * killPoints + (isWWCD ? wwcdBonus : 0);
-        s.kills += kills;
-        if (isWWCD) s.wwcds++;
-      }
-    }
+        const currentStage = tournament.stages.find((s) => s.id === stageId);
+        const nextStage = tournament.stages.find(
+          (s) => s.order === (currentStage?.order ?? 0) + 1
+        );
 
-    const standings = Array.from(teamStats.values())
-      .sort((a, b) => b.points - a.points || b.wwcds - a.wwcds || b.kills - a.kills);
-
-    const nextCapacity = nextStage.groups.length * (nextStage.teamsPerGroup || 16);
-    const advanceCount = Math.min(standings.length, nextCapacity);
-    const qualified = standings.slice(0, advanceCount);
-
-    // Snake seeding
-    const groupAssignments: string[][] = nextStage.groups.map(() => []);
-    let direction = 1, groupIdx = 0;
-    for (const q of qualified) {
-      groupAssignments[groupIdx].push(q.teamId);
-      if (direction === 1) {
-        if (groupIdx === nextStage.groups.length - 1) direction = -1;
-        else groupIdx++;
-      } else {
-        if (groupIdx === 0) direction = 1;
-        else groupIdx--;
-      }
-    }
-
-    await prisma.$transaction([
-      ...nextStage.groups.map((g: any, i: number) =>
-        prisma.stageGroup.update({ where: { id: g.id }, data: { teamIds: groupAssignments[i] } })
-      ),
-      prisma.stage.update({
-        where: { id: stageId },
-        data: { status: "COMPLETED", isLocked: true, lockedAt: new Date(), teamsAdvancing: qualified.length },
-      }),
-      prisma.stage.update({
-        where: { id: nextStage.id },
-        data: { status: "ACTIVE", totalTeams: qualified.length },
-      }),
-      ...qualified.map((q: any) =>
-        prisma.teamProgression.upsert({
-          where: { stageId_teamId: { stageId, teamId: q.teamId } },
-          create: {
-            tournamentId: id, stageId, teamId: q.teamId, teamName: q.teamName,
-            finalPosition: standings.indexOf(q) + 1,
-            points: q.points, kills: q.kills, wwcds: q.wwcds,
-            status: "QUALIFIED", advancedToStageId: nextStage.id,
-          },
-          update: {
-            finalPosition: standings.indexOf(q) + 1,
-            points: q.points, status: "QUALIFIED", advancedToStageId: nextStage.id,
-          },
-        })
-      ),
-    ]);
-
-    // Discord announcement
-    if (fresh.discord) {
-      const wh = fresh.discord;
-      const isValid = wh.startsWith("https://discord.com/api/webhooks/") || wh.startsWith("https://discordapp.com/api/webhooks/");
-      if (isValid) {
-        const branding = (fresh.brandingData as any) || {};
-        const primaryColor = parseInt((branding.primaryColor || "#f59e0b").replace("#", ""), 16) || 0xf59e0b;
-        const publicUrl = "https://www.tournaops.com/tournaments/" + fresh.slug;
-
-        // Advancement embed
         const chunks: string[][] = [];
-        for (let i = 0; i < qualified.length; i += 20) {
-          chunks.push(qualified.slice(i, i + 20).map((t: any, j: number) => {
-            const rank = i + j + 1;
-            const tag = t.teamTag ? "[" + t.teamTag + "] " : "";
-            return "`#" + String(rank).padStart(2, "0") + "` **" + tag + t.teamName + "** \u2014 " + t.points + " pts";
-          }));
+        for (let i = 0; i < progressions.length; i += 20) {
+          chunks.push(
+            progressions.slice(i, i + 20).map((t, j) => {
+              const rank = i + j + 1;
+              return (
+                "`#" +
+                String(rank).padStart(2, "0") +
+                "` **" +
+                t.teamName +
+                "** \u2014 " +
+                t.points +
+                " pts"
+              );
+            })
+          );
         }
 
-        const advEmbed: any = {
-          title: "\uD83C\uDFC6 " + currentStage.name.toUpperCase() + " COMPLETE",
-          description: "**" + qualified.length + " teams** have advanced to **" + nextStage.name + "**!\n\n\uD83D\uDD13 " + nextStage.name + " is now UNLOCKED.",
-          color: primaryColor,
+        const embed: any = {
+          title:
+            "\u26A1 " +
+            (currentStage?.name?.toUpperCase() || "STAGE") +
+            " \u2014 FORCE ADVANCED",
+          description:
+            "**" +
+            result.qualifiedCount +
+            " teams** have been force-advanced to **" +
+            result.nextStageName +
+            "**.\n\n\u26A0\uFE0F Admin override applied.",
+          color: 0xf59e0b,
           fields: chunks.slice(0, 5).map((chunk, i) => ({
-            name: i === 0 ? "\u2705 QUALIFIED TEAMS" : "\u2705 QUALIFIED (cont.)",
+            name:
+              i === 0
+                ? "\u2705 QUALIFIED TEAMS"
+                : "\u2705 QUALIFIED (cont.)",
             value: chunk.join("\n"),
             inline: false,
           })),
-          footer: { text: "TournaOps \u2022 Auto-advancement", icon_url: "https://www.tournaops.com/logo.png" },
+          footer: {
+            text: "TournaOps \u2022 Force advancement",
+            icon_url: "https://www.tournaops.com/logo.png",
+          },
           timestamp: new Date().toISOString(),
         };
-        advEmbed.fields.push({
+
+        embed.fields.push({
           name: "\uD83D\uDD17 LINKS",
-          value: "\uD83C\uDFC6 [Tournament Page](" + publicUrl + ") \u2022 \uD83D\uDCCA [Standings](" + publicUrl + "/results)",
+          value:
+            "\uD83C\uDFC6 [Tournament Page](" +
+            publicUrl +
+            ") \u2022 \uD83D\uDCCA [Live Standings](" +
+            publicUrl +
+            "/results)",
           inline: false,
         });
 
-        await fetch(wh, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: "@everyone", embeds: [advEmbed] }),
-        });
-
-        // Slot list embeds
-        const refreshedNext = await prisma.stage.findUnique({
-          where: { id: nextStage.id },
-          include: { groups: { orderBy: { order: "asc" } } },
-        });
-        const teamMap = new Map(fresh.teams.map(t => [t.id, t]));
-        const slotEmbeds: any[] = [];
-        slotEmbeds.push({
-          title: "\uD83D\uDCCB " + nextStage.name.toUpperCase() + " \u2014 SLOT LIST",
-          description: "**" + fresh.name + "**\n\uD83D\uDC65 " + qualified.length + " Teams \u2022 " + (refreshedNext?.groups.length || 0) + " Groups",
-          color: primaryColor,
-        });
-        for (const g of (refreshedNext?.groups || []).slice(0, 9)) {
-          const lines = (g.teamIds || []).map((tid: string, i: number) => {
-            const t = teamMap.get(tid) as any;
-            if (!t) return null;
-            const tag = t.tag ? "[" + t.tag + "] " : "";
-            return "\u0060Slot " + String(i + 1).padStart(2, "0") + "\u0060 \u2014 **" + tag + t.name + "**";
-          }).filter(Boolean);
-          slotEmbeds.push({
-            title: "\uD83D\uDD37 " + g.name.toUpperCase() + " \u2014 " + lines.length + " Teams",
-            color: primaryColor,
-            description: lines.join("\n") || "_No teams_",
-          });
-        }
-        if (slotEmbeds.length > 1) {
+        try {
           await fetch(wh, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ embeds: slotEmbeds }),
+            body: JSON.stringify({
+              content: "@everyone",
+              embeds: [embed],
+            }),
           });
+        } catch (e) {
+          console.warn("[DISCORD_FORCE_ADVANCE]", e);
+        }
+
+        // Post slot list for next stage
+        if (nextStage) {
+          const refreshedNext = await prisma.stage.findUnique({
+            where: { id: nextStage.id },
+            include: { groups: { orderBy: { order: "asc" } } },
+          });
+
+          if (refreshedNext) {
+            const teamMap = new Map(
+              tournament.teams.map((t) => [t.id, t])
+            );
+            const totalTeams = (refreshedNext.groups || []).reduce(
+              (s: number, g: any) => s + (g.teamIds?.length || 0),
+              0
+            );
+
+            if (totalTeams > 0) {
+              const slotEmbeds: any[] = [];
+              slotEmbeds.push({
+                title:
+                  "\uD83D\uDCCB " +
+                  nextStage.name.toUpperCase() +
+                  " \u2014 SLOT LIST",
+                description:
+                  "**" +
+                  tournament.name +
+                  "**\n\uD83D\uDC65 **" +
+                  totalTeams +
+                  " Teams** across **" +
+                  (refreshedNext.groups?.length || 0) +
+                  " Group" +
+                  ((refreshedNext.groups?.length || 0) !== 1 ? "s" : "") +
+                  "**",
+                color: primaryColor,
+              });
+
+              for (const group of (refreshedNext.groups || []).slice(0, 9)) {
+                const lines = (group.teamIds || [])
+                  .map((tid: string, i: number) => {
+                    const team = teamMap.get(tid) as any;
+                    if (!team) return null;
+                    const tag = team.tag ? "[" + team.tag + "] " : "";
+                    return (
+                      "\u0060Slot " +
+                      String(i + 1).padStart(2, "0") +
+                      "\u0060 \u2014 **" +
+                      tag +
+                      team.name +
+                      "**"
+                    );
+                  })
+                  .filter(Boolean);
+
+                slotEmbeds.push({
+                  title:
+                    "\uD83D\uDD37 " +
+                    group.name.toUpperCase() +
+                    " \u2014 " +
+                    lines.length +
+                    " Teams",
+                  color: primaryColor,
+                  description: lines.join("\n") || "_No teams_",
+                });
+              }
+
+              try {
+                await fetch(wh, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ embeds: slotEmbeds }),
+                });
+              } catch (e) {
+                console.warn("[DISCORD_SLOT_LIST]", e);
+              }
+            }
+          }
         }
       }
     }
 
     return NextResponse.json({
-      success: true,
-      qualified: qualified.length,
-      nextStage: nextStage.name,
-      message: qualified.length + " teams advanced to " + nextStage.name,
+      success: result.success,
+      qualified: result.qualifiedCount,
+      eliminated: result.eliminatedCount,
+      nextStage: result.nextStageName,
+      alreadyAdvanced: result.alreadyAdvanced,
+      message: result.message,
     });
   } catch (err: any) {
     console.error("[FORCE_ADVANCE]", err);
-    return NextResponse.json({ error: err?.message || "Failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: err?.message || "Force advance failed" },
+      { status: 500 }
+    );
   }
 }

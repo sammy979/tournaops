@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { logError } from "@/lib/logger";
 import { validateSubmittedMatchResults } from "@/lib/match-result-validation";
+import { triggerAutoAdvanceIfComplete } from "@/lib/stage-advancement-engine";
 
 // ============================================================
 // SCORING — uses lib/scoring-engine.ts as single source of truth
@@ -1378,11 +1379,14 @@ export async function PATCH(
 
         if (existing.stageId) {
           try {
-            await autoAdvanceIfStageComplete(
-              webhookUrl,
-              existing.tournament,
+            const advResult = await triggerAutoAdvanceIfComplete(
+              existing.tournamentId,
               existing.stageId
             );
+            if (advResult.triggered && advResult.result && !advResult.result.alreadyAdvanced) {
+              // Post Discord advancement announcements
+              await autoAdvanceIfStageComplete(webhookUrl, existing.tournament, existing.stageId);
+            }
           } catch (e) {
             console.warn("[AUTO_ADVANCE] Failed:", e);
           }
