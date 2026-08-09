@@ -1,4 +1,6 @@
-﻿// ============================================================
+﻿import { NextRequest } from "next/server";
+
+// ============================================================
 // lib/rate-limit.ts
 // In-memory rate limiting for TournaOps API routes
 // NOTE: For multi-instance production, replace with Redis
@@ -27,24 +29,17 @@ setInterval(() => {
 // ============================================================
 
 export interface RateLimitConfig {
-  windowMs: number;   // Time window in milliseconds
-  maxRequests: number; // Max requests per window
+  windowMs: number;
+  maxRequests: number;
 }
 
 export const RATE_LIMITS = {
-  // Auth endpoints — strict
-  AUTH_LOGIN: { windowMs: 15 * 60 * 1000, maxRequests: 10 },     // 10 per 15 min
-  AUTH_REGISTER: { windowMs: 60 * 60 * 1000, maxRequests: 5 },   // 5 per hour
-  
-  // AI endpoints — moderate
-  AI_GENERATE: { windowMs: 60 * 1000, maxRequests: 20 },         // 20 per minute
-  AI_SCREENSHOT: { windowMs: 60 * 1000, maxRequests: 5 },        // 5 per minute
-  
-  // Public API — lenient
-  PUBLIC_API: { windowMs: 60 * 1000, maxRequests: 60 },          // 60 per minute
-  
-  // General API
-  GENERAL: { windowMs: 60 * 1000, maxRequests: 100 },            // 100 per minute
+  AUTH_LOGIN:    { windowMs: 15 * 60 * 1000, maxRequests: 10 },
+  AUTH_REGISTER: { windowMs: 60 * 60 * 1000, maxRequests: 5  },
+  AI_GENERATE:   { windowMs: 60 * 1000,      maxRequests: 20 },
+  AI_SCREENSHOT: { windowMs: 60 * 1000,      maxRequests: 5  },
+  PUBLIC_API:    { windowMs: 60 * 1000,      maxRequests: 60 },
+  GENERAL:       { windowMs: 60 * 1000,      maxRequests: 100 },
 } as const;
 
 // ============================================================
@@ -66,19 +61,12 @@ export function checkRateLimit(
   const key = `rl:${identifier}`;
   const existing = store.get(key);
 
-  // No record or expired — create new
   if (!existing || existing.resetAt < now) {
     const resetAt = now + config.windowMs;
     store.set(key, { count: 1, resetAt });
-    return {
-      allowed: true,
-      remaining: config.maxRequests - 1,
-      resetAt,
-      retryAfterSeconds: 0,
-    };
+    return { allowed: true, remaining: config.maxRequests - 1, resetAt, retryAfterSeconds: 0 };
   }
 
-  // Within window
   if (existing.count >= config.maxRequests) {
     return {
       allowed: false,
@@ -88,48 +76,45 @@ export function checkRateLimit(
     };
   }
 
-  // Increment
   existing.count++;
   store.set(key, existing);
-
-  return {
-    allowed: true,
-    remaining: config.maxRequests - existing.count,
-    resetAt: existing.resetAt,
-    retryAfterSeconds: 0,
-  };
+  return { allowed: true, remaining: config.maxRequests - existing.count, resetAt: existing.resetAt, retryAfterSeconds: 0 };
 }
 
 // ============================================================
-// GET CLIENT IP FROM NEXT REQUEST
+// GET CLIENT IP — uses Vercel trusted header to prevent spoofing
 // ============================================================
 
-import { NextRequest } from "next/server";
-
 export function getClientIp(request: NextRequest): string {
-  // Vercel / Cloudflare headers
+  // x-vercel-forwarded-for is set by Vercel infrastructure — cannot be spoofed by clients
+  const vercelIp = request.headers.get("x-vercel-forwarded-for");
+  if (vercelIp) return vercelIp.split(",")[0].trim();
+
+  // Local dev fallback — use last entry (set by proxy, not client)
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
-    return forwarded.split(",")[0].trim();
+    const parts = forwarded.split(",");
+    return parts[parts.length - 1].trim();
   }
 
   const realIp = request.headers.get("x-real-ip");
-  if (realIp) {
-    return realIp.trim();
-  }
+  if (realIp) return realIp.trim();
 
   return "unknown";
 }
 
 // ============================================================
-// RATE LIMIT HEADERS
+// RATE LIMIT RESPONSE HEADERS
 // ============================================================
 
-export function getRateLimitHeaders(result: RateLimitResult, config: RateLimitConfig): Record<string, string> {
+export function getRateLimitHeaders(
+  result: RateLimitResult,
+  config: RateLimitConfig
+): Record<string, string> {
   return {
-    "X-RateLimit-Limit": String(config.maxRequests),
+    "X-RateLimit-Limit":     String(config.maxRequests),
     "X-RateLimit-Remaining": String(result.remaining),
-    "X-RateLimit-Reset": String(Math.ceil(result.resetAt / 1000)),
+    "X-RateLimit-Reset":     String(Math.ceil(result.resetAt / 1000)),
     ...(result.allowed ? {} : { "Retry-After": String(result.retryAfterSeconds) }),
   };
 }
