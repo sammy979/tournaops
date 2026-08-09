@@ -61,15 +61,16 @@ export default function TournamentDiscordPage() {
 
     setTesting(true);
     setTestResult(null);
-
-    // Auto-save first so the API can find the webhook
+    // Auto-save webhook first
     try {
-      await fetch(/api/tournaments/, {
+      await fetch(`/api/tournaments/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ discord: webhookUrl.trim() }),
       });
     } catch {}
+
+
 
     try {
       const testPayload = {
@@ -112,7 +113,7 @@ export default function TournamentDiscordPage() {
     </div>
   );
 
-  const isConfigured = webhookUrl && webhookUrl.startsWith("https://discord.com/api/webhooks/");
+  const isConfigured = webhookUrl && (webhookUrl.startsWith("https://discord.com/api/webhooks/") || webhookUrl.startsWith("https://discordapp.com/api/webhooks/"));
 
   return (
     <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
