@@ -1,4 +1,5 @@
-"use client";
+﻿"use client";
+import TeamLogo from "@/components/tournament/TeamLogo";
 import { useEffect, useState, useRef, use } from "react";
 import { toPng } from "html-to-image";
 import { Download, Loader2, Info } from "lucide-react";
@@ -245,7 +246,7 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
       <div style={{ maxWidth: 1400, margin: "0 auto 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, background: "#111", padding: "14px 20px", borderRadius: 12, border: "1px solid #333" }}>
         <div style={{ color: "#fff", fontFamily: "system-ui" }}>
           <div style={{ fontSize: 18, fontWeight: 700 }}>{tournament.name}</div>
-          <div style={{ fontSize: 13, color: "#999" }}>{standings.length} teams · PMGC Scoring</div>
+          <div style={{ fontSize: 13, color: "#999" }}>{standings.length} teams Â· PMGC Scoring</div>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button 
@@ -276,11 +277,11 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
       {/* Tips Panel */}
       {showTip && (
         <div style={{ maxWidth: 1400, margin: "0 auto 20px", background: "#1e293b", padding: "16px 20px", borderRadius: 12, border: "1px solid #3b82f6", color: "#fff", fontFamily: "system-ui", fontSize: 14 }}>
-          <div style={{ fontWeight: 700, marginBottom: 8, color: "#60a5fa" }}>💾 3 Ways to Save This Image:</div>
+          <div style={{ fontWeight: 700, marginBottom: 8, color: "#60a5fa" }}>ðŸ’¾ 3 Ways to Save This Image:</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
             <div><strong style={{ color: "#facc15" }}>Method 1 (Auto):</strong><br />Click the yellow "Download PNG" button above</div>
-            <div><strong style={{ color: "#facc15" }}>Method 2 (Right-click):</strong><br />Right-click the image → "Save image as..."</div>
-            <div><strong style={{ color: "#facc15" }}>Method 3 (Windows):</strong><br />Press Win+Shift+S → Select area → Ctrl+V to paste in Discord/browser</div>
+            <div><strong style={{ color: "#facc15" }}>Method 2 (Right-click):</strong><br />Right-click the image â†’ "Save image as..."</div>
+            <div><strong style={{ color: "#facc15" }}>Method 3 (Windows):</strong><br />Press Win+Shift+S â†’ Select area â†’ Ctrl+V to paste in Discord/browser</div>
           </div>
         </div>
       )}
@@ -310,7 +311,7 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
             <div style={{ textAlign: "center", marginBottom: 22, position: "relative", zIndex: 2 }}>
               <div style={{ color: primaryColor, fontSize: 18, fontWeight: 700, letterSpacing: 5, textTransform: "uppercase", marginBottom: 8, lineHeight: 1 }}>{config.subtitle}</div>
               <div style={{ color: "white", fontSize: titleSize, fontWeight: 900, lineHeight: 1, letterSpacing: -2, marginBottom: 8, textShadow: "0 0 40px " + primaryColor + "80" }}>{tournament.name}</div>
-              <div style={{ color: "#9ca3af", fontSize: 17, fontWeight: 500, lineHeight: 1 }}>Top {standings.length} · {(tournament.matches || []).length} Matches · PMGC Scoring</div>
+              <div style={{ color: "#9ca3af", fontSize: 17, fontWeight: 500, lineHeight: 1 }}>Top {standings.length} Â· {(tournament.matches || []).length} Matches Â· PMGC Scoring</div>
             </div>
             
             {/* TABLE */}
@@ -341,7 +342,7 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
                   <div key={s.teamId} style={{ display: "flex", alignItems: "center", padding: "10px 20px", background: rowBg, borderRadius: 10, height: rowHeight, border: isFirst ? "2px solid " + rankColor + "70" : "1px solid rgba(255,255,255,0.06)", boxSizing: "border-box" }}>
                     <div style={{ width: 70, textAlign: "center", color: rankColor, fontSize: numSize, fontWeight: 900, lineHeight: 1 }}>#{rank}</div>
                     <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 12 }}>
-                      {s.teamLogo ? <img src={s.teamLogo} alt="" crossOrigin="anonymous" style={{ width: logoSize, height: logoSize, borderRadius: 8, objectFit: "cover", border: "2px solid " + primaryColor + "80" }} /> : <div style={{ width: logoSize, height: logoSize, borderRadius: 8, background: primaryColor + "30", display: "flex", alignItems: "center", justifyContent: "center", color: primaryColor, fontSize: Math.round(logoSize * 0.35), fontWeight: 900, lineHeight: 1 }}>{(s.teamTag || s.teamName).slice(0, 2).toUpperCase()}</div>}
+                      <TeamLogo name={s.teamName} tag={s.teamTag} logo={s.teamLogo} size={logoSize} />
                       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                         {s.teamTag && <div style={{ color: primaryColor, fontSize: Math.max(10, Math.round(teamNameSize * 0.4)), fontWeight: 700, lineHeight: 1, letterSpacing: 1 }}>[{s.teamTag}]</div>}
                         <div style={{ color: "white", fontSize: teamNameSize, fontWeight: 700, lineHeight: 1.1 }}>{s.teamName}</div>
