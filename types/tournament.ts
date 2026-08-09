@@ -12,6 +12,8 @@ export interface PlacementPoints {
 
 export interface ScoringRule {
   type?: ScoringType;
+  name?: string;
+  description?: string;
   killPoints: number;
   placementPoints: PlacementPoints;
   wwcdBonus?: number;
@@ -66,7 +68,6 @@ export interface Team {
   updatedAt?: string;
 }
 
-// Bracket team type
 export interface BracketTeam {
   id: string;
   name: string;
@@ -211,16 +212,12 @@ export interface BracketMatch {
   id: string;
   round: number;
   position: number;
-  // Support both naming conventions
   teamA?: Team | BracketTeam | null;
   teamB?: Team | BracketTeam | null;
   team1?: Team | BracketTeam | null;
   team2?: Team | BracketTeam | null;
   winner?: Team | BracketTeam | null;
-  score?: {
-    teamA: number;
-    teamB: number;
-  };
+  score?: { teamA: number; teamB: number };
   score1?: number;
   score2?: number;
   bestOf?: BestOf;
@@ -288,65 +285,74 @@ export interface OverlayData {
 
 // ============================================================
 // SCORING PRESETS
+// These values are the SINGLE SOURCE OF TRUTH for tournament
+// creation. They MUST match lib/scoring-engine.ts exactly.
+// Do not change these values without also updating scoring-engine.ts.
 // ============================================================
 
 export const SCORING_PRESETS = {
   PMGC: {
+    type: "PMGC" as ScoringType,
     name: "PMGC (Official)",
     description: "PUBG Mobile Global Championship scoring",
     killPoints: 1,
     wwcdBonus: 0,
     placementPoints: {
-      1: 10, 2: 6, 3: 5, 4: 4, 5: 3,
-      6: 2, 7: 1, 8: 1, 9: 0, 10: 0,
-      11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0,
+      1: 12, 2: 9, 3: 8, 4: 7, 5: 6,
+      6: 5, 7: 4, 8: 3, 9: 2, 10: 1,
+      11: 1, 12: 1, 13: 0, 14: 0, 15: 0, 16: 0,
     },
   },
   PMPL: {
+    type: "PMPL" as ScoringType,
     name: "PMPL (Official)",
     description: "PUBG Mobile Pro League scoring",
     killPoints: 1,
     wwcdBonus: 0,
-    placementPoints: {
-      1: 12, 2: 9, 3: 8, 4: 7, 5: 6,
-      6: 5, 7: 4, 8: 3, 9: 2, 10: 1,
-      11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0,
-    },
-  },
-  COMMUNITY: {
-    name: "Community",
-    description: "Balanced scoring for community tournaments",
-    killPoints: 1,
-    wwcdBonus: 3,
     placementPoints: {
       1: 15, 2: 12, 3: 10, 4: 8, 5: 6,
       6: 4, 7: 3, 8: 2, 9: 1, 10: 1,
       11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0,
     },
   },
-  KILL_HEAVY: {
-    name: "Kill Heavy",
-    description: "High kill points - aggressive play rewarded",
-    killPoints: 3,
+  COMMUNITY: {
+    type: "COMMUNITY" as ScoringType,
+    name: "Community",
+    description: "Balanced scoring for community tournaments",
+    killPoints: 1,
     wwcdBonus: 0,
     placementPoints: {
       1: 10, 2: 6, 3: 5, 4: 4, 5: 3,
-      6: 2, 7: 1, 8: 1, 9: 0, 10: 0,
+      6: 2, 7: 2, 8: 1, 9: 1, 10: 1,
+      11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0,
+    },
+  },
+  KILL_HEAVY: {
+    type: "KILL_HEAVY" as ScoringType,
+    name: "Kill Heavy",
+    description: "High kill points — aggressive play rewarded",
+    killPoints: 2,
+    wwcdBonus: 3,
+    placementPoints: {
+      1: 8, 2: 5, 3: 4, 4: 3, 5: 2,
+      6: 1, 7: 1, 8: 0, 9: 0, 10: 0,
       11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0,
     },
   },
   PLACEMENT_HEAVY: {
+    type: "PLACEMENT_HEAVY" as ScoringType,
     name: "Placement Heavy",
-    description: "High placement points - survival rewarded",
+    description: "High placement points — survival rewarded",
     killPoints: 1,
     wwcdBonus: 5,
     placementPoints: {
-      1: 25, 2: 20, 3: 16, 4: 13, 5: 11,
-      6: 9, 7: 7, 8: 6, 9: 5, 10: 4,
-      11: 3, 12: 2, 13: 1, 14: 1, 15: 0, 16: 0,
+      1: 20, 2: 15, 3: 12, 4: 10, 5: 8,
+      6: 6, 7: 5, 8: 4, 9: 3, 10: 2,
+      11: 1, 12: 1, 13: 0, 14: 0, 15: 0, 16: 0,
     },
   },
   CUSTOM: {
+    type: "CUSTOM" as ScoringType,
     name: "Custom",
     description: "Define your own scoring rules",
     killPoints: 1,
