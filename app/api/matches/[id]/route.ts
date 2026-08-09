@@ -254,11 +254,10 @@ export async function PATCH(
       data: updates,
     });
 
-    // Auto-post to Discord if match completed
-    const wasNotCompleted = existing.status !== "completed";
-    const nowCompleted = updates.status === "completed" || match.status === "completed";
+    // Auto-post to Discord whenever results are saved (new OR edited)
+    const hasResults = updates.results && Array.isArray(updates.results) && updates.results.length > 0;
 
-    if (wasNotCompleted && nowCompleted && existing.tournament.discord) {
+    if (hasResults && existing.tournament.discord) {
       const webhookUrl = existing.tournament.discord;
       if (webhookUrl.startsWith("https://discord.com/api/webhooks/") || webhookUrl.startsWith("https://discordapp.com/api/webhooks/")) {
         postToDiscord(
