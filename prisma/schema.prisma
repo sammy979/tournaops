@@ -14,6 +14,7 @@ model User {
   displayName  String
   password     String
   avatar       String?
+  googleId     String?  @unique
   isAdmin      Boolean             @default(false)
   isPro        Boolean             @default(false)
   stripeCustomerId     String?
