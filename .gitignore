@@ -46,3 +46,7 @@ check-db.js
 # Debug scripts
 check-db.js
 
+
+# Backup files
+*.bak
+*.backup

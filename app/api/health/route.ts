@@ -1,31 +1,60 @@
-﻿import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { validateEnvironment } from "@/lib/env-validation";
 
-export async function GET() {
+// ============================================================
+// GET /api/health
+// Safe for public monitoring (Vercel, UptimeRobot, etc.)
+// NEVER exposes: secrets, database contents, user data
+// ============================================================
+
+export async function GET(req: NextRequest) {
   const start = Date.now();
-  let dbStatus = "ok";
-  let dbMs = 0;
 
+  // Check environment
+  const env = validateEnvironment();
+
+  // Check database connectivity
+  let dbOk = false;
+  let dbLatencyMs = 0;
   try {
+    const dbStart = Date.now();
     await prisma.$queryRaw`SELECT 1`;
-    dbMs = Date.now() - start;
+    dbLatencyMs = Date.now() - dbStart;
+    dbOk = true;
   } catch {
-    dbStatus = "error";
+    dbOk = false;
   }
 
-  const status = dbStatus === "ok" ? 200 : 503;
+  const totalMs = Date.now() - start;
+  const allOk = dbOk && env.valid;
 
-  return NextResponse.json({
-    status: dbStatus === "ok" ? "healthy" : "degraded",
+  const response = {
+    status: allOk ? "ok" : "degraded",
     timestamp: new Date().toISOString(),
-    version: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || "local",
-    environment: process.env.VERCEL_ENV || "development",
-    services: {
-      database: { status: dbStatus, latencyMs: dbMs },
-      email: { status: process.env.RESEND_API_KEY ? "configured" : "missing" },
-      ai: { status: (process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY) ? "configured" : "missing" },
-      payments: { status: process.env.DODO_API_KEY ? "configured" : "missing" },
-      storage: { status: process.env.BLOB_READ_WRITE_TOKEN ? "configured" : "missing" },
+    version: process.env.npm_package_version || "unknown",
+    environment: process.env.NODE_ENV || "unknown",
+    checks: {
+      database: {
+        status: dbOk ? "ok" : "error",
+        latencyMs: dbLatencyMs,
+      },
+      environment: {
+        status: env.valid ? "ok" : "error",
+        // Report which required vars are missing — never their values
+        missing: env.missing.length > 0 ? env.missing : undefined,
+        optionalMissing: Object.entries(env.report)
+          .filter(([, v]) => v === "optional-missing")
+          .map(([k]) => k),
+      },
     },
-  }, { status });
+    responseMs: totalMs,
+  };
+
+  return NextResponse.json(response, {
+    status: allOk ? 200 : 503,
+    headers: {
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+    },
+  });
 }
