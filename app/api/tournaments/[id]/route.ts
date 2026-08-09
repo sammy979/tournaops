@@ -1,9 +1,10 @@
-﻿import { broadcastMilestone, broadcastSlotList } from "@/lib/discord-broadcaster";
+import { broadcastMilestone, broadcastSlotList } from "@/lib/discord-broadcaster";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { verifyTournamentOwnership } from "@/lib/authorization";
 import { logError } from "@/lib/logger";
+import { isValidWebhookUrl } from "@/lib/discord-queue";
 
 export async function GET(
   req: NextRequest,
@@ -83,8 +84,7 @@ export async function PATCH(
     const newStatus = validUpdates.status;
     if (newStatus && oldStatus !== newStatus && tournament.discord) {
       const wh = tournament.discord;
-      const isValid = wh.startsWith("https://discord.com/api/webhooks/") || wh.startsWith("https://discordapp.com/api/webhooks/");
-      if (isValid) {
+      if (isValidWebhookUrl(wh)) {
         try {
           if (newStatus === "registration") await broadcastMilestone(wh, tournament, "REGISTRATION_OPEN");
           else if (newStatus === "live") await broadcastMilestone(wh, tournament, "TOURNAMENT_STARTED");

@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { logError } from "@/lib/logger";
 import { validateSubmittedMatchResults } from "@/lib/match-result-validation";
 import { triggerAutoAdvanceIfComplete } from "@/lib/stage-advancement-engine";
+import { isValidWebhookUrl } from "@/lib/discord-queue";
 
 // ============================================================
 // SCORING — uses lib/scoring-engine.ts as single source of truth
@@ -1346,10 +1347,7 @@ export async function PATCH(
 
     if (hasResults && existing.tournament.discord) {
       const webhookUrl = existing.tournament.discord;
-      if (
-        webhookUrl.startsWith("https://discord.com/api/webhooks/") ||
-        webhookUrl.startsWith("https://discordapp.com/api/webhooks/")
-      ) {
+      if (isValidWebhookUrl(webhookUrl)) {
         try {
           await postToDiscord(
             webhookUrl,

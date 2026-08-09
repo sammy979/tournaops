@@ -10,6 +10,7 @@
 // ============================================================
 
 import { prisma } from "@/lib/prisma";
+import { sendToDiscord, sendEmbedBatches, isValidWebhookUrl, fireAndForget } from "@/lib/discord-queue";
 
 export interface StageCompletionStatus {
   isComplete: boolean;
