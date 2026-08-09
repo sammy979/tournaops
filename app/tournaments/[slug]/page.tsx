@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import LiveRegistrationCounter from "@/components/tournament/LiveRegistrationCounter";
+import SponsorsBar from "@/components/tournament/SponsorsBar";
 import {
   Trophy, Users, Share2, Loader2, Target, ChevronLeft,
   Shield, User, Crown, Flame, Crosshair, Calendar,
@@ -845,6 +846,8 @@ export default function PublicTournamentPage() {
           </div>
         )}
       </div>
+
+      <SponsorsBar sponsors={branding?.sponsors || []} primaryColor={primaryColor} />
 
       {/* ── FOOTER ───────────────────────────────────────── */}
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", marginTop: "3rem" }}>
