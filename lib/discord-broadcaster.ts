@@ -234,7 +234,7 @@ export async function broadcastMilestone(
 export async function broadcastStandingsImage(webhookUrl: string, tournament: any) {
   const urls = tournamentUrls(tournament);
   // Uses the existing preview page as image source
-  const imageUrl = "https://www.tournaops.com/api/tournaments/" + tournament.id + "/screenshot?type=standings&t=" + Date.now();
+  const imageUrl = "https://www.tournaops.com/api/tournaments/" + tournament.id + "/standings-image?t=" + Date.now();
 
   const embed: DiscordEmbed = {
     ...baseEmbed(tournament),
