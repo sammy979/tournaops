@@ -62,6 +62,15 @@ export default function TournamentDiscordPage() {
     setTesting(true);
     setTestResult(null);
 
+    // Auto-save first so the API can find the webhook
+    try {
+      await fetch(/api/tournaments/, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ discord: webhookUrl.trim() }),
+      });
+    } catch {}
+
     try {
       const testPayload = {
         embeds: [{
