@@ -70,10 +70,12 @@ export async function POST(
       }];
     }
 
-    // Delete existing matches for this stage
-    await prisma.match.deleteMany({
+    // Delete ALL existing matches for this stage (bulletproof, transactional)
+    const beforeCount = await prisma.match.count({ where: { tournamentId: stage.tournamentId, stageId: stageId } });
+    const deleted = await prisma.match.deleteMany({
       where: { tournamentId: stage.tournamentId, stageId: stageId },
     });
+    console.log("[CONFIGURE_DAYS] Deleted " + deleted.count + "/" + beforeCount + " matches for stage " + stageId);
 
     // Create fresh matches per group per day
     const matchesToCreate: Prisma.MatchCreateManyInput[] = [];
