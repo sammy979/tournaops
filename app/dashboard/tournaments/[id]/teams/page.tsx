@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -82,7 +82,7 @@ export default function TeamsPage() {
       setTeams(prev => prev.filter(t => t.id !== teamId));
       if (editingTeam?.id === teamId) setEditingTeam(null);
     } else {
-      alert("Failed to delete team");
+      await dialog.alert({ title: "Delete Failed", description: "Failed to delete team. Please try again.", variant: "danger" });
     }
   }
 
@@ -108,7 +108,7 @@ export default function TeamsPage() {
         setTimeout(() => setSaved(null), 2000);
         setEditingTeam(null);
       } else {
-        alert("Failed to save team");
+        await dialog.alert({ title: "Save Failed", description: "Failed to save team changes. Please try again.", variant: "danger" });
       }
     } finally {
       setSaving(false);
@@ -116,7 +116,10 @@ export default function TeamsPage() {
   }
 
   async function addTeam() {
-    if (!newTeam.name.trim()) return alert("Team name required");
+    if (!newTeam.name.trim()) {
+      await dialog.alert({ title: "Name Required", description: "Please enter a team name before adding.", variant: "warning" });
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch(`/api/tournaments/${id}/teams`, {
@@ -143,7 +146,7 @@ export default function TeamsPage() {
         setAddingTeam(false);
       } else {
         const err = await res.json();
-        alert(err.error || "Failed to add team");
+        await dialog.alert({ title: "Add Failed", description: err.error || "Failed to add team. Please try again.", variant: "danger" });
       }
     } finally {
       setSaving(false);
@@ -153,7 +156,10 @@ export default function TeamsPage() {
   function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>, teamId?: string) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) return alert("Max 2MB");
+    if (file.size > 2 * 1024 * 1024) {
+      void dialog.alert({ title: "File Too Large", description: "Please use an image under 2MB.", variant: "warning" });
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       const url = reader.result as string;
@@ -187,7 +193,7 @@ export default function TeamsPage() {
             Teams
           </h1>
           <p style={{ color: "#6b7280", fontSize: "0.85rem", marginTop: "0.25rem" }}>
-            {tournament?.name} · {teams.length}/{tournament?.maxTeams} teams
+            {tournament?.name} Â· {teams.length}/{tournament?.maxTeams} teams
           </p>
         </div>
         <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -323,7 +329,7 @@ export default function TeamsPage() {
                         <span style={{ fontSize: "0.9rem", fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{team.name}</span>
                       </div>
                       <div style={{ fontSize: "0.7rem", color: "#6b7280", marginTop: "0.125rem" }}>
-                        {team.players.length} players{team.seed ? ` · Seed #${team.seed}` : ""}
+                        {team.players.length} players{team.seed ? ` Â· Seed #${team.seed}` : ""}
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: "0.25rem" }}>

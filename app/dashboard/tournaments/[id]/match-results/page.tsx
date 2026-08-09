@@ -232,10 +232,10 @@ export default function MatchResultsPage() {
         await loadData();
       } else {
         const err = await res.json();
-        alert("Error: " + (err.error || "Failed"));
+        await dialog.alert({ title: "Save Failed", description: err.error || "Failed to save results.", variant: "danger" });
       }
     } catch {
-      alert("Failed to save");
+      await dialog.alert({ title: "Save Failed", description: "An unexpected error occurred while saving results.", variant: "danger" });
     } finally {
       setSaving(false);
     }
@@ -477,28 +477,55 @@ export default function MatchResultsPage() {
               </div>
               <button
                 onClick={async () => {
+                  // Step 1: Confirm intent
                   const ok = await dialog.confirm({
-      title: `Advance to ${nextStage.name}?`,
-      description: `Top teams from ${activeStage.name} will be calculated, snake-seeded into ${nextStage.name} groups, and ${activeStage.name} will be locked. A Discord announcement will be posted.`,
-      confirmLabel: `Advance to ${nextStage.name}`,
-      variant: "info",
-    });
-    if (!ok) return;
+                    title: `Advance to ${nextStage.name}?`,
+                    description: `Top teams from ${activeStage.name} will be calculated, snake-seeded into ${nextStage.name} groups, and ${activeStage.name} will be locked. A Discord announcement will be posted.`,
+                    confirmLabel: `Advance to ${nextStage.name}`,
+                    variant: "info",
+                  });
+                  if (!ok) return;
+
+                  // Step 2: Collect reason (required by API, minimum 5 chars)
+                  const reason = await dialog.prompt({
+                    title: "Advancement Reason",
+                    description: "Provide a reason for this advancement. This is recorded in the audit log.",
+                    placeholder: "e.g. All matches complete, advancing top 8 teams",
+                    minLength: 5,
+                    maxLength: 250,
+                    submitLabel: "Confirm Advance",
+                    variant: "warning",
+                    helperText: "Minimum 5 characters required",
+                  });
+                  if (!reason) return;
+
                   try {
                     const res = await fetch(`/api/tournaments/${tournamentId}/force-advance`, {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ stageId: activeStage.id }),
+                      body: JSON.stringify({ stageId: activeStage.id, reason }),
                     });
                     const data = await res.json();
                     if (res.ok && data.success) {
-                      alert("✅ " + data.message);
+                      await dialog.alert({
+                        title: "Stage Advanced",
+                        description: data.message || `Successfully advanced to ${nextStage.name}.`,
+                        variant: "success",
+                      });
                       loadData();
                     } else {
-                      alert("Failed: " + (data.error || "Unknown"));
+                      await dialog.alert({
+                        title: "Advancement Failed",
+                        description: data.error || "Failed to advance stage. Please try again.",
+                        variant: "danger",
+                      });
                     }
                   } catch (e: any) {
-                    alert("Error: " + e.message);
+                    await dialog.alert({
+                      title: "Error",
+                      description: e.message || "An unexpected error occurred.",
+                      variant: "danger",
+                    });
                   }
                 }}
                 style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "#4ade80", color: "#000", padding: "0.75rem 1.5rem", borderRadius: "0.75rem", border: "none", fontSize: "0.9rem", fontWeight: 800, cursor: "pointer", boxShadow: "0 8px 20px rgba(34,197,94,0.3)" }}
