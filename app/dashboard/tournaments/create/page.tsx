@@ -134,7 +134,7 @@ export default function CreateTournamentPage() {
     ? activeStages[0].groups * activeStages[0].teamsPerGroup
     : maxTeams;
 
-  const effectiveMaxTeams = Math.max(maxTeams, totalTeamsFromStructure);
+  const effectiveMaxTeams = maxTeams; // Always use user-specified count
 
   // Total rounds
   const totalRounds = activeStages.length || 1;
