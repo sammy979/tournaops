@@ -1,28 +1,13 @@
-﻿"use client";
+"use client";
 import { useState, useEffect, use, useMemo } from "react";
 import { Trophy, Target, MapPin, ChevronLeft, Crown, Crosshair, Award, Users, Layers } from "lucide-react";
 import Link from "next/link";
 import TeamLogo from "@/components/tournament/TeamLogo";
 import SponsorsBar from "@/components/tournament/SponsorsBar";
 
-const DEFAULT_PLACEMENT_POINTS = [15, 12, 10, 8, 6, 4, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0];
-const DEFAULT_KILL_POINTS = 1;
-
-function parseScoringRule(scoringRule: any) {
-  const raw = scoringRule || {};
-  const killPoints = Number(raw.killPoints ?? DEFAULT_KILL_POINTS);
-  let placementPoints: number[] = DEFAULT_PLACEMENT_POINTS;
-  if (Array.isArray(raw.placementPoints) && raw.placementPoints.length > 0) {
-    placementPoints = raw.placementPoints.map(Number);
-  } else if (raw.placementPoints && typeof raw.placementPoints === "object") {
-    placementPoints = Object.values(raw.placementPoints).map(Number);
-  }
-  const wwcdBonus = Number(raw.wwcdBonus ?? 0);
-  return { killPoints, placementPoints, wwcdBonus };
-}
-
-function calcStandings(teamIds: string[], matchList: any[], allTeams: any[], scoringRule: any) {
-  const { killPoints, placementPoints, wwcdBonus } = parseScoringRule(scoringRule);
+// Uses stored server-calculated totalPoints from match results
+// This is the single source of truth — no client-side recalculation
+function calcStandings(teamIds: string[], matchList: any[], allTeams: any[]) {
   const teamMap = new Map(allTeams.map((t: any) => [t.id, t]));
   const stats = new Map<string, any>();
   for (const tid of teamIds) {
@@ -37,14 +22,11 @@ function calcStandings(teamIds: string[], matchList: any[], allTeams: any[], sco
     for (const r of m.results) {
       const s = stats.get(r.teamId);
       if (!s) continue;
-      const kills = Number(r.kills) || 0;
-      const placement = Number(r.placement) || 0;
-      const isWWCD = r.wwcd === true || placement === 1;
-      const pPts = placement >= 1 ? (placementPoints[placement - 1] ?? 0) : 0;
-      s.totalPoints += pPts + kills * killPoints + (isWWCD ? wwcdBonus : 0);
-      s.totalKills += kills;
-      if (isWWCD) s.wwcdCount += 1;
-      s.matchesPlayed += 1;
+      // Use server-calculated totalPoints — do not recalculate
+      s.totalPoints += Number(r.totalPoints) || 0;
+      s.totalKills += Number(r.kills) || 0;
+      if (r.wwcd === true || Number(r.placement) === 1) s.wwcdCount++;
+      s.matchesPlayed++;
     }
   }
   return Array.from(stats.values())
@@ -92,21 +74,21 @@ export default function PublicResultsPage({ params }: { params: Promise<{ slug: 
 
     if (view.type === "overall") {
       const allTeamIds = (t.teams || []).map((x: any) => x.id);
-      return calcStandings(allTeamIds, t.matches || [], t.teams || [], t.scoringRule);
+      return calcStandings(allTeamIds, t.matches || [], t.teams || []);
     }
     if (view.type === "stage" && view.stageId) {
       const stage = (t.stages || []).find((s: any) => s.id === view.stageId);
       if (!stage) return [];
       const teamIds = (stage.groups || []).flatMap((g: any) => g.teamIds || []);
       const stageMatches = (t.matches || []).filter((m: any) => m.stageId === view.stageId);
-      return calcStandings(teamIds, stageMatches, t.teams || [], stage.scoringRule || t.scoringRule);
+      return calcStandings(teamIds, stageMatches, t.teams || []);
     }
     if (view.type === "group" && view.groupId) {
       const stage = (t.stages || []).find((s: any) => s.id === view.stageId);
       const group = stage?.groups.find((g: any) => g.id === view.groupId);
       if (!group) return [];
       const groupMatches = (t.matches || []).filter((m: any) => m.groupId === view.groupId);
-      return calcStandings(group.teamIds || [], groupMatches, t.teams || [], stage.scoringRule || t.scoringRule);
+      return calcStandings(group.teamIds || [], groupMatches, t.teams || []);
     }
     return [];
   }, [data, selectedView, views]);

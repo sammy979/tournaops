@@ -1,13 +1,11 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-interface MatchResultItem {
-  teamId?: string;
-  placement?: number;
-  kills?: number;
-  wwcd?: boolean;
-  players?: Array<{ name: string; kills: number }>;
-}
+// ============================================================
+// PUBLIC tournament API — no authentication required
+// NEVER exposes: userId, registrationData, private settings
+// Standings use stored totalPoints from server-calculated results
+// ============================================================
 
 export async function GET(
   req: NextRequest,
@@ -17,7 +15,7 @@ export async function GET(
     const { slug } = await context.params;
 
     const tournament = await prisma.tournament.findFirst({
-      where: { slug },
+      where: { slug, isPublic: true },
       select: {
         id: true,
         slug: true,
@@ -31,26 +29,35 @@ export async function GET(
         scoringRule: true,
         mapRotation: true,
         bannerImage: true,
+        trophyImage: true,
+        coverImage: true,
+        sponsorLogos: true,
         rules: true,
-        isPublic: true,
         brandingData: true,
-        registrationData: true,
         createdAt: true,
-        userId: true,
+        // userId intentionally excluded from public response
+        userId: true, // needed to find organizer but NOT returned
       },
     });
 
     if (!tournament) {
-      return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Tournament not found" },
+        { status: 404 }
+      );
     }
 
-    let organizer = null;
+    // Fetch organizer display info only
+    let organizer: { username: string; displayName: string; avatar: string | null } | null = null;
     try {
-      organizer = await prisma.user.findUnique({
+      const user = await prisma.user.findUnique({
         where: { id: tournament.userId },
-        select: { id: true, username: true, displayName: true, avatar: true },
+        select: { username: true, displayName: true, avatar: true },
       });
-    } catch {}
+      if (user) organizer = user;
+    } catch {
+      // Non-fatal
+    }
 
     const teams = await prisma.team.findMany({
       where: { tournamentId: tournament.id },
@@ -59,9 +66,24 @@ export async function GET(
         name: true,
         tag: true,
         logo: true,
-        players: true,
+        banner: true,
+        country: true,
+        countryFlag: true,
+        seed: true,
+        playersList: {
+          select: {
+            id: true,
+            name: true,
+            ign: true,
+            role: true,
+            photo: true,
+            isCaptain: true,
+            country: true,
+            countryFlag: true,
+          },
+        },
       },
-      orderBy: { name: "asc" },
+      orderBy: { seed: "asc" },
     });
 
     const matches = await prisma.match.findMany({
@@ -73,12 +95,42 @@ export async function GET(
         results: true,
         matchNumber: true,
         map: true,
+        stageId: true,
+        groupId: true,
+        startTime: true,
+        endTime: true,
       },
+      orderBy: { matchNumber: "asc" },
     });
 
     const stages = await prisma.stage.findMany({
       where: { tournamentId: tournament.id },
-      include: { groups: { orderBy: { order: "asc" } } },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        status: true,
+        order: true,
+        numGroups: true,
+        teamsPerGroup: true,
+        matchesPerGroup: true,
+        totalTeams: true,
+        teamsAdvancing: true,
+        teamsEliminated: true,
+        scoringRule: true,
+        mapRotation: true,
+        isLocked: true,
+        groups: {
+          select: {
+            id: true,
+            name: true,
+            order: true,
+            teamIds: true,
+            status: true,
+          },
+          orderBy: { order: "asc" },
+        },
+      },
       orderBy: { order: "asc" },
     });
 
@@ -87,31 +139,13 @@ export async function GET(
       select: { id: true, name: true, order: true },
     });
 
-    // Calculate registration counts
-    const regData = Array.isArray(tournament.registrationData) ? tournament.registrationData as any[] : [];
-    const registrationStats = {
-      total: regData.length,
-      pending: regData.filter(r => r.status === "pending").length,
-      approved: regData.filter(r => r.status === "approved").length,
-      rejected: regData.filter(r => r.status === "rejected").length,
-    };
+    // ── STANDINGS using stored server-calculated totalPoints ──
+    // We trust r.totalPoints which was set by the server at result save time
+    // We do NOT recalculate here to avoid three-engine inconsistency
 
-    const totalSlotsUsed = teams.length + registrationStats.pending;
-    const slotsAvailable = Math.max(0, tournament.maxTeams - totalSlotsUsed);
-    const fillPercentage = Math.min(100, Math.round((totalSlotsUsed / tournament.maxTeams) * 100));
-
-    // Scoring calculation
-    const scoringRule: any = tournament.scoringRule || {};
-    const killPoints = Number(scoringRule.killPoints) || 1;
-    let placementPoints: number[] = [10, 6, 5, 4, 3, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0];
-    if (Array.isArray(scoringRule.placementPoints)) placementPoints = scoringRule.placementPoints;
-    const wwcdBonus = Number(scoringRule.wwcdBonus) || 0;
-
-    const teamStandings: Record<string, any> = {};
-    const playerKills: Record<string, any> = {};
-
-    teams.forEach((team) => {
-      teamStandings[team.id] = {
+    const teamStandings = new Map<string, any>();
+    for (const team of teams) {
+      teamStandings.set(team.id, {
         teamId: team.id,
         teamName: team.name,
         teamTag: team.tag || null,
@@ -120,87 +154,108 @@ export async function GET(
         totalKills: 0,
         matchesPlayed: 0,
         wwcdCount: 0,
-        players: Array.isArray(team.players) ? team.players : [],
-      };
-      const teamPlayers = Array.isArray(team.players) ? team.players as any[] : [];
-      teamPlayers.forEach((p: any) => {
-        if (!p || !p.name) return;
-        playerKills[`${team.id}-${p.name}`] = {
-          name: p.name,
-          teamName: team.name,
-          teamTag: team.tag,
-          teamLogo: team.logo,
-          kills: 0,
-          photo: p.photo,
-        };
+        placementPoints: 0,
+        killPoints: 0,
       });
-    });
+    }
 
-    matches.forEach((match) => {
-      if (!match.results) return;
-      const results = Array.isArray(match.results) ? match.results as MatchResultItem[] : [];
-      results.forEach((result) => {
-        if (!result || !result.teamId) return;
-        const team = teamStandings[result.teamId];
-        if (!team) return;
-        const kills = Number(result.kills) || 0;
-        const placement = Number(result.placement) || 16;
-        const placeIndex = Math.max(0, placement - 1);
-        const placePoints = placementPoints[placeIndex] || 0;
-        const isWWCD = placement === 1 || result.wwcd === true;
-        team.totalKills += kills;
-        team.totalPoints += (kills * killPoints) + placePoints + (isWWCD ? wwcdBonus : 0);
-        team.matchesPlayed += 1;
-        if (isWWCD) team.wwcdCount += 1;
-        if (Array.isArray(result.players)) {
-          result.players.forEach((p: any) => {
-            if (!p || !p.name) return;
-            const key = `${result.teamId}-${p.name}`;
-            if (playerKills[key]) playerKills[key].kills += Number(p.kills) || 0;
-          });
-        }
-      });
-    });
+    for (const match of matches) {
+      if (
+        match.status !== "completed" ||
+        !Array.isArray(match.results)
+      )
+        continue;
 
-    const standings = Object.values(teamStandings)
-      .sort((a: any, b: any) => {
-        if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
-        if (b.wwcdCount !== a.wwcdCount) return b.wwcdCount - a.wwcdCount;
-        return b.totalKills - a.totalKills;
-      })
-      .map((s: any, i: number) => ({ ...s, rank: i + 1 }));
+      for (const r of match.results as any[]) {
+        if (!r?.teamId) continue;
+        const s = teamStandings.get(r.teamId);
+        if (!s) continue;
 
-    const topFraggers = Object.values(playerKills)
-      .filter((p: any) => p.kills > 0)
-      .sort((a: any, b: any) => b.kills - a.kills)
-      .slice(0, 10);
+        // Use server-calculated totalPoints — single source of truth
+        s.totalPoints += Number(r.totalPoints) || 0;
+        s.placementPoints += Number(r.placementPoints) || 0;
+        s.killPoints += Number(r.killPoints) || 0;
+        s.totalKills += Number(r.kills) || 0;
+        s.matchesPlayed += 1;
+        if (r.wwcd === true || Number(r.placement) === 1) s.wwcdCount++;
+      }
+    }
 
-    // Remove registrationData from response but keep the stats
-    const { registrationData, ...tournamentPublic } = tournament;
+    const standings = Array.from(teamStandings.values())
+      .filter((s) => s.matchesPlayed > 0)
+      .sort(
+        (a, b) =>
+          b.totalPoints - a.totalPoints ||
+          b.wwcdCount - a.wwcdCount ||
+          b.totalKills - a.totalKills
+      )
+      .map((s, i) => ({ ...s, rank: i + 1 }));
 
-    return NextResponse.json({
-      tournament: { ...tournamentPublic, teams, matches, rounds, stages },
-      standings,
-      organizer,
-      branding: tournament.brandingData || null,
-      topFraggers,
-      registrationStats,
-      slotsInfo: {
-        maxTeams: tournament.maxTeams,
-        approvedTeams: teams.length,
-        pendingRegistrations: registrationStats.pending,
-        totalUsed: totalSlotsUsed,
-        available: slotsAvailable,
-        fillPercentage,
+    // ── SLOT INFO ─────────────────────────────────────────────
+    const slotsInfo = {
+      maxTeams: tournament.maxTeams,
+      approvedTeams: teams.length,
+      available: Math.max(0, tournament.maxTeams - teams.length),
+      fillPercentage: Math.min(
+        100,
+        Math.round((teams.length / tournament.maxTeams) * 100)
+      ),
+    };
+
+    // Build response — never include userId in public response
+    const { userId: _userId, ...tournamentPublic } = tournament as any;
+
+    return NextResponse.json(
+      {
+        tournament: {
+          ...tournamentPublic,
+          teams,
+          matches: matches.map((m) => ({
+            id: m.id,
+            name: m.name,
+            status: m.status,
+            matchNumber: m.matchNumber,
+            map: m.map,
+            stageId: m.stageId,
+            groupId: m.groupId,
+            startTime: m.startTime,
+            endTime: m.endTime,
+            // Only include results for completed matches
+            results:
+              m.status === "completed" && Array.isArray(m.results)
+                ? (m.results as any[]).map((r) => ({
+                    teamId: r.teamId,
+                    teamName: r.teamName,
+                    placement: r.placement,
+                    kills: r.kills,
+                    totalPoints: r.totalPoints,
+                    placementPoints: r.placementPoints,
+                    killPoints: r.killPoints,
+                    wwcd: r.wwcd,
+                    damage: r.damage,
+                  }))
+                : [],
+          })),
+          stages,
+          rounds,
+        },
+        standings,
+        organizer,
+        branding: tournament.brandingData || null,
+        slotsInfo,
       },
-    }, {
-      headers: { "Cache-Control": "no-cache, no-store, must-revalidate" },
-    });
-  } catch (error: any) {
-    console.error("Public API error:", error?.message, error?.stack);
-    return NextResponse.json({
-      error: error?.message || "Failed",
-      details: String(error),
-    }, { status: 500 });
+      {
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+      }
+    );
+  } catch (err) {
+    // Never expose stack traces or internal details publicly
+    console.error("[PUBLIC_TOURNAMENT_API]", err instanceof Error ? err.message : err);
+    return NextResponse.json(
+      { error: "Tournament not available" },
+      { status: 500 }
+    );
   }
 }
