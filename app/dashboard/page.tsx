@@ -1,12 +1,13 @@
 ﻿"use client";
-
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  Trophy, Plus, TrendingUp, Users, Target,
-  Crosshair, ArrowRight, Crown, Zap,
-  BarChart3, Radio, Clock, Star
+  Trophy, Plus, Users, Target, Crosshair, ArrowRight,
+  Crown, Zap, BarChart3, Radio, Clock, Star, Play,
+  TrendingUp, CheckCircle, Circle, Loader2, ExternalLink,
+  Palette, MessageSquare, Settings, ChevronRight, Flame
 } from "lucide-react";
+import TeamLogo from "@/components/tournament/TeamLogo";
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
@@ -17,303 +18,297 @@ export default function DashboardPage() {
     Promise.all([
       fetch("/api/auth/me").then(r => r.json()),
       fetch("/api/tournaments").then(r => r.json()),
-    ]).then(([userData, tourData]) => {
-      if (userData.user) setUser(userData.user);
-      setTournaments(tourData.tournaments || []);
+    ]).then(([u, t]) => {
+      if (u.user) setUser(u.user);
+      setTournaments(t.tournaments || []);
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  const stats = {
-    total: tournaments.length,
-    live: tournaments.filter(t => t.status === "live").length,
-    completed: tournaments.filter(t => t.status === "completed").length,
-    totalTeams: tournaments.reduce((a, t) => a + (t._count?.teams || 0), 0),
-  };
+  const live = tournaments.filter(t => t.status === "live");
+  const registration = tournaments.filter(t => t.status === "registration");
+  const completed = tournaments.filter(t => t.status === "completed");
+  const draft = tournaments.filter(t => t.status === "draft");
+  const totalTeams = tournaments.reduce((a, t) => a + (t._count?.teams || 0), 0);
+  const totalMatches = tournaments.reduce((a, t) => a + (t._count?.matches || 0), 0);
 
-  const recentTournaments = tournaments.slice(0, 5);
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  const quickActions = [
-    { icon: Plus, label: "New Tournament", href: "/dashboard/tournaments/create", color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
-    { icon: Radio, label: "OBS Overlays", href: "/dashboard/overlay", color: "#a855f7", bg: "rgba(168,85,247,0.1)" },
-    { icon: Zap, label: "AI Assistant", href: "/dashboard/ai", color: "#10b981", bg: "rgba(16,185,129,0.1)" },
-    { icon: BarChart3, label: "Analytics", href: "/dashboard/analytics", color: "#3b82f6", bg: "rgba(59,130,246,0.1)" },
-  ];
-
-  const statusColors: Record<string, string> = {
-    live: "#4ade80",
-    draft: "#9ca3af",
-    registration: "#60a5fa",
-    completed: "#c084fc",
-    cancelled: "#f87171",
-  };
-
-  const statusBg: Record<string, string> = {
-    live: "rgba(34,197,94,0.1)",
-    draft: "rgba(107,114,128,0.1)",
-    registration: "rgba(59,130,246,0.1)",
-    completed: "rgba(168,85,247,0.1)",
-    cancelled: "rgba(239,68,68,0.1)",
+  const STATUS_CONFIG: Record<string, { color: string; bg: string; border: string; dot?: boolean }> = {
+    live:         { color: "#4ade80", bg: "rgba(34,197,94,0.12)",    border: "rgba(34,197,94,0.3)",    dot: true },
+    registration: { color: "#60a5fa", bg: "rgba(59,130,246,0.12)",   border: "rgba(59,130,246,0.25)" },
+    completed:    { color: "#c084fc", bg: "rgba(168,85,247,0.12)",   border: "rgba(168,85,247,0.25)" },
+    draft:        { color: "#9ca3af", bg: "rgba(107,114,128,0.1)",   border: "rgba(107,114,128,0.2)" },
+    cancelled:    { color: "#f87171", bg: "rgba(239,68,68,0.1)",     border: "rgba(239,68,68,0.2)" },
   };
 
   if (loading) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
-      <div style={{
-        width: "2rem", height: "2rem",
-        border: "2px solid rgba(245,158,11,0.3)",
-        borderTopColor: "#f59e0b",
-        borderRadius: "50%",
-        animation: "spin 0.8s linear infinite",
-      }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh", gap: "0.75rem" }}>
+      <Loader2 style={{ width: "1.75rem", height: "1.75rem", color: "#f59e0b", animation: "spin 0.8s linear infinite" }} />
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}`}</style>
     </div>
   );
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+    <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}`}</style>
 
-      {/* Header */}
-      <div style={{ marginBottom: "2rem" }}>
-        <h1 style={{ fontSize: "1.875rem", fontWeight: 800, color: "#fff", marginBottom: "0.25rem" }}>
-          {user ? `Welcome back, ${user.displayName || user.username}` : "Dashboard"}
-        </h1>
-        <p style={{ color: "#6b7280", fontSize: "0.875rem" }}>
-          {new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-        </p>
+      {/* ── HEADER ── */}
+      <div style={{ marginBottom: "1.75rem", display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
+        <div>
+          <div style={{ fontSize: "0.75rem", color: "#6b7280", marginBottom: "0.25rem" }}>
+            {new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+          </div>
+          <h1 style={{ fontSize: "clamp(1.5rem,4vw,2.25rem)", fontWeight: 800, color: "#fff", lineHeight: 1.1 }}>
+            {greeting}{user ? `, ${user.displayName || user.username}` : ""} 👋
+          </h1>
+          {user?.isPro && (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", marginTop: "0.5rem", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: "9999px", padding: "0.2rem 0.75rem", fontSize: "0.7rem", fontWeight: 700, color: "#f59e0b" }}>
+              <Crown style={{ width: "0.75rem", height: "0.75rem" }} />PRO MEMBER
+            </div>
+          )}
+        </div>
+        <Link href="/dashboard/tournaments/create"
+          style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "#f59e0b", color: "#000", borderRadius: "0.875rem", padding: "0.75rem 1.5rem", fontWeight: 800, fontSize: "0.9rem", textDecoration: "none", boxShadow: "0 8px 25px rgba(245,158,11,0.3)" }}>
+          <Plus style={{ width: "1rem", height: "1rem" }} />New Tournament
+        </Link>
       </div>
 
-      {/* Pro Banner */}
-      {user && !user.isPro && (
-        <div style={{
-          background: "linear-gradient(135deg, rgba(245,158,11,0.08), rgba(249,115,22,0.05))",
-          border: "1px solid rgba(245,158,11,0.15)",
-          borderRadius: "1rem",
-          padding: "1rem 1.25rem",
-          marginBottom: "1.5rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "0.75rem",
-        }}>
+      {/* ── LIVE ALERT ── */}
+      {live.length > 0 && (
+        <div style={{ background: "linear-gradient(135deg, rgba(34,197,94,0.1), rgba(16,185,129,0.05))", border: "1px solid rgba(34,197,94,0.25)", borderRadius: "1rem", padding: "1rem 1.25rem", marginBottom: "1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <Crown style={{ width: "1.25rem", height: "1.25rem", color: "#f59e0b", flexShrink: 0 }} />
+            <div style={{ width: "0.6rem", height: "0.6rem", borderRadius: "50%", background: "#4ade80", animation: "pulse 2s infinite", flexShrink: 0 }} />
             <div>
-              <div style={{ fontWeight: 600, color: "#fff", fontSize: "0.9rem" }}>Upgrade to Pro</div>
-              <div style={{ color: "#9ca3af", fontSize: "0.8rem" }}>Unlimited tournaments, AI assistant, 400 teams</div>
+              <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#4ade80" }}>{live.length} Tournament{live.length > 1 ? "s" : ""} LIVE Now</div>
+              <div style={{ fontSize: "0.75rem", color: "#9ca3af" }}>{live.map((t: any) => t.name).join(", ")}</div>
             </div>
           </div>
-          <Link href="/dashboard/upgrade" style={{
-            background: "#f59e0b",
-            color: "#000",
-            padding: "0.5rem 1.25rem",
-            borderRadius: "0.625rem",
-            fontWeight: 700,
-            fontSize: "0.8rem",
-            textDecoration: "none",
-            whiteSpace: "nowrap",
-          }}>
-            Start Free Trial
+          <Link href={`/dashboard/tournaments/${live[0].id}/overview`}
+            style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: "0.625rem", padding: "0.5rem 1rem", color: "#4ade80", fontSize: "0.8rem", fontWeight: 700, textDecoration: "none" }}>
+            Open Command Center <ChevronRight style={{ width: "0.875rem", height: "0.875rem" }} />
           </Link>
         </div>
       )}
 
-      {/* Stats */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-        gap: "1rem",
-        marginBottom: "2rem",
-      }}>
+      {/* ── STATS ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "0.875rem", marginBottom: "1.75rem" }}>
         {[
-          { icon: Trophy, label: "Tournaments", value: stats.total, color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
-          { icon: TrendingUp, label: "Live Now", value: stats.live, color: "#4ade80", bg: "rgba(34,197,94,0.1)" },
-          { icon: Target, label: "Completed", value: stats.completed, color: "#c084fc", bg: "rgba(168,85,247,0.1)" },
-          { icon: Users, label: "Total Teams", value: stats.totalTeams, color: "#60a5fa", bg: "rgba(59,130,246,0.1)" },
-        ].map(stat => {
-          const Icon = stat.icon;
+          { label: "Tournaments", value: tournaments.length, icon: Trophy, color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
+          { label: "Live Now", value: live.length, icon: Radio, color: "#4ade80", bg: "rgba(34,197,94,0.1)" },
+          { label: "Total Teams", value: totalTeams, icon: Users, color: "#60a5fa", bg: "rgba(59,130,246,0.1)" },
+          { label: "Completed", value: completed.length, icon: CheckCircle, color: "#c084fc", bg: "rgba(168,85,247,0.1)" },
+        ].map(s => {
+          const Icon = s.icon;
           return (
-            <div key={stat.label} style={{
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "1rem",
-              padding: "1.25rem",
-            }}>
-              <div style={{
-                width: "2.25rem", height: "2.25rem",
-                borderRadius: "0.625rem",
-                background: stat.bg,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                marginBottom: "0.875rem",
-              }}>
-                <Icon style={{ width: "1.125rem", height: "1.125rem", color: stat.color }} />
+            <div key={s.label} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1.125rem" }}>
+              <div style={{ width: "2rem", height: "2rem", borderRadius: "0.5rem", background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "0.75rem" }}>
+                <Icon style={{ width: "1rem", height: "1rem", color: s.color }} />
               </div>
-              <div style={{ fontSize: "1.75rem", fontWeight: 800, color: "#fff", lineHeight: 1 }}>
-                {stat.value}
-              </div>
-              <div style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>
-                {stat.label}
-              </div>
+              <div style={{ fontSize: "1.75rem", fontWeight: 900, color: "#fff", lineHeight: 1 }}>{s.value}</div>
+              <div style={{ fontSize: "0.65rem", color: "#6b7280", marginTop: "0.25rem", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>{s.label}</div>
             </div>
           );
         })}
       </div>
 
-      {/* Quick Actions */}
-      <div style={{ marginBottom: "2rem" }}>
-        <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.875rem" }}>
-          Quick Actions
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "0.75rem" }}>
-          {quickActions.map(action => {
-            const Icon = action.icon;
-            return (
-              <Link
-                key={action.label}
-                href={action.href}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.75rem",
-                  padding: "1rem",
-                  borderRadius: "0.875rem",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  textDecoration: "none",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.06)";
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.03)";
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-                }}
-              >
-                <div style={{
-                  width: "2rem", height: "2rem",
-                  borderRadius: "0.5rem",
-                  background: action.bg,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                }}>
-                  <Icon style={{ width: "1rem", height: "1rem", color: action.color }} />
-                </div>
-                <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#d1d5db", whiteSpace: "nowrap" }}>
-                  {action.label}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "1.5rem" }} className="dash-grid">
 
-      {/* Recent Tournaments */}
-      <div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.875rem" }}>
-          <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4b5563", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-            Recent Tournaments
-          </div>
-          <Link href="/dashboard/tournaments" style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "#f59e0b", fontSize: "0.8rem", fontWeight: 600, textDecoration: "none" }}>
-            View all <ArrowRight style={{ width: "0.875rem", height: "0.875rem" }} />
-          </Link>
-        </div>
-
-        {recentTournaments.length === 0 ? (
-          <div style={{
-            background: "rgba(255,255,255,0.02)",
-            border: "2px dashed rgba(255,255,255,0.08)",
-            borderRadius: "1.25rem",
-            padding: "3rem",
-            textAlign: "center",
-          }}>
-            <Trophy style={{ width: "2.5rem", height: "2.5rem", color: "#374151", margin: "0 auto 1rem" }} />
-            <div style={{ fontWeight: 700, color: "#fff", marginBottom: "0.5rem" }}>No tournaments yet</div>
-            <div style={{ color: "#6b7280", fontSize: "0.875rem", marginBottom: "1.5rem" }}>
-              Create your first tournament and start running events
+        {/* ── LEFT: TOURNAMENTS ── */}
+        <div>
+          {/* Quick Actions */}
+          <div style={{ marginBottom: "1.5rem" }}>
+            <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.75rem" }}>Quick Actions</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "0.625rem" }}>
+              {[
+                { icon: Plus,         label: "New Tournament", href: "/dashboard/tournaments/create",  color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
+                { icon: Radio,        label: "OBS Overlays",   href: "/dashboard/overlay",             color: "#a855f7", bg: "rgba(168,85,247,0.1)" },
+                { icon: Zap,          label: "AI Assistant",   href: "/dashboard/ai",                  color: "#10b981", bg: "rgba(16,185,129,0.1)" },
+                { icon: MessageSquare,label: "Discord",         href: "/dashboard/discord",             color: "#818cf8", bg: "rgba(129,140,248,0.1)" },
+                { icon: Palette,      label: "Branding",        href: "/dashboard/branding",            color: "#34d399", bg: "rgba(52,211,153,0.1)" },
+                { icon: BarChart3,    label: "Analytics",       href: "/dashboard/analytics",           color: "#38bdf8", bg: "rgba(56,189,248,0.1)" },
+              ].map(action => {
+                const Icon = action.icon;
+                return (
+                  <Link key={action.label} href={action.href}
+                    style={{ display: "flex", alignItems: "center", gap: "0.625rem", padding: "0.75rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.875rem", textDecoration: "none", transition: "all 0.15s" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor = `${action.color}30`; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}>
+                    <div style={{ width: "1.875rem", height: "1.875rem", borderRadius: "0.5rem", background: action.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Icon style={{ width: "0.875rem", height: "0.875rem", color: action.color }} />
+                    </div>
+                    <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#d1d5db", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{action.label}</span>
+                  </Link>
+                );
+              })}
             </div>
-            <Link href="/dashboard/tournaments/create" style={{
-              display: "inline-flex", alignItems: "center", gap: "0.5rem",
-              background: "#f59e0b", color: "#000",
-              padding: "0.625rem 1.5rem",
-              borderRadius: "0.75rem",
-              fontWeight: 700, fontSize: "0.875rem",
-              textDecoration: "none",
-            }}>
-              <Plus style={{ width: "1rem", height: "1rem" }} />
-              Create Tournament
-            </Link>
           </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
-            {recentTournaments.map(t => (
-              <Link
-                key={t.id}
-                href={`/dashboard/tournaments/${t.id}`}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "1rem",
-                  padding: "1rem 1.25rem",
-                  borderRadius: "0.875rem",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  textDecoration: "none",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.03)";
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-                }}
-              >
-                <div style={{
-                  width: "2.5rem", height: "2.5rem",
-                  borderRadius: "0.625rem",
-                  background: "rgba(245,158,11,0.1)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                }}>
-                  <Trophy style={{ width: "1.125rem", height: "1.125rem", color: "#f59e0b" }} />
-                </div>
 
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, color: "#fff", fontSize: "0.9rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {t.name}
-                  </div>
-                  <div style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.125rem" }}>
-                    {t._count?.teams || 0} teams
-                  </div>
-                </div>
+          {/* Tournament List */}
+          <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
+              <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.1em" }}>Your Tournaments</div>
+              <Link href="/dashboard/tournaments" style={{ fontSize: "0.75rem", color: "#f59e0b", fontWeight: 600, textDecoration: "none" }}>View all</Link>
+            </div>
 
-                <div style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.375rem",
-                  padding: "0.25rem 0.75rem",
-                  borderRadius: "9999px",
-                  fontSize: "0.7rem",
-                  fontWeight: 600,
-                  background: statusBg[t.status] || "rgba(107,114,128,0.1)",
-                  color: statusColors[t.status] || "#9ca3af",
-                  border: `1px solid ${statusColors[t.status] || "#9ca3af"}30`,
-                  flexShrink: 0,
-                }}>
-                  {t.status === "live" && (
-                    <div style={{ width: "0.375rem", height: "0.375rem", borderRadius: "50%", background: "#4ade80" }} />
+            {tournaments.length === 0 ? (
+              <div style={{ background: "rgba(255,255,255,0.02)", border: "2px dashed rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "3rem 2rem", textAlign: "center" }}>
+                <Trophy style={{ width: "2.5rem", height: "2.5rem", color: "#374151", margin: "0 auto 1rem" }} />
+                <p style={{ color: "#9ca3af", fontWeight: 600, marginBottom: "0.5rem" }}>No tournaments yet</p>
+                <p style={{ color: "#6b7280", fontSize: "0.8rem", marginBottom: "1.25rem" }}>Create your first tournament to get started</p>
+                <Link href="/dashboard/tournaments/create"
+                  style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", background: "#f59e0b", color: "#000", borderRadius: "0.625rem", padding: "0.625rem 1.25rem", fontWeight: 700, fontSize: "0.85rem", textDecoration: "none" }}>
+                  <Plus style={{ width: "0.875rem", height: "0.875rem" }} />Create Tournament
+                </Link>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
+                {tournaments.slice(0, 8).map((t: any) => {
+                  const sc = STATUS_CONFIG[t.status] || STATUS_CONFIG.draft;
+                  const matchCount = t._count?.matches || 0;
+                  const teamCount = t._count?.teams || 0;
+                  return (
+                    <Link key={t.id} href={`/dashboard/tournaments/${t.id}/overview`}
+                      style={{ display: "flex", alignItems: "center", gap: "0.875rem", padding: "0.875rem 1rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.875rem", textDecoration: "none", transition: "all 0.15s" }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}>
+                      <div style={{ width: "2.25rem", height: "2.25rem", borderRadius: "0.625rem", background: "rgba(245,158,11,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Trophy style={{ width: "1rem", height: "1rem", color: "#f59e0b" }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: "0.875rem", fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</div>
+                        <div style={{ fontSize: "0.7rem", color: "#6b7280", marginTop: "0.125rem" }}>
+                          {teamCount} team{teamCount !== 1 ? "s" : ""} · {matchCount} match{matchCount !== 1 ? "es" : ""}
+                        </div>
+                      </div>
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", padding: "0.2rem 0.625rem", borderRadius: "9999px", fontSize: "0.65rem", fontWeight: 700, background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, flexShrink: 0, textTransform: "uppercase" }}>
+                        {sc.dot && <span style={{ width: "0.35rem", height: "0.35rem", borderRadius: "50%", background: sc.color, animation: "pulse 2s infinite" }} />}
+                        {t.status}
+                      </div>
+                      <ChevronRight style={{ width: "0.875rem", height: "0.875rem", color: "#4b5563", flexShrink: 0 }} />
+                    </Link>
+                  );
+                })}
+                {tournaments.length > 8 && (
+                  <Link href="/dashboard/tournaments"
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.375rem", padding: "0.75rem", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "0.875rem", color: "#6b7280", fontSize: "0.8rem", textDecoration: "none" }}>
+                    View {tournaments.length - 8} more tournaments <ChevronRight style={{ width: "0.75rem", height: "0.75rem" }} />
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── RIGHT SIDEBAR ── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+
+          {/* Status Breakdown */}
+          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1.25rem" }}>
+            <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.875rem" }}>Status Breakdown</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
+              {[
+                { label: "Live", count: live.length, color: "#4ade80" },
+                { label: "Registration", count: registration.length, color: "#60a5fa" },
+                { label: "Draft", count: draft.length, color: "#9ca3af" },
+                { label: "Completed", count: completed.length, color: "#c084fc" },
+              ].map(s => (
+                <div key={s.label} style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+                  <div style={{ width: "0.5rem", height: "0.5rem", borderRadius: "50%", background: s.color, flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: "0.8rem", color: "#9ca3af" }}>{s.label}</span>
+                  <span style={{ fontSize: "0.85rem", fontWeight: 700, color: s.count > 0 ? "#fff" : "#4b5563" }}>{s.count}</span>
+                  {tournaments.length > 0 && (
+                    <div style={{ width: "60px", height: "4px", background: "rgba(255,255,255,0.06)", borderRadius: "9999px", overflow: "hidden" }}>
+                      <div style={{ width: `${(s.count / tournaments.length) * 100}%`, height: "100%", background: s.color, borderRadius: "9999px" }} />
+                    </div>
                   )}
-                  {t.status}
                 </div>
-
-                <ArrowRight style={{ width: "1rem", height: "1rem", color: "#4b5563", flexShrink: 0 }} />
-              </Link>
-            ))}
+              ))}
+            </div>
           </div>
-        )}
+
+          {/* Pro Status */}
+          <div style={{ background: user?.isPro ? "linear-gradient(135deg, rgba(245,158,11,0.1), rgba(249,115,22,0.05))" : "rgba(255,255,255,0.03)", border: user?.isPro ? "1px solid rgba(245,158,11,0.25)" : "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1.25rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.75rem" }}>
+              <Crown style={{ width: "1rem", height: "1rem", color: "#f59e0b" }} />
+              <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff" }}>{user?.isPro ? "Pro Plan Active" : "Free Plan"}</span>
+            </div>
+            {user?.isPro ? (
+              <div style={{ fontSize: "0.75rem", color: "#9ca3af", lineHeight: 1.5 }}>
+                ✅ Unlimited tournaments<br />
+                ✅ Advanced AI tools<br />
+                ✅ Priority support<br />
+                ✅ All features unlocked
+              </div>
+            ) : (
+              <>
+                <div style={{ fontSize: "0.75rem", color: "#9ca3af", marginBottom: "0.875rem", lineHeight: 1.5 }}>
+                  {tournaments.length}/3 tournaments used
+                </div>
+                <div style={{ height: "4px", background: "rgba(255,255,255,0.06)", borderRadius: "9999px", overflow: "hidden", marginBottom: "0.875rem" }}>
+                  <div style={{ width: `${Math.min(100, (tournaments.length / 3) * 100)}%`, height: "100%", background: "linear-gradient(to right, #f59e0b, #f97316)", borderRadius: "9999px" }} />
+                </div>
+                <Link href="/dashboard/upgrade"
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.375rem", background: "#f59e0b", color: "#000", borderRadius: "0.625rem", padding: "0.5rem", fontSize: "0.8rem", fontWeight: 700, textDecoration: "none" }}>
+                  <Crown style={{ width: "0.75rem", height: "0.75rem" }} />Upgrade to Pro
+                </Link>
+              </>
+            )}
+          </div>
+
+          {/* Getting Started */}
+          {tournaments.length === 0 && (
+            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1.25rem" }}>
+              <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.875rem" }}>Getting Started</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
+                {[
+                  { step: 1, label: "Create a tournament", href: "/dashboard/tournaments/create", done: false },
+                  { step: 2, label: "Add teams", href: "/dashboard/discord", done: false },
+                  { step: 3, label: "Configure branding", href: "/dashboard/branding", done: false },
+                  { step: 4, label: "Set up Discord", href: "/dashboard/discord", done: false },
+                  { step: 5, label: "Go live!", href: "/dashboard/tournaments", done: false },
+                ].map(s => (
+                  <Link key={s.step} href={s.href}
+                    style={{ display: "flex", alignItems: "center", gap: "0.625rem", padding: "0.5rem 0.625rem", borderRadius: "0.5rem", background: "rgba(255,255,255,0.02)", textDecoration: "none", transition: "all 0.15s" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.02)"}>
+                    <div style={{ width: "1.25rem", height: "1.25rem", borderRadius: "50%", background: "rgba(245,158,11,0.15)", color: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem", fontWeight: 800, flexShrink: 0 }}>{s.step}</div>
+                    <span style={{ fontSize: "0.78rem", color: "#d1d5db", flex: 1 }}>{s.label}</span>
+                    <ChevronRight style={{ width: "0.75rem", height: "0.75rem", color: "#4b5563" }} />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Resources */}
+          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1.25rem" }}>
+            <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.875rem" }}>Resources</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {[
+                { label: "View Public Site", href: "/", external: true },
+                { label: "Discover Tournaments", href: "/discover", external: true },
+                { label: "Scoring Presets", href: "/dashboard/scoring" },
+                { label: "Account Settings", href: "/dashboard/settings" },
+              ].map(r => (
+                <Link key={r.label} href={r.href} target={r.external ? "_blank" : undefined}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.5rem 0.625rem", borderRadius: "0.5rem", background: "rgba(255,255,255,0.02)", textDecoration: "none", transition: "all 0.15s" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.02)"}>
+                  <span style={{ fontSize: "0.78rem", color: "#d1d5db" }}>{r.label}</span>
+                  {r.external ? <ExternalLink style={{ width: "0.75rem", height: "0.75rem", color: "#6b7280" }} /> : <ChevronRight style={{ width: "0.75rem", height: "0.75rem", color: "#6b7280" }} />}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
+
+      <style>{`
+        @media (max-width: 900px) { .dash-grid { grid-template-columns: 1fr !important; } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+      `}</style>
     </div>
   );
 }
