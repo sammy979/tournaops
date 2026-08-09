@@ -1,8 +1,8 @@
-﻿"use client";
+"use client";
 
 import { Tournament, ScoringRule, TeamMatchResult, LeaderboardEntry } from "@/types/tournament";
 
-// â”€â”€â”€ API HELPERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── API HELPERS ────────────────────────────────────────────
 
 async function fetchTournaments(): Promise<Tournament[]> {
   try {
@@ -36,9 +36,7 @@ async function fetchTournamentBySlug(slug: string): Promise<Tournament | undefin
   }
 }
 
-// â”€â”€â”€ SYNC-STYLE CACHED FUNCTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Note: These are async now but keep the same names for compat
-// UI code will need to await these
+// ─── CACHE ──────────────────────────────────────────────────
 
 let cache: Tournament[] = [];
 let cacheTime = 0;
@@ -57,7 +55,7 @@ export function invalidateCache() {
   cacheTime = 0;
 }
 
-// â”€â”€â”€ PUBLIC API (Async) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── PUBLIC API ─────────────────────────────────────────────
 
 export async function getAllTournaments(): Promise<Tournament[]> {
   return loadCache();
@@ -113,6 +111,22 @@ export async function createTournament(data: {
   rounds: number;
   discord?: string;
   rules?: string;
+  templateKey?: string;
+  stages?: Array<{
+    name: string;
+    type: string;
+    numGroups?: number;
+    groups?: number;
+    teamsPerGroup: number;
+    matchesPerGroup?: number;
+    matches?: number;
+    totalTeams?: number;
+    teamsAdvancing?: number;
+    qualificationRule?: {
+      type: "TOP_N_PER_GROUP" | "TOP_N_OVERALL";
+      count: number;
+    };
+  }>;
 }): Promise<Tournament | undefined> {
   try {
     const res = await fetch("/api/tournaments", {
@@ -165,7 +179,7 @@ export async function submitMatchResults(
   }
 }
 
-// â”€â”€â”€ DEMO RESULTS (Client-side) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── DEMO RESULTS ───────────────────────────────────────────
 
 export function generateDemoResults(tournament: Tournament, matchId: string): TeamMatchResult[] {
   try {
@@ -181,12 +195,19 @@ export function generateDemoResults(tournament: Tournament, matchId: string): Te
 
     const shuffled = [...lobbyTeams].sort(() => Math.random() - 0.5);
     const scoring = tournament.scoringRule;
+    const getPlacementPoints = (placement: number) => {
+      if (!scoring?.placementPoints) return 0;
+      if (Array.isArray(scoring.placementPoints)) {
+        return Number(scoring.placementPoints[placement - 1]) || 0;
+      }
+      return Number(scoring.placementPoints[placement]) || 0;
+    };
 
     return shuffled.map((team, idx) => {
       const placement = idx + 1;
-      const placementPoints = scoring.placementPoints[placement - 1] || 0;
+      const placementPoints = getPlacementPoints(placement);
 
-      const playerResults = (team.players || []).map(player => {
+      const playerResults = (team.players || []).map((player: any) => {
         const kills = placement <= 3 ? Math.floor(Math.random() * 6) + 1 : Math.floor(Math.random() * 4);
         const damage = kills * (Math.floor(Math.random() * 150) + 100) + Math.floor(Math.random() * 300);
         return {
@@ -201,9 +222,9 @@ export function generateDemoResults(tournament: Tournament, matchId: string): Te
         };
       });
 
-      const totalKills = playerResults.reduce((a, p) => a + p.kills, 0);
-      const killPoints = totalKills * scoring.killPoints;
-      const wwcdBonus = placement === 1 && scoring.wwcdBonus ? scoring.wwcdBonus : 0;
+      const totalKills = playerResults.reduce((a: number, p: any) => a + p.kills, 0);
+      const killPoints = totalKills * (scoring?.killPoints || 1);
+      const wwcdBonus = placement === 1 && scoring?.wwcdBonus ? scoring.wwcdBonus : 0;
 
       return {
         teamId: team.id,
@@ -213,7 +234,7 @@ export function generateDemoResults(tournament: Tournament, matchId: string): Te
         killPoints,
         totalPoints: placementPoints + killPoints + wwcdBonus,
         kills: totalKills,
-        damage: playerResults.reduce((a, p) => a + p.damage, 0),
+        damage: playerResults.reduce((a: number, p: any) => a + p.damage, 0),
         wwcd: placement === 1,
         playerResults,
       };
@@ -223,7 +244,7 @@ export function generateDemoResults(tournament: Tournament, matchId: string): Te
   }
 }
 
-// â”€â”€â”€ LEADERBOARD (Pure client-side, from tournament data) â”€â”€â”€
+// ─── LEADERBOARD ────────────────────────────────────────────
 
 export function getLeaderboard(tournament: Tournament, lobbyId?: string): LeaderboardEntry[] {
   try {

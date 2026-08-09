@@ -1,8 +1,10 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { validateTournamentInput } from "@/lib/validation";
 import { logError } from "@/lib/logger";
+import { generateTournamentPlan, toLegacyStageConfig } from "@/lib/tournament-generator";
+import type { TournamentTemplateKey } from "@/lib/tournament-templates";
 import type { Prisma } from "@prisma/client";
 
 function generateSlug(name: string): string {
@@ -89,9 +91,32 @@ export async function POST(req: NextRequest) {
         : {
             name: "Community Standard",
             killPoints: 1,
-            placementPoints: [10, 6, 5, 4, 3, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+            placementPoints: {
+              1: 10, 2: 6, 3: 5, 4: 4, 5: 3,
+              6: 2, 7: 1, 8: 1, 9: 0, 10: 0,
+              11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0,
+            },
             wwcdBonus: 0,
           };
+
+    const templateKey =
+      typeof data.templateKey === "string"
+        ? (data.templateKey as TournamentTemplateKey)
+        : null;
+
+    let stagesConfig: any[] = Array.isArray(data.stages) ? data.stages : [];
+
+    // If no explicit stages are supplied but a template is supplied, generate stages server-side
+    if (stagesConfig.length === 0 && templateKey && templateKey !== "CUSTOM") {
+      const plan = generateTournamentPlan({
+        templateKey,
+        teamCount: maxTeams,
+        mapRotation,
+      });
+      stagesConfig = toLegacyStageConfig(plan);
+    }
+
+    const useStageMode = stagesConfig.length > 0;
 
     const teamsPerLobby = 16;
     const numLobbies = Math.max(1, Math.ceil(maxTeams / teamsPerLobby));
@@ -140,9 +165,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const stagesConfigCheck = Array.isArray(data.stages) ? data.stages : [];
-    const useStageMode = stagesConfigCheck.length > 0;
-
+    // Create tournament first
     const tournament = await prisma.tournament.create({
       data: {
         slug: generateSlug(name),
@@ -151,15 +174,18 @@ export async function POST(req: NextRequest) {
         prizePool: ((data.prizePool as string | undefined) || "").trim(),
         discord: ((data.discord as string | undefined) || "").trim(),
         rules: ((data.rules as string | undefined) || "").trim(),
+        format: typeof data.format === "string" ? data.format : undefined,
+        game: typeof data.game === "string" ? data.game : "pubg_mobile",
         maxTeams,
         scoringRule,
         mapRotation,
         userId: session.userId,
-        // Only create legacy rounds/matches if NOT using stage mode
-        ...(useStageMode ? {} : {
-          rounds: { create: roundsData },
-          matches: { create: matchesData },
-        }),
+        ...(useStageMode
+          ? {}
+          : {
+              rounds: { create: roundsData },
+              matches: { create: matchesData },
+            }),
       },
       include: {
         teams: true,
@@ -168,17 +194,16 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Create Stages + Groups from the stages config passed by client
-    const stagesConfig = Array.isArray(data.stages) ? data.stages : [];
-    if (stagesConfig.length > 0) {
+    // If stage mode, create stages + groups + matches on the server in the same request
+    if (useStageMode) {
       for (let sIdx = 0; sIdx < stagesConfig.length; sIdx++) {
         const stageConfig: any = stagesConfig[sIdx];
         const numGroups = Number(stageConfig.numGroups || stageConfig.groups || 1);
         const teamsPerGroup = Number(stageConfig.teamsPerGroup || 16);
         const matchesPerGroup = Number(stageConfig.matchesPerGroup || stageConfig.matches || 4);
         const stageName = String(stageConfig.name || `Stage ${sIdx + 1}`);
+        const totalTeams = Number(stageConfig.totalTeams || numGroups * teamsPerGroup);
 
-        // Create stage
         const stage = await prisma.stage.create({
           data: {
             tournamentId: tournament.id,
@@ -189,8 +214,14 @@ export async function POST(req: NextRequest) {
             numGroups,
             teamsPerGroup,
             matchesPerGroup,
-            totalTeams: numGroups * teamsPerGroup,
-            qualificationRule: {} as Prisma.InputJsonValue,
+            totalTeams,
+            qualificationRule:
+              (stageConfig.qualificationRule as Prisma.InputJsonValue) ||
+              ({
+                type: "TOP_N_PER_GROUP",
+                count: Math.max(1, Math.floor(teamsPerGroup / 2)),
+              } as Prisma.InputJsonValue),
+            teamsAdvancing: Number(stageConfig.teamsAdvancing || 0),
             scoringRule: scoringRule as Prisma.InputJsonValue,
             mapRotation,
             groups: {
@@ -206,7 +237,6 @@ export async function POST(req: NextRequest) {
           include: { groups: true },
         });
 
-        // Create matches for this stage
         const stageMatches: Prisma.MatchCreateManyInput[] = [];
         for (let gIdx = 0; gIdx < numGroups; gIdx++) {
           const group = stage.groups[gIdx];
@@ -215,22 +245,45 @@ export async function POST(req: NextRequest) {
               tournamentId: tournament.id,
               stageId: stage.id,
               groupId: group.id,
-              roundId: tournament.rounds[0]?.id || "no-round",
+              roundId: "no-round",
               lobbyId: `stage_${stage.id}_group_${group.id}`,
-              name: `${stageName} - Match ${mIdx + 1}`,
+              name:
+                numGroups === 1
+                  ? `${stageName} - Match ${mIdx + 1}`
+                  : `${stageName} - ${group.name} - Match ${mIdx + 1}`,
               map: mapRotation[mIdx % mapRotation.length],
               status: "pending",
               matchNumber: mIdx + 1,
             });
           }
         }
+
         if (stageMatches.length > 0) {
           await prisma.match.createMany({ data: stageMatches });
         }
       }
     }
 
-    return NextResponse.json({ tournament }, { status: 201 });
+    const fullTournament = await prisma.tournament.findUnique({
+      where: { id: tournament.id },
+      include: {
+        teams: true,
+        matches: true,
+        rounds: true,
+        stages: {
+          include: { groups: { orderBy: { order: "asc" } } },
+          orderBy: { order: "asc" },
+        },
+      },
+    });
+
+    return NextResponse.json(
+      {
+        tournament: fullTournament,
+        generatedFromTemplate: !!templateKey && !Array.isArray(data.stages),
+      },
+      { status: 201 }
+    );
   } catch (err) {
     logError(err, "TOURNAMENTS_CREATE");
     return NextResponse.json(

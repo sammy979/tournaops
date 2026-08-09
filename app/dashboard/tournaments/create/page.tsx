@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -186,6 +186,27 @@ export default function CreateTournamentPage() {
         ? { name: "Custom", placementPoints, killPoints, wwcdBonus }
         : SCORING_PRESETS[scoringKey as keyof typeof SCORING_PRESETS];
 
+      const stagesPayload = activeStages.length > 0
+        ? activeStages.map((stage: any) => {
+            const numGroups = Number(stage.groups ?? stage.numGroups ?? 1);
+            const matchesPerGroup = Number(stage.matches ?? stage.matchesPerGroup ?? 4);
+            const teamsPerGroup = Number(stage.teamsPerGroup ?? 16);
+            return {
+              name: stage.name,
+              type: stage.type,
+              numGroups,
+              teamsPerGroup,
+              matchesPerGroup,
+              totalTeams: numGroups * teamsPerGroup,
+              qualificationRule: stage.qualificationRule || {
+                type: "TOP_N_PER_GROUP",
+                count: Math.max(1, Math.floor(teamsPerGroup / 2)),
+              },
+              teamsAdvancing: stage.teamsAdvancing || 0,
+            };
+          })
+        : undefined;
+
       const t = await createTournament({
         name: name.trim(),
         description,
@@ -197,35 +218,15 @@ export default function CreateTournamentPage() {
         mapRotation: selectedMaps.length > 0 ? selectedMaps : ["Erangel"],
         matchesPerLobby,
         rounds: totalRounds,
+        stages: stagesPayload,
       });
 
       if (t) {
-        // Create stages if template selected
-        if (activeStages.length > 0) {
-          for (const stage of activeStages) {
-            await fetch(`/api/tournaments/${t.id}/stages`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                name: stage.name,
-                type: stage.type,
-                numGroups: stage.groups,
-                teamsPerGroup: stage.teamsPerGroup,
-                matchesPerGroup: stage.matches,
-                totalTeams: stage.groups * stage.teamsPerGroup,
-                mapRotation: selectedMaps,
-                scoringRule: scoring,
-                qualificationRule: {
-                  type: "TOP_N_PER_GROUP",
-                  count: Math.floor(stage.teamsPerGroup / 2),
-                },
-              }),
-            });
-          }
-        }
-
         router.push(`/dashboard/tournaments/${t.id}`);
+        return;
       }
+
+      setLoading(false);
     } catch (e) {
       console.error(e);
       setLoading(false);
