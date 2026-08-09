@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -796,6 +796,153 @@ export default function LandingPage() {
         </div>
       </section>
 
+      
+      {/* FAQ SECTION — SEO POWERHOUSE */}
+      <section id="faq-section-tournaops" style={{ padding: "5rem 1.5rem", background: "rgba(255,255,255,0.02)" }}>
+        <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: "3rem" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "9999px", padding: "0.375rem 1rem", marginBottom: "1rem" }}>
+              <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#f59e0b", textTransform: "uppercase", letterSpacing: "0.1em" }}>Questions & Answers</span>
+            </div>
+            <h2 style={{ fontSize: "clamp(1.75rem, 5vw, 2.5rem)", fontWeight: 800, color: "#fff", marginBottom: "0.75rem" }}>
+              Frequently Asked Questions
+            </h2>
+            <p style={{ color: "#9ca3af", fontSize: "1rem" }}>Everything you need to know about running PUBG Mobile tournaments</p>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            {[
+              {
+                q: "How do I create a PUBG Mobile tournament for free?",
+                a: "Sign up on TournaOps in 30 seconds — no credit card required. Click 'Create Tournament,' set your name, format (solo/duo/squad), scoring system (PMGC, PMPL, or custom), and max teams. Your tournament is live in under 2 minutes with a public link to share.",
+              },
+              {
+                q: "Is TournaOps really 100% free?",
+                a: "Yes. The Free plan supports 3 tournaments with up to 32 teams each, complete with OBS overlays, Discord integration, public tournament pages, and basic scoring (PMGC/PMPL). Upgrade to Pro ($9.99/mo) only when you need unlimited tournaments, 400 teams, AI features, and screenshot import.",
+              },
+              {
+                q: "Can I use PMGC or PMPL scoring systems?",
+                a: "Absolutely. TournaOps includes official PMGC (PUBG Mobile Global Championship) and PMPL (PUBG Mobile Pro League) scoring presets out of the box. You can also create custom scoring rules with your own kill points, placement points, and WWCD bonuses.",
+              },
+              {
+                q: "Does TournaOps work with OBS Studio for streaming?",
+                a: "Yes. TournaOps generates professional broadcast overlays optimized for OBS Studio, Streamlabs, and any streaming software. Add the browser source URL to OBS and get real-time standings, match info, chicken dinner screens, top fragger displays, and rotating sponsor logos.",
+              },
+              {
+                q: "How does the AI screenshot import work?",
+                a: "Upload a screenshot of your PUBG Mobile match results and TournaOps' AI automatically extracts team placements, kill counts, and map information. It supports fuzzy team name matching, so slight name variations still map to the correct teams. Saves hours of manual data entry.",
+              },
+              {
+                q: "Does TournaOps have a Discord bot for tournament management?",
+                a: "Yes. Connect your Discord server via webhook and TournaOps will auto-post match results, WWCD winners, top fraggers, and standings. The Discord integration also imports slot lists directly — turn a Discord message with 16 teams into your tournament roster in 2 seconds.",
+              },
+              {
+                q: "How many teams can I add to a tournament?",
+                a: "The Free plan supports up to 32 teams per tournament. The Pro plan expands this to 400 teams per tournament — perfect for large qualifiers and PMGC/PMPL style events. You can bulk import teams via CSV, Discord, or registration forms.",
+              },
+              {
+                q: "Can players and fans view tournament standings publicly?",
+                a: "Yes. Every tournament gets a public shareable link (tournaops.com/tournaments/your-slug) with real-time standings, match schedule, team rosters, results, and sponsor branding. Fans can follow live during your broadcasts without needing an account.",
+              },
+              {
+                q: "Do you support multi-stage tournaments like qualifiers and grand finals?",
+                a: "Yes. TournaOps supports Open Qualifiers, Closed Qualifiers, Group Stages, Round of 16, Quarter Finals, Semi Finals, Grand Finals, and custom stages. Configure qualification rules (Top N per group) and TournaOps auto-advances teams between stages.",
+              },
+            ].map((item, i) => (
+              <details key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1.25rem 1.5rem", cursor: "pointer" }}>
+                <summary style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", listStyle: "none", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
+                  {item.q}
+                  <span style={{ color: "#f59e0b", fontSize: "1.5rem", flexShrink: 0 }}>+</span>
+                </summary>
+                <p style={{ marginTop: "0.875rem", color: "#9ca3af", fontSize: "0.9rem", lineHeight: 1.7 }}>
+                  {item.a}
+                </p>
+              </details>
+            ))}
+          </div>
+
+          {/* JSON-LD Structured Data for Google Featured Snippets */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "FAQPage",
+                "mainEntity": [
+                  { "@type": "Question", "name": "How do I create a PUBG Mobile tournament for free?", "acceptedAnswer": { "@type": "Answer", "text": "Sign up on TournaOps in 30 seconds — no credit card required. Create a tournament, set format and scoring, and go live in under 2 minutes." } },
+                  { "@type": "Question", "name": "Is TournaOps really 100% free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Free plan supports 3 tournaments with 32 teams each. Pro plan is $9.99/month for unlimited tournaments and 400 teams." } },
+                  { "@type": "Question", "name": "Can I use PMGC or PMPL scoring?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Official PMGC and PMPL scoring presets are built-in, plus custom scoring rules." } },
+                  { "@type": "Question", "name": "Does TournaOps work with OBS?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Professional OBS overlays for standings, match info, chicken dinner, and top fraggers." } },
+                  { "@type": "Question", "name": "How does AI screenshot import work?", "acceptedAnswer": { "@type": "Answer", "text": "Upload a PUBG Mobile match screenshot and AI extracts placements, kills, and map automatically." } },
+                ],
+              }),
+            }}
+          />
+        </div>
+      </section>
+
+      {/* COMPARISON SECTION */}
+      <section style={{ padding: "5rem 1.5rem" }}>
+        <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: "3rem" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: "9999px", padding: "0.375rem 1rem", marginBottom: "1rem" }}>
+              <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#22c55e", textTransform: "uppercase", letterSpacing: "0.1em" }}>Why TournaOps</span>
+            </div>
+            <h2 style={{ fontSize: "clamp(1.75rem, 5vw, 2.5rem)", fontWeight: 800, color: "#fff", marginBottom: "0.75rem" }}>
+              How TournaOps Compares
+            </h2>
+            <p style={{ color: "#9ca3af", fontSize: "1rem" }}>Built for PUBG Mobile organizers, not generic tournament tools</p>
+          </div>
+
+          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1.25rem", overflow: "hidden" }}>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
+                <thead>
+                  <tr style={{ background: "rgba(245,158,11,0.05)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                    <th style={{ padding: "1rem", textAlign: "left", color: "#9ca3af", fontWeight: 600, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Feature</th>
+                    <th style={{ padding: "1rem", textAlign: "center", color: "#f59e0b", fontWeight: 800, fontSize: "0.875rem" }}>TournaOps</th>
+                    <th style={{ padding: "1rem", textAlign: "center", color: "#6b7280", fontWeight: 600 }}>Toornament</th>
+                    <th style={{ padding: "1rem", textAlign: "center", color: "#6b7280", fontWeight: 600 }}>Battlefy</th>
+                    <th style={{ padding: "1rem", textAlign: "center", color: "#6b7280", fontWeight: 600 }}>Google Sheets</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { feature: "PUBG Mobile-specific scoring (PMGC, PMPL)", tournaOps: true, toornament: false, battlefy: false, sheets: false },
+                    { feature: "OBS Overlays included", tournaOps: true, toornament: "paid", battlefy: "paid", sheets: false },
+                    { feature: "AI Screenshot Import", tournaOps: true, toornament: false, battlefy: false, sheets: false },
+                    { feature: "Discord Bot Integration", tournaOps: true, toornament: false, battlefy: "limited", sheets: false },
+                    { feature: "Public Tournament Pages", tournaOps: true, toornament: true, battlefy: true, sheets: false },
+                    { feature: "Sponsor Branding", tournaOps: true, toornament: "paid", battlefy: "paid", sheets: false },
+                    { feature: "Multi-Stage Tournaments", tournaOps: true, toornament: true, battlefy: true, sheets: false },
+                    { feature: "Real-time Auto-calculation", tournaOps: true, toornament: true, battlefy: true, sheets: false },
+                    { feature: "Free Plan (with core features)", tournaOps: true, toornament: "limited", battlefy: "limited", sheets: true },
+                    { feature: "Made for PUBG Mobile organizers", tournaOps: true, toornament: false, battlefy: false, sheets: false },
+                  ].map((row, i) => {
+                    const cell = (v: any) => v === true ? <span style={{ color: "#22c55e", fontSize: "1.25rem", fontWeight: 900 }}>✓</span> : v === false ? <span style={{ color: "#ef4444", fontSize: "1.25rem", fontWeight: 900 }}>✗</span> : <span style={{ color: "#f59e0b", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase" }}>{v}</span>;
+                    return (
+                      <tr key={i} style={{ borderTop: "1px solid rgba(255,255,255,0.04)", background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)" }}>
+                        <td style={{ padding: "0.875rem 1rem", color: "#d1d5db", fontWeight: 500 }}>{row.feature}</td>
+                        <td style={{ padding: "0.875rem 1rem", textAlign: "center", background: "rgba(245,158,11,0.03)" }}>{cell(row.tournaOps)}</td>
+                        <td style={{ padding: "0.875rem 1rem", textAlign: "center" }}>{cell(row.toornament)}</td>
+                        <td style={{ padding: "0.875rem 1rem", textAlign: "center" }}>{cell(row.battlefy)}</td>
+                        <td style={{ padding: "0.875rem 1rem", textAlign: "center" }}>{cell(row.sheets)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div style={{ textAlign: "center", marginTop: "2.5rem" }}>
+            <a href="/register" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "#f59e0b", color: "#000", padding: "0.875rem 2rem", borderRadius: "0.875rem", fontWeight: 700, fontSize: "1rem", textDecoration: "none", boxShadow: "0 8px 30px rgba(245,158,11,0.3)" }}>
+              Start Free — See the Difference
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/*  FOOTER  */}
       <footer style={{
         borderTop: "1px solid rgba(255,255,255,0.08)",
@@ -865,3 +1012,4 @@ export default function LandingPage() {
     </div>
   );
 }
+
