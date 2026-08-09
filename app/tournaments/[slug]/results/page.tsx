@@ -1,7 +1,9 @@
 ﻿"use client";
 import { useState, useEffect, use, useMemo } from "react";
-import { Trophy, Target, MapPin, ChevronLeft, Crown, Crosshair, Award } from "lucide-react";
+import { Trophy, Target, MapPin, ChevronLeft, Crown, Crosshair, Award, Users, Layers } from "lucide-react";
 import Link from "next/link";
+import TeamLogo from "@/components/tournament/TeamLogo";
+import SponsorsBar from "@/components/tournament/SponsorsBar";
 
 const DEFAULT_PLACEMENT_POINTS = [15, 12, 10, 8, 6, 4, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0];
 const DEFAULT_KILL_POINTS = 1;
@@ -12,244 +14,257 @@ function parseScoringRule(scoringRule: any) {
   let placementPoints: number[] = DEFAULT_PLACEMENT_POINTS;
   if (Array.isArray(raw.placementPoints) && raw.placementPoints.length > 0) {
     placementPoints = raw.placementPoints.map(Number);
+  } else if (raw.placementPoints && typeof raw.placementPoints === "object") {
+    placementPoints = Object.values(raw.placementPoints).map(Number);
   }
   const wwcdBonus = Number(raw.wwcdBonus ?? 0);
   return { killPoints, placementPoints, wwcdBonus };
 }
 
-function buildStandings(teams: any[], matches: any[], scoringRule: any) {
+function calcStandings(teamIds: string[], matchList: any[], allTeams: any[], scoringRule: any) {
   const { killPoints, placementPoints, wwcdBonus } = parseScoringRule(scoringRule);
-  const map = new Map<string, any>();
-
-  teams.forEach((t: any) => {
-    map.set(t.id, {
-      id: t.id, name: t.name, tag: t.tag || null, logo: t.logo || null,
+  const teamMap = new Map(allTeams.map((t: any) => [t.id, t]));
+  const stats = new Map<string, any>();
+  for (const tid of teamIds) {
+    const t = teamMap.get(tid);
+    if (t) stats.set(tid, {
+      id: tid, name: t.name, tag: t.tag, logo: t.logo,
       totalPoints: 0, totalKills: 0, wwcdCount: 0, matchesPlayed: 0,
     });
-  });
-
-  matches.forEach((m: any) => {
-    if (!Array.isArray(m.results)) return;
-    m.results.forEach((r: any) => {
-      const s = map.get(r.teamId);
-      if (!s) return;
+  }
+  for (const m of matchList) {
+    if (!Array.isArray(m.results)) continue;
+    for (const r of m.results) {
+      const s = stats.get(r.teamId);
+      if (!s) continue;
       const kills = Number(r.kills) || 0;
       const placement = Number(r.placement) || 0;
       const isWWCD = r.wwcd === true || placement === 1;
       const pPts = placement >= 1 ? (placementPoints[placement - 1] ?? 0) : 0;
-      const kPts = kills * killPoints;
-      const bonus = isWWCD ? wwcdBonus : 0;
-      s.totalPoints += pPts + kPts + bonus;
+      s.totalPoints += pPts + kills * killPoints + (isWWCD ? wwcdBonus : 0);
       s.totalKills += kills;
       if (isWWCD) s.wwcdCount += 1;
       s.matchesPlayed += 1;
-    });
-  });
-
-  return Array.from(map.values())
+    }
+  }
+  return Array.from(stats.values())
     .filter((s: any) => s.matchesPlayed > 0)
-    .sort((a: any, b: any) => {
-      if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
-      if (b.wwcdCount !== a.wwcdCount) return b.wwcdCount - a.wwcdCount;
-      return b.totalKills - a.totalKills;
-    })
+    .sort((a: any, b: any) => b.totalPoints - a.totalPoints || b.wwcdCount - a.wwcdCount || b.totalKills - a.totalKills)
     .map((s: any, i: number) => ({ ...s, rank: i + 1 }));
 }
 
 export default function PublicResultsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const [data, setData] = useState<any>(null);
-  const [tab, setTab] = useState<"standings" | "matches">("standings");
+  const [loading, setLoading] = useState(true);
+  const [selectedView, setSelectedView] = useState<string>("overall");
 
   useEffect(() => {
     fetch(`/api/public/tournaments/${slug}`)
       .then(r => r.json())
       .then(d => setData(d))
-      .catch(() => {});
+      .finally(() => setLoading(false));
   }, [slug]);
 
-  const standings = useMemo(() => {
+  const views = useMemo(() => {
     if (!data?.tournament) return [];
-    return buildStandings(
-      data.tournament.teams || [],
-      data.tournament.matches || [],
-      data.tournament.scoringRule
-    );
+    const t = data.tournament;
+    const list: Array<{ id: string; label: string; type: "overall" | "stage" | "group"; stageId?: string; groupId?: string }> = [
+      { id: "overall", label: "Overall", type: "overall" },
+    ];
+    const stages = t.stages || [];
+    for (const s of stages) {
+      list.push({ id: `stage:${s.id}`, label: s.name, type: "stage", stageId: s.id });
+      if (s.groups && s.groups.length > 1) {
+        for (const g of s.groups) {
+          list.push({ id: `group:${g.id}`, label: `${s.name} · ${g.name}`, type: "group", stageId: s.id, groupId: g.id });
+        }
+      }
+    }
+    return list;
   }, [data]);
 
-  const completedMatches = useMemo(() => {
-    if (!data?.tournament?.matches) return [];
-    return data.tournament.matches.filter((m: any) => Array.isArray(m.results) && m.results.length > 0);
-  }, [data]);
+  const currentStandings = useMemo(() => {
+    if (!data?.tournament) return [];
+    const t = data.tournament;
+    const view = views.find(v => v.id === selectedView) || views[0];
+    if (!view) return [];
 
-  const primaryColor = data?.tournament?.brandingData?.primaryColor || "#f59e0b";
-  const tournamentName = data?.tournament?.name || "Tournament";
+    if (view.type === "overall") {
+      const allTeamIds = (t.teams || []).map((x: any) => x.id);
+      return calcStandings(allTeamIds, t.matches || [], t.teams || [], t.scoringRule);
+    }
+    if (view.type === "stage" && view.stageId) {
+      const stage = (t.stages || []).find((s: any) => s.id === view.stageId);
+      if (!stage) return [];
+      const teamIds = (stage.groups || []).flatMap((g: any) => g.teamIds || []);
+      const stageMatches = (t.matches || []).filter((m: any) => m.stageId === view.stageId);
+      return calcStandings(teamIds, stageMatches, t.teams || [], stage.scoringRule || t.scoringRule);
+    }
+    if (view.type === "group" && view.groupId) {
+      const stage = (t.stages || []).find((s: any) => s.id === view.stageId);
+      const group = stage?.groups.find((g: any) => g.id === view.groupId);
+      if (!group) return [];
+      const groupMatches = (t.matches || []).filter((m: any) => m.groupId === view.groupId);
+      return calcStandings(group.teamIds || [], groupMatches, t.teams || [], stage.scoringRule || t.scoringRule);
+    }
+    return [];
+  }, [data, selectedView, views]);
 
-  if (!data?.tournament) {
-    return (
-      <div style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: "2rem", height: "2rem", border: `2px solid ${primaryColor}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ width: "2rem", height: "2rem", border: "2px solid #f59e0b", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
 
-  const rankColors: Record<number, string> = { 1: "#f59e0b", 2: "#94a3b8", 3: "#f97316" };
+  if (!data?.tournament) return (
+    <div style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af" }}>
+      Tournament not found
+    </div>
+  );
+
+  const { tournament, branding } = data;
+  const primaryColor = branding?.primaryColor || "#f59e0b";
+  const sponsors = branding?.sponsors || [];
+  const top3 = currentStandings.slice(0, 3);
+  const rest = currentStandings.slice(3);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0a0f", color: "#fff", fontFamily: "system-ui, sans-serif" }}>
-      <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "1.5rem 1rem" }}>
-
-        {/* Back */}
-        <Link href={`/tournaments/${slug}`} style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", color: "#9ca3af", textDecoration: "none", fontSize: "0.8rem", fontWeight: 500, marginBottom: "1.5rem" }}>
-          <ChevronLeft style={{ width: "1rem", height: "1rem" }} />
-          Back to Tournament
+    <div style={{ minHeight: "100vh", background: "#0a0a0f", color: "#fff" }}>
+      {/* Header */}
+      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "2rem 1.5rem 1rem" }}>
+        <Link href={`/tournaments/${slug}`} style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", color: "#9ca3af", fontSize: "0.8rem", textDecoration: "none", marginBottom: "1rem" }}>
+          <ChevronLeft style={{ width: "0.875rem", height: "0.875rem" }} />Back to Tournament
         </Link>
+        <div style={{ fontSize: "0.75rem", fontWeight: 700, color: primaryColor, letterSpacing: "0.15em", marginBottom: "0.375rem" }}>RESULTS</div>
+        <h1 style={{ fontSize: "clamp(2rem, 5vw, 3rem)", fontWeight: 900, color: "#fff", lineHeight: 1.1 }}>{tournament.name}</h1>
+        <div style={{ marginTop: "0.5rem", fontSize: "0.85rem", color: "#9ca3af" }}>
+          {(tournament.teams || []).length} teams · {(tournament.matches || []).filter((m: any) => Array.isArray(m.results) && m.results.length > 0).length} matches played
+        </div>
+      </div>
 
-        {/* Header */}
-        <div style={{ marginBottom: "1.5rem" }}>
-          <div style={{ fontSize: "0.7rem", fontWeight: 700, color: primaryColor, letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: "0.5rem" }}>Results</div>
-          <h1 style={{ fontSize: "clamp(1.5rem, 4vw, 2.25rem)", fontWeight: 900, color: "#fff", lineHeight: 1.1, marginBottom: "0.5rem" }}>{tournamentName}</h1>
-          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", fontSize: "0.8rem", color: "#6b7280" }}>
-            <span>{standings.length} teams</span>
-            <span>•</span>
-            <span>{completedMatches.length} matches played</span>
+      {/* View selector */}
+      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 1.5rem 1rem" }}>
+        <div style={{ display: "flex", gap: "0.375rem", overflowX: "auto", padding: "0.375rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.875rem" }}>
+          {views.map(v => {
+            const active = selectedView === v.id;
+            return (
+              <button key={v.id} onClick={() => setSelectedView(v.id)}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: "0.375rem",
+                  padding: "0.5rem 0.875rem", borderRadius: "0.625rem",
+                  background: active ? `${primaryColor}25` : "transparent",
+                  color: active ? primaryColor : "#9ca3af",
+                  border: "none", fontSize: "0.8rem", fontWeight: 700,
+                  cursor: "pointer", whiteSpace: "nowrap",
+                }}>
+                {v.type === "overall" && <Trophy style={{ width: "0.75rem", height: "0.75rem" }} />}
+                {v.type === "stage" && <Layers style={{ width: "0.75rem", height: "0.75rem" }} />}
+                {v.type === "group" && <Users style={{ width: "0.75rem", height: "0.75rem" }} />}
+                {v.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Podium */}
+      {top3.length >= 3 && (
+        <div style={{ maxWidth: "1200px", margin: "1rem auto", padding: "0 1.5rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr 1fr", gap: "0.75rem", alignItems: "end" }}>
+            {[top3[1], top3[0], top3[2]].map((team, idx) => {
+              const rank = idx === 1 ? 1 : idx === 0 ? 2 : 3;
+              const isFirst = rank === 1;
+              const isSecond = rank === 2;
+              const config = isFirst
+                ? { color: "#fbbf24", bg: "rgba(251,191,36,0.12)", border: "rgba(251,191,36,0.4)", emoji: "🏆", label: "CHAMPION", height: "240px" }
+                : isSecond
+                ? { color: "#e5e7eb", bg: "rgba(229,231,235,0.08)", border: "rgba(229,231,235,0.25)", emoji: "🥈", label: "RUNNER UP", height: "200px" }
+                : { color: "#f97316", bg: "rgba(249,115,22,0.1)", border: "rgba(249,115,22,0.3)", emoji: "🥉", label: "THIRD", height: "180px" };
+
+              return (
+                <div key={team.id} style={{
+                  background: `linear-gradient(180deg, ${config.bg} 0%, rgba(0,0,0,0.3) 100%)`,
+                  border: `2px solid ${config.border}`,
+                  borderRadius: "1rem", padding: "1.5rem 1rem",
+                  textAlign: "center", height: config.height,
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between",
+                  boxShadow: `0 10px 40px ${config.color}30`,
+                }}>
+                  <div style={{ fontSize: isFirst ? "3rem" : "2rem" }}>{config.emoji}</div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
+                    <TeamLogo name={team.name} tag={team.tag} logo={team.logo} size={isFirst ? 72 : 56} />
+                    <div style={{ fontSize: "0.6rem", fontWeight: 800, color: config.color, letterSpacing: "0.15em" }}>{config.label}</div>
+                    {team.tag && <div style={{ fontSize: "0.65rem", color: "#9ca3af", fontWeight: 700 }}>[{team.tag}]</div>}
+                    <div style={{ fontSize: isFirst ? "1.125rem" : "0.95rem", fontWeight: 900, color: "#fff", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{team.name}</div>
+                  </div>
+                  <div style={{ display: "flex", gap: "1rem", fontSize: "0.7rem" }}>
+                    <div><div style={{ color: config.color, fontWeight: 900, fontSize: isFirst ? "1.5rem" : "1.125rem" }}>{team.totalPoints}</div><div style={{ color: "#6b7280", fontSize: "0.6rem", fontWeight: 700 }}>PTS</div></div>
+                    <div><div style={{ color: "#f87171", fontWeight: 900, fontSize: isFirst ? "1.5rem" : "1.125rem" }}>{team.totalKills}</div><div style={{ color: "#6b7280", fontSize: "0.6rem", fontWeight: 700 }}>KILLS</div></div>
+                    {team.wwcdCount > 0 && <div><div style={{ color: "#a855f7", fontWeight: 900, fontSize: isFirst ? "1.5rem" : "1.125rem" }}>{team.wwcdCount}</div><div style={{ color: "#6b7280", fontSize: "0.6rem", fontWeight: 700 }}>WWCD</div></div>}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
+      )}
 
-        {/* Tabs */}
-        <div style={{ display: "flex", gap: "0.25rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "0.25rem", marginBottom: "1.5rem", width: "fit-content" }}>
-          {(["standings", "matches"] as const).map(t => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              style={{ padding: "0.5rem 1.25rem", borderRadius: "0.5rem", fontSize: "0.8rem", fontWeight: 700, textTransform: "capitalize", background: tab === t ? primaryColor : "transparent", color: tab === t ? "#000" : "#9ca3af", border: "none", cursor: "pointer", transition: "all 0.15s" }}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-
-        {/* Standings Tab */}
-        {tab === "standings" && (
+      {/* Full standings table */}
+      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "1rem 1.5rem" }}>
+        {currentStandings.length === 0 ? (
+          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px dashed rgba(255,255,255,0.1)", borderRadius: "1rem", padding: "3rem", textAlign: "center", color: "#6b7280" }}>
+            No results for this view yet
+          </div>
+        ) : (
           <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", overflow: "hidden" }}>
-            {/* Header row */}
-            <div style={{ display: "grid", gridTemplateColumns: "48px 1fr 60px 60px 80px", gap: "0.5rem", padding: "0.75rem 1rem", background: "rgba(255,255,255,0.02)", borderBottom: "1px solid rgba(255,255,255,0.06)", fontSize: "0.65rem", fontWeight: 700, color: "#6b7280", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-              <div style={{ textAlign: "center" }}>#</div>
-              <div>Team</div>
-              <div style={{ textAlign: "center" }}>WWCD</div>
-              <div style={{ textAlign: "center" }}>Kills</div>
-              <div style={{ textAlign: "right", color: primaryColor }}>Points</div>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", fontSize: "0.85rem", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: "rgba(255,255,255,0.03)" }}>
+                    <th style={{ padding: "0.75rem 1rem", textAlign: "left", fontSize: "0.65rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>#</th>
+                    <th style={{ padding: "0.75rem 1rem", textAlign: "left", fontSize: "0.65rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Team</th>
+                    <th style={{ padding: "0.75rem 1rem", textAlign: "center", fontSize: "0.65rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>M</th>
+                    <th style={{ padding: "0.75rem 1rem", textAlign: "center", fontSize: "0.65rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>WWCD</th>
+                    <th style={{ padding: "0.75rem 1rem", textAlign: "center", fontSize: "0.65rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Kills</th>
+                    <th style={{ padding: "0.75rem 1rem", textAlign: "right", fontSize: "0.65rem", fontWeight: 700, color: primaryColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>Points</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentStandings.map((s: any) => (
+                    <tr key={s.id} style={{ borderTop: "1px solid rgba(255,255,255,0.04)", background: s.rank === 1 ? `${primaryColor}08` : "transparent" }}>
+                      <td style={{ padding: "0.75rem 1rem", fontWeight: 800, color: s.rank === 1 ? primaryColor : s.rank === 2 ? "#e5e7eb" : s.rank === 3 ? "#f97316" : "#6b7280" }}>#{s.rank}</td>
+                      <td style={{ padding: "0.75rem 1rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+                          <TeamLogo name={s.name} tag={s.tag} logo={s.logo} size={32} />
+                          <div>
+                            {s.tag && <div style={{ fontSize: "0.65rem", color: primaryColor, fontWeight: 700 }}>[{s.tag}]</div>}
+                            <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "#fff" }}>{s.name}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: "0.75rem 1rem", textAlign: "center", color: "#9ca3af" }}>{s.matchesPlayed}</td>
+                      <td style={{ padding: "0.75rem 1rem", textAlign: "center", color: s.wwcdCount > 0 ? primaryColor : "#4b5563", fontWeight: 700 }}>{s.wwcdCount}</td>
+                      <td style={{ padding: "0.75rem 1rem", textAlign: "center", color: "#f87171", fontWeight: 700 }}>{s.totalKills}</td>
+                      <td style={{ padding: "0.75rem 1rem", textAlign: "right", color: s.rank === 1 ? primaryColor : "#fff", fontWeight: 900, fontSize: "1rem" }}>{s.totalPoints}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-
-            {standings.length === 0 ? (
-              <div style={{ padding: "3rem", textAlign: "center", color: "#6b7280" }}>No results yet</div>
-            ) : standings.map((s: any) => {
-              const rankColor = rankColors[s.rank] || "rgba(255,255,255,0.4)";
-              const isTop3 = s.rank <= 3;
-              return (
-                <div
-                  key={s.id}
-                  style={{ display: "grid", gridTemplateColumns: "48px 1fr 60px 60px 80px", gap: "0.5rem", padding: "0.875rem 1rem", borderBottom: "1px solid rgba(255,255,255,0.04)", background: s.rank === 1 ? `${primaryColor}08` : "transparent", alignItems: "center" }}
-                >
-                  <div style={{ textAlign: "center", fontWeight: 900, fontSize: "1.1rem", color: rankColor }}>{s.rank}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", minWidth: 0 }}>
-                    {s.logo ? (
-                      <img src={s.logo} alt="" style={{ width: "2rem", height: "2rem", borderRadius: "0.375rem", objectFit: "cover", flexShrink: 0 }} />
-                    ) : (
-                      <div style={{ width: "2rem", height: "2rem", borderRadius: "0.375rem", background: `${primaryColor}20`, color: primaryColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.65rem", fontWeight: 700, flexShrink: 0 }}>
-                        {(s.tag || s.name).slice(0, 2).toUpperCase()}
-                      </div>
-                    )}
-                    <div style={{ minWidth: 0 }}>
-                      {s.tag && <div style={{ fontSize: "0.6rem", fontWeight: 700, color: primaryColor }}>[{s.tag}]</div>}
-                      <div style={{ fontSize: "0.875rem", fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</div>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "center" }}>
-                    {s.wwcdCount > 0 ? (
-                      <span style={{ background: primaryColor, color: "#000", padding: "0.1rem 0.4rem", borderRadius: "0.25rem", fontSize: "0.75rem", fontWeight: 800 }}>{s.wwcdCount}</span>
-                    ) : (
-                      <span style={{ color: "#4b5563", fontSize: "0.75rem" }}>—</span>
-                    )}
-                  </div>
-                  <div style={{ textAlign: "center", color: "#f87171", fontWeight: 700, fontSize: "0.875rem" }}>{s.totalKills}</div>
-                  <div style={{ textAlign: "right", fontWeight: 900, fontSize: "1.25rem", color: isTop3 ? rankColor : "#fff" }}>{s.totalPoints}</div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Matches Tab */}
-        {tab === "matches" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            {completedMatches.length === 0 ? (
-              <div style={{ padding: "3rem", textAlign: "center", color: "#6b7280", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem" }}>
-                No completed matches yet
-              </div>
-            ) : completedMatches.map((m: any) => {
-              const results = (Array.isArray(m.results) ? m.results : [])
-                .slice()
-                .sort((a: any, b: any) => (a.placement || 99) - (b.placement || 99));
-              const winner = results.find((r: any) => r.placement === 1);
-              const winnerTeam = data.tournament.teams?.find((t: any) => t.id === winner?.teamId);
-              return (
-                <div key={m.id} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", overflow: "hidden" }}>
-                  {/* Match header */}
-                  <div style={{ padding: "1rem 1.25rem", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
-                    <div>
-                      <div style={{ fontWeight: 800, color: "#fff", fontSize: "1rem" }}>{m.name}</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", color: "#6b7280", fontSize: "0.75rem", marginTop: "0.25rem" }}>
-                        <MapPin style={{ width: "0.75rem", height: "0.75rem" }} />
-                        {m.map}
-                        {winnerTeam && (
-                          <>
-                            <span>•</span>
-                            <Crown style={{ width: "0.75rem", height: "0.75rem", color: primaryColor }} />
-                            <span style={{ color: primaryColor, fontWeight: 700 }}>{winnerTeam.name}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#4ade80", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", padding: "0.2rem 0.6rem", borderRadius: "999px" }}>COMPLETED</div>
-                  </div>
-
-                  {/* Results */}
-                  <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.8rem", minWidth: "400px" }}>
-                      <thead>
-                        <tr style={{ background: "rgba(255,255,255,0.02)" }}>
-                          <th style={{ padding: "0.5rem 1rem", textAlign: "left", color: "#6b7280", fontWeight: 700, fontSize: "0.65rem", letterSpacing: "0.08em" }}>PLACE</th>
-                          <th style={{ padding: "0.5rem 1rem", textAlign: "left", color: "#6b7280", fontWeight: 700, fontSize: "0.65rem", letterSpacing: "0.08em" }}>TEAM</th>
-                          <th style={{ padding: "0.5rem 1rem", textAlign: "center", color: "#6b7280", fontWeight: 700, fontSize: "0.65rem", letterSpacing: "0.08em" }}>KILLS</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {results.slice(0, 8).map((r: any, i: number) => {
-                          const team = data.tournament.teams?.find((t: any) => t.id === r.teamId);
-                          const rColor = rankColors[r.placement] || "rgba(255,255,255,0.4)";
-                          return (
-                            <tr key={r.teamId || i} style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-                              <td style={{ padding: "0.5rem 1rem", fontWeight: 900, color: rColor, fontSize: "1rem" }}>#{r.placement}</td>
-                              <td style={{ padding: "0.5rem 1rem", color: "#fff", fontWeight: 600 }}>
-                                {team?.tag && <span style={{ color: primaryColor, marginRight: "0.25rem" }}>[{team.tag}]</span>}
-                                {team?.name || r.teamId}
-                              </td>
-                              <td style={{ padding: "0.5rem 1rem", textAlign: "center", color: "#f87171", fontWeight: 700 }}>{r.kills}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              );
-            })}
           </div>
         )}
       </div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+      {/* Sponsors */}
+      {sponsors.length > 0 && (
+        <div style={{ marginTop: "2rem" }}>
+          <SponsorsBar sponsors={sponsors} primaryColor={primaryColor} />
+        </div>
+      )}
+
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }

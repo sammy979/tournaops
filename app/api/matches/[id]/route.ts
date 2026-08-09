@@ -59,6 +59,92 @@ function calculateResultPoints(result: any, scoringRule: any): any {
 // ============================================================
 
 async function postStandingsToDiscord(webhookUrl: string, tournament: any) {
+  // Detect if tournament has stages+groups; if so, post per-group standings
+  try {
+    const stages = tournament.stages || [];
+    const activeStage = stages.find((s: any) =>
+      s.status === "ACTIVE" || (s.groups && s.groups.some((g: any) => (g.teamIds || []).length > 0))
+    );
+
+    if (activeStage && activeStage.groups && activeStage.groups.length > 1) {
+      // Multi-group: post standings per group as separate embeds
+      const teams = tournament.teams || [];
+      const teamMap = new Map(teams.map((t: any) => [t.id, t]));
+      const branding = tournament.brandingData || {};
+      const primaryColor = parseInt((branding.primaryColor || "#f59e0b").replace("#", ""), 16) || 0xf59e0b;
+      const publicUrl = "https://www.tournaops.com/tournaments/" + tournament.slug;
+      const scoringRule = activeStage.scoringRule || tournament.scoringRule || {};
+      const killPoints = Number(scoringRule.killPoints) || 1;
+      const wwcdBonus = Number(scoringRule.wwcdBonus) || 0;
+      let placementPoints: number[] = [10,6,5,4,3,2,1,1,0,0,0,0,0,0,0,0];
+      if (Array.isArray(scoringRule.placementPoints)) placementPoints = scoringRule.placementPoints;
+
+      const embeds: any[] = [];
+      embeds.push({
+        title: "\uD83D\uDCCA " + activeStage.name.toUpperCase() + " \u2014 GROUP STANDINGS",
+        description: "**" + tournament.name + "** \u2014 Live update after latest match",
+        color: primaryColor,
+      });
+
+      for (const group of activeStage.groups.slice(0, 8)) {
+        const stats = new Map<string, any>();
+        for (const tid of group.teamIds || []) {
+          const t = teamMap.get(tid) as any;
+          if (t) stats.set(tid, { name: t.name, tag: t.tag, points: 0, kills: 0, wwcds: 0, matches: 0 });
+        }
+        const groupMatches = (tournament.matches || []).filter((m: any) =>
+          m.groupId === group.id && m.status === "completed" && Array.isArray(m.results)
+        );
+        for (const match of groupMatches) {
+          for (const r of match.results) {
+            const s = stats.get(r.teamId);
+            if (!s) continue;
+            const p = Number(r.placement) || 16;
+            const k = Number(r.kills) || 0;
+            s.points += (placementPoints[Math.max(0, p - 1)] || 0) + k * killPoints + (p === 1 ? wwcdBonus : 0);
+            s.kills += k;
+            if (p === 1) s.wwcds++;
+            s.matches++;
+          }
+        }
+        const sorted = Array.from(stats.values())
+          .sort((a: any, b: any) => b.points - a.points || b.wwcds - a.wwcds || b.kills - a.kills);
+        const medals = ["\uD83E\uDD47", "\uD83E\uDD48", "\uD83E\uDD49"];
+        const lines = sorted.slice(0, 16).map((s: any, i: number) => {
+          const prefix = i < 3 ? medals[i] : "\u0060#" + String(i + 1).padStart(2, " ") + "\u0060";
+          const tag = s.tag ? "[" + s.tag + "] " : "";
+          return prefix + " **" + tag + s.name + "** \u2014 \u0060" + s.points + " pts\u0060 \u2022 \u0060" + s.kills + "K\u0060 \u2022 \u0060" + s.wwcds + "W\u0060";
+        });
+        embeds.push({
+          title: "\uD83D\uDD37 " + group.name.toUpperCase() + " \u2014 " + groupMatches.length + " matches",
+          description: lines.join("\n") || "_No results yet_",
+          color: primaryColor,
+        });
+      }
+
+      embeds.push({
+        color: primaryColor,
+        fields: [{
+          name: "\uD83D\uDD17 LINKS",
+          value: "\uD83C\uDFC6 [Tournament Page](" + publicUrl + ") \u2022 \uD83D\uDCCA [Live Standings](" + publicUrl + "/results)",
+          inline: false,
+        }],
+        footer: { text: "TournaOps \u2022 Auto-updated after every match", icon_url: "https://www.tournaops.com/logo.png" },
+        timestamp: new Date().toISOString(),
+      });
+
+      const res = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ embeds }),
+      });
+      return res.ok || res.status === 204;
+    }
+  } catch (e) {
+    console.warn("[GROUP_STANDINGS] Fallback to overall:", e);
+  }
+
+  // Fallback: single-group or no stages - use original overall logic
   try {
     const teams = tournament.teams || [];
     const matches = tournament.matches || [];
