@@ -1,4 +1,5 @@
-"use client";
+﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useEffect, useCallback } from "react";
 import { Calendar, Clock, Plus, Trash2, Save } from "lucide-react";
@@ -19,6 +20,7 @@ interface ScheduleMatch {
 }
 
 export default function SchedulePage() {
+  const dialog = useDialog();
   const [tournaments, setTournaments] = useState<TournamentItem[]>([]);
   const [selected, setSelected] = useState("");
   const [schedule, setSchedule] = useState<ScheduleMatch[]>([]);
@@ -66,10 +68,10 @@ export default function SchedulePage() {
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
       } else {
-        alert("Failed to save schedule");
+        void dialog.alert({ title: "Save Failed", description: "Failed to save schedule. Please try again.", variant: "danger" });
       }
     } catch {
-      alert("Failed to save schedule");
+      void dialog.alert({ title: "Save Failed", description: "Failed to save schedule. Please try again.", variant: "danger" });
     } finally {
       setSaving(false);
     }

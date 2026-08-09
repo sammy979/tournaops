@@ -1,4 +1,5 @@
-"use client";
+﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useEffect } from "react";
 import {
@@ -30,6 +31,7 @@ interface GroupAssignmentProps {
 }
 
 export default function GroupAssignment({ stageId, teams, groups: initialGroups, isLocked, onUpdate, onClose }: GroupAssignmentProps) {
+  const dialog = useDialog();
   const [groups, setGroups] = useState<Group[]>(initialGroups);
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
@@ -113,7 +115,7 @@ export default function GroupAssignment({ stageId, teams, groups: initialGroups,
         onUpdate();
         onClose();
       } else {
-        alert("Failed to save");
+        void dialog.alert({ title: "Save Failed", description: "Failed to save group assignment. Please try again.", variant: "danger" });
       }
     } finally {
       setSaving(false);

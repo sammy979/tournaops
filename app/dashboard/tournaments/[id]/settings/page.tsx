@@ -89,7 +89,7 @@ export default function SettingsPage() {
   }
 
   async function save() {
-    if (!form.name.trim()) return alert("Tournament name required");
+    if (!form.name.trim()) { void dialog.alert({ title: "Name Required", description: "Please enter a tournament name.", variant: "warning" }); return; }
     setSaving(true);
     try {
       const res = await fetch(`/api/tournaments/${id}`, {
@@ -114,7 +114,7 @@ export default function SettingsPage() {
         setTimeout(() => setSaved(false), 3000);
       } else {
         const err = await res.json();
-        alert(err.error || "Failed to save");
+        void dialog.alert({ title: "Save Failed", description: err.error || "Failed to save settings.", variant: "danger" });
       }
     } finally {
       setSaving(false);
@@ -129,7 +129,7 @@ export default function SettingsPage() {
       if (res.ok) {
         router.push("/dashboard/tournaments");
       } else {
-        alert("Failed to delete tournament");
+        void dialog.alert({ title: "Delete Failed", description: "Failed to delete tournament. Please try again.", variant: "danger" });
       }
     } finally {
       setDeleting(false);
@@ -342,13 +342,13 @@ export default function SettingsPage() {
                 });
                 const data = await res.json();
                 if (res.ok && data.success) {
-                  alert("✅ Demo data filled!\n\n" + (data.report?.actions || []).join("\n"));
+                  void dialog.alert({ title: "Demo Data Filled", description: "Demo data has been filled successfully.", variant: "success" });
                   window.location.reload();
                 } else {
-                  alert("Failed: " + (data.error || "Unknown"));
+                  void dialog.alert({ title: "Failed", description: data.error || "Unknown error occurred.", variant: "danger" });
                 }
               } catch (e: any) {
-                alert("Error: " + e.message);
+                void dialog.alert({ title: "Error", description: e.message || "An unexpected error occurred.", variant: "danger" });
               } finally {
                 if (btn) { btn.disabled = false; btn.innerText = "🎯 Auto-Fill Everything"; }
               }

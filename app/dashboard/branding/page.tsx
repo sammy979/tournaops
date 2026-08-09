@@ -1,4 +1,5 @@
-"use client";
+﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useEffect, useCallback } from "react";
 import { Palette, Save, Check, Upload, Globe, RefreshCw } from "lucide-react";
@@ -33,6 +34,7 @@ const DEFAULT_BRANDING: BrandingData = {
 };
 
 export default function BrandingPage() {
+  const dialog = useDialog();
   const [tournaments, setTournaments] = useState<TournamentItem[]>([]);
   const [selected, setSelected] = useState("");
   const [saved, setSaved] = useState(false);
@@ -86,10 +88,10 @@ export default function BrandingPage() {
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
       } else {
-        alert("Failed to save branding");
+        void dialog.alert({ title: "Save Failed", description: "Failed to save branding. Please try again.", variant: "danger" });
       }
     } catch {
-      alert("Failed to save branding");
+      void dialog.alert({ title: "Save Failed", description: "Failed to save branding. Please try again.", variant: "danger" });
     } finally {
       setSaving(false);
     }
@@ -99,7 +101,7 @@ export default function BrandingPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 500000) {
-      alert("Max 500KB");
+      void dialog.alert({ title: "File Too Large", description: "Please use an image under 500KB.", variant: "warning" });
       return;
     }
     const reader = new FileReader();

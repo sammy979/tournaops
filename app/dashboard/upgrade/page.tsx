@@ -1,8 +1,10 @@
-"use client";
+﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 import { useState, useEffect } from "react";
 import { Check, Crown, Zap, Loader2, Sparkles } from "lucide-react";
 
 export default function UpgradePage() {
+  const dialog = useDialog();
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<any>(null);
   const [loadingStatus, setLoadingStatus] = useState(true);
@@ -32,10 +34,10 @@ export default function UpgradePage() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert(data.error || "Checkout failed. Please try again.");
+        void dialog.alert({ title: "Checkout Failed", description: data.error || "Checkout failed. Please try again.", variant: "danger" });
       }
     } catch (e) {
-      alert("Failed to start checkout. Please try again.");
+      void dialog.alert({ title: "Checkout Error", description: "Failed to start checkout. Please try again.", variant: "danger" });
     } finally {
       setLoading(false);
     }
@@ -171,7 +173,7 @@ export default function UpgradePage() {
 
         <div className="mt-12 text-center text-gray-500 text-sm">
           <p>Secure payment powered by Dodo Payments</p>
-          <p className="mt-1">SSL encrypted • Cancel anytime • Made in Nepal</p>
+          <p className="mt-1">SSL encrypted â€¢ Cancel anytime â€¢ Made in Nepal</p>
         </div>
       </div>
     </div>

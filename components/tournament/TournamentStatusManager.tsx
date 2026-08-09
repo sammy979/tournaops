@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState } from "react";
 import { Play, Pause, Square, RefreshCw, Trash2, Check, X, AlertTriangle } from "lucide-react";
 import { useDialog } from "@/lib/use-confirm";
@@ -11,14 +11,14 @@ interface StatusManagerProps {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType; description: string }> = {
-  draft:        { label: "Draft",        color: "gray",   icon: Pause,       description: "Setting up — not visible to public" },
+  draft:        { label: "Draft",        color: "gray",   icon: Pause,       description: "Setting up â€” not visible to public" },
   registration: { label: "Registration", color: "blue",   icon: RefreshCw,   description: "Teams can register" },
   live:         { label: "Live",         color: "green",  icon: Play,        description: "Tournament in progress" },
   completed:    { label: "Completed",    color: "purple", icon: Check,       description: "Tournament finished" },
   cancelled:    { label: "Cancelled",    color: "red",    icon: X,           description: "Tournament cancelled" },
 };
 
-export default async function StatusManager({ tournamentId, currentStatus, tournamentName, onUpdate }: StatusManagerProps) {
+export default function StatusManager({ tournamentId, currentStatus, tournamentName, onUpdate }: StatusManagerProps) {
   const dialog = useDialog();
   const [status, setStatus] = useState(currentStatus);
   const [loading, setLoading] = useState(false);
@@ -50,10 +50,10 @@ export default async function StatusManager({ tournamentId, currentStatus, tourn
         setStatus(newStatus);
         onUpdate?.();
       } else {
-        alert(data.error || "Failed to update status");
+        void dialog.alert({ title: "Update Failed", description: data.error || "Failed to update tournament status.", variant: "danger" });
       }
     } catch {
-      alert("Network error");
+      void dialog.alert({ title: "Network Error", description: "A network error occurred. Please try again.", variant: "danger" });
     } finally {
       setLoading(false);
     }
@@ -71,10 +71,10 @@ export default async function StatusManager({ tournamentId, currentStatus, tourn
       if (res.ok) {
         window.location.href = "/dashboard/tournaments";
       } else {
-        alert("Failed to delete tournament");
+        void dialog.alert({ title: "Delete Failed", description: "Failed to delete tournament. Please try again.", variant: "danger" });
       }
     } catch {
-      alert("Network error");
+      void dialog.alert({ title: "Network Error", description: "A network error occurred. Please try again.", variant: "danger" });
     } finally {
       setLoading(false);
     }
@@ -132,7 +132,7 @@ export default async function StatusManager({ tournamentId, currentStatus, tourn
               <Play className="w-4 h-4" />
               <div className="text-left flex-1">
                 <p className="font-semibold text-sm">Start Tournament</p>
-                <p className="text-xs text-green-400/70">Mark as live — public visible</p>
+                <p className="text-xs text-green-400/70">Mark as live â€” public visible</p>
               </div>
             </button>
           </>

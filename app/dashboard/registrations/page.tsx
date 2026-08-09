@@ -1,4 +1,5 @@
 ﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -29,6 +30,7 @@ interface RegistrationItem {
 }
 
 export default function RegistrationsPage() {
+  const dialog = useDialog();
   const [tournaments, setTournaments] = useState<TournamentItem[]>([]);
   const [selected, setSelected] = useState("");
   const [selectedTournament, setSelectedTournament] = useState<TournamentItem | null>(null);
@@ -91,12 +93,12 @@ export default function RegistrationsPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || "Failed to update registration");
+        void dialog.alert({ title: "Update Failed", description: data.error || "Failed to update registration.", variant: "danger" });
         return;
       }
       setRegistrations(data.registrations || []);
     } catch {
-      alert("Failed to update registration");
+      void dialog.alert({ title: "Update Failed", description: "Failed to update registration. Please try again.", variant: "danger" });
     } finally {
       setProcessingId("");
     }

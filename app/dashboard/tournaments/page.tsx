@@ -76,9 +76,9 @@ export default function TournamentsPage() {
     try {
       const res = await fetch(`/api/tournaments/${id}`, { method: "DELETE" });
       if (res.ok) await loadData();
-      else alert("Failed to delete tournament");
+      else { void dialog.alert({ title: "Delete Failed", description: "Failed to delete tournament. Please try again.", variant: "danger" }); }
     } catch {
-      alert("Failed to delete tournament");
+      void dialog.alert({ title: "Delete Failed", description: "Failed to delete tournament. Please try again.", variant: "danger" });
     }
     setDeleting(null);
   };

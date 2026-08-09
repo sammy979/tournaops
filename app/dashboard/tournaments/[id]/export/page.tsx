@@ -1,4 +1,5 @@
 ﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { Download, ArrowLeft, Loader2, Monitor, Sparkles } from "lucide-react";
@@ -11,6 +12,7 @@ const SIZES = [
 ];
 
 export default function ExportPage({ params }: { params: Promise<{ id: string }> }) {
+  const dialog = useDialog();
   const { id } = use(params);
   const router = useRouter();
   const [tournament, setTournament] = useState<any>(null);
@@ -50,7 +52,7 @@ export default function ExportPage({ params }: { params: Promise<{ id: string }>
       link.click();
       setTimeout(() => URL.revokeObjectURL(link.href), 100);
     } catch (e: any) {
-      alert("Download failed: " + e?.message);
+      void dialog.alert({ title: "Download Failed", description: "Download failed: " + (e?.message || "Unknown error"), variant: "danger" });
     } finally {
       setDownloading(false);
     }

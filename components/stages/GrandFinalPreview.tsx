@@ -1,4 +1,5 @@
-"use client";
+﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useEffect } from "react";
 import {
@@ -14,6 +15,7 @@ interface GrandFinalPreviewProps {
 }
 
 export default function GrandFinalPreview({ stageId, currentStageName, onClose, onCreated }: GrandFinalPreviewProps) {
+  const dialog = useDialog();
   const [preview, setPreview] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -66,7 +68,7 @@ export default function GrandFinalPreview({ stageId, currentStageName, onClose, 
         onCreated(data.nextStage.id);
       } else {
         const err = await res.json();
-        alert("Failed: " + err.error);
+        void dialog.alert({ title: "Failed", description: err.error || "Operation failed. Please try again.", variant: "danger" });
         setCreating(false);
       }
     } catch (e) {

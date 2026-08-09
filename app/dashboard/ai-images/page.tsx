@@ -1,4 +1,5 @@
 ﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 import { useState } from "react";
 import {
   Sparkles, Download, Loader2, Wand2, Image as ImageIcon,
@@ -32,6 +33,7 @@ const PROMPT_TEMPLATES = [
 ];
 
 export default function AIImageGeneratorPage() {
+  const dialog = useDialog();
   const [prompt, setPrompt] = useState("");
   const [style, setStyle] = useState("esports poster");
   const [aspectRatio, setAspectRatio] = useState("1:1");
@@ -55,10 +57,10 @@ export default function AIImageGeneratorPage() {
         setGenerated(item);
         setHistory([item, ...history.slice(0, 9)]);
       } else {
-        alert(data.error || "Failed to generate");
+        void dialog.alert({ title: "Generation Failed", description: data.error || "Failed to generate image.", variant: "danger" });
       }
     } catch {
-      alert("Error generating image");
+      void dialog.alert({ title: "Error", description: "Error generating image. Please try again.", variant: "danger" });
     } finally {
       setLoading(false);
     }

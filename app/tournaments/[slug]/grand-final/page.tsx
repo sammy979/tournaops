@@ -1,4 +1,5 @@
 ﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
@@ -11,6 +12,7 @@ import {
 import { getTournamentBySlug } from "@/lib/storage/tournaments";
 
 export default function PublicGrandFinalPage() {
+  const dialog = useDialog();
   const params = useParams();
   const cardRef = useRef<HTMLDivElement>(null);
   const [tournament, setTournament] = useState<any>(null);
@@ -90,7 +92,7 @@ export default function PublicGrandFinalPage() {
       link.href = dataUrl;
       link.click();
     } catch (e) {
-      alert("Export failed");
+      void dialog.alert({ title: "Export Failed", description: "Export failed. Please try again.", variant: "danger" });
     }
     setExporting(false);
   };

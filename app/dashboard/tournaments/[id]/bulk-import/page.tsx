@@ -1,4 +1,5 @@
 ﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 import { useState, use } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -18,6 +19,7 @@ type ParsedTeam = {
 };
 
 export default function BulkImportPage({ params }: { params: Promise<{ id: string }> }) {
+  const dialog = useDialog();
   const { id } = use(params);
   const router = useRouter();
   const [teams, setTeams] = useState<ParsedTeam[]>([]);
@@ -53,7 +55,7 @@ export default function BulkImportPage({ params }: { params: Promise<{ id: strin
 
         setTeams(parsed);
       } catch (e: any) {
-        alert("Failed to parse file: " + e?.message);
+        void dialog.alert({ title: "Parse Error", description: "Failed to parse file: " + (e?.message || "Unknown error"), variant: "danger" });
       }
     };
     reader.readAsBinaryString(file);
@@ -74,7 +76,7 @@ export default function BulkImportPage({ params }: { params: Promise<{ id: strin
 
   const uploadTeams = async () => {
     const valid = teams.filter(t => t.valid);
-    if (valid.length === 0) return alert("No valid teams to import");
+    if (valid.length === 0) { void dialog.alert({ title: "No Valid Teams", description: "No valid teams found to import. Check the format and try again.", variant: "warning" }); return; }
 
     setUploading(true);
     try {
@@ -88,7 +90,7 @@ export default function BulkImportPage({ params }: { params: Promise<{ id: strin
       setImported(data.imported);
       setTimeout(() => router.push("/dashboard/tournaments/" + id), 2000);
     } catch (e: any) {
-      alert("Import failed: " + e.message);
+      void dialog.alert({ title: "Import Failed", description: "Import failed: " + e.message, variant: "danger" });
     } finally {
       setUploading(false);
     }

@@ -1,4 +1,5 @@
 ﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -55,6 +56,7 @@ S4 Dark Knights`,
 ];
 
 export default function DiscordSlotImporter({ tournament, onClose, onSave }: DiscordSlotImporterProps) {
+  const dialog = useDialog();
   const [mode, setMode] = useState<Mode>("paste");
   const [rawText, setRawText] = useState("");
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
@@ -88,7 +90,7 @@ export default function DiscordSlotImporter({ tournament, onClose, onSave }: Dis
       const text = await navigator.clipboard.readText();
       setRawText(text);
     } catch {
-      alert("Could not read clipboard. Please paste manually.");
+      void dialog.alert({ title: "Clipboard Error", description: "Could not read clipboard. Please paste manually.", variant: "warning" });
     }
   };
 

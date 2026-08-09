@@ -1,4 +1,5 @@
 ﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 import { useState, useEffect } from "react";
 import { Upload, Image as ImageIcon, Trash2, Trophy, Users, X, Loader2 } from "lucide-react";
 
@@ -21,6 +22,7 @@ interface Team {
 }
 
 export default function AssetsPage() {
+  const dialog = useDialog();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [selectedTournament, setSelectedTournament] = useState<string>("");
   const [teams, setTeams] = useState<Team[]>([]);
@@ -59,10 +61,10 @@ export default function AssetsPage() {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
       if (data.url) return data.url;
-      alert(data.error || "Upload failed");
+      void dialog.alert({ title: "Upload Failed", description: data.error || "Upload failed. Please try again.", variant: "danger" });
       return null;
     } catch {
-      alert("Upload failed");
+      void dialog.alert({ title: "Upload Failed", description: "Upload failed. Please try again.", variant: "danger" });
       return null;
     } finally {
       setUploading(null);

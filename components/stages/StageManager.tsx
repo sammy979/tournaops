@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useDialog } from "@/lib/use-confirm";
@@ -86,7 +86,7 @@ export default function StageManager({ tournament, onStageChange }: StageManager
     const method = stage.isLocked ? "DELETE" : "POST";
     const res = await fetch(`/api/stages/${stage.id}/lock`, { method });
     if (res.ok) loadStages();
-    else alert("Failed to toggle lock");
+    else { void dialog.alert({ title: "Failed", description: "Failed to toggle stage lock. Please try again.", variant: "danger" }); }
   };
 
   const deleteStage = async (stage: Stage) => {
@@ -99,7 +99,7 @@ export default function StageManager({ tournament, onStageChange }: StageManager
     if (!ok) return;
     const res = await fetch(`/api/stages/${stage.id}`, { method: "DELETE" });
     if (res.ok) loadStages();
-    else alert("Failed to delete stage");
+    else { void dialog.alert({ title: "Delete Failed", description: "Failed to delete stage. Please try again.", variant: "danger" }); }
   };
 
   const updateStatus = async (stage: Stage, newStatus: string) => {
@@ -420,7 +420,7 @@ function StageBuilder({ tournament, stage, onClose, onSave }: any) {
     });
 
     if (res.ok) onSave();
-    else alert("Failed to save stage");
+    else { void dialog.alert({ title: "Save Failed", description: "Failed to save stage. Please try again.", variant: "danger" }); }
     setSaving(false);
   };
 
@@ -604,10 +604,10 @@ function AdvanceTeamsModal({ stage, nextStage, onClose, onAdvanced }: any) {
     });
     if (res.ok) {
       const data = await res.json();
-      alert(data.message);
+      void dialog.alert({ title: "Stage Advanced", description: data.message || "Stage advanced successfully.", variant: "success" });
       onAdvanced();
     } else {
-      alert("Failed to advance");
+      void dialog.alert({ title: "Advance Failed", description: "Failed to advance stage. Please try again.", variant: "danger" });
     }
     setAdvancing(false);
   };

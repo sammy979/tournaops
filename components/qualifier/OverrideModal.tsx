@@ -1,4 +1,5 @@
-"use client";
+﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useEffect } from "react";
 import { X, Check, AlertTriangle, Clock, User, FileText, Undo2 } from "lucide-react";
@@ -12,13 +13,14 @@ interface OverrideModalProps {
 }
 
 export function OverrideModal({ stageId, teamId, teamName, onClose, onSave }: OverrideModalProps) {
+  const dialog = useDialog();
   const [action, setAction] = useState<"FORCE_QUALIFY" | "FORCE_ELIMINATE" | "REVERT">("FORCE_QUALIFY");
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async () => {
     if (reason.trim().length < 5) {
-      alert("Reason must be at least 5 characters");
+      void dialog.alert({ title: "Reason Required", description: "Reason must be at least 5 characters.", variant: "warning" });
       return;
     }
     setSaving(true);
@@ -32,7 +34,7 @@ export function OverrideModal({ stageId, teamId, teamName, onClose, onSave }: Ov
       onClose();
     } else {
       const err = await res.json();
-      alert("Failed: " + err.error);
+      void dialog.alert({ title: "Override Failed", description: err.error || "Override failed. Please try again.", variant: "danger" });
     }
     setSaving(false);
   };

@@ -1,4 +1,5 @@
 ﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useRef } from "react";
 import {
@@ -40,6 +41,7 @@ const TEAM_COLORS = [
 ];
 
 export default function TeamEditor({ tournament, onClose, onSave }: TeamEditorProps) {
+  const dialog = useDialog();
   const [teams, setTeams] = useState<Team[]>(JSON.parse(JSON.stringify(tournament.teams)));
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -100,7 +102,7 @@ export default function TeamEditor({ tournament, onClose, onSave }: TeamEditorPr
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 500000) {
-      alert("Image too large. Max 500KB.");
+      void dialog.alert({ title: "File Too Large", description: "Image too large. Please use an image under 500KB.", variant: "warning" });
       return;
     }
     const reader = new FileReader();
@@ -114,7 +116,7 @@ export default function TeamEditor({ tournament, onClose, onSave }: TeamEditorPr
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 300000) {
-      alert("Image too large. Max 300KB.");
+      void dialog.alert({ title: "File Too Large", description: "Image too large. Please use an image under 300KB.", variant: "warning" });
       return;
     }
     const reader = new FileReader();

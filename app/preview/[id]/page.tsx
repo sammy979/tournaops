@@ -1,4 +1,5 @@
-"use client";
+﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 import TeamLogo from "@/components/tournament/TeamLogo";
 import { useEffect, useState, useRef, use } from "react";
 import { toPng } from "html-to-image";
@@ -22,7 +23,7 @@ type Standing = {
 };
 
 // Uses stored server-calculated totalPoints from match results
-// (single source of truth — same as public standings)
+// (single source of truth â€” same as public standings)
 function calculateStandings(teams: any[], matches: any[], filters: {
   matchIds?: string[];
   stageId?: string;
@@ -119,7 +120,7 @@ function calculateStandings(teams: any[], matches: any[], filters: {
   return { standings, matchesInScope: filteredMatches.length };
 }
 
-// Format tournament name — proper title case
+// Format tournament name â€” proper title case
 function formatTournamentName(name: string): string {
   if (!name) return "Tournament";
   return name
@@ -133,7 +134,7 @@ function formatTournamentName(name: string): string {
     .join(" ");
 }
 
-// Extract safe hostname from URL — never expose webhook paths
+// Extract safe hostname from URL â€” never expose webhook paths
 function safeDisplayUrl(url: string): string {
   if (!url) return "";
   try {
@@ -155,6 +156,7 @@ function isWebhookUrl(url: string): boolean {
 }
 
 export default function PreviewPage({ params }: { params: Promise<{ id: string }> }) {
+  const dialog = useDialog();
   const { id } = use(params);
   const [tournament, setTournament] = useState<any>(null);
   const [downloading, setDownloading] = useState(false);
@@ -222,7 +224,7 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
       link.href = dataUrl;
       link.click();
     } catch (e: any) {
-      alert("Download failed: " + e?.message + "\n\nTIP: Right-click the image below and select 'Save image as...' as backup.");
+      void dialog.alert({ title: "Download Failed", description: "Download failed. Tip: Right-click the image and select Save image as... as a backup.", variant: "warning" });
     } finally {
       setDownloading(false);
     }
@@ -259,7 +261,7 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
   }
   const standings = filteredStandings.slice(0, config.topN);
 
-  // Determine max matches played — used to flag partial-play teams
+  // Determine max matches played â€” used to flag partial-play teams
   const maxMatches = standings.reduce((max, s) => Math.max(max, s.matchesPlayed), 0);
 
   const branding: any = tournament.brandingData || {};
@@ -320,7 +322,7 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
       <div style={{ maxWidth: 1400, margin: "0 auto 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, background: "#111", padding: "14px 20px", borderRadius: 12, border: "1px solid #333" }}>
         <div style={{ color: "#fff", fontFamily: "system-ui" }}>
           <div style={{ fontSize: 18, fontWeight: 700 }}>{displayTitle}</div>
-          <div style={{ fontSize: 13, color: "#999" }}>{standings.length} teams · {matchesInScope} matches</div>
+          <div style={{ fontSize: 13, color: "#999" }}>{standings.length} teams Â· {matchesInScope} matches</div>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button
@@ -463,7 +465,7 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
               </div>
             )}
 
-            {/* FOOTER — Only safe branding social links, NEVER webhook URLs */}
+            {/* FOOTER â€” Only safe branding social links, NEVER webhook URLs */}
             <div style={{ position: "relative", zIndex: 2, marginTop: 16, paddingTop: 12, borderTop: "2px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", gap: 24, alignItems: "center", flexWrap: "wrap" }}>
                 {config.showSocial && discordDisplay && (

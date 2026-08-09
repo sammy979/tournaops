@@ -1,4 +1,5 @@
-"use client";
+﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 import { useState } from "react";
 import { Save, X, Upload, Trash2, Sparkles, Users, ImageIcon } from "lucide-react";
 import type { Team } from "@/types/tournament";
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function TeamEditor({ teams, onSave, onClose }: Props) {
+  const dialog = useDialog();
   const [edited, setEdited] = useState<Team[]>(teams);
 
   const updateTeam = (id: string, field: keyof Team, value: any) => {
@@ -18,7 +20,7 @@ export default function TeamEditor({ teams, onSave, onClose }: Props) {
 
   const handleLogoUpload = (id: string, file: File) => {
     if (file.size > 2 * 1024 * 1024) {
-      alert("Logo too large. Please use images under 2MB.");
+      void dialog.alert({ title: "File Too Large", description: "Logo too large. Please use images under 2MB.", variant: "warning" });
       return;
     }
     const reader = new FileReader();

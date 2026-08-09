@@ -1,4 +1,5 @@
 ﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useRef } from "react";
 import {
@@ -87,6 +88,7 @@ const SIZES: Record<Size, { w: number; h: number; label: string; icon: any }> = 
 };
 
 export default function BroadcastStudio({ tournament, onClose }: BroadcastStudioProps) {
+  const dialog = useDialog();
   const canvasRef = useRef<HTMLDivElement>(null);
   const [cardType, setCardType] = useState<CardType>("standings");
   const [theme, setTheme] = useState<Theme>("midnight");
@@ -120,7 +122,7 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
       setTimeout(() => setExported(false), 2500);
     } catch (err) {
       console.error("Export failed:", err);
-      alert("Export failed. Try again.");
+      void dialog.alert({ title: "Export Failed", description: "Export failed. Please try again.", variant: "danger" });
     } finally {
       setExporting(false);
     }

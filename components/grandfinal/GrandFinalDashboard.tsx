@@ -1,4 +1,5 @@
-"use client";
+﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -23,6 +24,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string; icon: any }>
 };
 
 export default function GrandFinalDashboard({ stageId, onLock, onPublish }: GrandFinalDashboardProps) {
+  const dialog = useDialog();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export default function GrandFinalDashboard({ stageId, onLock, onPublish }: Gran
       body: JSON.stringify({ action, note }),
     });
     if (res.ok) load();
-    else alert("Failed");
+    else { void dialog.alert({ title: "Failed", description: "Operation failed. Please try again.", variant: "danger" }); }
     setVerifying(null);
   };
 

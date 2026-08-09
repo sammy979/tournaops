@@ -1,4 +1,5 @@
 ﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useEffect, useCallback } from "react";
 import { MessageSquare, Zap, Check, Users, X, ArrowRight, Loader2, Bot, AlertCircle } from "lucide-react";
@@ -19,6 +20,7 @@ interface PendingImport {
 }
 
 export default function DiscordPage() {
+  const dialog = useDialog();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [pendingImports, setPendingImports] = useState<PendingImport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,7 +93,7 @@ export default function DiscordPage() {
       setSelectedImport(null);
       setPendingImports((prev) => prev.filter((p) => p.id !== selectedImport.id));
     } catch {
-      alert("Import failed — please try again");
+      void dialog.alert({ title: "Import Failed", description: "Import failed. Please try again.", variant: "danger" });
     } finally {
       setImporting(false);
     }

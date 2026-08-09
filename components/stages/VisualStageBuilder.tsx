@@ -174,7 +174,7 @@ export default function VisualStageBuilder({ tournament }: VisualStageBuilderPro
     if (!ok) return;
     const res = await fetch(`/api/stages/${stage.id}`, { method: "DELETE" });
     if (res.ok) loadStages();
-    else alert("Failed to delete");
+    else { void dialog.alert({ title: "Delete Failed", description: "Failed to delete. Please try again.", variant: "danger" }); }
   };
 
   const duplicateStage = async (stage: Stage) => {

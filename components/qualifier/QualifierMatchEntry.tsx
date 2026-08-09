@@ -1,4 +1,5 @@
-"use client";
+﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 
 import { useState } from "react";
 import {
@@ -31,6 +32,7 @@ interface TeamResult {
 export default function QualifierMatchEntry({
   tournament, match, teams, existingResults, onClose, onSave
 }: QualifierMatchEntryProps) {
+  const dialog = useDialog();
   const initResults = (): TeamResult[] => {
     if (existingResults && existingResults.length > 0) {
       return existingResults.map(r => ({
@@ -87,7 +89,7 @@ export default function QualifierMatchEntry({
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 1000000) {
-      alert("Screenshot too large. Max 1MB.");
+      void dialog.alert({ title: "File Too Large", description: "Screenshot too large. Maximum 1MB allowed.", variant: "warning" });
       return;
     }
     const reader = new FileReader();
@@ -131,7 +133,7 @@ export default function QualifierMatchEntry({
         onSave();
       } else {
         const err = await res.json();
-        alert("Failed: " + err.error);
+        void dialog.alert({ title: "Save Failed", description: err.error || "Failed to save match results.", variant: "danger" });
       }
     } finally {
       setSaving(false);

@@ -1,4 +1,5 @@
 ﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 import { useEffect, useState, use, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -126,6 +127,7 @@ function calculateStandings(teams: any[], matches: any[], scoringRule: any) {
 }
 
 export default function StandingsPage({ params }: { params: Promise<{ id: string }> }) {
+  const dialog = useDialog();
   const { id } = use(params);
   const router = useRouter();
   const [tournament, setTournament] = useState<any>(null);
@@ -200,7 +202,7 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
         window.open("/preview/" + id + "?" + p.toString(), "_blank");
       }
     } catch (e: any) {
-      alert("Export failed: " + e?.message);
+      void dialog.alert({ title: "Export Failed", description: "Export failed: " + (e?.message || "Unknown error"), variant: "danger" });
     }
   };
 

@@ -93,10 +93,10 @@ export default function TournamentBrandingPage() {
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
       } else {
-        alert("Failed to save");
+        void dialog.alert({ title: "Save Failed", description: "Failed to save branding. Please try again.", variant: "danger" });
       }
     } catch {
-      alert("Failed to save");
+      void dialog.alert({ title: "Save Failed", description: "Failed to save branding. Please try again.", variant: "danger" });
     } finally {
       setSaving(false);
     }
@@ -106,7 +106,7 @@ export default function TournamentBrandingPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
-      alert("Image too large. Max 2MB.");
+      void dialog.alert({ title: "File Too Large", description: "Please use an image under 2MB.", variant: "warning" });
       return;
     }
     const reader = new FileReader();

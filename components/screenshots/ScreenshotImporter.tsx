@@ -1,4 +1,5 @@
-"use client";
+﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useRef } from "react";
 import {
@@ -29,6 +30,7 @@ interface ExtractedResult {
 type Step = "upload" | "extracting" | "review" | "confirm";
 
 export default function ScreenshotImporter({
+  const dialog = useDialog();
   tournament, match, teams, onClose, onSave
 }: ScreenshotImporterProps) {
   const [step, setStep] = useState<Step>("upload");
@@ -191,7 +193,7 @@ export default function ScreenshotImporter({
       if (res.ok) {
         onSave();
       } else {
-        alert("Failed to save results");
+        void dialog.alert({ title: "Save Failed", description: "Failed to save match results from screenshot.", variant: "danger" });
       }
     } finally {
       setSaving(false);

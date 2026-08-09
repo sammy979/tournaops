@@ -1,4 +1,5 @@
-"use client";
+﻿"use client";
+import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useEffect } from "react";
 import {
@@ -24,6 +25,7 @@ const TIEBREAKER_OPTIONS = [
 ];
 
 export default function ScoringBuilder({ initialPreset, onSave, onClose, onApplyToStage }: ScoringBuilderProps) {
+  const dialog = useDialog();
   const [name, setName] = useState(initialPreset?.name || "");
   const [description, setDescription] = useState(initialPreset?.description || "");
   const [placementPoints, setPlacementPoints] = useState<number[]>(
@@ -75,7 +77,7 @@ export default function ScoringBuilder({ initialPreset, onSave, onClose, onApply
 
   const handleSave = async () => {
     if (!name.trim()) {
-      alert("Name is required");
+      void dialog.alert({ title: "Name Required", description: "Please enter a name for this scoring preset.", variant: "warning" });
       return;
     }
     setSaving(true);
@@ -107,7 +109,7 @@ export default function ScoringBuilder({ initialPreset, onSave, onClose, onApply
       if (onSave) onSave(data.preset);
       onClose();
     } else {
-      alert("Failed to save");
+      void dialog.alert({ title: "Save Failed", description: "Failed to save scoring preset. Please try again.", variant: "danger" });
     }
     setSaving(false);
   };
