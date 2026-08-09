@@ -1,20 +1,33 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
+import { verifyStageOwnership } from "@/lib/authorization";
 
-async function checkOwner(stageId: string, userId: string) {
+async function checkOwner(stageId: string, userId: string, isAdmin: boolean) {
   const stage = await prisma.stage.findUnique({
     where: { id: stageId },
     include: { tournament: true },
   });
   if (!stage) return { error: "Not found", status: 404, stage: null };
-  if (stage.tournament.userId !== userId) return { error: "Forbidden", status: 403, stage: null };
+  if (!isAdmin && stage.tournament.userId !== userId) {
+    return { error: "Forbidden", status: 403, stage: null };
+  }
   return { stage, error: null, status: 200 };
 }
 
-// GET stage details
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
+
+  const { authorized, errorResponse } = await verifyStageOwnership(id, session);
+  if (!authorized) return errorResponse!;
 
   const stage = await prisma.stage.findUnique({
     where: { id },
@@ -25,22 +38,33 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     },
   });
 
-  if (!stage) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!stage) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   return NextResponse.json({ stage });
 }
 
-// PUT update stage
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const { id } = await params;
-  const check = await checkOwner(id, session.userId);
-  if (check.error) return NextResponse.json({ error: check.error }, { status: check.status });
+  const check = await checkOwner(id, session.userId, !!session.isAdmin);
+  if (check.error) {
+    return NextResponse.json({ error: check.error }, { status: check.status });
+  }
 
   if (check.stage!.isLocked) {
-    return NextResponse.json({ error: "Stage is locked. Unlock first to edit." }, { status: 403 });
+    return NextResponse.json(
+      { error: "Stage is locked. Unlock first to edit." },
+      { status: 403 }
+    );
   }
 
   const data = await req.json();
@@ -70,17 +94,26 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   return NextResponse.json({ stage: updated });
 }
 
-// DELETE stage
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const { id } = await params;
-  const check = await checkOwner(id, session.userId);
-  if (check.error) return NextResponse.json({ error: check.error }, { status: check.status });
+  const check = await checkOwner(id, session.userId, !!session.isAdmin);
+  if (check.error) {
+    return NextResponse.json({ error: check.error }, { status: check.status });
+  }
 
   if (check.stage!.isLocked) {
-    return NextResponse.json({ error: "Cannot delete locked stage" }, { status: 403 });
+    return NextResponse.json(
+      { error: "Cannot delete locked stage" },
+      { status: 403 }
+    );
   }
 
   await prisma.stage.delete({ where: { id } });
