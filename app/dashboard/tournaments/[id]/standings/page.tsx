@@ -342,6 +342,99 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
         })}
       </div>
 
+            {/* PODIUM HERO — Top 3 Champions */}
+      {filtered.length >= 3 && (
+        <div id="podium-hero-section" style={{ marginBottom: "1.5rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr 1fr", gap: "0.75rem", alignItems: "end" }}>
+            {[filtered[1], filtered[0], filtered[2]].map((team: any, idx: number) => {
+              const actualRank = idx === 1 ? 1 : idx === 0 ? 2 : 3;
+              const isFirst = actualRank === 1;
+              const isSecond = actualRank === 2;
+              const config = isFirst
+                ? { color: "#fbbf24", bg: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.3)", glow: "rgba(251,191,36,0.4)", emoji: "🏆", label: "CHAMPION", height: "220px" }
+                : isSecond
+                ? { color: "#e5e7eb", bg: "rgba(229,231,235,0.08)", border: "rgba(229,231,235,0.2)", glow: "rgba(229,231,235,0.2)", emoji: "🥈", label: "RUNNER UP", height: "180px" }
+                : { color: "#f97316", bg: "rgba(249,115,22,0.08)", border: "rgba(249,115,22,0.25)", glow: "rgba(249,115,22,0.3)", emoji: "🥉", label: "THIRD", height: "160px" };
+
+              return (
+                <button
+                  key={team.id}
+                  onClick={() => setSelectedTeam(team)}
+                  style={{
+                    background: `linear-gradient(180deg, ${config.bg} 0%, rgba(0,0,0,0.3) 100%)`,
+                    border: `2px solid ${config.border}`,
+                    borderRadius: "1rem",
+                    padding: "1.25rem 1rem",
+                    textAlign: "center",
+                    height: config.height,
+                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between",
+                    boxShadow: `0 10px 30px ${config.glow}, inset 0 1px 0 ${config.border}`,
+                    position: "relative",
+                    cursor: "pointer",
+                    transition: "transform 0.2s",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-4px)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
+                >
+                  <div style={{ fontSize: isFirst ? "2.5rem" : "1.75rem", lineHeight: 1 }}>{config.emoji}</div>
+
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
+                    <TeamLogo name={team.name} tag={team.tag} logo={team.logo} size={isFirst ? 64 : 52} />
+                    <div style={{ fontSize: "0.6rem", fontWeight: 800, color: config.color, letterSpacing: "0.15em" }}>
+                      {config.label}
+                    </div>
+                    {team.tag && (
+                      <div style={{ fontSize: "0.65rem", color: "#9ca3af", fontWeight: 700, letterSpacing: "0.05em" }}>
+                        [{team.tag}]
+                      </div>
+                    )}
+                    <div style={{
+                      fontSize: isFirst ? "1rem" : "0.85rem",
+                      fontWeight: 800,
+                      color: "#fff",
+                      maxWidth: "160px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}>
+                      {team.name}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "0.75rem", fontSize: "0.7rem" }}>
+                    <div>
+                      <div style={{ color: config.color, fontWeight: 900, fontSize: isFirst ? "1.5rem" : "1.125rem" }}>
+                        {team.totalPoints}
+                      </div>
+                      <div style={{ color: "#6b7280", fontSize: "0.6rem", textTransform: "uppercase", fontWeight: 700 }}>
+                        Points
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ color: "#f87171", fontWeight: 900, fontSize: isFirst ? "1.5rem" : "1.125rem" }}>
+                        {team.totalKills}
+                      </div>
+                      <div style={{ color: "#6b7280", fontSize: "0.6rem", textTransform: "uppercase", fontWeight: 700 }}>
+                        Kills
+                      </div>
+                    </div>
+                    {team.wwcdCount > 0 && (
+                      <div>
+                        <div style={{ color: "#a855f7", fontWeight: 900, fontSize: isFirst ? "1.5rem" : "1.125rem" }}>
+                          {team.wwcdCount}
+                        </div>
+                        <div style={{ color: "#6b7280", fontSize: "0.6rem", textTransform: "uppercase", fontWeight: 700 }}>
+                          WWCD
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       <div style={{ position: "relative", marginBottom: "1rem" }}>
         <Search style={{ position: "absolute", left: "0.875rem", top: "50%", transform: "translateY(-50%)", width: "1rem", height: "1rem", color: "#6b7280" }} />
         <input
@@ -422,6 +515,12 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
         )}
       </div>
 
+      
+      {tournament?.brandingData?.sponsors && tournament.brandingData.sponsors.length > 0 && (
+        <div style={{ marginTop: "2rem" }}>
+          <SponsorsBar sponsors={tournament.brandingData.sponsors} primaryColor={primaryColor} />
+        </div>
+      )}
       {selectedTeam && (
         <TeamDetailModal team={selectedTeam} primaryColor={primaryColor} onClose={() => setSelectedTeam(null)} />
       )}
@@ -430,3 +529,4 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
     </div>
   );
 }
+
