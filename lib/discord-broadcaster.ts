@@ -233,13 +233,14 @@ export async function broadcastMilestone(
 
 export async function broadcastStandingsImage(webhookUrl: string, tournament: any) {
   const urls = tournamentUrls(tournament);
-  // Uses the existing preview page as image source
-  const imageUrl = "https://www.tournaops.com/api/tournaments/" + tournament.id + "/standings-image?t=" + Date.now();
+  const timestamp = Date.now();
+  // Add .png extension via query so Discord recognizes as image
+  const imageUrl = "https://www.tournaops.com/api/tournaments/" + tournament.id + "/standings-image?t=" + timestamp + "&format=png";
 
   const embed: DiscordEmbed = {
     ...baseEmbed(tournament),
-    title: "\uD83D\uDCCA LIVE STANDINGS \u2014 " + tournament.name,
-    description: "Latest tournament standings visualization",
+    title: "\uD83D\uDCCA LIVE STANDINGS",
+    description: "**" + tournament.name + "**\n\n\uD83D\uDCCA Top 20 teams updated in real-time\n\uD83D\uDD17 [View Full Standings](" + urls.results + ")",
     url: urls.results,
     image: { url: imageUrl },
   };

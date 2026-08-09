@@ -70,7 +70,7 @@ export async function GET(
       .sort((a: any, b: any) => b.points - a.points || b.wwcds - a.wwcds || b.kills - a.kills)
       .map((s: any, i: number) => ({ ...s, rank: i + 1 }));
 
-    const top10 = standings.slice(0, 10);
+    const top20 = standings.slice(0, 20);
     const branding = tournament.brandingData as any || {};
     const primaryColor = branding.primaryColor || "#f59e0b";
     const orgName = branding.orgName || "Tournament";
@@ -106,11 +106,11 @@ export async function GET(
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-            {top10.length === 0 ? (
+            {top20.length === 0 ? (
               <div style={{ display: "flex", color: "#6b7280", fontSize: "24px", justifyContent: "center", marginTop: "100px" }}>
                 No results yet
               </div>
-            ) : top10.map((s: any, i: number) => {
+            ) : top20.map((s: any, i: number) => {
               const isFirst = s.rank === 1;
               const isSecond = s.rank === 2;
               const isThird = s.rank === 3;
@@ -119,8 +119,8 @@ export async function GET(
                 <div key={s.id} style={{
                   display: "flex",
                   alignItems: "center",
-                  padding: "18px 20px",
-                  marginBottom: "6px",
+                  padding: "14px 20px",
+                  marginBottom: "4px",
                   background: isFirst || isSecond || isThird ? rankColor + "15" : (i % 2 === 0 ? "rgba(255,255,255,0.03)" : "transparent"),
                   borderLeft: "6px solid " + (isFirst || isSecond || isThird ? rankColor : "transparent"),
                   borderRadius: "10px",
@@ -170,7 +170,7 @@ export async function GET(
       ),
       {
         width: 1200,
-        height: 1200,
+        height: 2000,
       }
     );
   } catch (e: any) {
