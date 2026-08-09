@@ -10,6 +10,8 @@ import {
 import { exportToCSV, exportToExcel, exportToPDF } from "@/lib/export-standings";
 import TeamDetailModal from "@/components/tournament/TeamDetailModal";
 import TournamentNav from "@/components/tournament/TournamentNav";
+import TeamLogo from "@/components/tournament/TeamLogo";
+import SponsorsBar from "@/components/tournament/SponsorsBar";
 
 // ─── Scoring helpers ──────────────────────────────────────────────────────────
 // Uses the tournament's scoringRule JSON field as the single source of truth.
@@ -393,10 +395,9 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
               >
                 <div style={{ textAlign: "center", fontWeight: 800, fontSize: "1.125rem", color: rankColor }}>#{s.currentRank}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", minWidth: 0 }}>
-                  {s.logo ? (
-                    <img src={s.logo} alt="" style={{ width: "2.25rem", height: "2.25rem", borderRadius: "0.5rem", objectFit: "cover", border: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }} />
-                  ) : (
-                    <div style={{ width: "2.25rem", height: "2.25rem", borderRadius: "0.5rem", background: `${primaryColor}20`, color: primaryColor, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "0.7rem", flexShrink: 0 }}>
+                  <TeamLogo name={s.name} tag={s.tag} logo={s.logo} size={36} />
+                  {false && (
+                    <div>
                       {(s.tag || s.name).slice(0, 2).toUpperCase()}
                     </div>
                   )}
