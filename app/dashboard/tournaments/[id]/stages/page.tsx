@@ -1,11 +1,12 @@
 ﻿"use client";
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Layers, RefreshCw, AlertTriangle, Check, X } from "lucide-react";
+import { ArrowLeft, Loader2, Layers, RefreshCw, AlertTriangle, Check, X, Calendar } from "lucide-react";
 import TournamentNav from "@/components/tournament/TournamentNav";
 import dynamic from "next/dynamic";
 
 const StageManager = dynamic(() => import("@/components/stages/StageManager"), { ssr: false });
+const DayConfigModal = dynamic(() => import("@/components/stages/DayConfigModal"), { ssr: false });
 
 interface StageConfig {
   name: string;
@@ -30,6 +31,7 @@ export default function StagesPage({ params }: { params: Promise<{ id: string }>
     { name: "Grand Final", numGroups: 1, teamsPerGroup: 16, matchesPerGroup: 4, type: "GRAND_FINAL" },
   ]);
   const [autoAssign, setAutoAssign] = useState(true);
+  const [configuringStage, setConfiguringStage] = useState<any>(null);
 
   function refresh() {
     fetch("/api/tournaments/" + id)
@@ -232,6 +234,45 @@ export default function StagesPage({ params }: { params: Promise<{ id: string }>
             {regenerating ? <><Loader2 style={{ width: "1rem", height: "1rem", animation: "spin 0.8s linear infinite" }} />Regenerating...</> : <><RefreshCw style={{ width: "1rem", height: "1rem" }} />Confirm Regenerate ({stageConfigs.length} stages, {stageConfigs.reduce((s, c) => s + c.matchesPerGroup * c.numGroups, 0)} matches)</>}
           </button>
         </div>
+      )}
+
+      {/* Day Configuration Section */}
+      {tournament.stages && tournament.stages.length > 0 && (
+        <div style={{ marginBottom: "1.5rem", background: "rgba(139,92,246,0.05)", border: "1px solid rgba(139,92,246,0.2)", borderRadius: "1rem", padding: "1.25rem" }}>
+          <h3 style={{ fontSize: "0.95rem", fontWeight: 700, color: "#fff", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <Calendar style={{ width: "1rem", height: "1rem", color: "#a78bfa" }} />
+            Configure Matches Per Stage
+          </h3>
+          <p style={{ color: "#c4b5fd", fontSize: "0.75rem", marginBottom: "1rem", lineHeight: 1.5 }}>
+            Set how many matches per group each stage has, organize by days (Day 1, Day 2, ...), and choose map rotation per day. Regenerates that stage's matches only.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "0.625rem" }}>
+            {tournament.stages.map((stage: any) => (
+              <button key={stage.id}
+                onClick={() => setConfiguringStage(stage)}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(139,92,246,0.25)", borderRadius: "0.625rem", color: "#fff", cursor: "pointer", textAlign: "left" }}>
+                <div>
+                  <div style={{ fontSize: "0.85rem", fontWeight: 700 }}>{stage.name}</div>
+                  <div style={{ fontSize: "0.7rem", color: "#9ca3af", marginTop: "0.125rem" }}>
+                    {stage.matchesPerGroup || 4} matches/group
+                  </div>
+                </div>
+                <Calendar style={{ width: "1rem", height: "1rem", color: "#a78bfa" }} />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {configuringStage && (
+        <DayConfigModal
+          stageId={configuringStage.id}
+          stageName={configuringStage.name}
+          currentMatchesPerGroup={configuringStage.matchesPerGroup || 4}
+          currentMapRotation={configuringStage.mapRotation || tournament.mapRotation || ["Erangel"]}
+          onClose={() => setConfiguringStage(null)}
+          onSaved={() => { setConfiguringStage(null); refresh(); }}
+        />
       )}
 
       <StageManager tournament={tournament} onStageChange={refresh} />

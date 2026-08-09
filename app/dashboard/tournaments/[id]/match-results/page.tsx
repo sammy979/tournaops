@@ -26,6 +26,7 @@ interface Match {
   stageId?: string;
   groupId?: string;
   results: any;
+  notes?: string | any;
 }
 
 interface Stage {
@@ -108,6 +109,23 @@ export default function MatchResultsPage() {
     }
     return list.sort((a, b) => (a.matchNumber || 0) - (b.matchNumber || 0));
   }, [matches, selectedStageId, selectedGroupId, matchSearch]);
+
+  // Group matches by day (if any have day metadata)
+  const matchesByDay = useMemo(() => {
+    const groups = new Map<string, Match[]>();
+    for (const m of filteredMatches) {
+      let day = "All Matches";
+      try {
+        const notes = m.notes ? (typeof m.notes === "string" ? JSON.parse(m.notes) : m.notes) : null;
+        if (notes && notes.dayName) {
+          day = notes.dayDate ? `${notes.dayName} · ${notes.dayDate}` : notes.dayName;
+        }
+      } catch {}
+      if (!groups.has(day)) groups.set(day, []);
+      groups.get(day)!.push(m);
+    }
+    return Array.from(groups.entries());
+  }, [filteredMatches]);
 
   // Get teams eligible for the selected match (from its stage/group)
   function getEligibleTeams(match: Match | null): Team[] {
