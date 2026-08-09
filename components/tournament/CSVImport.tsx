@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { X, Upload, Check, AlertCircle, FileText, Users, Clipboard, Download } from "lucide-react";
@@ -50,10 +50,10 @@ Storm Riders,Storm1,Storm2,Storm3,Storm4`;
   const handleImport = async () => {
     setImporting(true);
     setTimeout(async () => {
-      const newTeams: Team[] = parsed.map((t, i) => {
-        const existing = tournament.teams[i];
-        const players: Player[] = t.players.map((name, j) => ({
-          id: existing?.players[j]?.id || Math.random().toString(36).substring(2, 10),
+      const newTeams: any[] = parsed.map((t, i) => {
+        const existing = (tournament.teams ?? [])[i];
+        const players: any[] = t.players.map((name, j) => ({
+          id: (existing?.players as any)?.[j]?.id || Math.random().toString(36).substring(2, 10),
           name: name,
           ign: name,
           role: (["IGL", "Fragger", "Support", "Entry"] as const)[j % 4],
@@ -75,8 +75,8 @@ Storm Riders,Storm1,Storm2,Storm3,Storm4`;
         };
       });
 
-      for (let i = parsed.length; i < tournament.teams.length; i++) {
-        newTeams.push(tournament.teams[i]);
+      for (let i = parsed.length; i < (tournament.teams ?? []).length; i++) {
+        newTeams.push((tournament.teams ?? [])[i]);
       }
 
       const updated = { ...tournament, teams: newTeams };

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef } from "react";
 import {
@@ -52,7 +52,7 @@ export default function TeamEditor({ tournament, onClose, onSave }: TeamEditorPr
 
   const filteredTeams = teams.filter(t =>
     t.name.toLowerCase().includes(search.toLowerCase()) ||
-    t.players.some(p =>
+    (t.players ?? []).some(p =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       (p.ign && p.ign.toLowerCase().includes(search.toLowerCase()))
     )
@@ -68,7 +68,7 @@ export default function TeamEditor({ tournament, onClose, onSave }: TeamEditorPr
   const updatePlayer = (teamId: string, playerId: string, field: string, value: string) => {
     setTeams(prev => prev.map(t => {
       if (t.id !== teamId) return t;
-      return { ...t, players: t.players.map(p => p.id === playerId ? { ...p, [field]: value } : p) };
+      return { ...t, players: (t.players ?? []).map(p => p.id === playerId ? { ...p, [field]: value } : p) };
     }));
     markChanged();
   };
@@ -76,13 +76,13 @@ export default function TeamEditor({ tournament, onClose, onSave }: TeamEditorPr
   const addPlayer = (teamId: string) => {
     setTeams(prev => prev.map(t => {
       if (t.id !== teamId) return t;
-      const newPlayer: Player = {
+      const newPlayer: any = {
         id: Math.random().toString(36).substring(2, 10),
-        name: `Player ${t.players.length + 1}`,
+        name: `Player ${(t.players ?? []).length + 1}`,
         ign: "",
         role: "Support",
       };
-      return { ...t, players: [...t.players, newPlayer] };
+      return { ...t, players: [...(t.players ?? []), newPlayer] };
     }));
     markChanged();
   };
@@ -90,8 +90,8 @@ export default function TeamEditor({ tournament, onClose, onSave }: TeamEditorPr
   const removePlayer = (teamId: string, playerId: string) => {
     setTeams(prev => prev.map(t => {
       if (t.id !== teamId) return t;
-      if (t.players.length <= 1) return t;
-      return { ...t, players: t.players.filter(p => p.id !== playerId) };
+      if ((t.players ?? []).length <= 1) return t;
+      return { ...t, players: (t.players ?? []).filter(p => p.id !== playerId) };
     }));
     markChanged();
   };
@@ -151,7 +151,7 @@ export default function TeamEditor({ tournament, onClose, onSave }: TeamEditorPr
     setTeams(prev => prev.map((t, i) => ({
       ...t,
       name: `Team ${i + 1}`,
-      players: t.players.map((p, j) => ({
+      players: (t.players ?? []).map((p, j) => ({
         ...p,
         name: `Player ${j + 1}`,
         ign: `T${i + 1}_P${j + 1}`,
@@ -174,7 +174,7 @@ export default function TeamEditor({ tournament, onClose, onSave }: TeamEditorPr
     }
   };
 
-  const totalPlayers = teams.reduce((a, t) => a + t.players.length, 0);
+  const totalPlayers = teams.reduce((a, t) => a + (t.players ?? []).length, 0);
   const teamsWithLogos = teams.filter(t => (t as any).logo).length;
 
   return (
@@ -338,10 +338,10 @@ export default function TeamEditor({ tournament, onClose, onSave }: TeamEditorPr
                             placeholder="Squad name"
                           />
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-gray-600 text-xs">{team.players.length} players</span>
+                            <span className="text-gray-600 text-xs">{(team.players ?? []).length} players</span>
                             {/* Show roles */}
                             <div className="flex gap-1 overflow-hidden">
-                              {team.players.slice(0, 4).map(p => {
+                              {(team.players ?? []).slice(0, 4).map(p => {
                                 const rc = ROLE_COLORS[p.role || "Support"] || ROLE_COLORS.Support;
                                 return (
                                   <span key={p.id} className={`${rc.bg} ${rc.text} text-[9px] px-1.5 py-0.5 rounded-full border ${rc.border}`}>
@@ -395,7 +395,7 @@ export default function TeamEditor({ tournament, onClose, onSave }: TeamEditorPr
                             <div className="col-span-1"></div>
                           </div>
 
-                          {team.players.map((player, pIdx) => {
+                          {(team.players ?? []).map((player, pIdx) => {
                             const rc = ROLE_COLORS[player.role || "Support"] || ROLE_COLORS.Support;
 
                             return (
@@ -471,7 +471,7 @@ export default function TeamEditor({ tournament, onClose, onSave }: TeamEditorPr
 
                                 {/* Remove Player */}
                                 <div className="col-span-1 flex justify-center">
-                                  {team.players.length > 1 && (
+                                  {(team.players ?? []).length > 1 && (
                                     <button
                                       onClick={() => removePlayer(team.id, player.id)}
                                       className="p-1.5 rounded-lg text-gray-700 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover/player:opacity-100"

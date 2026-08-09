@@ -1,9 +1,10 @@
-// TournaOps Advanced Scoring Engine
+﻿// TournaOps Advanced Scoring Engine
 // Handles all official + custom PUBG Mobile scoring rules
 
 import { TeamMatchResult, ScoringRule, PlayerMatchResult } from "@/types/tournament";
 
 export interface AdvancedScoringRule extends ScoringRule {
+  name?: string;
   // Bonus rules
   wwcdBonus?: number;           // Extra points for #1
   top3Bonus?: number;           // Extra points for top 3

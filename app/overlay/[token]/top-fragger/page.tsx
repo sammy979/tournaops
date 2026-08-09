@@ -23,6 +23,7 @@ interface Standing {
 }
 
 interface Branding {
+  sponsors?: Array<{ id: string; name: string; logo: string; tier: string; website?: string }>;
   primaryColor?: string;
   organizerName?: string;
   logoUrl?: string;
@@ -253,8 +254,8 @@ export default function TopFraggerOverlay({
           </div>
         )}
       
-        {branding?.sponsors && branding.sponsors.length > 0 && (
-          <SponsorTicker sponsors={branding.sponsors} primaryColor={primaryColor} variant="rotate" position="bottom" />
+        {data?.branding?.sponsors && data?.branding?.sponsors.length > 0 && (
+          <SponsorTicker sponsors={(data?.branding?.sponsors ?? []) as any} primaryColor={primaryColor} variant="rotate" position="bottom" />
         )}
       </div>
     </>

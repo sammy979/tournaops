@@ -10,11 +10,12 @@ interface Props {
 }
 
 export default function MatchCard({ match, editable = false, onUpdate }: Props) {
-  const [score1, setScore1] = useState(match.score1);
-  const [score2, setScore2] = useState(match.score2);
+  const [score1, setScore1] = useState<number>(match.score1 ?? 0);
+  const [score2, setScore2] = useState<number>(match.score2 ?? 0);
   const [editing, setEditing] = useState(false);
 
-  const threshold = Math.ceil(match.bestOf / 2);
+  const bestOf = match.bestOf ?? 1;
+  const threshold = Math.ceil(bestOf / 2);
 
   const setWinner = (team: BracketTeam | null | undefined) => {
     if (!team || !onUpdate) return;
@@ -26,8 +27,8 @@ export default function MatchCard({ match, editable = false, onUpdate }: Props) 
   const saveScore = () => {
     if (!onUpdate) return;
     let winner: BracketTeam | null = null;
-    if (score1 > score2 && score1 >= threshold) winner = match.team1 || null;
-    else if (score2 > score1 && score2 >= threshold) winner = match.team2 || null;
+    if (score1 > score2 && score1 >= threshold) winner = match.team1 ?? null;
+    else if (score2 > score1 && score2 >= threshold) winner = match.team2 ?? null;
     onUpdate({ ...match, score1, score2, winner, isComplete: winner !== null });
     setEditing(false);
   };
@@ -42,7 +43,7 @@ export default function MatchCard({ match, editable = false, onUpdate }: Props) 
           R{match.round} M{match.position + 1}
         </span>
         <span className="text-[10px] font-bold text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/30">
-          BO{match.bestOf}
+          BO{bestOf}
         </span>
       </div>
 
@@ -67,7 +68,7 @@ export default function MatchCard({ match, editable = false, onUpdate }: Props) 
           />
         ) : (
           <div className={"text-2xl font-bold min-w-[32px] text-right " + (isWinner1 ? "text-green-400" : "text-purple-300/60")}>
-            {match.score1}
+            {match.score1 ?? 0}
           </div>
         )}
       </div>
@@ -97,7 +98,7 @@ export default function MatchCard({ match, editable = false, onUpdate }: Props) 
           />
         ) : (
           <div className={"text-2xl font-bold min-w-[32px] text-right " + (isWinner2 ? "text-green-400" : "text-purple-300/60")}>
-            {match.score2}
+            {match.score2 ?? 0}
           </div>
         )}
       </div>
@@ -109,7 +110,7 @@ export default function MatchCard({ match, editable = false, onUpdate }: Props) 
               <button onClick={saveScore} className="flex-1 py-2 text-xs bg-green-500/20 text-green-400 rounded-lg font-bold border border-green-500/50 hover:bg-green-500/30 transition-all">
                 <Check className="w-3.5 h-3.5 inline mr-1" /> SAVE
               </button>
-              <button onClick={() => { setEditing(false); setScore1(match.score1); setScore2(match.score2); }}
+              <button onClick={() => { setEditing(false); setScore1(match.score1 ?? 0); setScore2(match.score2 ?? 0); }}
                 className="flex-1 py-2 text-xs bg-red-500/20 text-red-400 rounded-lg font-bold border border-red-500/50 transition-all">
                 <X className="w-3.5 h-3.5 inline mr-1" /> CANCEL
               </button>

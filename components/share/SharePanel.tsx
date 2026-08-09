@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { Twitter, MessageSquare, Link, Check, Share2, Instagram, Copy } from "lucide-react";
@@ -27,7 +27,7 @@ export default function SharePanel({ tournament, onClose }: SharePanelProps) {
   const twitterTexts = [
     {
       label: "Tournament Announcement",
-      text: ` ${tournament.name} is LIVE!\n\n ${tournament.teams.length} squads competing\n ${tournament.mapRotation.join(", ")}\n Prize Pool: ${tournament.prizePool || "TBA"}\n\n Live standings:\n${publicUrl}\n\n#PUBGMobile #BGMI #Esports #Tournament`,
+      text: ` ${tournament.name} is LIVE!\n\n ${(tournament.teams ?? []).length} squads competing\n ${(tournament.mapRotation ?? []).join(", ")}\n Prize Pool: ${tournament.prizePool || "TBA"}\n\n Live standings:\n${publicUrl}\n\n#PUBGMobile #BGMI #Esports #Tournament`,
     },
     {
       label: "Current Leader",
@@ -37,7 +37,7 @@ export default function SharePanel({ tournament, onClose }: SharePanelProps) {
     },
     {
       label: "Team Registration Open",
-      text: ` Registrations OPEN for ${tournament.name}!\n\n ${tournament.teams.length}/${tournament.maxTeams} squads registered\n Prize: ${tournament.prizePool || "TBA"}\n\nRegister your team:\n${registerUrl}\n\n#PUBGMobile #BGMI #Tournament`,
+      text: ` Registrations OPEN for ${tournament.name}!\n\n ${(tournament.teams ?? []).length}/${tournament.maxTeams} squads registered\n Prize: ${tournament.prizePool || "TBA"}\n\nRegister your team:\n${registerUrl}\n\n#PUBGMobile #BGMI #Tournament`,
     },
     {
       label: "Champion Announcement",

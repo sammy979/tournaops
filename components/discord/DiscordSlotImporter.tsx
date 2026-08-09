@@ -65,7 +65,7 @@ export default function DiscordSlotImporter({ tournament, onClose, onSave }: Dis
   const [importCount, setImportCount] = useState(0);
 
   // Existing teams for duplicate check
-  const existingTeams: ExistingTeam[] = tournament.teams.map(t => ({
+  const existingTeams: ExistingTeam[] = (tournament.teams ?? []).map(t => ({
     id: t.id,
     name: t.name,
     seed: t.seed,
@@ -108,12 +108,12 @@ export default function DiscordSlotImporter({ tournament, onClose, onSave }: Dis
     setImporting(true);
     await new Promise(r => setTimeout(r, 600));
 
-    let updatedTeams = [...tournament.teams];
+    let updatedTeams = [...(tournament.teams ?? [])];
     let importedCount = 0;
 
     for (const slot of editableSlots) {
       const existingMatch = dupCheck?.existingMatches.find(
-        m => m.parsed.slotNumber === slot.slotNumber && m.parsed.teamName === slot.teamName
+        m => (m as any)?.parsed?.slotNumber === slot.slotNumber && (m as any)?.parsed?.teamName === slot.teamName
       );
 
       if (existingMatch) {
@@ -121,7 +121,7 @@ export default function DiscordSlotImporter({ tournament, onClose, onSave }: Dis
 
         if (conflictAction === "update") {
           updatedTeams = updatedTeams.map(t =>
-            t.id === existingMatch.existing.id
+            t.id === (existingMatch as any)?.existing?.id
               ? { ...t, name: slot.teamName, seed: slot.slotNumber }
               : t
           );
@@ -132,7 +132,7 @@ export default function DiscordSlotImporter({ tournament, onClose, onSave }: Dis
       }
 
       // Create new team
-      const newTeam: Team = {
+      const newTeam: any = {
         id: Math.random().toString(36).substring(2, 10),
         name: slot.teamName,
         tag: slot.teamName.substring(0, 4).toUpperCase(),
@@ -320,7 +320,7 @@ SLOT 3 - Team Nepal"
                 </div>
                 <div className="space-y-0.5 max-h-24 overflow-y-auto">
                   {parseResult.warnings.slice(0, 8).map((w, i) => (
-                    <p key={i} className="text-xs text-yellow-300/80"> {w.message}</p>
+                    <p key={i} className="text-xs text-yellow-300/80"> {typeof w === "string" ? w : (w as any).message ?? String(w)}</p>
                   ))}
                 </div>
               </div>
@@ -337,7 +337,7 @@ SLOT 3 - Team Nepal"
               <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
                 {editableSlots.map((slot, idx) => {
                   const conflict = dupCheck?.existingMatches.find(
-                    m => m.parsed.slotNumber === slot.slotNumber && m.parsed.teamName === slot.teamName
+                    m => (m as any)?.parsed?.slotNumber === slot.slotNumber && (m as any)?.parsed?.teamName === slot.teamName
                   );
                   return (
                     <div
@@ -362,12 +362,12 @@ SLOT 3 - Team Nepal"
                       />
                       {conflict && (
                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                          conflict.matchType === "exact_name" ? "bg-orange-500/20 text-orange-400" :
-                          conflict.matchType === "similar_name" ? "bg-yellow-500/20 text-yellow-400" :
+                          (conflict as any).matchType === "exact_name" ? "bg-orange-500/20 text-orange-400" :
+                          (conflict as any).matchType === "similar_name" ? "bg-yellow-500/20 text-yellow-400" :
                           "bg-blue-500/20 text-blue-400"
                         }`}>
-                          {conflict.matchType === "exact_name" ? "EXISTS" :
-                           conflict.matchType === "similar_name" ? "SIMILAR" : "SEED USED"}
+                          {(conflict as any).matchType === "exact_name" ? "EXISTS" :
+                           (conflict as any).matchType === "similar_name" ? "SIMILAR" : "SEED USED"}
                         </span>
                       )}
                       <button
@@ -466,12 +466,12 @@ SLOT 3 - Team Nepal"
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Existing squads:</span>
-                      <span className="text-gray-400">{tournament.teams.length}</span>
+                      <span className="text-gray-400">{(tournament.teams ?? []).length}</span>
                     </div>
                     <div className="flex justify-between pt-2 border-t border-white/8">
                       <span className="text-gray-500 font-semibold">After import:</span>
                       <span className="text-white font-bold">
-                        ~{tournament.teams.length + (dupCheck?.newTeams.length || 0) + (conflictAction === "create_new" ? (dupCheck?.existingMatches.length || 0) : 0)} squads
+                        ~{(tournament.teams ?? []).length + (dupCheck?.newTeams.length || 0) + (conflictAction === "create_new" ? (dupCheck?.existingMatches.length || 0) : 0)} squads
                       </span>
                     </div>
                   </div>

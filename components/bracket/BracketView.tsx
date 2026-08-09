@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { X, Trophy, ChevronRight, Users, Award } from "lucide-react";
 import { Tournament } from "@/types/tournament";
@@ -24,7 +24,7 @@ export default function BracketView({ tournament, onClose }: BracketViewProps) {
               Tournament Bracket
             </h2>
             <p className="text-gray-500 text-sm mt-1">
-              {tournament.name}  {tournament.rounds.length} rounds
+              {tournament.name}  {(tournament.rounds ?? []).length} rounds
             </p>
           </div>
           <button
@@ -38,10 +38,10 @@ export default function BracketView({ tournament, onClose }: BracketViewProps) {
         {/* Bracket */}
         <div className="p-6 overflow-x-auto">
           <div className="flex gap-6 min-w-max">
-            {tournament.rounds.map((round, rIdx) => {
-              const roundMatches = tournament.matches.filter(m => m.roundId === round.id);
+            {(tournament.rounds ?? []).map((round, rIdx) => {
+              const roundMatches = (tournament.matches ?? []).filter(m => m.roundId === round.id);
               const completedCount = roundMatches.filter(m => m.status === "completed").length;
-              const isLast = rIdx === tournament.rounds.length - 1;
+              const isLast = rIdx === (tournament.rounds ?? []).length - 1;
 
               return (
                 <div key={round.id} className="flex flex-col" style={{ minWidth: 260 }}>
@@ -56,15 +56,15 @@ export default function BracketView({ tournament, onClose }: BracketViewProps) {
                       {isLast ? " " : ""}{round.name}
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      {round.lobbies.length} {round.lobbies.length === 1 ? "lobby" : "lobbies"}  {completedCount}/{roundMatches.length} done
+                      {(round.lobbies ?? []).length} {(round.lobbies ?? []).length === 1 ? "lobby" : "lobbies"}  {completedCount}/{roundMatches.length} done
                     </p>
                   </div>
 
                   {/* Lobbies */}
                   <div className="space-y-3 flex-1">
-                    {round.lobbies.map((lobby) => {
-                      const lobbyTeams = tournament.teams.filter(t => lobby.teamIds.includes(t.id));
-                      const lobbyMatches = tournament.matches.filter(m => lobby.matchIds.includes(m.id));
+                    {(round.lobbies ?? []).map((lobby) => {
+                      const lobbyTeams = (tournament.teams ?? []).filter(t => lobby.teamIds.includes(t.id));
+                      const lobbyMatches = (tournament.matches ?? []).filter(m => lobby.matchIds.includes(m.id));
                       const lobbyDone = lobbyMatches.filter(m => m.status === "completed").length;
                       const lobbyBoard = getLeaderboard(tournament, lobby.id).filter(e => e.matchesPlayed > 0);
                       const displayList = lobbyBoard.length > 0 ? lobbyBoard : lobbyTeams.map((t, i) => ({ teamId: t.id, teamName: t.name, totalPoints: 0, rank: i + 1 }));

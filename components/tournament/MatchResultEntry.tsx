@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { X, Save, Zap, Trophy, Crosshair, Shield } from "lucide-react";
@@ -34,7 +34,7 @@ export default function MatchResultEntry({ tournament, match, teams, onClose, on
       teamId: team.id,
       teamName: team.name,
       placement: idx + 1,
-      players: team.players.map(p => ({
+      players: (team.players ?? []).map(p => ({
         playerId: p.id,
         playerName: p.name,
         kills: 0,
@@ -67,12 +67,12 @@ export default function MatchResultEntry({ tournament, match, teams, onClose, on
         teamId: r.teamId,
         teamName: team?.name || r.teamId,
         placement: r.placement,
-        players: r.playerResults.map(pr => ({
+        players: (r.playerResults ?? []).map(pr => ({
           playerId: pr.playerId,
           playerName: pr.playerName,
           kills: pr.kills,
           damage: pr.damage,
-          survived: pr.survived,
+          survived: pr.survived ?? false,
         }))
       };
     });

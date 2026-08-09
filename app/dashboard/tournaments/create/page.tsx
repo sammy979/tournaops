@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -492,7 +492,7 @@ export default function CreateTournamentPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-white font-bold">{s.name}</div>
-                        <div className="text-gray-500 text-xs">1st={s.placementPoints[0]}pts  Kill={s.killPoints}pt{s.killPoints > 1 ? "s" : ""}{s.wwcdBonus ? `  WWCD+${s.wwcdBonus}` : ""}</div>
+                        <div className="text-gray-500 text-xs">1st={(s.placementPoints as any)[1] ?? (s.placementPoints as any)[0] ?? 0}pts  Kill={s.killPoints}pt{s.killPoints > 1 ? "s" : ""}{s.wwcdBonus ? `  WWCD+${s.wwcdBonus}` : ""}</div>
                       </div>
                       {scoringKey === key && <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center"><Check className="w-4 h-4 text-white" /></div>}
                     </div>

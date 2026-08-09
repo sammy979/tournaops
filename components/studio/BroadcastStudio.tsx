@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef } from "react";
 import {
@@ -99,7 +99,7 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
   const dim = SIZES[size];
   const leaderboard = getLeaderboard(tournament);
   const { topKillers, topDamage } = getTopPlayers(tournament);
-  const completedMatches = tournament.matches.filter(m => m.status === "completed");
+  const completedMatches = (tournament.matches ?? []).filter(m => m.status === "completed");
   const selectedMatch = completedMatches.find(m => m.id === selectedMatchId) || completedMatches[completedMatches.length - 1];
 
   const exportCard = async () => {
@@ -479,7 +479,7 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
                           textShadow: `0 0 80px ${t.glow}`,
                           letterSpacing: -2,
                         }}>
-                          {selectedMatch.results[0]?.teamName.toUpperCase()}
+                          {selectedMatch?.results?.[0]?.teamName?.toUpperCase() ?? ""}
                         </div>
                         <div style={{
                           padding: "12px 32px",
@@ -517,7 +517,7 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
 
                         {/* Match info */}
                         <div style={{ color: t.sub, fontSize: 22, letterSpacing: 3 }}>
-                          {selectedMatch.name.toUpperCase()}  {selectedMatch.map.toUpperCase()}
+                          {(selectedMatch?.name ?? "").toUpperCase()}  {(selectedMatch?.map ?? "").toUpperCase()}
                         </div>
                       </div>
                     )}
@@ -660,10 +660,10 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
                       <>
                         <div style={{ textAlign: "center", marginBottom: 36 }}>
                           <div style={{ color: t.accent, fontSize: 30, fontWeight: 900, letterSpacing: 8, marginBottom: 10 }}>
-                            {selectedMatch.name.toUpperCase()}
+                            {(selectedMatch?.name ?? "").toUpperCase()}
                           </div>
                           <div style={{ color: t.sub, fontSize: 22, letterSpacing: 4 }}>
-                            {selectedMatch.map.toUpperCase()}
+                            {(selectedMatch?.map ?? "").toUpperCase()}
                           </div>
                         </div>
 

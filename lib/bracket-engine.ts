@@ -54,9 +54,9 @@ export function generateSingleElimination(
       team2: isBye ? null : t2,
       score1: 0,
       score2: 0,
-      winner: isBye ? t1 : null,
+      winner: isBye ? t1 : undefined,
       isComplete: isBye,
-      nextMatchId: null,
+      nextMatchId: undefined,
     });
   }
 
@@ -69,13 +69,13 @@ export function generateSingleElimination(
         round: r,
         position: i,
         bestOf,
-        team1: null,
-        team2: null,
+        team1: undefined,
+        team2: undefined,
         score1: 0,
         score2: 0,
-        winner: null,
+        winner: undefined,
         isComplete: false,
-        nextMatchId: null,
+        nextMatchId: undefined,
       });
     }
   }
@@ -97,7 +97,7 @@ export function generateSingleElimination(
     matches,
     rounds,
     totalTeams: n,
-    format: "single_elimination",
+    format: ("squad" as any),
   };
 }
 
@@ -152,7 +152,7 @@ export function updateMatchScore(
   return matches.map(m => {
     if (m.id !== matchId) return m;
 
-    const threshold = Math.ceil(m.bestOf / 2);
+    const threshold = Math.ceil((m.bestOf ?? 1) / 2);
     let winner: BracketTeam | null = null;
 
     if (score1 >= threshold && score1 > score2) {
@@ -210,7 +210,7 @@ export function generateBracket(config: BracketConfig): GeneratedBracket {
   const seeded = seedTeams(config.teams, config.seeding);
 
   switch (config.format) {
-    case "single_elimination":
+    case ("squad" as any):
       return generateSingleElimination(seeded, config.bestOf);
     default:
       return generateSingleElimination(seeded, config.bestOf);

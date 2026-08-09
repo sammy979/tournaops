@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import TournamentStatusManager from "@/components/tournament/TournamentStatusManager";
 import RegistrationSharePanel from "@/components/tournament/RegistrationSharePanel";
 import TournamentNav from "@/components/tournament/TournamentNav";
@@ -34,7 +34,7 @@ const getLeaderboard = (tournament: any) => {
   }
   for (const m of matches) {
     if (m.status !== "completed" || !Array.isArray(m.results)) continue;
-    for (const r of m.results) {
+    for (const r of (m.results as any[]) ?? []) {
       const s = map.get(r.teamId);
       if (!s) continue;
       s.totalKills += r.kills || 0;
@@ -69,7 +69,7 @@ type Tab = "overview" | "matches" | "standings" | "teams";
 
 export default function TournamentDetailPage() {
   const params = useParams();
-  const [tournament, setTournament] = useState<Tournament | null>(null);
+  const [tournament, setTournament] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [loading, setLoading] = useState(true);
   const [showTeamEditor, setShowTeamEditor] = useState(false);
@@ -114,9 +114,9 @@ export default function TournamentDetailPage() {
     if (!tournament) return;
     const rounds = tournament.rounds || [];
     const teams = tournament.teams || [];
-    const lobby = rounds.flatMap(r => r.lobbies || []).find(l => l.matchIds?.includes(match.id));
+    const lobby = rounds.flatMap((r: any) => r.lobbies || []).find((l: any) => l.matchIds?.includes(match.id));
     const matchTeams = lobby
-      ? teams.filter(t => lobby.teamIds?.includes(t.id))
+      ? teams.filter((t: any) => lobby.teamIds?.includes(t.id))
       : teams.slice(0, 16);
     setSelectedMatch(match);
     setSelectedMatchTeams(matchTeams);
@@ -199,7 +199,7 @@ export default function TournamentDetailPage() {
   const rounds = tournament.rounds || [];
   const leaderboard = getLeaderboard(tournament);
   const { topKillers, topDamage } = getTopPlayers(tournament);
-  const completedMatches = matches.filter(m => m.status === "completed").length;
+  const completedMatches = matches.filter((m: any) => m.status === "completed").length;
   const totalMatches = matches.length;
   const progress = totalMatches > 0 ? Math.round((completedMatches / totalMatches) * 100) : 0;
   const totalKills = leaderboard.reduce((a, e) => a + (e.totalKills || 0), 0);
@@ -635,9 +635,9 @@ export default function TournamentDetailPage() {
                 Round Structure
               </h3>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                {rounds.map((round, idx) => {
-                  const roundMatches = matches.filter(m => m.roundId === round.id);
-                  const roundCompleted = roundMatches.filter(m => m.status === "completed").length;
+                {rounds.map((round: any, idx: number) => {
+                  const roundMatches = matches.filter((m: any) => m.roundId === round.id);
+                  const roundCompleted = roundMatches.filter((m: any) => m.status === "completed").length;
                   const lobbies = round.lobbies || [];
                   const roundProgress = roundMatches.length > 0 ? (roundCompleted / roundMatches.length) * 100 : 0;
                   return (
@@ -705,14 +705,14 @@ export default function TournamentDetailPage() {
               </p>
             </div>
           ) : (
-            rounds.map(round => (
+            rounds.map((round: any) => (
               <div key={round.id}>
                 <h3 style={{ color: "#fff", fontWeight: 700, fontSize: "1rem", marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                   <Award style={{ width: "1.125rem", height: "1.125rem", color: "#c084fc" }} />
                   {round.name}
                 </h3>
-                {(round.lobbies || []).map(lobby => {
-                  const lobbyMatches = matches.filter(m => lobby.matchIds?.includes(m.id));
+                {(round.lobbies || []).map((lobby: any) => {
+                  const lobbyMatches = matches.filter((m: any) => lobby.matchIds?.includes(m.id));
                   return (
                     <div key={lobby.id} style={{ marginBottom: "1.25rem" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
@@ -721,7 +721,7 @@ export default function TournamentDetailPage() {
                         <span style={{ color: "#4b5563", fontSize: "0.65rem" }}>({lobby.teamIds?.length || 0} teams)</span>
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "0.625rem" }}>
-                        {lobbyMatches.map(match => (
+                        {lobbyMatches.map((match: any) => (
                           <div key={match.id} style={{
                             background: match.status === "completed" ? "rgba(34,197,94,0.05)" : "rgba(255,255,255,0.03)",
                             border: match.status === "completed" ? "1px solid rgba(34,197,94,0.15)" : "1px solid rgba(255,255,255,0.08)",
@@ -952,7 +952,7 @@ export default function TournamentDetailPage() {
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "0.875rem" }}>
-              {teams.map(team => (
+              {teams.map((team: any) => (
                 <div key={team.id} style={{
                   background: "rgba(255,255,255,0.03)",
                   border: "1px solid rgba(255,255,255,0.08)",

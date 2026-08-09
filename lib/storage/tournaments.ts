@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Tournament, ScoringRule, TeamMatchResult, LeaderboardEntry } from "@/types/tournament";
 
@@ -169,13 +169,13 @@ export async function submitMatchResults(
 
 export function generateDemoResults(tournament: Tournament, matchId: string): TeamMatchResult[] {
   try {
-    const match = tournament.matches.find(m => m.id === matchId);
+    const match = (tournament.matches ?? []).find(m => m.id === matchId);
     if (!match) return [];
 
-    const lobby = tournament.rounds.flatMap(r => r.lobbies).find(l => l.matchIds.includes(matchId));
+    const lobby = (tournament.rounds ?? []).flatMap(r => r.lobbies).find(l => l.matchIds.includes(matchId));
     const lobbyTeams = lobby
-      ? tournament.teams.filter(t => lobby.teamIds.includes(t.id))
-      : tournament.teams.slice(0, 16);
+      ? (tournament.teams ?? []).filter(t => lobby.teamIds.includes(t.id))
+      : (tournament.teams ?? []).slice(0, 16);
 
     if (lobbyTeams.length === 0) return [];
 
@@ -229,14 +229,14 @@ export function getLeaderboard(tournament: Tournament, lobbyId?: string): Leader
   try {
     if (!tournament?.matches) return [];
 
-    const completedMatches = tournament.matches.filter(m =>
+    const completedMatches = (tournament.matches ?? []).filter(m =>
       m?.status === "completed" && m.results && m.results.length > 0 &&
       (lobbyId ? m.lobbyId === lobbyId : true)
     );
 
     const teamMap: Record<string, LeaderboardEntry> = {};
 
-    (tournament.teams || []).forEach(team => {
+    ((tournament.teams ?? []) || []).forEach(team => {
       if (!team?.id) return;
       teamMap[team.id] = {
         rank: 0,
@@ -301,7 +301,7 @@ export function getTopPlayers(tournament: Tournament) {
 
     const playerMap: Record<string, any> = {};
 
-    tournament.matches.forEach(match => {
+    (tournament.matches ?? []).forEach(match => {
       if (!match || match.status !== "completed" || !match.results) return;
       match.results.forEach(result => {
         if (!result?.playerResults) return;
@@ -335,8 +335,8 @@ export function getTopPlayers(tournament: Tournament) {
 export function getTournamentStats(tournament: Tournament) {
   try {
     if (!tournament) return { completedMatches: 0, totalMatches: 0, progress: 0, leader: "TBD", leaderPoints: 0, totalKills: 0, teamsCount: 0 };
-    const completed = (tournament.matches || []).filter(m => m?.status === "completed").length;
-    const total = (tournament.matches || []).length;
+    const completed = ((tournament.matches ?? []) || []).filter(m => m?.status === "completed").length;
+    const total = ((tournament.matches ?? []) || []).length;
     const leaderboard = getLeaderboard(tournament);
     const leader = leaderboard[0];
     return {
@@ -346,7 +346,7 @@ export function getTournamentStats(tournament: Tournament) {
       leader: leader?.teamName || "TBD",
       leaderPoints: leader?.totalPoints || 0,
       totalKills: leaderboard.reduce((a, e) => a + (e.totalKills || 0), 0),
-      teamsCount: (tournament.teams || []).length,
+      teamsCount: ((tournament.teams ?? []) || []).length,
     };
   } catch {
     return { completedMatches: 0, totalMatches: 0, progress: 0, leader: "TBD", leaderPoints: 0, totalKills: 0, teamsCount: 0 };
