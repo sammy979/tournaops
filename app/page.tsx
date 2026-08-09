@@ -390,8 +390,7 @@ export default function LandingPage() {
               maxWidth: "600px",
               margin: "0 auto 2.5rem",
             }}>
-              From qualifiers to grand finals. Real-time standings, OBS overlays,
-              Discord bot, AI assistant, and screenshot import. Free forever.
+              Stop juggling spreadsheets. Run multi-stage PUBG Mobile tournaments with live standings, OBS overlays, Discord auto-posts, and AI screenshot import. Free forever.
             </p>
 
             {/* CTA Buttons */}
@@ -411,7 +410,7 @@ export default function LandingPage() {
                   transition: "all 0.2s",
                 }}
               >
-                Start Free - No Credit Card
+                Create Your Tournament
                 <ArrowRight style={{ width: "1.125rem", height: "1.125rem" }} />
               </Link>
               <a

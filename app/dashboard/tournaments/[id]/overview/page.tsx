@@ -131,7 +131,7 @@ export default function TournamentOverviewPage() {
     { icon: Layers, label: "Stages", desc: "Manage stages", href: `/dashboard/tournaments/${id}/stages`, color: "#c084fc", bg: "rgba(168,85,247,0.1)", border: "rgba(168,85,247,0.2)" },
     { icon: Play, label: "Matches", desc: `${matches.length} total`, href: `/dashboard/tournaments/${id}/matches`, color: "#fb923c", bg: "rgba(249,115,22,0.1)", border: "rgba(249,115,22,0.2)" },
     { icon: Radio, label: "OBS Overlays", desc: "Broadcast tools", href: `/dashboard/tournaments/${id}/overlays`, color: "#f472b6", bg: "rgba(244,114,182,0.1)", border: "rgba(244,114,182,0.2)" },
-    { icon: MessageSquare, label: "Discord", desc: "Webhooks & bots", href: `/dashboard/tournaments/${id}/broadcast`, color: "#818cf8", bg: "rgba(129,140,248,0.1)", border: "rgba(129,140,248,0.2)" },
+    { icon: MessageSquare, label: "Discord", desc: "Webhooks & bots", href: `/dashboard/tournaments/${id}/discord`, color: "#818cf8", bg: "rgba(129,140,248,0.1)", border: "rgba(129,140,248,0.2)" },
     { icon: Palette, label: "Branding", desc: "Colors & sponsors", href: `/dashboard/tournaments/${id}/branding`, color: "#34d399", bg: "rgba(52,211,153,0.1)", border: "rgba(52,211,153,0.2)" },
     { icon: Sparkles, label: "AI Insights", desc: "Smart analysis", href: `/dashboard/tournaments/${id}/insights`, color: "#a78bfa", bg: "rgba(167,139,250,0.1)", border: "rgba(167,139,250,0.2)" },
     { icon: FileText, label: "Report", desc: "Tournament report", href: `/tournaments/${tournament.slug}/report`, color: "#38bdf8", bg: "rgba(56,189,248,0.1)", border: "rgba(56,189,248,0.2)", external: true },

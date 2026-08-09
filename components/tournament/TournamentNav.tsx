@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Trophy, Sparkles, Radio, ClipboardList, Home,
-  Palette, Users, Layers, Play, Monitor
+  Palette, Users, Layers, Play, Monitor, MessageSquare
 } from "lucide-react";
 
 interface TournamentNavProps {
@@ -11,16 +11,16 @@ interface TournamentNavProps {
 }
 
 const NAV_ITEMS = [
-  { icon: Home,        label: "Overview",      href: "/overview" },
-  { icon: Trophy,      label: "Standings",     href: "/standings" },
+  { icon: Home,          label: "Overview",    href: "/overview" },
+  { icon: Trophy,        label: "Standings",   href: "/standings" },
   { icon: ClipboardList, label: "Results",     href: "/match-results" },
-  { icon: Play,        label: "Matches",       href: "/matches" },
-  { icon: Users,       label: "Teams",         href: "/teams" },
-  { icon: Layers,      label: "Stages",        href: "/stages" },
-  { icon: Monitor,     label: "Overlays",      href: "/overlays" },
-  { icon: Radio,       label: "Broadcast",     href: "/broadcast" },
-  { icon: Sparkles,    label: "AI Insights",   href: "/insights" },
-  { icon: Palette,     label: "Branding",      href: "/branding" },
+  { icon: Play,          label: "Matches",     href: "/matches" },
+  { icon: Users,         label: "Teams",       href: "/teams" },
+  { icon: Layers,        label: "Stages",      href: "/stages" },
+  { icon: Monitor,       label: "Overlays",    href: "/overlays" },
+  { icon: MessageSquare, label: "Discord",     href: "/discord" },
+  { icon: Sparkles,      label: "AI Insights", href: "/insights" },
+  { icon: Palette,       label: "Branding",    href: "/branding" },
 ];
 
 export default function TournamentNav({ tournamentId }: TournamentNavProps) {
