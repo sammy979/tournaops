@@ -7,7 +7,7 @@ import TeamLogo from "@/components/tournament/TeamLogo";
 import {
   Trophy, Save, Loader2, Check, ChevronLeft, Trash2, Zap,
   MapPin, Search, Target, PlayCircle, Layers, AlertCircle,
-  Crown, Crosshair, Users
+  Crown, Crosshair, Users, Lock
 } from "lucide-react";
 
 interface Team {
@@ -319,56 +319,99 @@ export default function MatchResultsPage() {
         </p>
       </div>
 
-      {/* STAGE TABS */}
-      {stages.length > 0 && (
-        <div style={{ display: "flex", gap: "0.375rem", marginBottom: "1rem", overflowX: "auto", padding: "0.375rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.875rem" }} className="scrollbar-hide">
-          <button
-            onClick={() => { setSelectedStageId("all"); setSelectedGroupId("all"); setSelectedMatch(null); }}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: "0.375rem",
-              padding: "0.5rem 0.875rem", borderRadius: "0.625rem",
-              background: selectedStageId === "all" ? "rgba(245,158,11,0.15)" : "transparent",
-              color: selectedStageId === "all" ? "#f59e0b" : "#9ca3af",
-              border: "none", fontSize: "0.8rem", fontWeight: 700,
-              cursor: "pointer", whiteSpace: "nowrap",
-            }}
-          >
-            <Trophy style={{ width: "0.875rem", height: "0.875rem" }} />
-            All Matches ({matches.length})
-          </button>
-          {stages.map(stage => {
-            const stageMatches = matches.filter(m => m.stageId === stage.id);
-            const stageDone = stageMatches.filter(m => Array.isArray(m.results) && m.results.length > 0).length;
-            const totalTeamsInStage = stage.groups.reduce((s, g) => s + g.teamIds.length, 0);
-            const active = selectedStageId === stage.id;
-            return (
+      {/* STAGE TABS - only show active/completed stages, gate upcoming stages */}
+      {stages.length > 0 && (() => {
+        // Filter: show stages that have teams assigned OR completed matches
+        const visibleStages = stages.filter((s: any) => {
+          const teamsInStage = (s.groups || []).reduce((sum: number, g: any) => sum + (g.teamIds?.length || 0), 0);
+          const matchesInStage = matches.filter(m => m.stageId === s.id);
+          const hasCompleted = matchesInStage.some(m => Array.isArray(m.results) && m.results.length > 0);
+          return teamsInStage > 0 || hasCompleted;
+        });
+        const upcomingStages = stages.filter((s: any) => !visibleStages.find((v: any) => v.id === s.id));
+
+        return (
+          <>
+            <div style={{ display: "flex", gap: "0.375rem", marginBottom: "0.5rem", overflowX: "auto", padding: "0.375rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.875rem" }} className="scrollbar-hide">
               <button
-                key={stage.id}
-                onClick={() => { setSelectedStageId(stage.id); setSelectedGroupId("all"); setSelectedMatch(null); }}
+                onClick={() => { setSelectedStageId("all"); setSelectedGroupId("all"); setSelectedMatch(null); }}
                 style={{
-                  display: "inline-flex", alignItems: "center", gap: "0.5rem",
+                  display: "inline-flex", alignItems: "center", gap: "0.375rem",
                   padding: "0.5rem 0.875rem", borderRadius: "0.625rem",
-                  background: active ? "rgba(139,92,246,0.15)" : "transparent",
-                  color: active ? "#a78bfa" : "#9ca3af",
+                  background: selectedStageId === "all" ? "rgba(245,158,11,0.15)" : "transparent",
+                  color: selectedStageId === "all" ? "#f59e0b" : "#9ca3af",
                   border: "none", fontSize: "0.8rem", fontWeight: 700,
                   cursor: "pointer", whiteSpace: "nowrap",
                 }}
               >
-                <Layers style={{ width: "0.875rem", height: "0.875rem" }} />
-                {stage.name}
-                <span style={{
-                  fontSize: "0.65rem",
-                  background: active ? "rgba(139,92,246,0.2)" : "rgba(255,255,255,0.06)",
-                  padding: "0.1rem 0.45rem", borderRadius: "9999px",
-                  fontWeight: 700,
-                }}>
-                  {totalTeamsInStage}T · {stageDone}/{stageMatches.length}M
-                </span>
+                <Trophy style={{ width: "0.875rem", height: "0.875rem" }} />
+                All Active ({matches.filter(m => visibleStages.find((v: any) => v.id === m.stageId)).length})
               </button>
-            );
-          })}
-        </div>
-      )}
+              {visibleStages.map((stage: any) => {
+                const stageMatches = matches.filter(m => m.stageId === stage.id);
+                const stageDone = stageMatches.filter(m => Array.isArray(m.results) && m.results.length > 0).length;
+                const totalTeamsInStage = (stage.groups || []).reduce((s: number, g: any) => s + (g.teamIds?.length || 0), 0);
+                const active = selectedStageId === stage.id;
+                const isComplete = stageMatches.length > 0 && stageDone === stageMatches.length;
+                return (
+                  <button
+                    key={stage.id}
+                    onClick={() => { setSelectedStageId(stage.id); setSelectedGroupId("all"); setSelectedMatch(null); }}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: "0.5rem",
+                      padding: "0.5rem 0.875rem", borderRadius: "0.625rem",
+                      background: active ? "rgba(139,92,246,0.15)" : (isComplete ? "rgba(34,197,94,0.08)" : "transparent"),
+                      color: active ? "#a78bfa" : (isComplete ? "#4ade80" : "#9ca3af"),
+                      border: "none", fontSize: "0.8rem", fontWeight: 700,
+                      cursor: "pointer", whiteSpace: "nowrap",
+                    }}
+                  >
+                    {isComplete ? <Check style={{ width: "0.875rem", height: "0.875rem" }} /> : <Layers style={{ width: "0.875rem", height: "0.875rem" }} />}
+                    {stage.name}
+                    <span style={{
+                      fontSize: "0.65rem",
+                      background: active ? "rgba(139,92,246,0.2)" : "rgba(255,255,255,0.06)",
+                      padding: "0.1rem 0.45rem", borderRadius: "9999px",
+                      fontWeight: 700,
+                    }}>
+                      {totalTeamsInStage}T · {stageDone}/{stageMatches.length}M
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {upcomingStages.length > 0 && (
+              <div style={{ display: "flex", gap: "0.375rem", marginBottom: "1rem", overflowX: "auto", padding: "0.375rem", background: "rgba(107,114,128,0.05)", border: "1px dashed rgba(107,114,128,0.2)", borderRadius: "0.875rem" }} className="scrollbar-hide">
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", padding: "0.5rem 0.75rem", color: "#6b7280", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <Lock style={{ width: "0.75rem", height: "0.75rem" }} />
+                  Locked until teams advance:
+                </div>
+                {upcomingStages.map((stage: any) => (
+                  <div key={stage.id}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: "0.375rem",
+                      padding: "0.5rem 0.875rem", borderRadius: "0.625rem",
+                      background: "rgba(107,114,128,0.08)",
+                      color: "#6b7280",
+                      fontSize: "0.75rem", fontWeight: 600,
+                      whiteSpace: "nowrap",
+                      opacity: 0.6,
+                    }}
+                    title={"This stage unlocks after teams are advanced from the previous stage. Go to Stages page > Advance Teams."}
+                  >
+                    <Layers style={{ width: "0.75rem", height: "0.75rem" }} />
+                    {stage.name}
+                    <span style={{ fontSize: "0.6rem", background: "rgba(255,255,255,0.05)", padding: "0.1rem 0.4rem", borderRadius: "9999px" }}>
+                      LOCKED
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* GROUP TABS (only if stage selected and has multiple groups) */}
       {activeStage && (activeStage.groups?.length || 0) > 1 && (
