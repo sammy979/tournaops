@@ -448,6 +448,55 @@ export default function MatchResultsPage() {
         </div>
       )}
 
+      {/* Force Advance button — appears when active stage is complete */}
+      {activeStage && (() => {
+        const stageMatches = matches.filter(m => m.stageId === activeStage.id);
+        const stageDone = stageMatches.filter(m => Array.isArray(m.results) && m.results.length > 0).length;
+        const allDone = stageMatches.length > 0 && stageDone === stageMatches.length;
+        const nextStage = stages.find((s: any) => s.order === activeStage.order + 1);
+        const nextHasTeams = nextStage && nextStage.groups.some((g: any) => (g.teamIds || []).length > 0);
+
+        if (allDone && nextStage && !nextHasTeams) {
+          return (
+            <div style={{ background: "linear-gradient(135deg, rgba(34,197,94,0.1), rgba(16,185,129,0.05))", border: "1px solid rgba(34,197,94,0.3)", borderRadius: "1rem", padding: "1.25rem", marginBottom: "1.25rem", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
+              <div>
+                <div style={{ fontSize: "0.9rem", fontWeight: 800, color: "#4ade80", marginBottom: "0.25rem" }}>
+                  ✅ {activeStage.name} Complete!
+                </div>
+                <div style={{ fontSize: "0.75rem", color: "#a7f3d0" }}>
+                  All {stageMatches.length} matches done. Click below to advance top teams to <strong>{nextStage.name}</strong>.
+                </div>
+              </div>
+              <button
+                onClick={async () => {
+                  if (!confirm(`Advance top teams from ${activeStage.name} to ${nextStage.name}?\n\nThis will:\n- Calculate final standings\n- Snake-seed qualified teams into next stage groups\n- Post Discord announcement + slot list\n- Lock ${activeStage.name}`)) return;
+                  try {
+                    const res = await fetch(`/api/tournaments/${tournamentId}/force-advance`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ stageId: activeStage.id }),
+                    });
+                    const data = await res.json();
+                    if (res.ok && data.success) {
+                      alert("✅ " + data.message);
+                      loadData();
+                    } else {
+                      alert("Failed: " + (data.error || "Unknown"));
+                    }
+                  } catch (e: any) {
+                    alert("Error: " + e.message);
+                  }
+                }}
+                style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "#4ade80", color: "#000", padding: "0.75rem 1.5rem", borderRadius: "0.75rem", border: "none", fontSize: "0.9rem", fontWeight: 800, cursor: "pointer", boxShadow: "0 8px 20px rgba(34,197,94,0.3)" }}
+              >
+                🚀 Advance to {nextStage.name}
+              </button>
+            </div>
+          );
+        }
+        return null;
+      })()}
+
       {/* Warning if no matches in this stage */}
       {stages.length > 0 && filteredMatches.length === 0 && (
         <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: "0.875rem", padding: "1rem 1.25rem", marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
