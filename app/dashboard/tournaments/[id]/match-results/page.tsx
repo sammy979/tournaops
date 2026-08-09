@@ -78,9 +78,9 @@ export default function MatchResultsPage() {
         setTournament(t);
         setTeams(t?.teams || []);
         setMatches(t?.matches || []);
-        setStages(t?.stages || []);
+        setStages((t?.stages || []).map((s: any) => ({ ...s, groups: s.groups || [] })));
         // Auto-select first stage if stages exist
-        if (t?.stages?.length > 0 && selectedStageId === "all") {
+        if (t?.stages && t.stages.length > 0 && selectedStageId === "all") {
           setSelectedStageId(t.stages[0].id);
         }
       }
@@ -344,7 +344,7 @@ export default function MatchResultsPage() {
       )}
 
       {/* GROUP TABS (only if stage selected and has multiple groups) */}
-      {activeStage && activeStage.groups.length > 1 && (
+      {activeStage && (activeStage.groups?.length || 0) > 1 && (
         <div style={{ display: "flex", gap: "0.375rem", marginBottom: "1.5rem", overflowX: "auto", padding: "0.25rem", background: "rgba(139,92,246,0.05)", border: "1px solid rgba(139,92,246,0.15)", borderRadius: "0.75rem" }} className="scrollbar-hide">
           <button
             onClick={() => { setSelectedGroupId("all"); setSelectedMatch(null); }}
