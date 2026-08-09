@@ -1,13 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { logError } from "@/lib/logger";
 import { validateSubmittedMatchResults } from "@/lib/match-result-validation";
+import { parseScoringConfig, calculateMatchScore } from "@/lib/scoring-engine";
 import { triggerAutoAdvanceIfComplete } from "@/lib/stage-advancement-engine";
 import { isValidWebhookUrl } from "@/lib/discord-queue";
 
 // ============================================================
-// SCORING — uses lib/scoring-engine.ts as single source of truth
+// SCORING â€” uses lib/scoring-engine.ts as single source of truth
 // Handles all three storage formats (dictionary, array, placementTable)
 // for backwards compatibility with existing tournament data
 // ============================================================
@@ -58,7 +59,7 @@ function calculateResultPoints(result: any, scoringRule: any): any {
 }
 
 // ============================================================
-// DISCORD — post match result
+// DISCORD â€” post match result
 // ============================================================
 
 async function postToDiscord(
@@ -265,7 +266,7 @@ async function postToDiscord(
 }
 
 // ============================================================
-// DISCORD — post overall standings after match
+// DISCORD â€” post overall standings after match
 // ============================================================
 
 async function postStandingsToDiscord(
@@ -633,7 +634,7 @@ async function autoAdvanceIfStageComplete(
       for (const r of match.results as any[]) {
         const s = teamStats.get(r.teamId);
         if (!s) continue;
-        // Use server-calculated totalPoints — do not recalculate
+        // Use server-calculated totalPoints â€” do not recalculate
         s.points += Number(r.totalPoints) || 0;
         s.kills += Number(r.kills) || 0;
         if (r.wwcd || Number(r.placement) === 1) s.wwcds++;
@@ -1150,7 +1151,7 @@ export async function GET(
 }
 
 // ============================================================
-// PATCH match — update results with server-side scoring
+// PATCH match â€” update results with server-side scoring
 // ============================================================
 
 export async function PATCH(
