@@ -458,24 +458,28 @@ export async function PATCH(
       const webhookUrl = existing.tournament.discord;
       if (webhookUrl.startsWith("https://discord.com/api/webhooks/") || webhookUrl.startsWith("https://discordapp.com/api/webhooks/")) {
         // Post match result first
-        postToDiscord(
-          webhookUrl,
-          { ...match, name: existing.name, matchNumber: existing.matchNumber, map: match.map || existing.map },
-          existing.tournament
-        ).catch(() => {});
+        try {
+          await postToDiscord(
+            webhookUrl,
+            { ...match, name: existing.name, matchNumber: existing.matchNumber, map: match.map || existing.map },
+            existing.tournament
+          );
+        } catch (e) {
+          console.warn("[DISCORD_MATCH] Failed:", e);
+        }
 
-        // Then post updated overall standings 3 seconds later (so match embed appears first)
-        setTimeout(() => {
-          // Re-fetch tournament with fresh match data
-          prisma.tournament.findUnique({
+        // Post updated overall standings immediately after match
+        try {
+          const freshTournament = await prisma.tournament.findUnique({
             where: { id: existing.tournamentId },
             include: { teams: true, matches: true },
-          }).then((freshTournament: any) => {
-            if (freshTournament) {
-              postStandingsToDiscord(webhookUrl, freshTournament).catch(() => {});
-            }
-          }).catch(() => {});
-        }, 3000);
+          });
+          if (freshTournament) {
+            await postStandingsToDiscord(webhookUrl, freshTournament);
+          }
+        } catch (e) {
+          console.warn("[DISCORD_STANDINGS] Failed:", e);
+        }
       }
     }
 
