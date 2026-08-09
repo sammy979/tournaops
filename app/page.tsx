@@ -357,7 +357,7 @@ export default function LandingPage() {
             }}>
               <Flame style={{ width: "0.875rem", height: "0.875rem", color: "#f59e0b" }} />
               <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#f59e0b" }}>
-                The #1 Free PUBG Mobile Tournament Platform
+                Built for PUBG Mobile Organizers
               </span>
             </div>
 
@@ -1001,7 +1001,7 @@ export default function LandingPage() {
             justifyContent: "space-between",
           }}>
             <p style={{ color: "#6b7280", fontSize: "0.8rem" }}>
-              2024 TournaOps. Built with love for the PUBG Mobile community.
+              2025 TournaOps. Built with love for the PUBG Mobile community.
             </p>
             <p style={{ color: "#6b7280", fontSize: "0.8rem" }}>
               Made in Nepal
