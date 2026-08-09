@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useDialog } from "@/lib/use-confirm";
 import {
   Plus, Trophy, Users, Trash2, Search, Eye,
   Edit, Grid3x3, List, Filter, Calendar, Target,
@@ -26,6 +27,7 @@ interface Tournament {
 }
 
 export default function TournamentsPage() {
+  const dialog = useDialog();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "draft" | "registration" | "live" | "completed">("all");
@@ -63,7 +65,13 @@ export default function TournamentsPage() {
     });
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    const ok = await dialog.confirm({
+      title: `Delete "${name}"?`,
+      description: "All teams, matches, and results for this tournament will be permanently deleted. This cannot be undone.",
+      confirmLabel: "Delete tournament",
+      variant: "danger",
+    });
+    if (!ok) return;
     setDeleting(id);
     try {
       const res = await fetch(`/api/tournaments/${id}`, { method: "DELETE" });

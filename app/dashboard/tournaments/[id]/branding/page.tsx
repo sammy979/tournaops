@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useDialog } from "@/lib/use-confirm";
 import {
   Palette, Save, Check, Upload, Globe, ChevronLeft,
   Loader2, Plus, Trash2, Award, Building2, Image as ImageIcon,
@@ -55,6 +56,7 @@ const TIER_CONFIG = {
 };
 
 export default function TournamentBrandingPage() {
+  const dialog = useDialog();
   const params = useParams();
   const tournamentId = params?.id as string;
   const [tournament, setTournament] = useState<any>(null);
@@ -141,8 +143,14 @@ export default function TournamentBrandingPage() {
     }));
   };
 
-  const removeSponsor = (id: string) => {
-    if (!confirm("Remove this sponsor?")) return;
+  const removeSponsor = async (id: string) => {
+    const ok = await dialog.confirm({
+      title: "Remove sponsor?",
+      description: "This sponsor will be removed from your tournament branding and broadcasts.",
+      confirmLabel: "Remove sponsor",
+      variant: "warning",
+    });
+    if (!ok) return;
     setBranding(b => ({ ...b, sponsors: b.sponsors.filter(s => s.id !== id) }));
   };
 

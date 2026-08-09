@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useDialog } from "@/lib/use-confirm";
 import {
   Plus, Trophy, Users, Lock, Unlock, Play, Check, X,
   ChevronRight, Award, AlertTriangle, Zap, Calendar, Crown,
@@ -58,6 +59,7 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }>
 };
 
 export default function StageManager({ tournament, onStageChange }: StageManagerProps) {
+  const dialog = useDialog();
   const [stages, setStages] = useState<Stage[]>([]);
   const [loading, setLoading] = useState(true);
   const [showBuilder, setShowBuilder] = useState(false);
@@ -88,7 +90,13 @@ export default function StageManager({ tournament, onStageChange }: StageManager
   };
 
   const deleteStage = async (stage: Stage) => {
-    if (!confirm(`Delete "${stage.name}"? This cannot be undone.`)) return;
+    const ok = await dialog.confirm({
+      title: `Delete "${stage.name}"?`,
+      description: "This stage and all its matches will be permanently deleted. Match results in this stage will be lost.",
+      confirmLabel: "Delete stage",
+      variant: "danger",
+    });
+    if (!ok) return;
     const res = await fetch(`/api/stages/${stage.id}`, { method: "DELETE" });
     if (res.ok) loadStages();
     else alert("Failed to delete stage");

@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Play, Pause, Square, RefreshCw, Trash2, Check, X, AlertTriangle } from "lucide-react";
+import { useDialog } from "@/lib/use-confirm";
 
 interface StatusManagerProps {
   tournamentId: string;
@@ -17,7 +18,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
   cancelled:    { label: "Cancelled",    color: "red",    icon: X,           description: "Tournament cancelled" },
 };
 
-export default function StatusManager({ tournamentId, currentStatus, tournamentName, onUpdate }: StatusManagerProps) {
+export default async function StatusManager({ tournamentId, currentStatus, tournamentName, onUpdate }: StatusManagerProps) {
+  const dialog = useDialog();
   const [status, setStatus] = useState(currentStatus);
   const [loading, setLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -27,7 +29,13 @@ export default function StatusManager({ tournamentId, currentStatus, tournamentN
 
     // Confirm dangerous transitions
     if (newStatus === "completed" || newStatus === "cancelled") {
-      if (!confirm("Are you sure you want to mark this tournament as " + newStatus + "?")) return;
+      const ok = await dialog.confirm({
+      title: `Change tournament status to ${newStatus}?`,
+      description: "This will update the tournament status and may trigger Discord announcements if configured.",
+      confirmLabel: `Set to ${newStatus}`,
+      variant: "warning",
+    });
+    if (!ok) return;
     }
 
     setLoading(true);

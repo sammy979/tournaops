@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, Layers, RefreshCw, AlertTriangle, Check, X, Calendar } from "lucide-react";
 import TournamentNav from "@/components/tournament/TournamentNav";
 import dynamic from "next/dynamic";
+import { useDialog } from "@/lib/use-confirm";
 
 const StageManager = dynamic(() => import("@/components/stages/StageManager"), { ssr: false });
 const DayConfigModal = dynamic(() => import("@/components/stages/DayConfigModal"), { ssr: false });
@@ -17,6 +18,7 @@ interface StageConfig {
 }
 
 export default function StagesPage({ params }: { params: Promise<{ id: string }> }) {
+  const dialog = useDialog();
   const { id } = use(params);
   const router = useRouter();
   const [tournament, setTournament] = useState<any>(null);
@@ -61,7 +63,13 @@ export default function StagesPage({ params }: { params: Promise<{ id: string }>
   }, [id]);
 
   async function regenerateStages() {
-    if (!confirm("This will DELETE existing stages and their matches, then create fresh ones.\n\nExisting completed match results will be lost.\n\nContinue?")) return;
+    const ok = await dialog.confirm({
+      title: "Regenerate all stages?",
+      description: "Existing stages, matches, and completed match results will be permanently deleted, then fresh stages and matches will be created. This cannot be undone.",
+      confirmLabel: "Regenerate stages",
+      variant: "danger",
+    });
+    if (!ok) return;
     setRegenerating(true);
     setRegenResult(null);
     try {

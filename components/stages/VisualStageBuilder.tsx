@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useState, useEffect } from "react";
+import { useDialog } from "@/lib/use-confirm";
 import {
   Plus, Trophy, Users, Award, Crown, Zap, Target,
   Edit, Copy, Trash2, Check, ArrowDown, ArrowRight,
@@ -110,6 +111,7 @@ const STAGE_PRESETS = [
 ];
 
 export default function VisualStageBuilder({ tournament }: VisualStageBuilderProps) {
+  const dialog = useDialog();
   const [stages, setStages] = useState<Stage[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddAt, setShowAddAt] = useState<number | null>(null);
@@ -163,7 +165,13 @@ export default function VisualStageBuilder({ tournament }: VisualStageBuilderPro
   };
 
   const deleteStage = async (stage: Stage) => {
-    if (!confirm(`Delete "${stage.name}"? All settings will be lost.`)) return;
+    const ok = await dialog.confirm({
+      title: `Delete "${stage.name}"?`,
+      description: "All stage settings, groups, and match configuration will be lost.",
+      confirmLabel: "Delete stage",
+      variant: "danger",
+    });
+    if (!ok) return;
     const res = await fetch(`/api/stages/${stage.id}`, { method: "DELETE" });
     if (res.ok) loadStages();
     else alert("Failed to delete");

@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import TournamentNav from "@/components/tournament/TournamentNav";
 import TeamLogo from "@/components/tournament/TeamLogo";
+import { useDialog } from "@/lib/use-confirm";
 import {
   Trophy, Save, Loader2, Check, ChevronLeft, Trash2, Zap,
   MapPin, Search, Target, PlayCircle, Layers, AlertCircle,
@@ -50,6 +51,7 @@ interface Result {
 }
 
 export default function MatchResultsPage() {
+  const dialog = useDialog();
   const params = useParams();
   const tournamentId = params?.id as string;
   const [tournament, setTournament] = useState<any>(null);
@@ -268,8 +270,14 @@ export default function MatchResultsPage() {
     setResults(newResults);
   }
 
-  function clearResults() {
-    if (!confirm("Clear all entered results for this match?")) return;
+  async function clearResults() {
+    const ok = await dialog.confirm({
+      title: "Clear all match results?",
+      description: "All entered placements and kills for this match will be reset. You can re-enter them afterwards.",
+      confirmLabel: "Clear results",
+      variant: "warning",
+    });
+    if (!ok) return;
     const eligibleTeams = getEligibleTeams(selectedMatch);
     setResults(
       eligibleTeams.map(team => ({
@@ -469,7 +477,13 @@ export default function MatchResultsPage() {
               </div>
               <button
                 onClick={async () => {
-                  if (!confirm(`Advance top teams from ${activeStage.name} to ${nextStage.name}?\n\nThis will:\n- Calculate final standings\n- Snake-seed qualified teams into next stage groups\n- Post Discord announcement + slot list\n- Lock ${activeStage.name}`)) return;
+                  const ok = await dialog.confirm({
+      title: `Advance to ${nextStage.name}?`,
+      description: `Top teams from ${activeStage.name} will be calculated, snake-seeded into ${nextStage.name} groups, and ${activeStage.name} will be locked. A Discord announcement will be posted.`,
+      confirmLabel: `Advance to ${nextStage.name}`,
+      variant: "info",
+    });
+    if (!ok) return;
                   try {
                     const res = await fetch(`/api/tournaments/${tournamentId}/force-advance`, {
                       method: "POST",

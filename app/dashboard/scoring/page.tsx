@@ -3,10 +3,12 @@
 import { useState, useEffect } from "react";
 import { Plus, Trash2, Edit, Copy, Trophy, Star, Sparkles, Lock, User, AlertTriangle } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useDialog } from "@/lib/use-confirm";
 
 const ScoringBuilder = dynamic(() => import("@/components/scoring/ScoringBuilder"), { ssr: false });
 
 export default function ScoringPresetsPage() {
+  const dialog = useDialog();
   const [presets, setPresets] = useState<{ builtIn: any[]; custom: any[] }>({ builtIn: [], custom: [] });
   const [loading, setLoading] = useState(true);
   const [showBuilder, setShowBuilder] = useState(false);
@@ -25,7 +27,13 @@ export default function ScoringPresetsPage() {
   useEffect(() => { load(); }, []);
 
   const deletePreset = async (id: string) => {
-    if (!confirm("Delete this preset?")) return;
+    const ok = await dialog.confirm({
+      title: "Delete this preset?",
+      description: "This scoring preset will be permanently removed. This cannot be undone.",
+      confirmLabel: "Delete preset",
+      variant: "danger",
+    });
+    if (!ok) return;
     const res = await fetch(`/api/scoring-presets/${id}`, { method: "DELETE" });
     if (res.ok) load();
   };

@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import TournamentNav from "@/components/tournament/TournamentNav";
 import TeamLogo from "@/components/tournament/TeamLogo";
+import { useDialog } from "@/lib/use-confirm";
 import {
   Users, Plus, Search, X, Edit, Trash2, Save,
   Loader2, ChevronLeft, Upload, Shield, Crown,
@@ -34,6 +35,7 @@ interface Team {
 const ROLES = ["IGL", "Fragger", "Support", "Entry", "Scout"];
 
 export default function TeamsPage() {
+  const dialog = useDialog();
   const params = useParams();
   const id = params?.id as string;
   const [tournament, setTournament] = useState<any>(null);
@@ -68,7 +70,13 @@ export default function TeamsPage() {
   );
 
   async function deleteTeam(teamId: string) {
-    if (!confirm("Delete this team? This cannot be undone.")) return;
+    const ok = await dialog.confirm({
+      title: "Delete team?",
+      description: "This team and its players will be permanently removed. This cannot be undone.",
+      confirmLabel: "Delete team",
+      variant: "danger",
+    });
+    if (!ok) return;
     const res = await fetch(`/api/tournaments/${id}/teams/${teamId}`, { method: "DELETE" });
     if (res.ok) {
       setTeams(prev => prev.filter(t => t.id !== teamId));

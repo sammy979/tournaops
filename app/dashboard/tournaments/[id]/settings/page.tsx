@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import TournamentNav from "@/components/tournament/TournamentNav";
+import { useDialog } from "@/lib/use-confirm";
 import {
   Settings, Save, Loader2, Check, ChevronLeft, Trash2,
   Globe, Lock, Users, MapPin, Trophy, AlertCircle,
@@ -24,6 +25,7 @@ const STATUSES = [
 ];
 
 export default function SettingsPage() {
+  const dialog = useDialog();
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
@@ -318,7 +320,13 @@ export default function SettingsPage() {
           </p>
           <button
             onClick={async () => {
-              if (!confirm("Auto-fill this tournament with demo data?\n\nThis will:\n- Fill teams up to max\n- Add demo sponsors (13 total across 4 tiers)\n- Assign teams to Stage 1 groups\n- Simulate all Stage 1 match results\n\nExisting data will NOT be deleted.")) return;
+              const ok = await dialog.confirm({
+      title: "Auto-fill tournament with demo data?",
+      description: "Teams will be filled up to max, 13 demo sponsors added across 4 tiers, teams assigned to Stage 1 groups, and all Stage 1 match results simulated. Existing data will NOT be deleted.",
+      confirmLabel: "Auto-fill demo data",
+      variant: "info",
+    });
+    if (!ok) return;
               const btn = event?.target as HTMLButtonElement;
               if (btn) { btn.disabled = true; btn.innerText = "Filling..."; }
               try {
