@@ -260,7 +260,7 @@ export async function PATCH(
 
     if (wasNotCompleted && nowCompleted && existing.tournament.discord) {
       const webhookUrl = existing.tournament.discord;
-      if (webhookUrl.startsWith("https://discord.com/api/webhooks/")) {
+      if (webhookUrl.startsWith("https://discord.com/api/webhooks/") || webhookUrl.startsWith("https://discordapp.com/api/webhooks/")) {
         postToDiscord(
           webhookUrl,
           { ...match, name: existing.name, matchNumber: existing.matchNumber, map: match.map || existing.map },

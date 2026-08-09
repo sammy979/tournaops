@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
 
     const webhookUrl = tournament.discord;
 
-    if (!webhookUrl || !webhookUrl.startsWith("https://discord.com/api/webhooks/")) {
+    if (!webhookUrl || (!webhookUrl.startsWith("https://discord.com/api/webhooks/") && !webhookUrl.startsWith("https://discordapp.com/api/webhooks/"))) {
       return NextResponse.json(
         { error: "No Discord webhook configured for this tournament. Add it in tournament settings." },
         { status: 400 }
