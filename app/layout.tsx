@@ -1,6 +1,7 @@
-﻿import type { Metadata, Viewport } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/Toast";
+import { DialogProvider } from "@/lib/use-confirm";
 import { GoogleAnalytics } from "@next/third-parties/google";
 
 export const metadata: Metadata = {
@@ -67,9 +68,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="bg-[#0a0a0f] text-white antialiased font-sans">
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <DialogProvider>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </DialogProvider>
         <GoogleAnalytics gaId="G-03N4EE8LBN" />
       </body>
     </html>
