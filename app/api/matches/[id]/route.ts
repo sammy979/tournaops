@@ -1,11 +1,8 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { logError } from "@/lib/logger";
-import {
-  parseScoringConfig,
-  calculateMatchScore,
-} from "@/lib/scoring-engine";
+import { validateSubmittedMatchResults } from "@/lib/match-result-validation";
 
 // ============================================================
 // SCORING — uses lib/scoring-engine.ts as single source of truth
@@ -1168,12 +1165,18 @@ export async function PATCH(
     const existing = await prisma.match.findUnique({
       where: { id },
       include: {
-        tournament: { include: { teams: true } },
+        tournament: {
+          include: {
+            teams: true,
+            rounds: true,
+          },
+        },
       },
     });
 
     if (!existing)
       return NextResponse.json({ error: "Not found" }, { status: 404 });
+
     if (
       existing.tournament.userId !== session.userId &&
       !session.isAdmin
@@ -1184,38 +1187,88 @@ export async function PATCH(
     const body = await req.json();
     const updates: any = {};
 
+    let hadOfficialResults =
+      existing.status === "completed" &&
+      Array.isArray(existing.results) &&
+      (existing.results as any[]).length > 0;
+
+    let validationWarnings: string[] = [];
+    let eligibilityContext: string | null = null;
+
+    // Protect locked stages
+    if (existing.stageId) {
+      const stage = await prisma.stage.findUnique({
+        where: { id: existing.stageId },
+        select: { id: true, isLocked: true, name: true },
+      });
+
+      if (stage?.isLocked) {
+        return NextResponse.json(
+          { error: `Stage "${stage.name}" is locked. Match results cannot be changed.` },
+          { status: 403 }
+        );
+      }
+    }
+
     if ("results" in body && Array.isArray(body.results)) {
       const scoringRule = existing.tournament.scoringRule as any;
       const teams = existing.tournament.teams || [];
       const teamMap = new Map(teams.map((t: any) => [t.id, t]));
+      const tournamentTeamIds = new Set(teams.map((t: any) => t.id));
 
-      const validResults = body.results.filter(
-        (r: any) => r.teamId && Number(r.placement) > 0
-      );
+      let eligibleTeamIds: Set<string> | undefined;
 
-      const placements = validResults.map((r: any) => Number(r.placement));
-      const hasDuplicates =
-        new Set(placements).size !== placements.length;
+      // Stage/group-aware eligibility
+      if (existing.groupId) {
+        const group = await prisma.stageGroup.findUnique({
+          where: { id: existing.groupId },
+          select: { id: true, name: true, teamIds: true },
+        });
 
-      const invalidTeams = validResults.filter(
-        (r: any) => !teamMap.has(r.teamId)
-      );
-      if (invalidTeams.length > 0) {
+        if (group && Array.isArray(group.teamIds) && group.teamIds.length > 0) {
+          eligibleTeamIds = new Set(group.teamIds);
+          eligibilityContext = `group ${group.name}`;
+        }
+      }
+
+      // Legacy round/lobby-aware eligibility
+      if (!eligibleTeamIds && existing.lobbyId && Array.isArray(existing.tournament.rounds)) {
+        const lobbies = existing.tournament.rounds.flatMap((r: any) =>
+          Array.isArray(r.lobbies) ? r.lobbies : []
+        );
+        const lobby = lobbies.find((l: any) => l.id === existing.lobbyId);
+        if (lobby && Array.isArray(lobby.teamIds) && lobby.teamIds.length > 0) {
+          eligibleTeamIds = new Set(lobby.teamIds);
+          eligibilityContext = `lobby ${lobby.name || existing.lobbyId}`;
+        }
+      }
+
+      const validation = validateSubmittedMatchResults(body.results, {
+        tournamentTeamIds,
+        eligibleTeamIds,
+        requireAllEligible: !!eligibleTeamIds && eligibleTeamIds.size > 0,
+        maxPlacement: 100,
+        maxKills: 99,
+      });
+
+      if (!validation.valid) {
         return NextResponse.json(
           {
-            error: "Some teams do not belong to this tournament",
-            invalidTeams: invalidTeams.map((r: any) => r.teamId),
+            error: validation.error,
+            details: validation.details || [],
           },
           { status: 400 }
         );
       }
 
-      updates.results = validResults.map((r: any) => {
+      validationWarnings = validation.warnings;
+
+      updates.results = validation.sanitizedResults.map((r: any) => {
         const team = teamMap.get(r.teamId) as any;
         const calculated = calculateResultPoints(r, scoringRule);
         return {
           ...calculated,
-          teamName: team?.name || r.teamName || r.teamId,
+          teamName: team?.name || r.teamId,
           teamTag: team?.tag || null,
           teamLogo: team?.logo || null,
         };
@@ -1225,31 +1278,64 @@ export async function PATCH(
         (a: any, b: any) => (a.placement || 999) - (b.placement || 999)
       );
 
-      if (hasDuplicates) {
-        console.warn(
-          "[MATCH_PATCH] Duplicate placements detected in match",
-          id
-        );
+      if (!("status" in body)) {
+        updates.status = "completed";
       }
     }
 
     if ("status" in body) updates.status = body.status;
     if ("map" in body) updates.map = body.map;
     if ("notes" in body) updates.notes = body.notes;
-    if ("startTime" in body && body.startTime)
-      updates.startTime = new Date(body.startTime);
-    if ("endTime" in body && body.endTime)
-      updates.endTime = new Date(body.endTime);
-    if ("screenshotUrl" in body)
-      updates.screenshotUrl = body.screenshotUrl;
+    if ("startTime" in body && body.startTime) updates.startTime = new Date(body.startTime);
+    if ("endTime" in body && body.endTime) updates.endTime = new Date(body.endTime);
+    if ("screenshotUrl" in body) updates.screenshotUrl = body.screenshotUrl;
 
-    if (updates.results && !updates.status) {
-      updates.status = "completed";
-    }
+    const shouldAudit = !!updates.results;
+    const auditAction = hadOfficialResults
+      ? "MATCH_RESULTS_EDITED"
+      : "MATCH_RESULTS_SUBMITTED";
+    const auditReason =
+      typeof body.editReason === "string" && body.editReason.trim().length > 0
+        ? body.editReason.trim().slice(0, 250)
+        : hadOfficialResults
+        ? "Official match results edited"
+        : "Official match results submitted";
 
-    const match = await prisma.match.update({
-      where: { id },
-      data: updates,
+    const oldResults = existing.results ?? null;
+    const oldStatus = existing.status;
+
+    const match = await prisma.$transaction(async (tx) => {
+      const updated = await tx.match.update({
+        where: { id },
+        data: updates,
+      });
+
+      if (shouldAudit) {
+        await tx.qualifierAuditLog.create({
+          data: {
+            tournamentId: existing.tournamentId,
+            stageId: existing.stageId || undefined,
+            action: auditAction,
+            reason: auditReason,
+            metadata: {
+              matchId: existing.id,
+              matchName: existing.name,
+              groupId: existing.groupId,
+              lobbyId: existing.lobbyId,
+              eligibilityContext,
+              oldStatus,
+              newStatus: updated.status,
+              oldResults,
+              newResults: updates.results,
+              warnings: validationWarnings,
+              recalculated: hadOfficialResults,
+            },
+            performedBy: session.userId,
+          },
+        });
+      }
+
+      return updated;
     });
 
     const hasResults =
@@ -1307,6 +1393,8 @@ export async function PATCH(
     return NextResponse.json({
       match,
       pointsCalculated: !!updates.results,
+      recalculated: hadOfficialResults,
+      warnings: validationWarnings,
     });
   } catch (err) {
     logError(err, "MATCH_PATCH");
