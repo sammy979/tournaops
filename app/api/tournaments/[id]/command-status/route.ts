@@ -285,7 +285,7 @@ export async function GET(
           label: "Publish Final Results",
           description: "Tournament complete. Publish the final results.",
           urgency: "medium",
-          href: `/tournaments/${tournament.slug}/results`,
+          href: `/tournaments/${tournamentSlug}/results`,
         };
       }
 
@@ -298,6 +298,7 @@ export async function GET(
       };
     }
 
+    const tournamentSlug = tournament.slug;
     const nextAction = getNextAction();
 
     // ── INTEGRATION STATUS ────────────────────────────────────
