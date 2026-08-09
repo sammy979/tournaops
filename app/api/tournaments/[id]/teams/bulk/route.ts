@@ -1,11 +1,16 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { verifyTournamentOwnership } from "@/lib/authorization";
 import { logError } from "@/lib/logger";
+import { validateBulkImport } from "@/lib/team-import-parser";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
+
+// POST /api/tournaments/[id]/teams/bulk
+// Accepts: { teams: Array<{ name, tag?, seed? }> }
+// Returns: { success, imported, skipped, warnings, teams }
 
 export async function POST(
   req: NextRequest,
@@ -13,63 +18,108 @@ export async function POST(
 ) {
   try {
     const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const { id } = await params;
-    const { authorized, errorResponse } = await verifyTournamentOwnership(id, session);
+
+    const { authorized, errorResponse } = await verifyTournamentOwnership(
+      id,
+      session
+    );
     if (!authorized) return errorResponse!;
 
-    const body = await req.json();
-    const teams = Array.isArray(body?.teams) ? body.teams : [];
-
-    if (teams.length === 0) {
-      return NextResponse.json({ error: "No teams to import" }, { status: 400 });
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 }
+      );
     }
 
-    if (teams.length > 400) {
-      return NextResponse.json({ error: "Max 400 teams" }, { status: 400 });
-    }
+    const rawTeams = Array.isArray(body?.teams) ? body.teams : [];
 
+    // Load tournament with current teams
     const tournament = await prisma.tournament.findUnique({
       where: { id },
-      include: { teams: true },
+      include: {
+        teams: { select: { name: true } },
+      },
     });
 
-    if (!tournament) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-    if (tournament.teams.length + teams.length > tournament.maxTeams) {
-      return NextResponse.json({
-        error: "Would exceed max teams (" + tournament.maxTeams + "). Currently have " + tournament.teams.length
-      }, { status: 400 });
+    if (!tournament) {
+      return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
 
-    const validTeams = teams
-      .filter((t: any) => t.name && typeof t.name === "string" && t.name.trim().length > 0)
-      .map((t: any, idx: number) => ({
-        name: String(t.name).trim().slice(0, 100),
-        tag: t.tag ? String(t.tag).trim().slice(0, 20) : null,
-        contact: t.contact ? String(t.contact).trim().slice(0, 100) : null,
-        seed: t.seed ? Number(t.seed) : (tournament.teams.length + idx + 1),
-        players: t.players || [],
-        tournamentId: id,
-      }));
+    const existingNames = tournament.teams.map((t) => t.name);
+    const currentCount = tournament.teams.length;
+    const maxTeams = tournament.maxTeams;
 
-    if (validTeams.length === 0) {
-      return NextResponse.json({ error: "No valid teams (name required)" }, { status: 400 });
-    }
-
-    const created = await prisma.$transaction(
-      validTeams.map((team: any) => prisma.team.create({ data: team }))
+    // Server-side validation using canonical parser
+    const validation = validateBulkImport(
+      rawTeams,
+      existingNames,
+      currentCount,
+      maxTeams
     );
+
+    if (!validation.valid) {
+      return NextResponse.json(
+        {
+          error: validation.errors[0],
+          errors: validation.errors,
+          warnings: validation.warnings,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Cap import to remaining capacity
+    const remaining = maxTeams - currentCount;
+    const teamsToImport = validation.teams.slice(0, remaining);
+
+    if (teamsToImport.length === 0) {
+      return NextResponse.json(
+        {
+          error: `Tournament is full (${currentCount}/${maxTeams} teams)`,
+          warnings: validation.warnings,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Build create data with auto-seeding
+    const createData = teamsToImport.map((t, idx) => ({
+      name: t.name,
+      tag: t.tag || null,
+      seed: t.seed || currentCount + idx + 1,
+      players: [],
+      contact: null,
+      tournamentId: id,
+    }));
+
+    // Create all teams in a transaction
+    const created = await prisma.$transaction(
+      createData.map((team) => prisma.team.create({ data: team }))
+    );
+
+    const skipped = rawTeams.length - teamsToImport.length;
 
     return NextResponse.json({
       success: true,
       imported: created.length,
-      skipped: teams.length - validTeams.length,
+      skipped,
+      warnings: validation.warnings,
       teams: created,
     });
-  } catch (err: any) {
+  } catch (err) {
     logError(err, "TEAM_BULK_IMPORT");
-    return NextResponse.json({ error: err?.message || "Import failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Import failed. Please try again." },
+      { status: 500 }
+    );
   }
 }
