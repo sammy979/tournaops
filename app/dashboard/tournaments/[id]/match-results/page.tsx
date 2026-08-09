@@ -303,7 +303,7 @@ export default function MatchResultsPage() {
   if (loading) return (
     <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <Loader2 style={{ width: "2rem", height: "2rem", color: "#f59e0b", animation: "spin 0.8s linear infinite" }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @media(min-width:700px){.match-results-grid{grid-template-columns:minmax(280px,320px) 1fr!important}}`}</style>
     </div>
   );
 
@@ -548,7 +548,7 @@ export default function MatchResultsPage() {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(280px, 320px) 1fr", gap: "1.25rem" }} className="match-results-grid">
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: "1.25rem" }} className="match-results-grid">
 
         {/* Match List */}
         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1rem", maxHeight: "80vh", display: "flex", flexDirection: "column" }}>

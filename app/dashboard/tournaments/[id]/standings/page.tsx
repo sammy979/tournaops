@@ -453,8 +453,8 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
         )}
       </div>
 
-      <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 55px 65px 65px 65px 65px 90px", gap: "0.5rem", alignItems: "center", padding: "0.875rem", borderBottom: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)", fontSize: "0.65rem", fontWeight: 700, color: "#6b7280", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+      <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", overflowX: "auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 55px 65px 65px 65px 65px 90px", gap: "0.5rem", alignItems: "center", padding: "0.875rem", borderBottom: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)", fontSize: "0.65rem", fontWeight: 700, color: "#6b7280", letterSpacing: "0.1em", textTransform: "uppercase", minWidth: "520px" }}>
           <div style={{ textAlign: "center" }}>Rank</div>
           <div>Team</div>
           <div style={{ textAlign: "center" }}>M</div>
@@ -484,7 +484,7 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
               <button
                 key={s.id}
                 onClick={() => setSelectedTeam(s)}
-                style={{ width: "100%", display: "grid", gridTemplateColumns: "60px 1fr 55px 65px 65px 65px 65px 90px", gap: "0.5rem", alignItems: "center", padding: "0.875rem", borderBottom: "1px solid rgba(255,255,255,0.04)", background: rowBg, border: "none", cursor: "pointer", color: "#fff" }}
+                style={{ width: "100%", display: "grid", gridTemplateColumns: "60px 1fr 55px 65px 65px 65px 65px 90px", gap: "0.5rem", alignItems: "center", padding: "0.875rem", borderBottom: "1px solid rgba(255,255,255,0.04)", background: rowBg, border: "none", cursor: "pointer", color: "#fff", minWidth: "520px" }}
                 onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
                 onMouseLeave={e => e.currentTarget.style.background = rowBg}
               >

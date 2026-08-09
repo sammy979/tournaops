@@ -128,7 +128,7 @@ export default function TournamentOverviewPage() {
     return (
       <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Loader2 style={{ width: "2rem", height: "2rem", color: "#f59e0b", animation: "spin 0.8s linear infinite" }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}} @media(min-width:900px){.overview-main-grid{grid-template-columns:1fr 340px!important}}`}</style>
       </div>
     );
   }
@@ -345,7 +345,7 @@ export default function TournamentOverviewPage() {
         })}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "1.5rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr)", gap: "1.5rem" }} className="overview-main-grid">
 
         {/* COMMAND CENTER */}
         <div>
