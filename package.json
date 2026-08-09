@@ -12,6 +12,7 @@
     },
     "dependencies": {
         "@hookform/resolvers": "^5.7.1",
+        "@next/third-parties": "^16.3.0",
         "@prisma/client": "^6.19.3",
         "@sparticuz/chromium": "^149.0.0",
         "@vercel/blob": "^2.6.1",
