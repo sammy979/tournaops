@@ -106,6 +106,28 @@ export default function TournamentDiscordPage() {
     }
   }
 
+  async function broadcast(type: "slot_list" | "standings_image" | "tournament_started" | "registration_open") {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await fetch(`/api/tournaments/${id}/broadcast-discord`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTestResult({ success: true, message: "\u2705 " + (data.message || "Broadcast sent!") });
+      } else {
+        setTestResult({ success: false, message: data.error || "Broadcast failed" });
+      }
+    } catch {
+      setTestResult({ success: false, message: "Network error" });
+    } finally {
+      setTesting(false);
+    }
+  }
+
   if (loading) return (
     <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <Loader2 style={{ width: "2rem", height: "2rem", color: "#f59e0b", animation: "spin 0.8s linear infinite" }} />
@@ -207,6 +229,43 @@ export default function TournamentDiscordPage() {
             style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", background: "rgba(88,101,242,0.15)", color: "#818cf8", border: "1px solid rgba(88,101,242,0.3)", borderRadius: "0.625rem", padding: "0.625rem 1.25rem", fontSize: "0.8rem", fontWeight: 700, cursor: testing || !webhookUrl.trim() ? "not-allowed" : "pointer" }}>
             {testing ? <><Loader2 style={{ width: "0.875rem", height: "0.875rem", animation: "spin 0.8s linear infinite" }} />Testing...</> : <><Send style={{ width: "0.875rem", height: "0.875rem" }} />Send Test Message</>}
           </button>
+        </div>
+      </div>
+
+      {/* Manual Broadcast */}
+      <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1.5rem", marginBottom: "1.5rem" }}>
+        <h3 style={{ color: "#fff", fontWeight: 700, fontSize: "0.95rem", marginBottom: "0.5rem" }}>
+          Manual Broadcast
+        </h3>
+        <p style={{ color: "#6b7280", fontSize: "0.75rem", marginBottom: "1rem" }}>
+          Instantly post to Discord (in addition to automatic match posts)
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.5rem" }}>
+          {[
+            { type: "slot_list", label: "Post Slot List", desc: "All registered teams", color: "#3b82f6" },
+            { type: "standings_image", label: "Post Standings Image", desc: "Visual leaderboard", color: "#f59e0b" },
+            { type: "registration_open", label: "Announce Registration", desc: "@everyone ping", color: "#4ade80" },
+            { type: "tournament_started", label: "Announce Tournament Live", desc: "@everyone ping", color: "#ef4444" },
+          ].map(btn => (
+            <button
+              key={btn.type}
+              onClick={() => broadcast(btn.type as any)}
+              disabled={testing || !isConfigured}
+              style={{
+                display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "0.25rem",
+                padding: "0.75rem 1rem",
+                background: `${btn.color}10`, border: `1px solid ${btn.color}30`,
+                borderRadius: "0.625rem", color: btn.color,
+                fontSize: "0.8rem", fontWeight: 700,
+                cursor: testing || !isConfigured ? "not-allowed" : "pointer",
+                opacity: testing || !isConfigured ? 0.5 : 1,
+                textAlign: "left",
+              }}
+            >
+              <span>{btn.label}</span>
+              <span style={{ fontSize: "0.65rem", fontWeight: 500, color: "#9ca3af" }}>{btn.desc}</span>
+            </button>
+          ))}
         </div>
       </div>
 

@@ -1,4 +1,5 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+﻿import { broadcastMilestone, broadcastSlotList } from "@/lib/discord-broadcaster";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { verifyTournamentOwnership } from "@/lib/authorization";
@@ -73,7 +74,23 @@ export async function PATCH(
     const tournament = await prisma.tournament.update({
       where: { id },
       data: validUpdates,
+      include: { teams: true },
     });
+
+    // Auto-broadcast milestone events to Discord
+    const oldStatus = (await prisma.tournament.findUnique({ where: { id }, select: { status: true } }))?.status;
+    const newStatus = validUpdates.status;
+    if (newStatus && oldStatus !== newStatus && tournament.discord) {
+      const wh = tournament.discord;
+      const isValid = wh.startsWith("https://discord.com/api/webhooks/") || wh.startsWith("https://discordapp.com/api/webhooks/");
+      if (isValid) {
+        try {
+          if (newStatus === "registration") await broadcastMilestone(wh, tournament, "REGISTRATION_OPEN");
+          else if (newStatus === "live") await broadcastMilestone(wh, tournament, "TOURNAMENT_STARTED");
+          else if (newStatus === "completed") await broadcastMilestone(wh, tournament, "TOURNAMENT_COMPLETED");
+        } catch (e) { console.warn("[DISCORD_MILESTONE] Failed:", e); }
+      }
+    }
 
     return NextResponse.json({ tournament });
   } catch (err) {
