@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import TeamLogo from "@/components/tournament/TeamLogo";
 import { useEffect, useState, useRef, use } from "react";
 import { toPng } from "html-to-image";
@@ -246,7 +246,7 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
       <div style={{ maxWidth: 1400, margin: "0 auto 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, background: "#111", padding: "14px 20px", borderRadius: 12, border: "1px solid #333" }}>
         <div style={{ color: "#fff", fontFamily: "system-ui" }}>
           <div style={{ fontSize: 18, fontWeight: 700 }}>{tournament.name}</div>
-          <div style={{ fontSize: 13, color: "#999" }}>{standings.length} teams Â· PMGC Scoring</div>
+          <div style={{ fontSize: 13, color: "#999" }}>{standings.length} teams · PMGC Scoring</div>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button 
@@ -311,7 +311,7 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
             <div style={{ textAlign: "center", marginBottom: 22, position: "relative", zIndex: 2 }}>
               <div style={{ color: primaryColor, fontSize: 18, fontWeight: 700, letterSpacing: 5, textTransform: "uppercase", marginBottom: 8, lineHeight: 1 }}>{config.subtitle}</div>
               <div style={{ color: "white", fontSize: titleSize, fontWeight: 900, lineHeight: 1, letterSpacing: -2, marginBottom: 8, textShadow: "0 0 40px " + primaryColor + "80" }}>{tournament.name}</div>
-              <div style={{ color: "#9ca3af", fontSize: 17, fontWeight: 500, lineHeight: 1 }}>Top {standings.length} Â· {(tournament.matches || []).length} Matches Â· PMGC Scoring</div>
+              <div style={{ color: "#9ca3af", fontSize: 17, fontWeight: 500, lineHeight: 1 }}>Top {standings.length} · {(tournament.matches || []).length} Matches · PMGC Scoring</div>
             </div>
             
             {/* TABLE */}
