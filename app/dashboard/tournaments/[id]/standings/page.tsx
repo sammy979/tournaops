@@ -344,8 +344,8 @@ export default function StandingsPage({ params }: { params: Promise<{ id: string
 
             {/* PODIUM HERO — Top 3 Champions */}
       {filtered.length >= 3 && (
-        <div id="podium-hero-section" style={{ marginBottom: "1.5rem" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr 1fr", gap: "0.75rem", alignItems: "end" }}>
+        <div id="podium-hero-section" style={{ marginBottom: "2.5rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1.3fr 1fr", gap: "0.75rem", alignItems: "end" }}>
             {[filtered[1], filtered[0], filtered[2]].map((team: any, idx: number) => {
               const actualRank = idx === 1 ? 1 : idx === 0 ? 2 : 3;
               const isFirst = actualRank === 1;
