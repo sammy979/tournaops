@@ -30,9 +30,15 @@ export async function POST(
     });
     if (!tournament) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    // Delete existing stages + orphan matches (cascade deletes stage groups)
+    // First unlock all stages so they can be deleted
+    await prisma.stage.updateMany({
+      where: { tournamentId: id },
+      data: { isLocked: false, lockedAt: null, lockedBy: null },
+    });
+    // Delete all matches for this tournament (both stage-tied and orphan)
+    await prisma.match.deleteMany({ where: { tournamentId: id } });
+    // Delete existing stages (cascade deletes stage groups + progressions)
     await prisma.stage.deleteMany({ where: { tournamentId: id } });
-    await prisma.match.deleteMany({ where: { tournamentId: id, stageId: null } });
 
     const created: any[] = [];
     let allTeams = [...tournament.teams];
