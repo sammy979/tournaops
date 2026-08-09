@@ -67,9 +67,9 @@ export default function TournamentOverviewPage() {
     const nextStageName = nextStage?.stageName || "next stage";
 
     const ok = await dialog.confirm({
-      title: Force Advance to ?,
-      description: This will calculate standings, seed teams into , and lock the current stage. A Discord announcement will be posted if configured.,
-      confirmLabel: Advance to ,
+      title: `Force Advance to ${nextStageName}?`,
+      description: `This will calculate standings, seed teams into ${nextStageName}, and lock the current stage. A Discord announcement will be posted if configured.`,
+      confirmLabel: `Advance to ${nextStageName}`,
       variant: "warning",
     });
     if (!ok) return;
@@ -81,20 +81,19 @@ export default function TournamentOverviewPage() {
       submitLabel: "Confirm Advance",
       variant: "warning",
     });
-    if (!reason || reason.trim().length < 5) {
-      if (reason !== null) {
-        await dialog.alert({
-          title: "Reason Too Short",
-          description: "Please provide a reason of at least 5 characters.",
-          variant: "warning",
-        });
-      }
+    if (reason === null) return;
+    if (reason.trim().length < 5) {
+      await dialog.alert({
+        title: "Reason Too Short",
+        description: "Please provide a reason of at least 5 characters.",
+        variant: "warning",
+      });
       return;
     }
 
     setAdvancing(true);
     try {
-      const res = await fetch(/api/tournaments//force-advance, {
+      const res = await fetch(`/api/tournaments/${id}/force-advance`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ stageId: status.activeStage.id, reason: reason.trim() }),
@@ -103,7 +102,7 @@ export default function TournamentOverviewPage() {
       if (res.ok && data.success) {
         await dialog.alert({
           title: "Stage Advanced",
-          description: data.message || Successfully advanced to .,
+          description: data.message || `Successfully advanced to ${nextStageName}.`,
           variant: "success",
         });
         load(true);
