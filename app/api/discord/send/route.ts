@@ -1,5 +1,6 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
+import { requirePro } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/prisma";
 import { verifyTournamentOwnership } from "@/lib/authorization";
 import { logError, logger } from "@/lib/logger";
@@ -13,6 +14,8 @@ export async function POST(req: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
+    const proCheck = await requirePro(session);
+    if (!proCheck.authorized) return proCheck.errorResponse!;
 
     const ip = getClientIp(req);
     const rl = checkRateLimit("discord_send:" + session.userId + ":" + ip, DISCORD_RATE);

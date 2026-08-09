@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
+import { requirePro } from "@/lib/auth/rbac";
 import { logError } from "@/lib/logger";
 import { checkRateLimit, getClientIp, RATE_LIMITS, getRateLimitHeaders } from "@/lib/rate-limit";
 
@@ -138,6 +139,8 @@ export async function POST(
     if (!session) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
+    const proCheck = await requirePro(session);
+    if (!proCheck.authorized) return proCheck.errorResponse!;
 
     const ip = getClientIp(req);
     const rl = checkRateLimit("screenshot:" + session.userId + ":" + ip, RATE_LIMITS.AI_SCREENSHOT);

@@ -1,6 +1,8 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { generateAI } from "@/lib/ai";
 import { checkRateLimit, getClientIp, RATE_LIMITS, getRateLimitHeaders } from "@/lib/rate-limit";
+import { getSession } from "@/lib/auth/session";
+import { requirePro } from "@/lib/auth/rbac";
 import { logError } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {

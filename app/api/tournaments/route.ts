@@ -1,9 +1,10 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { validateTournamentInput } from "@/lib/validation";
 import { logError } from "@/lib/logger";
 import { generateTournamentPlan, toLegacyStageConfig } from "@/lib/tournament-generator";
+import { PLAN_LIMITS } from "@/lib/plan-limits";
 import type { TournamentTemplateKey } from "@/lib/tournament-templates";
 import type { Prisma } from "@prisma/client";
 
@@ -66,6 +67,44 @@ export async function POST(req: NextRequest) {
       data = await req.json();
     } catch {
       return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    }
+
+    // ── Enforce plan limits BEFORE validation ────────────────
+    const userForLimits = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { isPro: true, isAdmin: true, role: true, _count: { select: { tournaments: true } } },
+    });
+
+    if (!userForLimits) {
+      return NextResponse.json({ error: "User not found" }, { status: 401 });
+    }
+
+    const isPro = userForLimits.isPro || userForLimits.isAdmin || userForLimits.role === "SUPER_ADMIN";
+    const limits = isPro ? PLAN_LIMITS.PRO : PLAN_LIMITS.FREE;
+
+    if (userForLimits._count.tournaments >= limits.maxTournaments) {
+      return NextResponse.json(
+        {
+          error: `Free plan limit reached. Upgrade to Pro to create more than ${PLAN_LIMITS.FREE.maxTournaments} tournaments.`,
+          upgradeUrl: "/dashboard/upgrade",
+          currentCount: userForLimits._count.tournaments,
+          maxAllowed: limits.maxTournaments,
+        },
+        { status: 402 }
+      );
+    }
+
+    const requestedMaxTeams = Number((data as any).maxTeams) || 16;
+    if (requestedMaxTeams > limits.maxTeamsPerTournament) {
+      return NextResponse.json(
+        {
+          error: `Free plan allows up to ${PLAN_LIMITS.FREE.maxTeamsPerTournament} teams per tournament. Upgrade to Pro for up to ${PLAN_LIMITS.PRO.maxTeamsPerTournament}.`,
+          upgradeUrl: "/dashboard/upgrade",
+          requested: requestedMaxTeams,
+          maxAllowed: limits.maxTeamsPerTournament,
+        },
+        { status: 402 }
+      );
     }
 
     const validation = validateTournamentInput(data);

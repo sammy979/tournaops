@@ -1,6 +1,7 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
+import { requirePro } from "@/lib/auth/rbac";
 import { verifyTournamentOwnership } from "@/lib/authorization";
 import { logError } from "@/lib/logger";
 
@@ -156,6 +157,8 @@ export async function GET(
   try {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const proCheck = await requirePro(session);
+    if (!proCheck.authorized) return proCheck.errorResponse!;
 
     const { id } = await params;
 

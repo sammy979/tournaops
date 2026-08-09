@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
+import { requirePro } from "@/lib/auth/rbac";
 import { put } from "@vercel/blob";
 import { logError } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
@@ -95,6 +96,8 @@ export async function POST(req: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const proCheck = await requirePro(session);
+    if (!proCheck.authorized) return proCheck.errorResponse!;
 
     // Check if user is Pro
     const user = await prisma.user.findUnique({
