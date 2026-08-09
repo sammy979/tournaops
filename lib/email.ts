@@ -6,7 +6,14 @@
 // REQUIRES: RESEND_API_KEY environment variable
 // ============================================================
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+function getResend(): Resend | null {
+  if (_resend) return _resend;
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return null;
+  _resend = new Resend(key);
+  return _resend;
+}
 const FROM = process.env.EMAIL_FROM || "TournaOps <noreply@tournaops.com>";
 const BASE_URL = process.env.NEXT_PUBLIC_URL || "https://www.tournaops.com";
 
@@ -90,7 +97,8 @@ async function safeSend(params: {
   subject: string;
   html: string;
 }): Promise<boolean> {
-  if (!process.env.RESEND_API_KEY) {
+  const resend = getResend();
+  if (!resend) {
     console.warn("[EMAIL] RESEND_API_KEY not set — skipping email to", params.to);
     return false;
   }
