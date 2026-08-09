@@ -134,7 +134,7 @@ model Match {
   @@index([status])
   @@index([roundId])
   @@index([stageId])
-  @@unique([stageId, groupId, matchNumber])
+  @@index([groupId])
 }
 
 model DiscordImport {
@@ -194,7 +194,6 @@ model Stage {
 
   @@index([tournamentId, order])
   @@index([status])
-  @@unique([tournamentId, order])
 }
 
 model StageGroup {
@@ -210,7 +209,6 @@ model StageGroup {
   stage     Stage    @relation(fields: [stageId], references: [id], onDelete: Cascade)
 
   @@index([stageId])
-  @@unique([stageId, order])
 }
 
 model TeamProgression {
