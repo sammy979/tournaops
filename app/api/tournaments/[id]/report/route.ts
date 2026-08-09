@@ -1,42 +1,26 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
-import { generateAI } from "@/lib/ai";
 import { verifyTournamentOwnership } from "@/lib/authorization";
 import { logError } from "@/lib/logger";
-import { calculateStandings, getTopFragger, parseScoringConfig } from "@/lib/scoring-engine";
 
 export async function GET(
   req: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+
+    // Try authenticated access first, fall back to public
     const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-    }
-
-    const { id } = await context.params;
-
-    const { authorized, errorResponse } = await verifyTournamentOwnership(id, session);
-    if (!authorized) return errorResponse!;
 
     const tournament = await prisma.tournament.findUnique({
       where: { id },
       include: {
-        teams: { select: { id: true, name: true, tag: true } },
-        matches: {
-          where: { status: "completed" },
-          select: {
-            id: true, name: true, map: true,
-            matchNumber: true, results: true,
-          },
-          orderBy: { matchNumber: "asc" },
-        },
-        stages: {
-          select: { id: true, name: true, type: true, status: true },
-          orderBy: { order: "asc" },
-        },
+        teams: { include: { playersList: true }, orderBy: { name: "asc" } },
+        matches: { orderBy: { matchNumber: "asc" } },
+        stages: { orderBy: { order: "asc" } },
+        progressions: { orderBy: { finalPosition: "asc" } },
       },
     });
 
@@ -44,103 +28,192 @@ export async function GET(
       return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
 
-    // Official scoring â€” single source of truth
-    const scoringConfig = parseScoringConfig(tournament.scoringRule);
-    const allResults: Array<{
-      teamId: string;
-      teamName: string;
-      matchNumber: number;
-      placement: number;
-      kills: number;
-    }> = [];
+    // If private and not owner, deny
+    if (!tournament.isPublic && (!session || tournament.userId !== session.userId)) {
+      return NextResponse.json({ error: "Tournament is private" }, { status: 403 });
+    }
 
-    for (const match of tournament.matches) {
-      if (!match.results || !Array.isArray(match.results)) continue;
-      for (const result of match.results as Array<Record<string, unknown>>) {
-        allResults.push({
-          teamId: String(result.teamId || ""),
-          teamName: String(result.teamName || ""),
-          matchNumber: match.matchNumber || 0,
-          placement: Number(result.placement) || 0,
-          kills: Number(result.kills) || 0,
-        });
+    const scoringRule = tournament.scoringRule as any || {};
+    const killPoints = Number(scoringRule.killPoints) || 1;
+    const wwcdBonus = Number(scoringRule.wwcdBonus) || 0;
+    let placementPoints: number[] = [10,6,5,4,3,2,1,1,0,0,0,0,0,0,0,0];
+    if (Array.isArray(scoringRule.placementPoints)) {
+      placementPoints = scoringRule.placementPoints;
+    } else if (scoringRule.placementPoints && typeof scoringRule.placementPoints === "object") {
+      placementPoints = Object.values(scoringRule.placementPoints).map(Number);
+    }
+
+    // Build standings
+    const teamStats = new Map<string, any>();
+    for (const team of tournament.teams) {
+      teamStats.set(team.id, {
+        id: team.id,
+        name: team.name,
+        tag: team.tag,
+        logo: team.logo,
+        players: team.playersList,
+        points: 0,
+        kills: 0,
+        wwcds: 0,
+        placementPts: 0,
+        killPts: 0,
+        damage: 0,
+        matchesPlayed: 0,
+        bestPlacement: 999,
+        placements: [] as number[],
+      });
+    }
+
+    const completedMatches = tournament.matches.filter(m =>
+      m.status === "completed" && Array.isArray(m.results) && (m.results as any[]).length > 0
+    );
+
+    let totalKills = 0;
+    let totalDamage = 0;
+    let totalWWCDs = 0;
+
+    for (const match of completedMatches) {
+      const results = match.results as any[];
+      for (const r of results) {
+        const s = teamStats.get(r.teamId);
+        if (!s) continue;
+        const kills = Number(r.kills) || 0;
+        const placement = Number(r.placement) || 0;
+        const damage = Number(r.damage) || 0;
+        const isWWCD = placement === 1 || r.wwcd === true;
+        const pIdx = Math.max(0, placement - 1);
+        const pPts = placementPoints[pIdx] || 0;
+        const kPts = kills * killPoints;
+        const bonus = isWWCD ? wwcdBonus : 0;
+
+        s.points += pPts + kPts + bonus;
+        s.placementPts += pPts;
+        s.killPts += kPts;
+        s.kills += kills;
+        s.damage += damage;
+        s.matchesPlayed++;
+        if (isWWCD) { s.wwcds++; totalWWCDs++; }
+        if (placement > 0 && placement < s.bestPlacement) s.bestPlacement = placement;
+        s.placements.push(placement);
+        totalKills += kills;
+        totalDamage += damage;
       }
     }
 
-    const standings = calculateStandings(allResults, scoringConfig);
-    const topFragger = getTopFragger(standings);
-    const champion = standings[0];
-    const completedMatches = tournament.matches.length;
+    const standings = Array.from(teamStats.values())
+      .filter(s => s.matchesPlayed > 0)
+      .sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.wwcds !== a.wwcds) return b.wwcds - a.wwcds;
+        return b.kills - a.kills;
+      })
+      .map((s, i) => ({
+        rank: i + 1,
+        id: s.id,
+        name: s.name,
+        tag: s.tag,
+        logo: s.logo,
+        points: s.points,
+        kills: s.kills,
+        wwcds: s.wwcds,
+        placementPts: s.placementPts,
+        killPts: s.killPts,
+        damage: s.damage,
+        matchesPlayed: s.matchesPlayed,
+        bestPlacement: s.bestPlacement === 999 ? null : s.bestPlacement,
+        avgPlacement: s.placements.length > 0
+          ? Math.round((s.placements.reduce((a: number, b: number) => a + b, 0) / s.placements.length) * 10) / 10
+          : null,
+      }));
 
-    // Report data from verified DB numbers
-    const reportData = {
-      tournament: tournament.name,
-      status: tournament.status,
-      totalTeams: tournament.teams.length,
-      completedMatches,
-      champion: champion ? {
-        name: champion.teamName,
-        points: champion.totalPoints,
-        kills: champion.totalKills,
-        wwcds: champion.wwcdCount,
-      } : null,
-      top3: standings.slice(0, 3).map(s => ({
-        rank: s.rank,
-        team: s.teamName,
-        points: s.totalPoints,
-        kills: s.totalKills,
-      })),
-      topFragger: topFragger ? {
-        team: topFragger.teamName,
-        kills: topFragger.totalKills,
-      } : null,
-      scoringType: scoringConfig.type,
-      maps: [...new Set(tournament.matches.map(m => m.map))],
-    };
+    const champion = standings[0] || null;
+    const topFragger = standings.sort((a, b) => b.kills - a.kills)[0] || null;
+    standings.sort((a, b) => a.rank - b.rank);
 
-    const prompt = `Generate a professional PUBG Mobile tournament report.
+    // Stage journeys
+    const stageJourneys: Record<string, any[]> = {};
+    for (const prog of tournament.progressions) {
+      if (!stageJourneys[prog.teamId]) stageJourneys[prog.teamId] = [];
+      const stage = tournament.stages.find(s => s.id === prog.stageId);
+      stageJourneys[prog.teamId].push({
+        stageId: prog.stageId,
+        stageName: stage?.name || "Unknown",
+        stageType: stage?.type || "",
+        position: prog.finalPosition,
+        points: prog.points,
+        kills: prog.kills,
+        status: prog.status,
+      });
+    }
 
-VERIFIED TOURNAMENT DATA:
-${JSON.stringify(reportData, null, 2)}
+    const avgKillsPerMatch = completedMatches.length > 0
+      ? Math.round((totalKills / completedMatches.length) * 10) / 10
+      : 0;
 
-Write a tournament report with these sections:
-1. Tournament Overview
-2. Champion & Podium
-3. Standout Performances  
-4. Tournament Highlights
-5. Closing Statement
-
-Rules:
-- Base ONLY on the data provided
-- Do not invent stats not in the data
-- Professional esports tone
-- Under 400 words
-- If champion is null, note tournament is still in progress`;
-
-    const result = await generateAI({
-      prompt,
-      temperature: 0.7,
-      maxTokens: 600,
-      preferProvider: "groq",
+    const branding = tournament.brandingData as any || {};
+    const organizer = await prisma.user.findUnique({
+      where: { id: tournament.userId },
+      select: { displayName: true, username: true, avatar: true },
     });
 
     return NextResponse.json({
-      report: result.text || "Report generation unavailable. Please try again.",
-      provider: result.provider,
-      data: reportData,
-      standings: standings.slice(0, 10),
-      branding: tournament.brandingData || {},
       tournament: {
         id: tournament.id,
         name: tournament.name,
         slug: tournament.slug,
+        description: tournament.description,
+        prizePool: tournament.prizePool,
+        status: tournament.status,
+        format: tournament.format,
+        bannerImage: tournament.bannerImage,
+        organizer: branding.orgName || organizer?.displayName || organizer?.username || "Organizer",
+        createdAt: tournament.createdAt,
       },
+      standings,
+      awards: {
+        champion: champion ? {
+          name: champion.name,
+          logo: champion.logo,
+          points: champion.points,
+          kills: champion.kills,
+          wwcds: champion.wwcds,
+        } : null,
+        topFragger: topFragger ? {
+          name: topFragger.name,
+          team: topFragger.name,
+          kills: topFragger.kills,
+        } : null,
+        topDamage: standings.sort((a, b) => b.damage - a.damage)[0] ? {
+          name: standings[0]?.name,
+          team: standings[0]?.name,
+          damage: standings[0]?.damage,
+        } : null,
+        mostWWCD: standings.sort((a, b) => b.wwcds - a.wwcds)[0] ? {
+          name: standings[0]?.name,
+          wwcds: standings[0]?.wwcds,
+        } : null,
+        mostConsistent: standings.length > 0 ? {
+          name: standings[0].name,
+          points: standings[0].points,
+        } : null,
+        biggestComeback: null,
+      },
+      statistics: {
+        totalTeams: tournament.teams.length,
+        completedMatches: completedMatches.length,
+        totalMatches: tournament.matches.length,
+        totalKills,
+        totalDamage,
+        totalWWCDs,
+        avgKillsPerMatch,
+      },
+      stages: tournament.stages.map(s => ({ id: s.id, name: s.name, type: s.type, status: s.status })),
+      stageJourneys,
+      branding,
+      aiSummary: null,
     });
   } catch (err) {
     logError(err, "TOURNAMENT_REPORT");
-    return NextResponse.json(
-      { error: "Failed to generate report." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to generate report" }, { status: 500 });
   }
 }

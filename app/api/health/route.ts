@@ -1,55 +1,31 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const results: any = {
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    version: "1.0.0",
-  };
+  const start = Date.now();
+  let dbStatus = "ok";
+  let dbMs = 0;
 
-  // Check database
-  const dbStart = Date.now();
   try {
     await prisma.$queryRaw`SELECT 1`;
-    results.database = {
-      status: "connected",
-      latency: Date.now() - dbStart,
-    };
-  } catch (err) {
-    results.database = {
-      status: "error",
-      error: "Connection failed",
-    };
-    results.status = "degraded";
+    dbMs = Date.now() - start;
+  } catch {
+    dbStatus = "error";
   }
 
-  // Check AI providers
-  results.ai = {
-    provider: process.env.AI_PROVIDER || "groq",
-    status: "configured",
-    providers: {
-      groq: process.env.GROQ_API_KEY ? "configured" : "missing",
-      gemini: process.env.GEMINI_API_KEY ? "configured" : "missing",
-      openai: process.env.OPENAI_API_KEY ? "configured" : "not-set",
+  const status = dbStatus === "ok" ? 200 : 503;
+
+  return NextResponse.json({
+    status: dbStatus === "ok" ? "healthy" : "degraded",
+    timestamp: new Date().toISOString(),
+    version: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || "local",
+    environment: process.env.VERCEL_ENV || "development",
+    services: {
+      database: { status: dbStatus, latencyMs: dbMs },
+      email: { status: process.env.RESEND_API_KEY ? "configured" : "missing" },
+      ai: { status: (process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY) ? "configured" : "missing" },
+      payments: { status: process.env.DODO_API_KEY ? "configured" : "missing" },
+      storage: { status: process.env.BLOB_READ_WRITE_TOKEN ? "configured" : "missing" },
     },
-  };
-
-  // Check integrations
-  results.integrations = {
-    dodo: process.env.DODO_API_KEY ? "configured" : "missing",
-    dodoWebhook: process.env.DODO_WEBHOOK_SECRET ? "configured" : "missing",
-    resend: process.env.RESEND_API_KEY ? "configured" : "not-set",
-    pusher: process.env.PUSHER_KEY ? "configured" : "not-set",
-  };
-
-  // Environment info
-  results.environment = {
-    node: process.version,
-    nodeEnv: process.env.NODE_ENV || "development",
-    hasJwtSecret: !!process.env.JWT_SECRET,
-  };
-
-  const statusCode = results.status === "ok" ? 200 : 503;
-  return NextResponse.json(results, { status: statusCode });
+  }, { status });
 }
