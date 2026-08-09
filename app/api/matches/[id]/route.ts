@@ -183,6 +183,324 @@ async function postStandingsToDiscord(webhookUrl: string, tournament: any) {
     return false;
   }
 }
+
+// ============================================================
+// AUTO-ADVANCE — When a stage completes all matches,
+// automatically advance top N teams to the next stage
+// and announce it in Discord.
+// ============================================================
+
+async function autoAdvanceIfStageComplete(
+  webhookUrl: string | null,
+  tournament: any,
+  currentStageId: string
+) {
+  try {
+    // Reload fresh tournament with all stages, groups, matches
+    const fresh = await prisma.tournament.findUnique({
+      where: { id: tournament.id },
+      include: {
+        stages: {
+          include: { groups: true },
+          orderBy: { order: "asc" },
+        },
+        matches: true,
+        teams: true,
+      },
+    });
+    if (!fresh) return;
+
+    const currentStage = fresh.stages.find(s => s.id === currentStageId);
+    if (!currentStage) return;
+
+    // Check if ALL matches in this stage are completed
+    const stageMatches = fresh.matches.filter(m => m.stageId === currentStageId);
+    if (stageMatches.length === 0) return;
+    const allCompleted = stageMatches.every(m =>
+      m.status === "completed" && Array.isArray(m.results) && (m.results as any[]).length > 0
+    );
+    if (!allCompleted) return;
+
+    // Find next stage (next by order)
+    const nextStage = fresh.stages.find(s => s.order === currentStage.order + 1);
+    if (!nextStage) {
+      // This is the FINAL stage — tournament complete!
+      console.log("[AUTO_ADVANCE] Tournament complete!");
+      if (webhookUrl) {
+        await postTournamentCompleteToDiscord(webhookUrl, fresh, currentStage);
+      }
+      return;
+    }
+
+    // Check if next stage already has teams assigned (avoid re-advancing)
+    const nextStageHasTeams = nextStage.groups.some((g: any) => (g.teamIds || []).length > 0);
+    if (nextStageHasTeams) {
+      console.log("[AUTO_ADVANCE] Next stage already has teams, skipping");
+      return;
+    }
+
+    // Calculate standings across all groups in current stage
+    const scoringRule: any = currentStage.scoringRule || fresh.scoringRule || {};
+    const killPoints = Number(scoringRule.killPoints) || 1;
+    const wwcdBonus = Number(scoringRule.wwcdBonus) || 0;
+    let placementPoints: number[] = [10,6,5,4,3,2,1,1,0,0,0,0,0,0,0,0];
+    if (Array.isArray(scoringRule.placementPoints)) placementPoints = scoringRule.placementPoints;
+    else if (scoringRule.placementPoints && typeof scoringRule.placementPoints === "object") {
+      placementPoints = Object.values(scoringRule.placementPoints).map(Number);
+    }
+
+    // Get all teams in current stage
+    const stageTeamIds = new Set<string>();
+    for (const g of currentStage.groups) (g.teamIds || []).forEach((id: string) => stageTeamIds.add(id));
+
+    const teamStats = new Map<string, any>();
+    for (const tid of stageTeamIds) {
+      const team = fresh.teams.find(t => t.id === tid);
+      if (team) {
+        teamStats.set(tid, {
+          teamId: tid, teamName: team.name, teamTag: team.tag,
+          points: 0, kills: 0, wwcds: 0,
+        });
+      }
+    }
+
+    for (const match of stageMatches) {
+      for (const r of (match.results as any[])) {
+        const s = teamStats.get(r.teamId);
+        if (!s) continue;
+        const kills = Number(r.kills) || 0;
+        const placement = Number(r.placement) || 16;
+        const isWWCD = placement === 1 || r.wwcd === true;
+        s.points += (placementPoints[Math.max(0, placement - 1)] || 0) + kills * killPoints + (isWWCD ? wwcdBonus : 0);
+        s.kills += kills;
+        if (isWWCD) s.wwcds++;
+      }
+    }
+
+    const standings = Array.from(teamStats.values())
+      .sort((a, b) => b.points - a.points || b.wwcds - a.wwcds || b.kills - a.kills);
+
+    // How many teams advance? Use next stage capacity as the target
+    const nextStageCapacity = nextStage.groups.length * (nextStage.teamsPerGroup || 16);
+    const advanceCount = Math.min(standings.length, nextStageCapacity);
+    const qualified = standings.slice(0, advanceCount);
+    const eliminated = standings.slice(advanceCount);
+
+    console.log(`[AUTO_ADVANCE] ${qualified.length} teams advancing to ${nextStage.name}`);
+
+    // Snake seeding: distribute qualified teams across next stage groups
+    const groupAssignments: string[][] = nextStage.groups.map(() => []);
+    let direction = 1;
+    let groupIdx = 0;
+    for (const q of qualified) {
+      groupAssignments[groupIdx].push(q.teamId);
+      if (direction === 1) {
+        if (groupIdx === nextStage.groups.length - 1) direction = -1;
+        else groupIdx++;
+      } else {
+        if (groupIdx === 0) direction = 1;
+        else groupIdx--;
+      }
+    }
+
+    // Update next stage groups
+    await prisma.$transaction([
+      ...nextStage.groups.map((g: any, i: number) =>
+        prisma.stageGroup.update({
+          where: { id: g.id },
+          data: { teamIds: groupAssignments[i] },
+        })
+      ),
+      // Mark current stage as completed
+      prisma.stage.update({
+        where: { id: currentStageId },
+        data: { status: "COMPLETED", isLocked: true, lockedAt: new Date(), teamsAdvancing: qualified.length, teamsEliminated: eliminated.length },
+      }),
+      // Mark next stage as active
+      prisma.stage.update({
+        where: { id: nextStage.id },
+        data: { status: "ACTIVE", totalTeams: qualified.length },
+      }),
+      // Create progression records
+      ...qualified.map((q: any) =>
+        prisma.teamProgression.upsert({
+          where: { stageId_teamId: { stageId: currentStageId, teamId: q.teamId } },
+          create: {
+            tournamentId: fresh.id,
+            stageId: currentStageId,
+            teamId: q.teamId,
+            teamName: q.teamName,
+            finalPosition: standings.indexOf(q) + 1,
+            points: q.points,
+            kills: q.kills,
+            wwcds: q.wwcds,
+            status: "QUALIFIED",
+            advancedToStageId: nextStage.id,
+          },
+          update: {
+            finalPosition: standings.indexOf(q) + 1,
+            points: q.points,
+            status: "QUALIFIED",
+            advancedToStageId: nextStage.id,
+          },
+        })
+      ),
+      ...eliminated.map((e: any) =>
+        prisma.teamProgression.upsert({
+          where: { stageId_teamId: { stageId: currentStageId, teamId: e.teamId } },
+          create: {
+            tournamentId: fresh.id,
+            stageId: currentStageId,
+            teamId: e.teamId,
+            teamName: e.teamName,
+            finalPosition: standings.indexOf(e) + 1,
+            points: e.points,
+            kills: e.kills,
+            wwcds: e.wwcds,
+            status: "ELIMINATED",
+          },
+          update: {
+            finalPosition: standings.indexOf(e) + 1,
+            points: e.points,
+            status: "ELIMINATED",
+          },
+        })
+      ),
+    ]);
+
+    // Post Discord announcement
+    if (webhookUrl) {
+      await postAdvancementToDiscord(webhookUrl, fresh, currentStage, nextStage, qualified);
+    }
+  } catch (e) {
+    console.error("[AUTO_ADVANCE] Failed:", e);
+  }
+}
+
+// ============================================================
+// DISCORD — Stage advancement announcement
+// ============================================================
+
+async function postAdvancementToDiscord(
+  webhookUrl: string,
+  tournament: any,
+  fromStage: any,
+  toStage: any,
+  qualified: any[]
+) {
+  try {
+    const branding = tournament.brandingData || {};
+    const primaryColor = parseInt((branding.primaryColor || "#f59e0b").replace("#", ""), 16) || 0xf59e0b;
+    const publicUrl = "https://www.tournaops.com/tournaments/" + tournament.slug;
+
+    // Chunk qualified teams into fields (25 per field max)
+    const chunks: string[][] = [];
+    for (let i = 0; i < qualified.length; i += 20) {
+      chunks.push(qualified.slice(i, i + 20).map((t: any, j: number) => {
+        const rank = i + j + 1;
+        const tag = t.teamTag ? "[" + t.teamTag + "] " : "";
+        return "`#" + String(rank).padStart(2, "0") + "` **" + tag + t.teamName + "** \u2014 " + t.points + " pts";
+      }));
+    }
+
+    const embed: any = {
+      title: "\uD83C\uDFC6 " + fromStage.name.toUpperCase() + " COMPLETE",
+      description: "**" + qualified.length + " teams** have advanced to **" + toStage.name + "**!\n\n\uD83D\uDD13 " + toStage.name + " is now UNLOCKED.",
+      color: primaryColor,
+      fields: chunks.slice(0, 5).map((chunk, i) => ({
+        name: i === 0 ? "\u2705 QUALIFIED TEAMS" : "\u2705 QUALIFIED (cont.)",
+        value: chunk.join("\n"),
+        inline: false,
+      })),
+      footer: { text: "TournaOps \u2022 Auto-advancement", icon_url: "https://www.tournaops.com/logo.png" },
+      timestamp: new Date().toISOString(),
+    };
+
+    embed.fields.push({
+      name: "\uD83D\uDD17 LINKS",
+      value: "\uD83C\uDFC6 [Tournament Page](" + publicUrl + ") \u2022 \uD83D\uDCCA [Live Standings](" + publicUrl + "/results)",
+      inline: false,
+    });
+
+    if (tournament.bannerImage) embed.thumbnail = { url: tournament.bannerImage };
+
+    await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: "@everyone", embeds: [embed] }),
+    });
+  } catch (e) {
+    console.error("[DISCORD_ADVANCE] Failed:", e);
+  }
+}
+
+// ============================================================
+// DISCORD — Tournament complete announcement
+// ============================================================
+
+async function postTournamentCompleteToDiscord(webhookUrl: string, tournament: any, finalStage: any) {
+  try {
+    const scoringRule: any = finalStage.scoringRule || tournament.scoringRule || {};
+    const killPoints = Number(scoringRule.killPoints) || 1;
+    let placementPoints: number[] = [10,6,5,4,3,2,1,1,0,0,0,0,0,0,0,0];
+    if (Array.isArray(scoringRule.placementPoints)) placementPoints = scoringRule.placementPoints;
+
+    const stageTeamIds = new Set<string>();
+    for (const g of finalStage.groups || []) (g.teamIds || []).forEach((id: string) => stageTeamIds.add(id));
+    const finalMatches = (tournament.matches || []).filter((m: any) =>
+      m.stageId === finalStage.id && m.status === "completed" && Array.isArray(m.results)
+    );
+
+    const teamStats = new Map<string, any>();
+    for (const tid of stageTeamIds) {
+      const t = (tournament.teams || []).find((x: any) => x.id === tid);
+      if (t) teamStats.set(tid, { name: t.name, tag: t.tag, points: 0, kills: 0, wwcds: 0 });
+    }
+    for (const match of finalMatches) {
+      for (const r of match.results) {
+        const s = teamStats.get(r.teamId);
+        if (!s) continue;
+        const p = Number(r.placement) || 16;
+        const k = Number(r.kills) || 0;
+        s.points += (placementPoints[p-1] || 0) + k * killPoints + (p === 1 ? Number(scoringRule.wwcdBonus) || 0 : 0);
+        s.kills += k;
+        if (p === 1) s.wwcds++;
+      }
+    }
+    const finalStandings = Array.from(teamStats.values()).sort((a: any, b: any) => b.points - a.points);
+    const champion = finalStandings[0];
+    const runnerUp = finalStandings[1];
+    const third = finalStandings[2];
+
+    const branding = tournament.brandingData || {};
+    const publicUrl = "https://www.tournaops.com/tournaments/" + tournament.slug;
+
+    const embed: any = {
+      title: "\uD83C\uDFC6 " + tournament.name.toUpperCase() + " \u2014 COMPLETE!",
+      description: "**Congratulations to all teams!** The tournament has concluded.",
+      color: 0xf59e0b,
+      fields: [
+        champion && { name: "\uD83E\uDD47 CHAMPION", value: "**" + (champion.tag ? "[" + champion.tag + "] " : "") + champion.name + "**\n" + champion.points + " pts \u2022 " + champion.kills + " kills", inline: true },
+        runnerUp && { name: "\uD83E\uDD48 RUNNER-UP", value: "**" + (runnerUp.tag ? "[" + runnerUp.tag + "] " : "") + runnerUp.name + "**\n" + runnerUp.points + " pts", inline: true },
+        third && { name: "\uD83E\uDD49 THIRD PLACE", value: "**" + (third.tag ? "[" + third.tag + "] " : "") + third.name + "**\n" + third.points + " pts", inline: true },
+        { name: "\uD83D\uDD17 FINAL REPORT", value: "\uD83D\uDCCA [Full Standings](" + publicUrl + "/results) \u2022 \uD83D\uDCCB [Tournament Report](" + publicUrl + "/report)", inline: false },
+      ].filter(Boolean),
+      footer: { text: "TournaOps \u2022 Tournament complete", icon_url: "https://www.tournaops.com/logo.png" },
+      timestamp: new Date().toISOString(),
+    };
+
+    if (tournament.bannerImage) embed.image = { url: tournament.bannerImage };
+
+    await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: "@everyone \uD83C\uDFC6 TOURNAMENT COMPLETE!", embeds: [embed] }),
+    });
+  } catch (e) {
+    console.error("[DISCORD_COMPLETE] Failed:", e);
+  }
+}
+
 async function postToDiscord(webhookUrl: string, match: any, tournament: any) {
   try {
     const results = Array.isArray(match.results) ? match.results : [];
@@ -479,6 +797,15 @@ export async function PATCH(
           }
         } catch (e) {
           console.warn("[DISCORD_STANDINGS] Failed:", e);
+        }
+
+        // Auto-advance to next stage if current stage complete
+        if (existing.stageId) {
+          try {
+            await autoAdvanceIfStageComplete(webhookUrl, existing.tournament, existing.stageId);
+          } catch (e) {
+            console.warn("[AUTO_ADVANCE] Failed:", e);
+          }
         }
       }
     }
