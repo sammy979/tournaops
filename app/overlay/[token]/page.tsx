@@ -1,4 +1,5 @@
 ﻿"use client";
+import SponsorTicker from "@/components/tournament/SponsorTicker";
 import { useEffect, useState, use } from "react";
 
 export default function OverlayPage({ params }: { params: Promise<{ token: string }> }) {
@@ -239,6 +240,10 @@ export default function OverlayPage({ params }: { params: Promise<{ token: strin
             50% { opacity: 0.4; }
           }
         `}</style>
+      
+        {branding?.sponsors && branding.sponsors.length > 0 && (
+          <SponsorTicker sponsors={branding.sponsors} primaryColor={primaryColor} variant="rotate" position="bottom" />
+        )}
       </div>
     </>
   );

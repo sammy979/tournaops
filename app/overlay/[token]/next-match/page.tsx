@@ -1,4 +1,5 @@
 ﻿"use client";
+import SponsorTicker from "@/components/tournament/SponsorTicker";
 import { useEffect, useState, use } from "react";
 
 interface Branding {
@@ -214,6 +215,10 @@ export default function NextMatchOverlay({
             <div style={{ color: primaryColor, fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em" }}>TOURNAOPS.COM</div>
           </div>
         </div>
+      
+        {branding?.sponsors && branding.sponsors.length > 0 && (
+          <SponsorTicker sponsors={branding.sponsors} primaryColor={primaryColor} variant="rotate" position="bottom" />
+        )}
       </div>
     </>
   );

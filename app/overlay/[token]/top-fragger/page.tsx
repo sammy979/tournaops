@@ -1,4 +1,5 @@
 ﻿"use client";
+import SponsorTicker from "@/components/tournament/SponsorTicker";
 import { useEffect, useState, use } from "react";
 
 interface TopFragger {
@@ -250,6 +251,10 @@ export default function TopFraggerOverlay({
               </div>
             </div>
           </div>
+        )}
+      
+        {branding?.sponsors && branding.sponsors.length > 0 && (
+          <SponsorTicker sponsors={branding.sponsors} primaryColor={primaryColor} variant="rotate" position="bottom" />
         )}
       </div>
     </>

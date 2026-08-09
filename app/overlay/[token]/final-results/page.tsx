@@ -1,4 +1,5 @@
 ﻿"use client";
+import SponsorTicker from "@/components/tournament/SponsorTicker";
 import { useEffect, useState, use } from "react";
 
 interface Standing {
@@ -197,6 +198,10 @@ export default function FinalResultsOverlay({
               </div>
             )}
           </div>
+        )}
+      
+        {branding?.sponsors && branding.sponsors.length > 0 && (
+          <SponsorTicker sponsors={branding.sponsors} primaryColor={primaryColor} variant="rotate" position="bottom" />
         )}
       </div>
     </>
