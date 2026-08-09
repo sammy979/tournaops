@@ -368,12 +368,106 @@ async function autoAdvanceIfStageComplete(
       ),
     ]);
 
-    // Post Discord announcement
+    // Reload next stage with fresh group data (with newly assigned teams)
+    const refreshedNext = await prisma.stage.findUnique({
+      where: { id: nextStage.id },
+      include: { groups: { orderBy: { order: "asc" } } },
+    });
+
+    // Post Discord announcements
     if (webhookUrl) {
+      // 1. Advancement announcement (qualified teams list)
       await postAdvancementToDiscord(webhookUrl, fresh, currentStage, nextStage, qualified);
+
+      // 2. Slot list for the next stage (grouped by Group A/B/C)
+      if (refreshedNext) {
+        await postNextStageSlotListToDiscord(webhookUrl, fresh, refreshedNext);
+      }
     }
   } catch (e) {
     console.error("[AUTO_ADVANCE] Failed:", e);
+  }
+}
+
+// ============================================================
+// DISCORD — Next stage slot list (grouped)
+// ============================================================
+
+async function postNextStageSlotListToDiscord(webhookUrl: string, tournament: any, stage: any) {
+  try {
+    const teams = tournament.teams || [];
+    const teamMap = new Map(teams.map((t: any) => [t.id, t]));
+    const branding = tournament.brandingData || {};
+    const primaryColor = parseInt((branding.primaryColor || "#f59e0b").replace("#", ""), 16) || 0xf59e0b;
+    const publicUrl = "https://www.tournaops.com/tournaments/" + tournament.slug;
+
+    const groups = stage.groups || [];
+    if (groups.length === 0) return;
+
+    const totalTeams = groups.reduce((s: number, g: any) => s + (g.teamIds?.length || 0), 0);
+    if (totalTeams === 0) return;
+
+    const embeds: any[] = [];
+
+    // Header embed
+    embeds.push({
+      title: "\uD83D\uDCCB " + stage.name.toUpperCase() + " \u2014 SLOT LIST",
+      description: "**" + tournament.name + "**\n\uD83D\uDC65 **" + totalTeams + " Teams** across **" + groups.length + " Group" + (groups.length !== 1 ? "s" : "") + "**\n\n\uD83C\uDFAF Matches will begin soon!",
+      color: primaryColor,
+      thumbnail: tournament.bannerImage ? { url: tournament.bannerImage } : undefined,
+    });
+
+    // One embed per group (up to 9 groups, Discord limit is 10 embeds per message)
+    for (const group of groups.slice(0, 9)) {
+      const groupTeams = (group.teamIds || [])
+        .map((id: string, i: number) => {
+          const team = teamMap.get(id) as any;
+          if (!team) return null;
+          const tag = team.tag ? "[" + team.tag + "] " : "";
+          const slot = String(i + 1).padStart(2, "0");
+          return "\u0060Slot " + slot + "\u0060 \u2014 **" + tag + team.name + "**";
+        })
+        .filter(Boolean);
+
+      // Split if group has > 20 teams
+      const chunks: string[][] = [];
+      for (let i = 0; i < groupTeams.length; i += 20) {
+        chunks.push(groupTeams.slice(i, i + 20));
+      }
+
+      embeds.push({
+        title: "\uD83D\uDD37 " + group.name.toUpperCase() + " \u2014 " + groupTeams.length + " Teams",
+        color: primaryColor,
+        fields: chunks.length > 0 ? chunks.map((chunk, i) => ({
+          name: chunks.length > 1 ? "Teams " + (i * 20 + 1) + "-" + Math.min((i + 1) * 20, groupTeams.length) : "\u200B",
+          value: chunk.join("\n"),
+          inline: false,
+        })) : [{ name: "\u200B", value: "_No teams_", inline: false }],
+      });
+    }
+
+    // Footer embed with links
+    embeds.push({
+      color: primaryColor,
+      fields: [{
+        name: "\uD83D\uDD17 LINKS",
+        value: "\uD83C\uDFC6 [Tournament Page](" + publicUrl + ") \u2022 \uD83D\uDCCA [Live Standings](" + publicUrl + "/results)",
+        inline: false,
+      }],
+      footer: {
+        text: "TournaOps \u2022 " + stage.name + " group draw",
+        icon_url: "https://www.tournaops.com/logo.png",
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ embeds }),
+    });
+  } catch (e) {
+    console.error("[DISCORD_NEXT_SLOTLIST] Failed:", e);
   }
 }
 
