@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { setSessionCookie } from "@/lib/auth/session";
@@ -53,14 +53,14 @@ export async function GET(req: NextRequest) {
     // Priority: googleId match > email match > create new
     let user = await prisma.user.findUnique({
       where: { googleId: profile.sub },
-      select: { id: true, email: true, username: true, displayName: true, isAdmin: true, googleId: true },
+      select: { id: true, email: true, username: true, displayName: true, isAdmin: true, isPro: true, role: true, googleId: true },
     });
 
     if (!user) {
       // Check if email already registered (email/password account)
       const existingByEmail = await prisma.user.findUnique({
         where: { email: profile.email.toLowerCase() },
-        select: { id: true, email: true, username: true, displayName: true, isAdmin: true, googleId: true },
+        select: { id: true, email: true, username: true, displayName: true, isAdmin: true, isPro: true, role: true, googleId: true },
       });
 
       if (existingByEmail) {
@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
             // Update avatar if not set
             avatar: existingByEmail.googleId ? undefined : (profile.picture || undefined),
           },
-          select: { id: true, email: true, username: true, displayName: true, isAdmin: true, googleId: true },
+          select: { id: true, email: true, username: true, displayName: true, isAdmin: true, isPro: true, role: true, googleId: true },
         });
       } else {
         // Create new user from Google profile
@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
             googleId: profile.sub,
             avatar: profile.picture || null,
           },
-          select: { id: true, email: true, username: true, displayName: true, isAdmin: true, googleId: true },
+          select: { id: true, email: true, username: true, displayName: true, isAdmin: true, isPro: true, role: true, googleId: true },
         });
       }
     } else {

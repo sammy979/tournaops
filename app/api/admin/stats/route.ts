@@ -1,25 +1,14 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
+import { requireSuperAdmin } from "@/lib/auth/rbac";
 import { logError } from "@/lib/logger";
 
 export async function GET() {
   try {
-    // ── Auth check ─────────────────────────────────────────────
     const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-    }
-
-    // ── Admin check — verify from DB not just session ──────────
-    const requestingUser = await prisma.user.findUnique({
-      where: { id: session.userId },
-      select: { isAdmin: true },
-    });
-
-    if (!requestingUser?.isAdmin) {
-      return NextResponse.json({ error: "Admin access required" }, { status: 403 });
-    }
+    const { authorized, errorResponse } = await requireSuperAdmin(session);
+    if (!authorized) return errorResponse!;
 
     // ── Fetch stats ────────────────────────────────────────────
     const [

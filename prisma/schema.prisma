@@ -7,6 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  USER
+  ORGANIZER
+  SUPER_ADMIN
+}
+
 model User {
   id           String              @id @default(cuid())
   email        String              @unique
@@ -17,6 +23,7 @@ model User {
   googleId     String?  @unique
   isAdmin      Boolean             @default(false)
   isPro        Boolean             @default(false)
+  role         Role                @default(USER)
   stripeCustomerId     String?
   stripeSubscriptionId String?
   dodoCustomerId       String?

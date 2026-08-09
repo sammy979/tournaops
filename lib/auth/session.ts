@@ -1,4 +1,4 @@
-﻿import jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 
 // ============================================================
@@ -26,6 +26,8 @@ export interface SessionPayload {
   email: string;
   username: string;
   isAdmin?: boolean;
+  isPro?: boolean;
+  role?: "USER" | "ORGANIZER" | "SUPER_ADMIN";
 }
 
 export function signSession(payload: SessionPayload): string {
