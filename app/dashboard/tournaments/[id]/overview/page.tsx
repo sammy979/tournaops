@@ -1,5 +1,6 @@
-"use client";
+﻿"use client";
 import { useState, useEffect, useCallback } from "react";
+import { useDialog } from "@/lib/use-confirm";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import TournamentNav from "@/components/tournament/TournamentNav";
@@ -13,6 +14,8 @@ import {
 } from "lucide-react";
 
 export default function TournamentOverviewPage() {
+  const dialog = useDialog();
+  const [advancing, setAdvancing] = useState(false);
   const params = useParams();
   const id = params?.id as string;
 
@@ -54,6 +57,73 @@ export default function TournamentOverviewPage() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
+  const handleForceAdvance = async () => {
+    if (!status?.activeStage?.id) return;
+    if (advancing) return;
+
+    const nextStage = status.stageProgress?.find(
+      (s: any) => s.stageOrder === (status.activeStage.order + 1)
+    );
+    const nextStageName = nextStage?.stageName || "next stage";
+
+    const ok = await dialog.confirm({
+      title: Force Advance to ?,
+      description: This will calculate standings, seed teams into , and lock the current stage. A Discord announcement will be posted if configured.,
+      confirmLabel: Advance to ,
+      variant: "warning",
+    });
+    if (!ok) return;
+
+    const reason = await dialog.prompt({
+      title: "Advancement Reason",
+      description: "Provide a reason for this advancement. This is recorded in the audit log.",
+      placeholder: "e.g. All matches complete, advancing top 8 teams",
+      submitLabel: "Confirm Advance",
+      variant: "warning",
+    });
+    if (!reason || reason.trim().length < 5) {
+      if (reason !== null) {
+        await dialog.alert({
+          title: "Reason Too Short",
+          description: "Please provide a reason of at least 5 characters.",
+          variant: "warning",
+        });
+      }
+      return;
+    }
+
+    setAdvancing(true);
+    try {
+      const res = await fetch(/api/tournaments//force-advance, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stageId: status.activeStage.id, reason: reason.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        await dialog.alert({
+          title: "Stage Advanced",
+          description: data.message || Successfully advanced to .,
+          variant: "success",
+        });
+        load(true);
+      } else {
+        await dialog.alert({
+          title: "Advancement Failed",
+          description: data.error || "Failed to advance stage. Please try again.",
+          variant: "danger",
+        });
+      }
+    } catch (e: any) {
+      await dialog.alert({
+        title: "Error",
+        description: e?.message || "An unexpected error occurred.",
+        variant: "danger",
+      });
+    } finally {
+      setAdvancing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -330,7 +400,7 @@ export default function TournamentOverviewPage() {
                 {status.activeStage.name}
               </div>
               <div style={{ fontSize: "0.75rem", color: "#9ca3af", marginBottom: "0.875rem" }}>
-                {status.activeStage.numGroups} group{status.activeStage.numGroups !== 1 ? "s" : ""} · {status.activeStage.teamsPerGroup} teams/group
+                {status.activeStage.numGroups} group{status.activeStage.numGroups !== 1 ? "s" : ""} Â· {status.activeStage.teamsPerGroup} teams/group
               </div>
               {status.activeStageCompletion && (
                 <div>
@@ -350,21 +420,29 @@ export default function TournamentOverviewPage() {
                   </div>
                   {status.activeStageCompletion.isComplete && (
                     <div style={{ marginTop: "0.625rem", padding: "0.5rem 0.75rem", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: "0.5rem", fontSize: "0.75rem", color: "#4ade80", fontWeight: 600 }}>
-                      ✅ Stage complete{status.canAdvance ? " — ready to advance" : ""}
+                      âœ… Stage complete{status.canAdvance ? " â€” ready to advance" : ""}
                     </div>
                   )}
                 </div>
               )}
               {status.canAdvance && (
-                <Link href={`/dashboard/tournaments/${id}/stages`} style={{
-                  display: "inline-flex", alignItems: "center", gap: "0.375rem",
-                  marginTop: "0.75rem", padding: "0.5rem 1rem",
-                  background: "#4ade80", color: "#000",
-                  borderRadius: "0.625rem", fontSize: "0.75rem", fontWeight: 700, textDecoration: "none",
-                }}>
-                  <TrendingUp style={{ width: "0.875rem", height: "0.875rem" }} />
-                  Advance Stage
-                </Link>
+                <button
+                  onClick={handleForceAdvance}
+                  disabled={advancing}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: "0.375rem",
+                    marginTop: "0.75rem", padding: "0.5rem 1rem",
+                    background: advancing ? "rgba(74,222,128,0.5)" : "#4ade80", color: "#000",
+                    borderRadius: "0.625rem", fontSize: "0.75rem", fontWeight: 700,
+                    border: "none", cursor: advancing ? "not-allowed" : "pointer",
+                    opacity: advancing ? 0.7 : 1,
+                  }}
+                >
+                  {advancing
+                    ? <><Loader2 style={{ width: "0.875rem", height: "0.875rem", animation: "spin 0.8s linear infinite" }} />Advancing...</>
+                    : <><TrendingUp style={{ width: "0.875rem", height: "0.875rem" }} />Advance Stage</>
+                  }
+                </button>
               )}
             </div>
           )}
@@ -417,7 +495,7 @@ export default function TournamentOverviewPage() {
                   <span style={{ fontSize: "0.8rem", color: "#d1d5db" }}>{item.label}</span>
                 </div>
                 <span style={{ fontSize: "0.7rem", color: item.ok ? "#4ade80" : "#6b7280", fontWeight: 600 }}>
-                  {item.ok ? "Connected" : "Configure →"}
+                  {item.ok ? "Connected" : "Configure â†’"}
                 </span>
               </Link>
             ))}
@@ -463,7 +541,7 @@ export default function TournamentOverviewPage() {
           {/* Last refresh */}
           {lastRefresh && (
             <div style={{ fontSize: "0.65rem", color: "#374151", textAlign: "center" }}>
-              Last updated {lastRefresh.toLocaleTimeString()} · auto-refreshes every 30s
+              Last updated {lastRefresh.toLocaleTimeString()} Â· auto-refreshes every 30s
             </div>
           )}
         </div>
