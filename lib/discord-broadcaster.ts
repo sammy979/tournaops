@@ -231,16 +231,23 @@ export async function broadcastMilestone(
 // Note: uses Vercel OG or external screenshot service
 // ============================================================
 
-export async function broadcastStandingsImage(webhookUrl: string, tournament: any) {
+export async function broadcastStandingsImage(webhookUrl: string, tournament: any, stageId?: string) {
   const urls = tournamentUrls(tournament);
   const timestamp = Date.now();
-  // Add .png extension via query so Discord recognizes as image
-  const imageUrl = "https://www.tournaops.com/api/tournaments/" + tournament.id + "/standings-image?t=" + timestamp + "&format=png";
+  const stageParam = stageId ? "&stage=" + stageId : "";
+  const imageUrl = "https://www.tournaops.com/api/tournaments/" + tournament.id + "/standings-image?t=" + timestamp + stageParam;
+
+  // Detect stage label
+  let stageName = "Live Standings";
+  if (stageId && tournament.stages) {
+    const s = tournament.stages.find((x: any) => x.id === stageId);
+    if (s) stageName = s.name + " Standings";
+  }
 
   const embed: DiscordEmbed = {
     ...baseEmbed(tournament),
-    title: "\uD83D\uDCCA LIVE STANDINGS",
-    description: "**" + tournament.name + "**\n\n\uD83D\uDCCA All competing teams updated in real-time\n\uD83D\uDD17 [View Full Standings](" + urls.results + ")",
+    title: "\uD83D\uDCCA " + stageName.toUpperCase(),
+    description: "**" + tournament.name + "**\n\uD83D\uDD17 [View Full Standings](" + urls.results + ")",
     url: urls.results,
     image: { url: imageUrl },
   };
