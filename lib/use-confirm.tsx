@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // ============================================================
 // lib/use-confirm.tsx
@@ -11,7 +11,6 @@ import {
   useCallback,
   useContext,
   useMemo,
-  useRef,
   useState,
   ReactNode,
 } from "react";
@@ -72,7 +71,9 @@ const DialogContext = createContext<DialogContextValue | null>(null);
 
 interface DialogState {
   kind: "confirm" | "alert" | "prompt" | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   options: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   resolve: ((value: any) => void) | null;
 }
 
@@ -83,6 +84,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     resolve: null,
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const close = useCallback((result: any) => {
     setState((prev) => {
       prev.resolve?.(result);
@@ -90,24 +92,27 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const confirm = useCallback((options: ConfirmOptions): Promise<boolean> => {
-    return new Promise((resolve) => {
-      setState({ kind: "confirm", options, resolve });
-    });
-  }, []);
+  const confirm = useCallback(
+    (options: ConfirmOptions): Promise<boolean> =>
+      new Promise((resolve) => {
+        setState({ kind: "confirm", options, resolve });
+      }),
+    []
+  );
 
-  const alert = useCallback((options: AlertOptions): Promise<void> => {
-    return new Promise((resolve) => {
-      setState({ kind: "alert", options, resolve: () => resolve() });
-    });
-  }, []);
+  const alert = useCallback(
+    (options: AlertOptions): Promise<void> =>
+      new Promise((resolve) => {
+        setState({ kind: "alert", options, resolve: () => resolve() });
+      }),
+    []
+  );
 
   const prompt = useCallback(
-    (options: PromptOptions): Promise<string | null> => {
-      return new Promise((resolve) => {
+    (options: PromptOptions): Promise<string | null> =>
+      new Promise((resolve) => {
         setState({ kind: "prompt", options, resolve });
-      });
-    },
+      }),
     []
   );
 
@@ -116,34 +121,23 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     [confirm, alert, prompt]
   );
 
-  const renderConfirmDescription = () => {
-    if (!state.options) return undefined;
-    // description alone is fine — we render details as children if needed
-    return state.options.description;
-  };
-
   return (
     <DialogContext.Provider value={value}>
       {children}
 
-      {/* CONFIRM */}
       {state.kind === "confirm" && (
         <ConfirmDialog
           open={true}
           onClose={() => close(false)}
           onConfirm={() => close(true)}
           title={state.options.title}
-          description={renderConfirmDescription()}
+          description={state.options.description}
           confirmLabel={state.options.confirmLabel}
           cancelLabel={state.options.cancelLabel}
           variant={state.options.variant || "warning"}
         />
       )}
 
-      {/* Details block for confirm — rendered below main modal via custom Modal if provided */}
-      {/* Note: description-only supports basic text. For lists we use RichConfirmDialog below */}
-
-      {/* ALERT */}
       {state.kind === "alert" && (
         <AlertDialog
           open={true}
@@ -155,7 +149,6 @@ export function DialogProvider({ children }: { children: ReactNode }) {
         />
       )}
 
-      {/* PROMPT */}
       {state.kind === "prompt" && (
         <PromptDialog
           open={true}
@@ -180,30 +173,18 @@ export function DialogProvider({ children }: { children: ReactNode }) {
 }
 
 // ============================================================
-// HOOK
+// HOOK — throws if DialogProvider is not mounted
+// Native browser dialogs are NEVER used as fallback
 // ============================================================
 
 export function useDialog(): DialogContextValue {
   const ctx = useContext(DialogContext);
   if (!ctx) {
-    // Graceful fallback to native dialogs if provider not mounted
-    return {
-      confirm: async (options) => window.confirm(
-        options.title + (options.description ? "\n\n" + options.description : "")
-      ),
-      alert: async (options) => {
-        window.alert(
-          options.title + (options.description ? "\n\n" + options.description : "")
-        );
-      },
-      prompt: async (options) => {
-        const result = window.prompt(
-          options.title + (options.description ? "\n\n" + options.description : ""),
-          options.defaultValue || ""
-        );
-        return result;
-      },
-    };
+    throw new Error(
+      "[TournaOps] useDialog() must be used inside <DialogProvider>. " +
+        "Ensure DialogProvider is mounted in your root layout. " +
+        "Native browser dialogs (window.confirm/alert/prompt) are not permitted."
+    );
   }
   return ctx;
 }

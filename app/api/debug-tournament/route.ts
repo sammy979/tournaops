@@ -2,7 +2,19 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 
+// ============================================================
+// DEBUG ROUTE — development only
+// Returns 404 in production regardless of auth state.
+// This route is intentionally not removed so local debugging
+// remains possible, but it is completely inaccessible in prod.
+// ============================================================
+
 export async function GET(req: NextRequest) {
+  // Hard block in production — no exceptions
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Login required" }, { status: 401 });
@@ -42,7 +54,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (t.userId !== session.userId && !session.isAdmin) {
+  // Only the tournament owner may access debug info
+  // isAdmin bypass intentionally removed — owner only
+  if (t.userId !== session.userId) {
     return NextResponse.json(
       { error: "You do not have permission to access this tournament" },
       { status: 403 }
@@ -50,7 +64,7 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({
-    tournament: { id: t.id, name: t.name, userId: t.userId },
+    tournament: { id: t.id, name: t.name },
     teams: {
       count: t.teams.length,
       first5: t.teams.slice(0, 5).map((x) => ({
@@ -74,8 +88,8 @@ export async function GET(req: NextRequest) {
         id: g.id,
         name: g.name,
         teamCount: g.teamIds.length,
-        teamIds: g.teamIds.slice(0, 3),
         matchIdsCount: g.matchIds.length,
+        // teamIds intentionally omitted from debug output
       })),
       progressions: s.progressions.length,
     })),
