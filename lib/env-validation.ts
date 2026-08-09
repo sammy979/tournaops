@@ -1,5 +1,6 @@
 ﻿// lib/env-validation.ts
-// Reports presence/absence of env vars — NEVER prints actual values
+// Reports presence/absence of env vars.
+// NEVER prints actual secret values.
 
 interface EnvCheck {
   key: string;
@@ -67,7 +68,10 @@ export function logEnvironmentStatus(): void {
     .map(([k]) => k);
 
   if (optionalMissing.length > 0) {
-    console.warn("[ENV] Optional features not configured:", optionalMissing.join(", "));
+    console.warn(
+      "[ENV] Optional features not configured:",
+      optionalMissing.join(", ")
+    );
   }
 
   if (result.configured.length > 0) {
