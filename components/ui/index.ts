@@ -1,4 +1,4 @@
-﻿export { Button, buttonVariants } from "./Button";
+export { Button, buttonVariants } from "./Button";
 export type { ButtonProps } from "./Button";
 
 export { Input } from "./Input";
@@ -8,7 +8,15 @@ export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 
 export { Badge, StatusBadge, badgeVariants } from "./Badge";
 
-export { Modal } from "./Modal";
+export { Modal, ConfirmDialog, AlertDialog, PromptDialog } from "./Modal";
+export type {
+  ModalProps,
+  ModalSize,
+  ModalVariant,
+  ConfirmDialogProps,
+  AlertDialogProps,
+  PromptDialogProps,
+} from "./Modal";
 
 export { ToastProvider, useToast } from "./Toast";
 
