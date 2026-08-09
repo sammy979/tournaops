@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   keywords: ["PUBG Mobile", "tournament", "esports", "PMGC", "PMPL", "organizer", "standings", "bracket"],
   authors: [{ name: "TournaOps" }],
   creator: "TournaOps",
+  verification: {
+    google: "aZlkt6TzykfZYpgnQRofrfr-DeuTRgEvFQiXMddnT6M",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
