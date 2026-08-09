@@ -43,7 +43,7 @@ export const RATE_LIMITS = {
 } as const;
 
 // ============================================================
-// RATE LIMIT CHECK
+// RATE LIMIT RESULT
 // ============================================================
 
 export interface RateLimitResult {
@@ -52,6 +52,10 @@ export interface RateLimitResult {
   resetAt: number;
   retryAfterSeconds: number;
 }
+
+// ============================================================
+// RATE LIMIT CHECK
+// ============================================================
 
 export function checkRateLimit(
   identifier: string,
@@ -78,7 +82,12 @@ export function checkRateLimit(
 
   existing.count++;
   store.set(key, existing);
-  return { allowed: true, remaining: config.maxRequests - existing.count, resetAt: existing.resetAt, retryAfterSeconds: 0 };
+  return {
+    allowed: true,
+    remaining: config.maxRequests - existing.count,
+    resetAt: existing.resetAt,
+    retryAfterSeconds: 0,
+  };
 }
 
 // ============================================================
