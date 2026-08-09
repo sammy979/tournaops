@@ -372,6 +372,7 @@ export default function StageManager({ tournament, onStageChange }: StageManager
 // 
 
 function StageBuilder({ tournament, stage, onClose, onSave }: any) {
+  const dialog = useDialog();
   const [form, setForm] = useState({
     name: stage?.name || "",
     type: stage?.type || "GROUP_STAGE",
@@ -576,6 +577,7 @@ function StageBuilder({ tournament, stage, onClose, onSave }: any) {
 // 
 
 function AdvanceTeamsModal({ stage, nextStage, onClose, onAdvanced }: any) {
+  const dialog = useDialog();
   const [preview, setPreview] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [advancing, setAdvancing] = useState(false);

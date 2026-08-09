@@ -30,9 +30,9 @@ interface ExtractedResult {
 type Step = "upload" | "extracting" | "review" | "confirm";
 
 export default function ScreenshotImporter({
-  const dialog = useDialog();
   tournament, match, teams, onClose, onSave
 }: ScreenshotImporterProps) {
+  const dialog = useDialog();
   const [step, setStep] = useState<Step>("upload");
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [results, setResults] = useState<ExtractedResult[]>([]);
