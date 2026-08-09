@@ -4,11 +4,6 @@ import { useEffect, useState, useRef, use } from "react";
 import { toPng } from "html-to-image";
 import { Download, Loader2, Info } from "lucide-react";
 
-// PMGC/PMWC Official Scoring
-const PLACEMENT_POINTS: Record<number, number> = {
-  1: 15, 2: 12, 3: 10, 4: 8, 5: 6, 6: 4, 7: 2, 8: 1,
-};
-
 type Standing = {
   teamId: string;
   teamName: string;
@@ -16,6 +11,7 @@ type Standing = {
   teamLogo: string;
   totalPoints: number;
   placementPoints: number;
+  killPoints: number;
   kills: number;
   wwcd: number;
   matchesPlayed: number;
@@ -25,12 +21,14 @@ type Standing = {
   highestKills: number;
 };
 
+// Uses stored server-calculated totalPoints from match results
+// (single source of truth — same as public standings)
 function calculateStandings(teams: any[], matches: any[], filters: {
   matchIds?: string[];
   stageId?: string;
   groupId?: string;
   day?: number;
-} = {}): Standing[] {
+} = {}): { standings: Standing[]; matchesInScope: number } {
   const map = new Map<string, Standing>();
   teams.forEach((t: any) => {
     map.set(t.id, {
@@ -40,6 +38,7 @@ function calculateStandings(teams: any[], matches: any[], filters: {
       teamLogo: t.logo || "",
       totalPoints: 0,
       placementPoints: 0,
+      killPoints: 0,
       kills: 0,
       wwcd: 0,
       matchesPlayed: 0,
@@ -49,11 +48,12 @@ function calculateStandings(teams: any[], matches: any[], filters: {
       highestKills: 0,
     });
   });
-  
+
   const placementSums = new Map<string, number>();
-  
-    // Apply filters
-  let filteredMatches = matches;
+
+  let filteredMatches = matches.filter((m: any) =>
+    m.status === "completed" && Array.isArray(m.results) && m.results.length > 0
+  );
   if (filters.matchIds && filters.matchIds.length > 0) {
     filteredMatches = filteredMatches.filter((m: any) => filters.matchIds!.includes(m.id));
   }
@@ -70,7 +70,7 @@ function calculateStandings(teams: any[], matches: any[], filters: {
       return d.getDate() === filters.day;
     });
   }
-  
+
   filteredMatches.forEach((m: any) => {
     const results = Array.isArray(m.results) ? m.results : [];
     results.forEach((r: any) => {
@@ -78,23 +78,26 @@ function calculateStandings(teams: any[], matches: any[], filters: {
       if (!s) return;
       const kills = Number(r.kills) || 0;
       const placement = Number(r.placement) || 0;
-      const pts = PLACEMENT_POINTS[placement] || 0;
-      
+      // Use server-calculated points as single source of truth
+      const placementPts = Number(r.placementPoints) || 0;
+      const killPts = Number(r.killPoints) || 0;
+      const totalPts = Number(r.totalPoints) || 0;
+
       s.kills += kills;
-      s.placementPoints += pts;
-      s.totalPoints += kills + pts;
+      s.placementPoints += placementPts;
+      s.killPoints += killPts;
+      s.totalPoints += totalPts;
       if (r.wwcd || placement === 1) s.wwcd += 1;
       s.matchesPlayed += 1;
-      
+
       if (placement > 0 && placement < s.bestPlacement) s.bestPlacement = placement;
       if (kills > s.highestKills) s.highestKills = kills;
-      
+
       const currentSum = placementSums.get(r.teamId) || 0;
       placementSums.set(r.teamId, currentSum + (placement || 16));
     });
   });
-  
-  // Calculate averages
+
   map.forEach((s, teamId) => {
     if (s.matchesPlayed > 0) {
       s.avgKills = Math.round((s.kills / s.matchesPlayed) * 10) / 10;
@@ -102,17 +105,53 @@ function calculateStandings(teams: any[], matches: any[], filters: {
       s.avgPlacement = Math.round((placementSum / s.matchesPlayed) * 10) / 10;
     }
   });
-  
-  return Array.from(map.values())
+
+  const standings = Array.from(map.values())
     .filter(s => s.matchesPlayed > 0)
     .sort((a, b) => {
-      // PMGC Official Tie-Breaker Rules
       if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
       if (b.wwcd !== a.wwcd) return b.wwcd - a.wwcd;
       if (b.kills !== a.kills) return b.kills - a.kills;
       if (a.bestPlacement !== b.bestPlacement) return a.bestPlacement - b.bestPlacement;
       return 0;
     });
+
+  return { standings, matchesInScope: filteredMatches.length };
+}
+
+// Format tournament name — proper title case
+function formatTournamentName(name: string): string {
+  if (!name) return "Tournament";
+  return name
+    .split(" ")
+    .map(word => {
+      if (word.length === 0) return word;
+      // Preserve all-caps acronyms (2-4 letters all caps)
+      if (word.length <= 4 && word === word.toUpperCase()) return word;
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(" ");
+}
+
+// Extract safe hostname from URL — never expose webhook paths
+function safeDisplayUrl(url: string): string {
+  if (!url) return "";
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
+// Only allow branding social links, never webhook URLs
+function isWebhookUrl(url: string): boolean {
+  if (!url) return false;
+  return (
+    url.includes("/api/webhooks/") ||
+    url.includes("discord.com/api/") ||
+    url.includes("discordapp.com/api/")
+  );
 }
 
 export default function PreviewPage({ params }: { params: Promise<{ id: string }> }) {
@@ -171,7 +210,6 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
       const el = cardRef.current;
       const w = el.scrollWidth;
       const h = el.scrollHeight;
-      console.log("[DOWNLOAD] Capturing:", w, "x", h, "teams:", config.topN);
       const dataUrl = await toPng(el, {
         cacheBust: true,
         pixelRatio: 2,
@@ -184,7 +222,7 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
       link.href = dataUrl;
       link.click();
     } catch (e: any) {
-      alert("Download failed: " + e?.message + "\n\nTIP: Right-click the image below and select 'Save image as...' as backup!");
+      alert("Download failed: " + e?.message + "\n\nTIP: Right-click the image below and select 'Save image as...' as backup.");
     } finally {
       setDownloading(false);
     }
@@ -205,31 +243,67 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
   };
   const { w, h } = sizes[config.format] || sizes.youtube;
 
-  let allStandings = calculateStandings(tournament.teams || [], tournament.matches || [], filters);
-  // Apply search filter
+  const { standings: allStandings, matchesInScope } = calculateStandings(
+    tournament.teams || [],
+    tournament.matches || [],
+    filters
+  );
+
+  let filteredStandings = allStandings;
   if (filters.search) {
     const q = filters.search.toLowerCase();
-    allStandings = allStandings.filter(s => 
-      s.teamName.toLowerCase().includes(q) || 
+    filteredStandings = filteredStandings.filter(s =>
+      s.teamName.toLowerCase().includes(q) ||
       s.teamTag.toLowerCase().includes(q)
     );
   }
-  const standings = allStandings.slice(0, config.topN);
+  const standings = filteredStandings.slice(0, config.topN);
+
+  // Determine max matches played — used to flag partial-play teams
+  const maxMatches = standings.reduce((max, s) => Math.max(max, s.matchesPlayed), 0);
+
   const branding: any = tournament.brandingData || {};
   const primaryColor = branding.primaryColor || "#FFD700";
   const accentColor = branding.accentColor || "#3b82f6";
   const orgName = branding.orgName || branding.organizerName || "Tournament Organizer";
   const orgLogo = branding.orgLogo || "";
-  const discordUrl = branding.discordUrl || tournament.discord || "";
-  const websiteUrl = branding.websiteUrl || "";
-  const instagramUrl = branding.instagramUrl || "";
-  const sponsors: any[] = Array.isArray(tournament.sponsorLogos) ? tournament.sponsorLogos : [];
 
+  // SECURITY: Never display webhook URLs. Only use safe branding social links.
+  const discordDisplay = branding.discordUrl && !isWebhookUrl(branding.discordUrl)
+    ? safeDisplayUrl(branding.discordUrl)
+    : "";
+  const websiteDisplay = branding.websiteUrl && !isWebhookUrl(branding.websiteUrl)
+    ? safeDisplayUrl(branding.websiteUrl)
+    : "";
+  const instagramDisplay = branding.instagramUrl && !isWebhookUrl(branding.instagramUrl)
+    ? safeDisplayUrl(branding.instagramUrl)
+    : "";
+  const youtubeDisplay = branding.youtubeUrl && !isWebhookUrl(branding.youtubeUrl)
+    ? safeDisplayUrl(branding.youtubeUrl)
+    : "";
+  const twitchDisplay = branding.twitchUrl && !isWebhookUrl(branding.twitchUrl)
+    ? safeDisplayUrl(branding.twitchUrl)
+    : "";
+
+  // Sponsors can be strings, {url}, or {url, name}
+  const rawSponsors: any[] = Array.isArray(tournament.sponsorLogos)
+    ? tournament.sponsorLogos
+    : Array.isArray(branding.sponsors) ? branding.sponsors : [];
+  const sponsors = rawSponsors
+    .map((sp: any) => {
+      if (typeof sp === "string") return { url: sp, name: "" };
+      if (sp && typeof sp === "object" && sp.url) return { url: sp.url, name: sp.name || "" };
+      if (sp && typeof sp === "object" && sp.logo) return { url: sp.logo, name: sp.name || "" };
+      return null;
+    })
+    .filter((sp): sp is { url: string; name: string } => sp !== null);
+
+  const displayTitle = formatTournamentName(tournament.name);
   const isVertical = h > w;
   const isSquare = w === h;
   const teamCount = standings.length;
   const factor = teamCount <= 8 ? 1 : teamCount <= 12 ? 0.9 : teamCount <= 16 ? 0.78 : 0.65;
-  
+
   const titleSize = isVertical ? 88 : isSquare ? 72 : 96;
   const teamNameSize = Math.round((isVertical ? 30 : isSquare ? 24 : 28) * factor);
   const numSize = Math.round((isVertical ? 36 : isSquare ? 28 : 36) * factor);
@@ -245,12 +319,12 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
       {/* TOP BAR */}
       <div style={{ maxWidth: 1400, margin: "0 auto 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, background: "#111", padding: "14px 20px", borderRadius: 12, border: "1px solid #333" }}>
         <div style={{ color: "#fff", fontFamily: "system-ui" }}>
-          <div style={{ fontSize: 18, fontWeight: 700 }}>{tournament.name}</div>
-          <div style={{ fontSize: 13, color: "#999" }}>{standings.length} teams · PMGC Scoring</div>
+          <div style={{ fontSize: 18, fontWeight: 700 }}>{displayTitle}</div>
+          <div style={{ fontSize: 13, color: "#999" }}>{standings.length} teams · {matchesInScope} matches</div>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <button 
-            onClick={() => setShowTip(!showTip)} 
+          <button
+            onClick={() => setShowTip(!showTip)}
             style={{ background: "#222", color: "#fff", border: "1px solid #444", padding: "10px 14px", borderRadius: 8, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}
           >
             <Info size={14} /> How to Save
@@ -260,12 +334,12 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
             disabled={downloading || !ready}
             style={{
               display: "flex", alignItems: "center", gap: 8,
-              background: "#facc15", color: "#000", fontWeight: 800,
+              background: primaryColor, color: "#000", fontWeight: 800,
               padding: "14px 28px", borderRadius: 10, border: "none",
               cursor: (downloading || !ready) ? "wait" : "pointer",
               fontSize: 16, opacity: (downloading || !ready) ? 0.6 : 1,
               fontFamily: "system-ui",
-              boxShadow: "0 4px 20px rgba(250,204,21,0.3)",
+              boxShadow: "0 4px 20px " + primaryColor + "50",
             }}
           >
             {downloading ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} /> : <Download size={18} />}
@@ -274,28 +348,26 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
         </div>
       </div>
 
-      {/* Tips Panel */}
       {showTip && (
         <div style={{ maxWidth: 1400, margin: "0 auto 20px", background: "#1e293b", padding: "16px 20px", borderRadius: 12, border: "1px solid #3b82f6", color: "#fff", fontFamily: "system-ui", fontSize: 14 }}>
-          <div style={{ fontWeight: 700, marginBottom: 8, color: "#60a5fa" }}>ðŸ’¾ 3 Ways to Save This Image:</div>
+          <div style={{ fontWeight: 700, marginBottom: 8, color: "#60a5fa" }}>3 Ways to Save This Image:</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
-            <div><strong style={{ color: "#facc15" }}>Method 1 (Auto):</strong><br />Click the yellow "Download PNG" button above</div>
-            <div><strong style={{ color: "#facc15" }}>Method 2 (Right-click):</strong><br />Right-click the image â†’ "Save image as..."</div>
-            <div><strong style={{ color: "#facc15" }}>Method 3 (Windows):</strong><br />Press Win+Shift+S â†’ Select area â†’ Ctrl+V to paste in Discord/browser</div>
+            <div><strong style={{ color: primaryColor }}>Method 1 (Auto):</strong><br />Click the yellow &quot;Download PNG&quot; button above</div>
+            <div><strong style={{ color: primaryColor }}>Method 2 (Right-click):</strong><br />Right-click the image and select &quot;Save image as...&quot;</div>
+            <div><strong style={{ color: primaryColor }}>Method 3 (Windows):</strong><br />Press Win+Shift+S, select area, Ctrl+V into Discord</div>
           </div>
         </div>
       )}
 
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
 
-      {/* CARD PREVIEW */}
+      {/* CARD */}
       <div style={{ maxWidth: 1400, margin: "0 auto", background: "#111", padding: 20, borderRadius: 12, border: "1px solid #333", overflowX: "auto" }}>
         <div style={{ transformOrigin: "top left", transform: "scale(" + scale + ")", width: w, marginBottom: h * scale - h }}>
-          {/* THE CARD */}
           <div ref={cardRef} style={{ width: w, minHeight: h, background: "linear-gradient(135deg, #0a0a0a 0%, #0f172a 40%, #1a1a2e 60%, #0a0a0a 100%)", display: "flex", flexDirection: "column", padding: isVertical ? "70px 60px" : "60px 80px", position: "relative", fontFamily: "Inter, system-ui, -apple-system, sans-serif", boxSizing: "border-box" }}>
             <div style={{ position: "absolute", top: -200, right: -200, width: 600, height: 600, background: primaryColor, opacity: 0.15, borderRadius: "50%", filter: "blur(120px)", pointerEvents: "none" }} />
             <div style={{ position: "absolute", bottom: -200, left: -200, width: 600, height: 600, background: accentColor, opacity: 0.15, borderRadius: "50%", filter: "blur(120px)", pointerEvents: "none" }} />
-            
+
             {/* HEADER */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 20, marginBottom: 20, borderBottom: "3px solid " + primaryColor, position: "relative", zIndex: 2 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
@@ -306,14 +378,16 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
                 </div>
               </div>
             </div>
-            
+
             {/* TITLE */}
             <div style={{ textAlign: "center", marginBottom: 22, position: "relative", zIndex: 2 }}>
               <div style={{ color: primaryColor, fontSize: 18, fontWeight: 700, letterSpacing: 5, textTransform: "uppercase", marginBottom: 8, lineHeight: 1 }}>{config.subtitle}</div>
-              <div style={{ color: "white", fontSize: titleSize, fontWeight: 900, lineHeight: 1, letterSpacing: -2, marginBottom: 8, textShadow: "0 0 40px " + primaryColor + "80" }}>{tournament.name}</div>
-              <div style={{ color: "#9ca3af", fontSize: 17, fontWeight: 500, lineHeight: 1 }}>Top {standings.length} · {(tournament.matches || []).length} Matches · PMGC Scoring</div>
+              <div style={{ color: "white", fontSize: titleSize, fontWeight: 900, lineHeight: 1, letterSpacing: -2, marginBottom: 8, textShadow: "0 0 40px " + primaryColor + "80" }}>{displayTitle}</div>
+              <div style={{ color: "#9ca3af", fontSize: 17, fontWeight: 500, lineHeight: 1 }}>
+                Top {standings.length} &middot; {matchesInScope} {matchesInScope === 1 ? "Match" : "Matches"} &middot; {tournament.scoringRule?.name || tournament.scoringRule?.type || "PMGC"} Scoring
+              </div>
             </div>
-            
+
             {/* TABLE */}
             <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", gap: rowGap }}>
               <div style={{ display: "flex", alignItems: "center", padding: "12px 20px", background: primaryColor + "30", borderRadius: 10, color: primaryColor, fontWeight: 800, fontSize: 14, letterSpacing: 2, textTransform: "uppercase", lineHeight: 1 }}>
@@ -327,12 +401,13 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
                 {config.showAdvanced && <div style={{ width: 80, textAlign: "center" }}>Avg P</div>}
                 <div style={{ width: 120, textAlign: "center" }}>Total</div>
               </div>
-              
+
               {standings.map((s, idx) => {
                 const rank = idx + 1;
                 const isFirst = rank === 1;
                 const isSecond = rank === 2;
                 const isThird = rank === 3;
+                const isPartial = maxMatches > 0 && s.matchesPlayed < maxMatches;
                 const rowBg = isFirst ? "linear-gradient(90deg, rgba(255,215,0,0.28) 0%, rgba(255,215,0,0.04) 100%)"
                   : isSecond ? "linear-gradient(90deg, rgba(192,192,192,0.22) 0%, rgba(192,192,192,0.04) 100%)"
                   : isThird ? "linear-gradient(90deg, rgba(205,127,50,0.22) 0%, rgba(205,127,50,0.04) 100%)"
@@ -345,10 +420,24 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
                       <TeamLogo name={s.teamName} tag={s.teamTag} logo={s.teamLogo} size={logoSize} />
                       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                         {s.teamTag && <div style={{ color: primaryColor, fontSize: Math.max(10, Math.round(teamNameSize * 0.4)), fontWeight: 700, lineHeight: 1, letterSpacing: 1 }}>[{s.teamTag}]</div>}
-                        <div style={{ color: "white", fontSize: teamNameSize, fontWeight: 700, lineHeight: 1.1 }}>{s.teamName}</div>
+                        <div style={{ color: "white", fontSize: teamNameSize, fontWeight: 700, lineHeight: 1.1, display: "flex", alignItems: "center", gap: 8 }}>
+                          {s.teamName}
+                          {isPartial && (
+                            <span style={{
+                              fontSize: Math.max(9, Math.round(teamNameSize * 0.4)),
+                              fontWeight: 800,
+                              background: "rgba(239,68,68,0.2)",
+                              color: "#fca5a5",
+                              padding: "2px 8px",
+                              borderRadius: 6,
+                              border: "1px solid rgba(239,68,68,0.35)",
+                              letterSpacing: 1,
+                            }}>PARTIAL</span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <div style={{ width: 70, textAlign: "center", color: "white", fontSize: numSize - 6, fontWeight: 600, lineHeight: 1 }}>{s.matchesPlayed}</div>
+                    <div style={{ width: 70, textAlign: "center", color: isPartial ? "#fca5a5" : "white", fontSize: numSize - 6, fontWeight: 600, lineHeight: 1 }}>{s.matchesPlayed}</div>
                     <div style={{ width: 80, textAlign: "center" }}>
                       <span style={{ display: "inline-block", background: s.wwcd > 0 ? primaryColor : "rgba(255,255,255,0.1)", color: s.wwcd > 0 ? "#000" : "#666", padding: "5px 14px", borderRadius: 20, fontSize: numSize - 8, fontWeight: 900, lineHeight: 1, minWidth: 36 }}>{s.wwcd}</span>
                     </div>
@@ -361,25 +450,52 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
                 );
               })}
             </div>
-            
+
             {/* SPONSORS */}
             {config.showSponsors && sponsors.length > 0 && (
               <div style={{ position: "relative", zIndex: 2, marginTop: 18, padding: "16px 30px", background: "rgba(255,255,255,0.04)", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)" }}>
                 <div style={{ color: primaryColor, fontSize: 12, fontWeight: 700, letterSpacing: 4, textTransform: "uppercase", textAlign: "center", marginBottom: 10, lineHeight: 1 }}>Official Sponsors</div>
                 <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 40, flexWrap: "wrap" }}>
-                  {sponsors.slice(0, 6).map((sp: any, i: number) => (
-                    <img key={i} src={typeof sp === "string" ? sp : sp.url} alt="" crossOrigin="anonymous" style={{ height: 50, maxWidth: 140, objectFit: "contain", opacity: 0.95 }} />
+                  {sponsors.slice(0, 6).map((sp, i) => (
+                    <img key={i} src={sp.url} alt={sp.name || "Sponsor"} crossOrigin="anonymous" style={{ height: 50, maxWidth: 140, objectFit: "contain", opacity: 0.95 }} />
                   ))}
                 </div>
               </div>
             )}
-            
-            {/* FOOTER */}
+
+            {/* FOOTER — Only safe branding social links, NEVER webhook URLs */}
             <div style={{ position: "relative", zIndex: 2, marginTop: 16, paddingTop: 12, borderTop: "2px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", gap: 30, alignItems: "center", flexWrap: "wrap" }}>
-                {config.showSocial && discordUrl && <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, lineHeight: 1 }}><span style={{ color: "#5865F2", fontWeight: 800 }}>DISCORD</span><span style={{ color: "#9ca3af" }}>{discordUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span></div>}
-                {config.showSocial && instagramUrl && <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, lineHeight: 1 }}><span style={{ color: "#E1306C", fontWeight: 800 }}>INSTA</span><span style={{ color: "#9ca3af" }}>{instagramUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span></div>}
-                {config.showSocial && websiteUrl && <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, lineHeight: 1 }}><span style={{ color: primaryColor, fontWeight: 800 }}>WEB</span><span style={{ color: "#9ca3af" }}>{websiteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span></div>}
+              <div style={{ display: "flex", gap: 24, alignItems: "center", flexWrap: "wrap" }}>
+                {config.showSocial && discordDisplay && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, lineHeight: 1 }}>
+                    <span style={{ color: "#5865F2", fontWeight: 800, letterSpacing: 1 }}>DISCORD</span>
+                    <span style={{ color: "#9ca3af" }}>{discordDisplay}</span>
+                  </div>
+                )}
+                {config.showSocial && instagramDisplay && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, lineHeight: 1 }}>
+                    <span style={{ color: "#E1306C", fontWeight: 800, letterSpacing: 1 }}>INSTA</span>
+                    <span style={{ color: "#9ca3af" }}>{instagramDisplay}</span>
+                  </div>
+                )}
+                {config.showSocial && youtubeDisplay && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, lineHeight: 1 }}>
+                    <span style={{ color: "#FF0000", fontWeight: 800, letterSpacing: 1 }}>YOUTUBE</span>
+                    <span style={{ color: "#9ca3af" }}>{youtubeDisplay}</span>
+                  </div>
+                )}
+                {config.showSocial && twitchDisplay && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, lineHeight: 1 }}>
+                    <span style={{ color: "#9146FF", fontWeight: 800, letterSpacing: 1 }}>TWITCH</span>
+                    <span style={{ color: "#9ca3af" }}>{twitchDisplay}</span>
+                  </div>
+                )}
+                {config.showSocial && websiteDisplay && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, lineHeight: 1 }}>
+                    <span style={{ color: primaryColor, fontWeight: 800, letterSpacing: 1 }}>WEB</span>
+                    <span style={{ color: "#9ca3af" }}>{websiteDisplay}</span>
+                  </div>
+                )}
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
                 <div style={{ color: primaryColor, fontSize: 14, fontWeight: 800, lineHeight: 1 }}>TournaOps.com</div>
