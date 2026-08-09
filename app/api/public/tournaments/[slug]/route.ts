@@ -76,6 +76,12 @@ export async function GET(
       },
     });
 
+    const stages = await prisma.stage.findMany({
+      where: { tournamentId: tournament.id },
+      include: { groups: { orderBy: { order: "asc" } } },
+      orderBy: { order: "asc" },
+    });
+
     const rounds = await prisma.round.findMany({
       where: { tournamentId: tournament.id },
       select: { id: true, name: true, order: true },
@@ -173,7 +179,7 @@ export async function GET(
     const { registrationData, ...tournamentPublic } = tournament;
 
     return NextResponse.json({
-      tournament: { ...tournamentPublic, teams, matches, rounds },
+      tournament: { ...tournamentPublic, teams, matches, rounds, stages },
       standings,
       organizer,
       branding: tournament.brandingData || null,
