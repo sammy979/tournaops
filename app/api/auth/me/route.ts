@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { logError } from "@/lib/logger";
@@ -19,6 +19,8 @@ export async function GET() {
         displayName: true,
         avatar: true,
         isAdmin: true,
+        isPro: true,
+        role: true,
         createdAt: true,
         // Never select: password
       },

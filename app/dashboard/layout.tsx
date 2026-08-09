@@ -10,7 +10,7 @@ import {
   BarChart3, Users, Calendar, Palette,
   MessageSquare, Radio, Zap, Crown,
   Image as ImageIcon, DollarSign,
-  Bot, Clock
+  Bot, Clock, Shield
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -208,6 +208,46 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         WebkitOverflowScrolling: "touch",
         padding: "0.75rem",
       }} className="scrollbar-hide">
+        {(user?.isAdmin || user?.role === "SUPER_ADMIN") && (
+          <div style={{ marginBottom: "1.25rem" }}>
+            {!collapsed && (
+              <div style={{
+                fontSize: "0.65rem",
+                fontWeight: 600,
+                color: "#f59e0b",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                padding: "0 0.5rem",
+                marginBottom: "0.375rem",
+              }}>
+                Super Admin
+              </div>
+            )}
+            <Link
+              href="/admin"
+              title={collapsed ? "Admin" : undefined}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.625rem",
+                padding: "0.75rem",
+                borderRadius: "0.625rem",
+                marginBottom: "0.125rem",
+                textDecoration: "none",
+                justifyContent: collapsed ? "center" : "flex-start",
+                background: isActive("/admin") ? "rgba(239,68,68,0.12)" : "transparent",
+                color: isActive("/admin") ? "#f87171" : "#9ca3af",
+                fontWeight: isActive("/admin") ? 600 : 500,
+                fontSize: "0.9rem",
+                minHeight: "44px",
+              }}
+            >
+              <Shield style={{ width: "1.125rem", height: "1.125rem", flexShrink: 0 }} />
+              {!collapsed && <span style={{ whiteSpace: "nowrap" }}>Admin Panel</span>}
+            </Link>
+          </div>
+        )}
+
         {NAV_ITEMS.map(group => (
           <div key={group.label} style={{ marginBottom: "1.25rem" }}>
             {!collapsed && (
