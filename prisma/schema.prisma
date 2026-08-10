@@ -380,6 +380,7 @@ model PaymentSettings {
   khaltiInstructions   String?
   bankEnabled          Boolean  @default(false)
   bankName             String?
+  bankQrUrl            String?
   bankAccountHolder    String?
   bankAccountNumber    String?
   bankBranch           String?

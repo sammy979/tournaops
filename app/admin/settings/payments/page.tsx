@@ -20,6 +20,7 @@ interface Settings {
   bankAccountNumber?: string
   bankBranch?: string
   bankInstructions?: string
+  bankQrUrl?: string
   internationalEnabled: boolean
 }
 
@@ -165,6 +166,7 @@ export default function PaymentSettingsPage() {
               { label: "Account Holder", key: "bankAccountHolder" as keyof Settings },
               { label: "Account Number", key: "bankAccountNumber" as keyof Settings },
               { label: "Branch", key: "bankBranch" as keyof Settings },
+              { label: "QR Image URL", key: "bankQrUrl" as keyof Settings },
             ].map(({ label, key }) => (
               <div key={key}>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">{label}</label>

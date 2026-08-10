@@ -8,7 +8,6 @@ export async function GET() {
     try {
       settings = await prisma.paymentSettings.findFirst()
     } catch {
-      // Table might not exist yet or query failed - return safe defaults
       settings = null
     }
 
@@ -22,7 +21,6 @@ export async function GET() {
       })
     }
 
-    // Only expose public-safe fields
     const publicSettings = {
       esewaEnabled: settings.esewaEnabled,
       esewaQrUrl: settings.esewaQrUrl,
@@ -36,6 +34,7 @@ export async function GET() {
       khaltiInstructions: settings.khaltiInstructions,
       bankEnabled: settings.bankEnabled,
       bankName: settings.bankName,
+      bankQrUrl: (settings as any).bankQrUrl,
       bankAccountHolder: settings.bankAccountHolder,
       bankAccountNumber: settings.bankAccountNumber,
       bankBranch: settings.bankBranch,

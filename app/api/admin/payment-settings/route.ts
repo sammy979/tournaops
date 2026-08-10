@@ -31,7 +31,7 @@ export async function PUT(req: NextRequest) {
     const allowedFields = [
       "esewaEnabled", "esewaQrUrl", "esewaAccountName", "esewaAccountId", "esewaInstructions",
       "khaltiEnabled", "khaltiQrUrl", "khaltiAccountName", "khaltiAccountId", "khaltiInstructions",
-      "bankEnabled", "bankName", "bankAccountHolder", "bankAccountNumber", "bankBranch", "bankInstructions",
+      "bankEnabled", "bankName", "bankAccountHolder", "bankAccountNumber", "bankBranch", "bankInstructions", "bankQrUrl",
       "internationalEnabled",
     ]
 
