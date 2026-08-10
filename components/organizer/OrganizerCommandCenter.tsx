@@ -12,6 +12,7 @@ import ResultsQueue, { PendingResult } from "./ResultsQueue"
 import NextMatch, { MatchInfo } from "./NextMatch"
 import RecentActivity, { ActivityItem } from "./RecentActivity"
 import type { HealthIssue } from "./TournamentHealth"
+import TournamentStatusManager from "@/components/tournament/TournamentStatusManager"
 
 interface Tournament {
   id: string
@@ -183,14 +184,12 @@ export default function OrganizerCommandCenter() {
               )}
             </div>
 
-            {summary && (
-              <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "rgba(255,255,255,0.08)",
-                borderRadius: "0.75rem", padding: "0.5rem 0.75rem", border: "1px solid rgba(255,255,255,0.1)" }}>
-                <div style={{ width: "0.5rem", height: "0.5rem", borderRadius: "50%",
-                  background: summary.status === "LIVE" ? "#4ade80" : "#6b7280",
-                  animation: summary.status === "LIVE" ? "pulse 2s infinite" : "none" }} />
-                <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#e5e7eb", textTransform: "uppercase" }}>{summary.status}</span>
-              </div>
+            {selectedId && summary && (
+              <TournamentStatusManager
+                tournamentId={selectedId}
+                currentStatus={summary.status}
+                onStatusChange={() => fetchData(selectedId)}
+              />
             )}
 
             <button onClick={handleRefresh} disabled={refreshing}
