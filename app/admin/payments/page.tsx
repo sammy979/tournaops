@@ -2,7 +2,7 @@
 "use client"
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Search, CheckCircle, XCircle, Clock, Eye, Loader2 } from "lucide-react"
+import { Search, CheckCircle, XCircle, Clock, Eye, Loader2, ExternalLink, Image as ImageIcon } from "lucide-react"
 
 interface Payment {
   id: string
@@ -45,6 +45,7 @@ export default function AdminPaymentsPage() {
   const [processing, setProcessing] = useState(false)
   const [actionError, setActionError] = useState("")
   const [pageError, setPageError] = useState("")
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
 
   const fetchPayments = useCallback(async () => {
     setLoading(true)
@@ -63,8 +64,6 @@ export default function AdminPaymentsPage() {
       if (!res.ok) {
         setPageError(data.error || `HTTP ${res.status}`)
         setPayments([])
-        setTotal(0)
-        setSummary([])
       } else {
         setPayments(Array.isArray(data.payments) ? data.payments : [])
         setTotal(data.total || 0)
@@ -78,9 +77,7 @@ export default function AdminPaymentsPage() {
     }
   }, [statusFilter, methodFilter, search, page])
 
-  useEffect(() => {
-    fetchPayments()
-  }, [fetchPayments])
+  useEffect(() => { fetchPayments() }, [fetchPayments])
 
   const handleAction = async () => {
     if (!reviewModal || !action) return
@@ -129,25 +126,13 @@ export default function AdminPaymentsPage() {
   return (
     <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "1.5rem" }}>
       <div style={{ marginBottom: "1.5rem" }}>
-        <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "#fff", margin: 0 }}>
-          Payment Center
-        </h1>
-        <p style={{ color: "#9ca3af", fontSize: "0.875rem", marginTop: "0.375rem" }}>
-          Review and manage Pro payment submissions
-        </p>
+        <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "#fff", margin: 0 }}>Payment Center</h1>
+        <p style={{ color: "#9ca3af", fontSize: "0.875rem", marginTop: "0.375rem" }}>Review and manage Pro payment submissions</p>
       </div>
 
-      {/* Page Error */}
       {pageError && (
-        <div style={{
-          background: "rgba(239,68,68,0.1)",
-          border: "1px solid rgba(239,68,68,0.3)",
-          borderRadius: "0.75rem",
-          padding: "1rem",
-          color: "#f87171",
-          marginBottom: "1rem",
-        }}>
-          Error loading payments: {pageError}
+        <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "0.75rem", padding: "1rem", color: "#f87171", marginBottom: "1rem" }}>
+          Error: {pageError}
         </div>
       )}
 
@@ -158,18 +143,8 @@ export default function AdminPaymentsPage() {
           { label: "Approved", status: "APPROVED", color: "#10b981", icon: CheckCircle },
           { label: "Rejected", status: "REJECTED", color: "#f87171", icon: XCircle },
         ].map(({ label, status, color, icon: Icon }) => (
-          <button
-            key={status}
-            onClick={() => { setStatusFilter(status === statusFilter ? "" : status); setPage(1) }}
-            style={{
-              background: statusFilter === status ? `${color}22` : "rgba(30,30,40,0.6)",
-              border: `1px solid ${statusFilter === status ? color : "rgba(255,255,255,0.06)"}`,
-              borderRadius: "0.75rem",
-              padding: "1rem",
-              cursor: "pointer",
-              textAlign: "left",
-            }}
-          >
+          <button key={status} onClick={() => { setStatusFilter(status === statusFilter ? "" : status); setPage(1) }}
+            style={{ background: statusFilter === status ? `${color}22` : "rgba(30,30,40,0.6)", border: `1px solid ${statusFilter === status ? color : "rgba(255,255,255,0.06)"}`, borderRadius: "0.75rem", padding: "1rem", cursor: "pointer", textAlign: "left" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color }}>
               <Icon style={{ width: "1rem", height: "1rem" }} />
               <span style={{ fontSize: "1.5rem", fontWeight: 700 }}>{getSummaryCount(status)}</span>
@@ -180,51 +155,16 @@ export default function AdminPaymentsPage() {
       </div>
 
       {/* Filters */}
-      <div style={{
-        background: "rgba(30,30,40,0.6)",
-        border: "1px solid rgba(255,255,255,0.06)",
-        borderRadius: "0.75rem",
-        padding: "0.875rem",
-        marginBottom: "1rem",
-        display: "flex",
-        gap: "0.75rem",
-        flexWrap: "wrap",
-      }}>
+      <div style={{ background: "rgba(30,30,40,0.6)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "0.75rem", padding: "0.875rem", marginBottom: "1rem", display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
         <div style={{ flex: 1, minWidth: "200px", position: "relative" }}>
           <Search style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", width: "1rem", height: "1rem", color: "#6b7280" }} />
-          <input
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
+          <input value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { setSearch(searchInput); setPage(1) } }}
-            placeholder="Search email, username, reference..."
-            style={{
-              width: "100%",
-              paddingLeft: "2.25rem",
-              paddingRight: "0.75rem",
-              paddingTop: "0.5rem",
-              paddingBottom: "0.5rem",
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "0.5rem",
-              color: "#fff",
-              fontSize: "0.875rem",
-              outline: "none",
-            }}
-          />
+            placeholder="Search email, reference..."
+            style={{ width: "100%", paddingLeft: "2.25rem", paddingRight: "0.75rem", paddingTop: "0.5rem", paddingBottom: "0.5rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", color: "#fff", fontSize: "0.875rem", outline: "none" }} />
         </div>
-        <select
-          value={methodFilter}
-          onChange={(e) => { setMethodFilter(e.target.value); setPage(1) }}
-          style={{
-            padding: "0.5rem 0.75rem",
-            background: "rgba(255,255,255,0.05)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: "0.5rem",
-            color: "#fff",
-            fontSize: "0.875rem",
-            outline: "none",
-          }}
-        >
+        <select value={methodFilter} onChange={(e) => { setMethodFilter(e.target.value); setPage(1) }}
+          style={{ padding: "0.5rem 0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", color: "#fff", fontSize: "0.875rem", outline: "none" }}>
           <option value="">All Methods</option>
           <option value="ESEWA">eSewa</option>
           <option value="KHALTI">Khalti</option>
@@ -233,27 +173,20 @@ export default function AdminPaymentsPage() {
       </div>
 
       {/* Table */}
-      <div style={{
-        background: "rgba(30,30,40,0.6)",
-        border: "1px solid rgba(255,255,255,0.06)",
-        borderRadius: "0.75rem",
-        overflow: "hidden",
-      }}>
+      <div style={{ background: "rgba(30,30,40,0.6)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "0.75rem", overflow: "hidden" }}>
         {loading ? (
           <div style={{ padding: "3rem", textAlign: "center" }}>
             <Loader2 style={{ width: "1.5rem", height: "1.5rem", color: "#a855f7", animation: "spin 1s linear infinite" }} />
             <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
           </div>
         ) : payments.length === 0 ? (
-          <div style={{ padding: "3rem", textAlign: "center", color: "#6b7280" }}>
-            No payments found
-          </div>
+          <div style={{ padding: "3rem", textAlign: "center", color: "#6b7280" }}>No payments found</div>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", fontSize: "0.875rem", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "rgba(0,0,0,0.3)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                  {["User", "Method", "Amount", "Reference", "Status", "Submitted", ""].map((h) => (
+                  {["User", "Method", "Amount", "Reference", "Proof", "Status", "Submitted", ""].map((h) => (
                     <th key={h} style={{ textAlign: "left", padding: "0.75rem", fontSize: "0.7rem", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
                   ))}
                 </tr>
@@ -273,30 +206,22 @@ export default function AdminPaymentsPage() {
                       <td style={{ padding: "0.75rem", fontWeight: 700, color: "#fff" }}>{p.currency} {p.amount.toLocaleString()}</td>
                       <td style={{ padding: "0.75rem", fontFamily: "monospace", fontSize: "0.75rem", color: "#9ca3af", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.transactionReference}</td>
                       <td style={{ padding: "0.75rem" }}>
+                        {p.proofUrl ? (
+                          <button onClick={() => setImagePreview(p.proofUrl!)}
+                            style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.7rem", color: "#a78bfa", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", padding: "0.25rem 0.5rem", borderRadius: "0.375rem", cursor: "pointer" }}>
+                            <ImageIcon style={{ width: "0.75rem", height: "0.75rem" }} /> View
+                          </button>
+                        ) : (
+                          <span style={{ fontSize: "0.7rem", color: "#6b7280" }}>—</span>
+                        )}
+                      </td>
+                      <td style={{ padding: "0.75rem" }}>
                         <span style={{ fontSize: "0.7rem", fontWeight: 700, color: badge.color, background: badge.bg, padding: "0.25rem 0.5rem", borderRadius: "0.375rem" }}>{p.status}</span>
                       </td>
                       <td style={{ padding: "0.75rem", fontSize: "0.75rem", color: "#6b7280" }}>{new Date(p.submittedAt).toLocaleDateString()}</td>
                       <td style={{ padding: "0.75rem" }}>
-                        <button
-                          onClick={() => {
-                            setReviewModal(p)
-                            setAction("")
-                            setRejectionReason("")
-                            setAdminNote("")
-                            setActionError("")
-                          }}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.25rem",
-                            fontSize: "0.75rem",
-                            color: "#a855f7",
-                            background: "transparent",
-                            border: "none",
-                            cursor: "pointer",
-                            fontWeight: 600,
-                          }}
-                        >
+                        <button onClick={() => { setReviewModal(p); setAction(""); setRejectionReason(""); setAdminNote(""); setActionError("") }}
+                          style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.75rem", color: "#a855f7", background: "transparent", border: "none", cursor: "pointer", fontWeight: 600 }}>
                           <Eye style={{ width: "0.875rem", height: "0.875rem" }} /> Review
                         </button>
                       </td>
@@ -312,26 +237,49 @@ export default function AdminPaymentsPage() {
       {/* Review Modal */}
       {reviewModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", background: "rgba(0,0,0,0.6)" }}>
-          <div style={{ background: "#1a1a24", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1.5rem", width: "100%", maxWidth: "480px" }}>
+          <div style={{ background: "#1a1a24", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1.5rem", width: "100%", maxWidth: "520px", maxHeight: "90vh", overflowY: "auto" }}>
             <h2 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#fff", margin: 0, marginBottom: "1rem" }}>Review Payment</h2>
 
+            {/* Payment Screenshot Preview */}
+            {reviewModal.proofUrl && (
+              <div style={{ marginBottom: "1rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "0.75rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                  <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    📸 Payment Screenshot
+                  </span>
+                  <a href={reviewModal.proofUrl} target="_blank" rel="noopener noreferrer"
+                    style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.7rem", color: "#a78bfa", textDecoration: "none" }}>
+                    Open full size <ExternalLink style={{ width: "0.75rem", height: "0.75rem" }} />
+                  </a>
+                </div>
+                <div style={{ background: "#000", borderRadius: "0.5rem", overflow: "hidden", cursor: "pointer" }}
+                  onClick={() => setImagePreview(reviewModal.proofUrl!)}>
+                  <img src={reviewModal.proofUrl} alt="Payment screenshot"
+                    style={{ width: "100%", maxHeight: "300px", objectFit: "contain", display: "block" }}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }} />
+                </div>
+                <p style={{ fontSize: "0.7rem", color: "#6b7280", margin: "0.5rem 0 0", textAlign: "center" }}>Click to enlarge</p>
+              </div>
+            )}
+
+            {/* Payment Details */}
             <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "0.625rem", padding: "0.875rem", marginBottom: "1rem", fontSize: "0.8125rem" }}>
               {[
-                ["User", reviewModal.user?.email],
+                ["User", reviewModal.user?.email || "Unknown"],
                 ["Method", reviewModal.method],
                 ["Amount", `${reviewModal.currency} ${reviewModal.amount}`],
                 ["Reference", reviewModal.transactionReference],
                 ["Note", reviewModal.note || "—"],
+                ["Submitted", new Date(reviewModal.submittedAt).toLocaleString()],
               ].map(([k, v]) => (
-                <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "0.25rem 0" }}>
-                  <span style={{ color: "#9ca3af" }}>{k}</span>
-                  <span style={{ color: "#fff", fontWeight: 600, fontFamily: k === "Reference" ? "monospace" : "inherit", fontSize: k === "Reference" ? "0.75rem" : "inherit" }}>{v}</span>
+                <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "0.25rem 0", gap: "0.5rem" }}>
+                  <span style={{ color: "#9ca3af", flexShrink: 0 }}>{k}</span>
+                  <span style={{ color: "#fff", fontWeight: 600, fontFamily: k === "Reference" ? "monospace" : "inherit", fontSize: k === "Reference" ? "0.75rem" : "inherit", textAlign: "right", wordBreak: "break-all" }}>{v}</span>
                 </div>
               ))}
-              {reviewModal.proofUrl && (
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "0.25rem 0" }}>
-                  <span style={{ color: "#9ca3af" }}>Proof</span>
-                  <a href={reviewModal.proofUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#a855f7", fontSize: "0.75rem" }}>View Screenshot</a>
+              {!reviewModal.proofUrl && (
+                <div style={{ marginTop: "0.5rem", padding: "0.5rem", background: "rgba(250,204,21,0.08)", border: "1px solid rgba(250,204,21,0.2)", borderRadius: "0.375rem", fontSize: "0.75rem", color: "#facc15" }}>
+                  ⚠ No screenshot attached
                 </div>
               )}
             </div>
@@ -339,39 +287,70 @@ export default function AdminPaymentsPage() {
             {reviewModal.status === "PENDING" ? (
               <>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginBottom: "0.875rem" }}>
-                  <button onClick={() => setAction("approve")} style={{ padding: "0.625rem", borderRadius: "0.5rem", border: `2px solid ${action === "approve" ? "#10b981" : "rgba(255,255,255,0.1)"}`, background: action === "approve" ? "rgba(16,185,129,0.1)" : "transparent", color: action === "approve" ? "#10b981" : "#e5e7eb", fontWeight: 600, cursor: "pointer", fontSize: "0.875rem" }}>✓ Approve</button>
-                  <button onClick={() => setAction("reject")} style={{ padding: "0.625rem", borderRadius: "0.5rem", border: `2px solid ${action === "reject" ? "#f87171" : "rgba(255,255,255,0.1)"}`, background: action === "reject" ? "rgba(239,68,68,0.1)" : "transparent", color: action === "reject" ? "#f87171" : "#e5e7eb", fontWeight: 600, cursor: "pointer", fontSize: "0.875rem" }}>✕ Reject</button>
+                  <button onClick={() => setAction("approve")}
+                    style={{ padding: "0.625rem", borderRadius: "0.5rem", border: `2px solid ${action === "approve" ? "#10b981" : "rgba(255,255,255,0.1)"}`, background: action === "approve" ? "rgba(16,185,129,0.1)" : "transparent", color: action === "approve" ? "#10b981" : "#e5e7eb", fontWeight: 600, cursor: "pointer", fontSize: "0.875rem" }}>
+                    ✓ Approve
+                  </button>
+                  <button onClick={() => setAction("reject")}
+                    style={{ padding: "0.625rem", borderRadius: "0.5rem", border: `2px solid ${action === "reject" ? "#f87171" : "rgba(255,255,255,0.1)"}`, background: action === "reject" ? "rgba(239,68,68,0.1)" : "transparent", color: action === "reject" ? "#f87171" : "#e5e7eb", fontWeight: 600, cursor: "pointer", fontSize: "0.875rem" }}>
+                    ✕ Reject
+                  </button>
                 </div>
 
                 {action === "reject" && (
                   <div style={{ marginBottom: "0.875rem" }}>
                     <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "#e5e7eb", marginBottom: "0.25rem" }}>Rejection Reason *</label>
-                    <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} rows={2} style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.5rem", color: "#fff", fontSize: "0.8125rem", outline: "none", resize: "none" }} placeholder="Explain why this payment is being rejected..." />
+                    <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} rows={2}
+                      style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.5rem", color: "#fff", fontSize: "0.8125rem", outline: "none", resize: "none" }}
+                      placeholder="Explain why this payment is being rejected..." />
                   </div>
                 )}
 
                 <div style={{ marginBottom: "0.875rem" }}>
                   <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "#e5e7eb", marginBottom: "0.25rem" }}>Admin Note (optional)</label>
-                  <input value={adminNote} onChange={(e) => setAdminNote(e.target.value)} style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.5rem", color: "#fff", fontSize: "0.8125rem", outline: "none" }} placeholder="Internal note..." />
+                  <input value={adminNote} onChange={(e) => setAdminNote(e.target.value)}
+                    style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.5rem", color: "#fff", fontSize: "0.8125rem", outline: "none" }}
+                    placeholder="Internal note..." />
                 </div>
 
                 {actionError && <p style={{ fontSize: "0.75rem", color: "#f87171", marginBottom: "0.5rem" }}>{actionError}</p>}
 
                 <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <button onClick={() => setReviewModal(null)} style={{ flex: 1, padding: "0.625rem", borderRadius: "0.5rem", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#e5e7eb", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem" }}>Cancel</button>
-                  <button onClick={handleAction} disabled={!action || processing} style={{ flex: 1, padding: "0.625rem", borderRadius: "0.5rem", color: "#fff", cursor: !action || processing ? "not-allowed" : "pointer", opacity: !action || processing ? 0.5 : 1, background: action === "approve" ? "#10b981" : action === "reject" ? "#ef4444" : "#6b7280", border: "none", fontWeight: 600, fontSize: "0.875rem" }}>
+                  <button onClick={() => setReviewModal(null)}
+                    style={{ flex: 1, padding: "0.625rem", borderRadius: "0.5rem", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#e5e7eb", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem" }}>
+                    Cancel
+                  </button>
+                  <button onClick={handleAction} disabled={!action || processing}
+                    style={{ flex: 1, padding: "0.625rem", borderRadius: "0.5rem", color: "#fff", cursor: !action || processing ? "not-allowed" : "pointer", opacity: !action || processing ? 0.5 : 1, background: action === "approve" ? "#10b981" : action === "reject" ? "#ef4444" : "#6b7280", border: "none", fontWeight: 600, fontSize: "0.875rem" }}>
                     {processing ? "Processing..." : action === "approve" ? "Approve & Activate Pro" : action === "reject" ? "Reject Payment" : "Select Action"}
                   </button>
                 </div>
               </>
             ) : (
               <>
-                <div style={{ padding: "0.75rem", borderRadius: "0.5rem", background: STATUS_BADGE[reviewModal.status]?.bg, color: STATUS_BADGE[reviewModal.status]?.color, fontSize: "0.8125rem", marginBottom: "0.75rem" }}>Status: <strong>{reviewModal.status}</strong></div>
+                <div style={{ padding: "0.75rem", borderRadius: "0.5rem", background: STATUS_BADGE[reviewModal.status]?.bg, color: STATUS_BADGE[reviewModal.status]?.color, fontSize: "0.8125rem", marginBottom: "0.75rem" }}>
+                  Status: <strong>{reviewModal.status}</strong>
+                </div>
                 {reviewModal.rejectionReason && <p style={{ fontSize: "0.75rem", color: "#f87171", marginBottom: "0.75rem" }}>Reason: {reviewModal.rejectionReason}</p>}
-                <button onClick={() => setReviewModal(null)} style={{ width: "100%", padding: "0.625rem", borderRadius: "0.5rem", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#e5e7eb", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem" }}>Close</button>
+                <button onClick={() => setReviewModal(null)}
+                  style={{ width: "100%", padding: "0.625rem", borderRadius: "0.5rem", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#e5e7eb", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem" }}>
+                  Close
+                </button>
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Fullscreen Image Preview */}
+      {imagePreview && (
+        <div onClick={() => setImagePreview(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.95)", display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", cursor: "pointer" }}>
+          <img src={imagePreview} alt="Full size" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+          <button onClick={(e) => { e.stopPropagation(); setImagePreview(null) }}
+            style={{ position: "absolute", top: "1rem", right: "1rem", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "0.5rem 1rem", borderRadius: "0.5rem", cursor: "pointer", fontSize: "0.875rem" }}>
+            Close ✕
+          </button>
         </div>
       )}
     </div>

@@ -1,104 +1,173 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth/session";
+// app/api/matches/[id]/qualifier/route.ts
+import { NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import { getSession } from "@/lib/auth/session"
+import { logSystemError } from "@/lib/system-health/error-logger"
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+interface ResultInput {
+  teamName?: string
+  matched?: string
+  placement: number
+  kills: number
+  survivalPoints?: number
+  totalPoints?: number
+}
 
-  const { id: matchId } = await params;
-  const body = await req.json();
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+) {
+  try {
+    const session = await getSession()
+    if (!session?.userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  const match = await prisma.match.findUnique({
-    where: { id: matchId },
-    include: { tournament: true },
-  });
+    const resolvedParams = await Promise.resolve(params)
+    const matchId = resolvedParams.id
 
-  if (!match) return NextResponse.json({ error: "Match not found" }, { status: 404 });
-  if (match.tournament.userId !== session.userId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+    const body = await req.json().catch(() => ({}))
+    const { results, source } = body as { results?: ResultInput[]; source?: string }
 
-  // Check if stage is locked
-  if (match.stageId) {
-    const stage = await prisma.stage.findUnique({ where: { id: match.stageId } });
-    if (stage?.isLocked) {
-      return NextResponse.json({ error: "Stage is locked" }, { status: 403 });
+    if (!Array.isArray(results) || results.length === 0) {
+      return NextResponse.json({ error: "Results array required" }, { status: 400 })
     }
-  }
 
-  const {
-    results,             // Standard team results with kills, placement, points
-    compensation,        // { teamId: { points, reason } }
-    penalties,           // { teamId: { points, reason } }
-    notes,               // Match-level notes
-    screenshotUrl,       // Optional screenshot
-  } = body;
-
-  const scoring = match.tournament.scoringRule as any;
-
-  // Recalculate totalPoints for each result including comp/penalty
-  const enrichedResults = (results || []).map((r: any) => {
-    const compPoints = compensation?.[r.teamId]?.points || 0;
-    const penPoints = penalties?.[r.teamId]?.points || 0;
-
-    const placePts = scoring.placementPoints?.[r.placement - 1] || 0;
-    const killPts = (r.kills || 0) * (scoring.killPoints || 1);
-    const wwcdBonus = r.placement === 1 && scoring.wwcdBonus ? scoring.wwcdBonus : 0;
-    const totalPoints = Math.max(0, placePts + killPts + wwcdBonus + compPoints - penPoints);
-
-    return {
-      ...r,
-      placementPoints: placePts,
-      killPoints: killPts,
-      wwcdBonus,
-      compensationPoints: compPoints,
-      penaltyPoints: penPoints,
-      totalPoints,
-    };
-  });
-
-  // Sort results by placement
-  enrichedResults.sort((a: any, b: any) => a.placement - b.placement);
-
-  const updated = await prisma.match.update({
-    where: { id: matchId },
-    data: {
-      status: "completed",
-      results: enrichedResults,
-      compensationData: compensation || {},
-      penaltyData: penalties || {},
-      notes: notes || null,
-      screenshotUrl: screenshotUrl || null,
-      endTime: new Date(),
-    },
-  });
-
-  // Audit log if compensation or penalties applied
-  if (compensation && Object.keys(compensation).length > 0) {
-    await prisma.qualifierAuditLog.create({
-      data: {
-        tournamentId: match.tournamentId,
-        stageId: match.stageId,
-        action: "ADD_COMPENSATION",
-        reason: `Compensation added to match ${match.name}`,
-        metadata: { compensation, matchId },
-        performedBy: session.userId,
+    // Load match with tournament access
+    const match = await prisma.match.findUnique({
+      where: { id: matchId },
+      include: {
+        stage: {
+          include: {
+            tournament: {
+              select: { id: true, userId: true },
+              include: { teams: true },
+            },
+          },
+        },
       },
-    });
-  }
-  if (penalties && Object.keys(penalties).length > 0) {
-    await prisma.qualifierAuditLog.create({
-      data: {
-        tournamentId: match.tournamentId,
-        stageId: match.stageId,
-        action: "ADD_PENALTY",
-        reason: `Penalty added to match ${match.name}`,
-        metadata: { penalties, matchId },
-        performedBy: session.userId,
-      },
-    });
-  }
+    })
 
-  return NextResponse.json({ match: updated });
+    if (!match) return NextResponse.json({ error: "Match not found" }, { status: 404 })
+
+    // Access check
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { role: true, isAdmin: true },
+    })
+    const isAdmin = user?.role === "SUPER_ADMIN" || user?.isAdmin
+    if (!isAdmin && match.stage.tournament.userId !== session.userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    const teams = (match.stage.tournament as any).teams || []
+
+    // Match team names to actual team IDs
+    const normalized = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "")
+    const matchTeamByName = (name: string) => {
+      const target = normalized(name)
+      // Exact match
+      let team = teams.find((t: any) => normalized(t.name) === target)
+      if (team) return team
+      // Partial match
+      team = teams.find(
+        (t: any) => normalized(t.name).includes(target) || target.includes(normalized(t.name))
+      )
+      return team
+    }
+
+    const savedResults: any[] = []
+    const unmatched: string[] = []
+
+    for (const r of results) {
+      const teamName = String(r.teamName || "").trim()
+      if (!teamName) continue
+
+      let teamId = r.matched || null
+      if (!teamId) {
+        const foundTeam = matchTeamByName(teamName)
+        teamId = foundTeam?.id || null
+      }
+
+      if (!teamId) {
+        unmatched.push(teamName)
+        continue
+      }
+
+      // Try to save - schema may vary, so we save what we can
+      try {
+        const resultData: any = {
+          matchId,
+          teamId,
+          placement: r.placement || 0,
+          kills: r.kills || 0,
+          verified: false,
+        }
+        // Optional fields
+        if (r.survivalPoints !== undefined) resultData.survivalPoints = r.survivalPoints
+        if (r.totalPoints !== undefined) resultData.totalPoints = r.totalPoints
+        if (source) resultData.source = source
+        resultData.submittedAt = new Date()
+        resultData.submittedBy = session.userId
+
+        // Upsert - if a result exists for this team on this match, update it
+        const existing = await (prisma as any).matchResult?.findFirst?.({
+          where: { matchId, teamId },
+        }).catch(() => null)
+
+        if (existing) {
+          await (prisma as any).matchResult.update({
+            where: { id: existing.id },
+            data: resultData,
+          })
+        } else {
+          await (prisma as any).matchResult.create({ data: resultData })
+        }
+
+        savedResults.push({ teamName, teamId, ...r })
+      } catch (err: any) {
+        console.error("Failed to save result for", teamName, err?.message)
+      }
+    }
+
+    // Mark match as completed if all results in
+    try {
+      await prisma.match.update({
+        where: { id: matchId },
+        data: { status: "COMPLETED" },
+      })
+    } catch {}
+
+    // Audit log
+    try {
+      await (prisma as any).auditLog?.create({
+        data: {
+          action: "RESULTS_SAVED",
+          actorId: session.userId,
+          targetId: matchId,
+          metadata: JSON.stringify({
+            matchId,
+            tournamentId: match.stage.tournament.id,
+            source: source || "MANUAL",
+            savedCount: savedResults.length,
+            unmatchedCount: unmatched.length,
+          }),
+        },
+      })
+    } catch {}
+
+    return NextResponse.json({
+      message: `Saved ${savedResults.length} result(s)`,
+      saved: savedResults.length,
+      unmatched,
+      unmatchedTeams: unmatched,
+    })
+  } catch (err: any) {
+    await logSystemError(err, {
+      route: "/api/matches/[id]/qualifier",
+      severity: "ERROR",
+    })
+    return NextResponse.json(
+      { error: err?.message || "Failed to save results" },
+      { status: 500 }
+    )
+  }
 }

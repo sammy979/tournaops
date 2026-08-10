@@ -1,7 +1,7 @@
 // components/organizer/QuickActions.tsx
 "use client"
 import { useRouter } from "next/navigation"
-import { UserPlus, Upload, ClipboardList, BarChart2, ArrowUpCircle, MessageSquare, Radio, Megaphone, FileText } from "lucide-react"
+import { UserPlus, Upload, ClipboardList, BarChart2, ArrowUpCircle, MessageSquare, Radio, Sparkles, FileText } from "lucide-react"
 
 interface QuickActionsProps {
   tournamentId: string
@@ -11,15 +11,16 @@ interface QuickActionsProps {
   onAnnounce?: () => void
 }
 
-export default function QuickActions({ tournamentId, onAddTeam, onImportTeams, onEnterResult, onAnnounce }: QuickActionsProps) {
+export default function QuickActions({ tournamentId, onAddTeam, onImportTeams, onEnterResult }: QuickActionsProps) {
   const router = useRouter()
 
   const actions = [
     { label: "Add Team", icon: UserPlus, color: "#3b82f6", onClick: onAddTeam || (() => router.push(`/dashboard/tournaments/${tournamentId}/teams`)) },
     { label: "Import Teams", icon: Upload, color: "#6366f1", onClick: onImportTeams || (() => router.push(`/dashboard/tournaments/${tournamentId}/bulk-import`)) },
     { label: "Enter Result", icon: ClipboardList, color: "#10b981", onClick: onEnterResult || (() => router.push(`/dashboard/tournaments/${tournamentId}/match-results`)) },
+    { label: "AI Screenshot", icon: Sparkles, color: "#a855f7", onClick: () => router.push(`/dashboard/tournaments/${tournamentId}/ai-import`) },
     { label: "Standings", icon: BarChart2, color: "#f59e0b", onClick: () => router.push(`/dashboard/tournaments/${tournamentId}/standings`) },
-    { label: "Advance Stage", icon: ArrowUpCircle, color: "#a855f7", onClick: () => router.push(`/dashboard/tournaments/${tournamentId}/stages`) },
+    { label: "Advance Stage", icon: ArrowUpCircle, color: "#ec4899", onClick: () => router.push(`/dashboard/tournaments/${tournamentId}/stages`) },
     { label: "Discord", icon: MessageSquare, color: "#5865F2", onClick: () => router.push(`/dashboard/tournaments/${tournamentId}/discord`) },
     { label: "Broadcast", icon: Radio, color: "#ef4444", onClick: () => router.push(`/dashboard/tournaments/${tournamentId}/broadcast`) },
     { label: "Export", icon: FileText, color: "#6b7280", onClick: () => router.push(`/dashboard/tournaments/${tournamentId}/export`) },

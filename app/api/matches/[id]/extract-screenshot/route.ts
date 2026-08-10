@@ -1,194 +1,199 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth/session";
-import { requirePro } from "@/lib/auth/rbac";
-import { logError } from "@/lib/logger";
-import { checkRateLimit, getClientIp, RATE_LIMITS, getRateLimitHeaders } from "@/lib/rate-limit";
+// app/api/matches/[id]/extract-screenshot/route.ts
+import { NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import { getSession } from "@/lib/auth/session"
+import { logSystemError } from "@/lib/system-health/error-logger"
 
-export const maxDuration = 60;
-
-async function extractWithGroq(imageBase64: string, teams: string[]): Promise<any> {
-  const key = process.env.GROQ_API_KEY;
-  if (!key) return null;
-
-  const knownTeams = teams.length > 0 ? teams.join(", ") : "";
-
-  const prompt = `Extract PUBG Mobile match results from this screenshot.
-${knownTeams ? "Known teams in this tournament: " + knownTeams : ""}
-
-Return ONLY valid JSON in this exact format (no markdown, no explanation):
-{
-  "map": "Erangel",
-  "results": [
-    { "teamName": "TSM", "placement": 1, "kills": 12 },
-    { "teamName": "GodLike", "placement": 2, "kills": 8 }
-  ]
-}
-
-Rules:
-- placement 1 = WWCD (Winner Winner Chicken Dinner)
-- If team name is not readable, use best guess from known teams list
-- Include ALL visible teams in the screenshot
-- Kills = total team kills, not individual player kills`;
-
-  try {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer " + key,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "meta-llama/llama-4-scout-17b-16e-instruct",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: prompt },
-              { type: "image_url", image_url: { url: "data:image/png;base64," + imageBase64 } },
-            ],
-          },
-        ],
-        temperature: 0.1,
-        max_tokens: 2000,
-        response_format: { type: "json_object" },
-      }),
-    });
-
-    if (!res.ok) {
-      const txt = await res.text();
-      console.warn("[EXTRACT] Groq vision failed:", res.status, txt.slice(0, 300));
-      return null;
-    }
-
-    const data = await res.json();
-    const content = data?.choices?.[0]?.message?.content;
-    if (!content) return null;
-
-    try {
-      return JSON.parse(content);
-    } catch {
-      const match = content.match(/\{[\s\S]*\}/);
-      if (match) return JSON.parse(match[0]);
-      return null;
-    }
-  } catch (e: any) {
-    console.warn("[EXTRACT] Groq vision error:", e?.message);
-    return null;
-  }
-}
-
-async function extractWithTogether(imageBase64: string, teams: string[]): Promise<any> {
-  const key = process.env.TOGETHER_API_KEY;
-  if (!key) return null;
-
-  const knownTeams = teams.length > 0 ? teams.join(", ") : "";
-
-  const prompt = `Extract PUBG Mobile match results from this screenshot.
-${knownTeams ? "Known teams: " + knownTeams : ""}
-
-Return ONLY JSON: {"map":"Erangel","results":[{"teamName":"X","placement":1,"kills":10}]}
-placement 1 = WWCD. Include all visible teams.`;
-
-  try {
-    const res = await fetch("https://api.together.xyz/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer " + key,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "meta-llama/Llama-Vision-Free",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: prompt },
-              { type: "image_url", image_url: { url: "data:image/jpeg;base64," + imageBase64 } },
-            ],
-          },
-        ],
-        temperature: 0.1,
-        max_tokens: 2000,
-      }),
-    });
-
-    if (!res.ok) {
-      console.warn("[EXTRACT] Together vision failed:", res.status);
-      return null;
-    }
-
-    const data = await res.json();
-    const content = data?.choices?.[0]?.message?.content;
-    if (!content) return null;
-
-    const match = content.match(/\{[\s\S]*\}/);
-    if (match) return JSON.parse(match[0]);
-    return null;
-  } catch (e: any) {
-    console.warn("[EXTRACT] Together error:", e?.message);
-    return null;
-  }
-}
+/**
+ * AI Screenshot Extractor
+ * Accepts: { imageUrl: string }
+ * Returns: { teams: [{ teamName, placement, kills, confidence }] }
+ *
+ * Uses Google Gemini Vision API to extract match results from screenshots.
+ */
 
 export async function POST(
   req: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-    }
-    const proCheck = await requirePro(session);
-    if (!proCheck.authorized) return proCheck.errorResponse!;
-
-    const ip = getClientIp(req);
-    const rl = checkRateLimit("screenshot:" + session.userId + ":" + ip, RATE_LIMITS.AI_SCREENSHOT);
-    if (!rl.allowed) {
-      return NextResponse.json(
-        { error: "Too many screenshot requests. Please wait." },
-        { status: 429, headers: getRateLimitHeaders(rl, RATE_LIMITS.AI_SCREENSHOT) }
-      );
+    const session = await getSession()
+    if (!session?.userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    let body: Record<string, unknown>;
+    const resolvedParams = await Promise.resolve(params)
+    const matchId = resolvedParams.id
+
+    if (!matchId) {
+      return NextResponse.json({ error: "Missing match ID" }, { status: 400 })
+    }
+
+    const body = await req.json().catch(() => ({}))
+    const { imageUrl } = body as { imageUrl?: string }
+
+    if (!imageUrl || typeof imageUrl !== "string") {
+      return NextResponse.json({ error: "imageUrl required" }, { status: 400 })
+    }
+
+    // Verify match exists and user has access
+    const match = await prisma.match.findUnique({
+      where: { id: matchId },
+      include: {
+        stage: {
+          include: {
+            tournament: { select: { id: true, userId: true } },
+          },
+        },
+      },
+    })
+
+    if (!match) {
+      return NextResponse.json({ error: "Match not found" }, { status: 404 })
+    }
+
+    // Check ownership (unless admin)
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { role: true, isAdmin: true },
+    })
+    const isAdmin = user?.role === "SUPER_ADMIN" || user?.isAdmin
+    if (!isAdmin && match.stage.tournament.userId !== session.userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    // Fetch image
+    let imageBuffer: Buffer
+    let mimeType = "image/jpeg"
     try {
-      body = await req.json();
-    } catch {
-      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+      const imgRes = await fetch(imageUrl, { signal: AbortSignal.timeout(15000) })
+      if (!imgRes.ok) throw new Error("Failed to fetch image")
+      mimeType = imgRes.headers.get("content-type") || "image/jpeg"
+      const arrayBuffer = await imgRes.arrayBuffer()
+      imageBuffer = Buffer.from(arrayBuffer)
+      if (imageBuffer.length > 10 * 1024 * 1024) {
+        return NextResponse.json({ error: "Image too large (max 10MB)" }, { status: 400 })
+      }
+    } catch (err) {
+      return NextResponse.json({ error: "Could not download image from URL" }, { status: 400 })
     }
 
-    const imageBase64 = body.imageBase64 as string;
-    const teams = Array.isArray(body.teams) ? body.teams as string[] : [];
-
-    if (!imageBase64 || imageBase64.length < 100) {
-      return NextResponse.json({ error: "Valid imageBase64 required" }, { status: 400 });
-    }
-
-    // Strip data URL prefix if present
-    const cleanBase64 = imageBase64.replace(/^data:image\/[a-z]+;base64,/, "");
-
-    // Try Groq first (Llama 4 Scout Vision), then Together (Llama Vision Free)
-    let result = await extractWithGroq(cleanBase64, teams);
-    if (!result) result = await extractWithTogether(cleanBase64, teams);
-
-    if (!result || !Array.isArray(result.results)) {
+    // Call Gemini Vision API
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY
+    if (!apiKey) {
       return NextResponse.json(
-        { error: "AI could not read the screenshot. Try a clearer image or enter results manually." },
-        { status: 502 }
-      );
+        { error: "AI service not configured (missing GEMINI_API_KEY)" },
+        { status: 503 }
+      )
     }
+
+    const prompt = `You are an expert at reading PUBG Mobile / BGMI match result screenshots.
+Extract EVERY team from the results table in this image.
+
+For each team, provide:
+- teamName: exact team name/tag as shown (preserve capitalization, brackets, tags)
+- placement: final position (1 = first place, 2 = second, etc.)
+- kills: total team kills for this match
+
+Return ONLY valid JSON in this exact format (no markdown, no explanation):
+{
+  "teams": [
+    { "teamName": "TEAM_NAME", "placement": 1, "kills": 12 },
+    { "teamName": "TEAM_NAME", "placement": 2, "kills": 8 }
+  ]
+}
+
+If you cannot read the screenshot clearly, return: { "teams": [] }`
+
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt },
+                {
+                  inline_data: {
+                    mime_type: mimeType,
+                    data: imageBuffer.toString("base64"),
+                  },
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: "application/json",
+          },
+        }),
+        signal: AbortSignal.timeout(60000),
+      }
+    )
+
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text().catch(() => "")
+      console.error("Gemini API error:", geminiRes.status, errText.substring(0, 200))
+      return NextResponse.json(
+        { error: "AI extraction failed. Try a clearer screenshot." },
+        { status: 502 }
+      )
+    }
+
+    const geminiData = await geminiRes.json()
+    const text = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || ""
+
+    let parsed: any
+    try {
+      // Clean up any markdown wrapping
+      const cleaned = text
+        .replace(/```json\s*/gi, "")
+        .replace(/```\s*/g, "")
+        .trim()
+      parsed = JSON.parse(cleaned)
+    } catch (err) {
+      console.error("Failed to parse Gemini response:", text.substring(0, 200))
+      return NextResponse.json(
+        { error: "AI returned invalid data. Try a different screenshot." },
+        { status: 502 }
+      )
+    }
+
+    const teams = Array.isArray(parsed?.teams) ? parsed.teams : []
+
+    if (teams.length === 0) {
+      return NextResponse.json(
+        { error: "No teams detected. Ensure the screenshot shows the full results leaderboard." },
+        { status: 400 }
+      )
+    }
+
+    // Normalize + validate
+    const cleanTeams = teams
+      .filter((t: any) => t?.teamName)
+      .map((t: any) => ({
+        teamName: String(t.teamName).trim().slice(0, 60),
+        placement: Math.max(0, Math.min(50, parseInt(t.placement) || 0)),
+        kills: Math.max(0, Math.min(200, parseInt(t.kills) || 0)),
+        confidence: 0.9,
+      }))
+      .filter((t: any) => t.teamName.length > 0)
 
     return NextResponse.json({
-      map: result.map || "Erangel",
-      results: result.results,
-      provider: "vision-ai",
-    });
-  } catch (err) {
-    logError(err, "EXTRACT_SCREENSHOT");
+      teams: cleanTeams,
+      count: cleanTeams.length,
+      source: "gemini-2.0-flash",
+    })
+  } catch (err: any) {
+    await logSystemError(err, {
+      route: "/api/matches/[id]/extract-screenshot",
+      severity: "ERROR",
+    })
     return NextResponse.json(
-      { error: "Failed to extract screenshot data" },
+      { error: err?.message || "Extraction failed" },
       { status: 500 }
-    );
+    )
   }
 }
