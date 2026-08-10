@@ -17,39 +17,95 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 100)
     const skip = (page - 1) * limit
 
+    // Build where clause - only apply filters if they exist
     const where: Record<string, unknown> = {}
-    if (status && ["PENDING", "APPROVED", "REJECTED"].includes(status)) where.status = status
-    if (method && ["ESEWA", "KHALTI", "BANK"].includes(method)) where.method = method
+    if (status && ["PENDING", "APPROVED", "REJECTED"].includes(status)) {
+      where.status = status
+    }
+    if (method && ["ESEWA", "KHALTI", "BANK"].includes(method)) {
+      where.method = method
+    }
     if (search) {
       where.OR = [
         { user: { email: { contains: search, mode: "insensitive" } } },
-        { user: { name: { contains: search, mode: "insensitive" } } },
+        { user: { username: { contains: search, mode: "insensitive" } } },
+        { user: { displayName: { contains: search, mode: "insensitive" } } },
         { transactionReference: { contains: search, mode: "insensitive" } },
       ]
     }
 
-    const [payments, total] = await Promise.all([
+    const [payments, total, summary] = await Promise.all([
       prisma.payment.findMany({
         where,
         skip,
         take: limit,
         orderBy: { submittedAt: "desc" },
         include: {
-          user: { select: { id: true, name: true, email: true } },
-          reviewer: { select: { id: true, name: true, email: true } },
+          user: {
+            select: {
+              id: true,
+              email: true,
+              username: true,
+              displayName: true,
+            },
+          },
+          reviewer: {
+            select: {
+              id: true,
+              email: true,
+              username: true,
+              displayName: true,
+            },
+          },
         },
       }),
       prisma.payment.count({ where }),
+      prisma.payment.groupBy({
+        by: ["status"],
+        _count: { status: true },
+      }),
     ])
 
-    const summary = await prisma.payment.groupBy({
-      by: ["status"],
-      _count: { status: true },
-    })
+    // Map user field for backward compatibility
+    const mappedPayments = payments.map((p) => ({
+      ...p,
+      user: p.user
+        ? {
+            id: p.user.id,
+            email: p.user.email,
+            name: p.user.displayName || p.user.username,
+          }
+        : null,
+      reviewer: p.reviewer
+        ? {
+            id: p.reviewer.id,
+            email: p.reviewer.email,
+            name: p.reviewer.displayName || p.reviewer.username,
+          }
+        : null,
+    }))
 
-    return NextResponse.json({ payments, total, page, limit, summary })
+    return NextResponse.json({
+      payments: mappedPayments,
+      total,
+      page,
+      limit,
+      summary,
+    })
   } catch (err) {
-    await logSystemError(err, { route: "/api/admin/payments", severity: "ERROR" })
-    return NextResponse.json({ error: "Failed to fetch payments" }, { status: 500 })
+    console.error("Admin payments error:", err)
+    await logSystemError(err, {
+      route: "/api/admin/payments",
+      severity: "ERROR",
+    })
+    return NextResponse.json(
+      {
+        payments: [],
+        total: 0,
+        summary: [],
+        error: "Failed to fetch payments",
+      },
+      { status: 500 }
+    )
   }
 }

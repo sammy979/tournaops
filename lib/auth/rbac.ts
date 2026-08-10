@@ -1,125 +1,144 @@
 // lib/auth/rbac.ts
-// Role-based access control helpers for TournaOps
-// SUPER_ADMIN: platform owner only
-// ORGANIZER: tournament owner/operator
-// USER: normal user (default)
+import { NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import { getSession } from "@/lib/auth/session"
 
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import type { SessionPayload } from "@/lib/auth/session";
+/**
+ * Requires the user to be a SUPER_ADMIN.
+ * Returns null if authorized, or a NextResponse with error if not.
+ */
+export async function requireSuperAdmin(_req?: NextRequest): Promise<NextResponse | null> {
+  const session = await getSession()
 
-export type UserRole = "USER" | "ORGANIZER" | "SUPER_ADMIN";
+  if (!session?.userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
 
-// ============================================================
-// SERVER-SIDE ROLE CHECK — always hits DB, never trust session role
-// Use this in every /api/admin/* and /api/pro/* route
-// ============================================================
+  // Verify against database (session role may be stale)
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: {
+      id: true,
+      role: true,
+      isAdmin: true,
+      isPro: true,
+      email: true,
+    },
+  })
 
-export interface RoleCheckResult {
-  authorized: boolean;
-  errorResponse: NextResponse | null;
-  user?: { id: string; role: UserRole; isAdmin: boolean; isPro: boolean; email: string };
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 401 })
+  }
+
+  // Allow SUPER_ADMIN role OR legacy isAdmin flag
+  const isSuperAdmin = user.role === "SUPER_ADMIN" || user.isAdmin === true
+
+  if (!isSuperAdmin) {
+    return NextResponse.json({ error: "Forbidden - admin access required" }, { status: 403 })
+  }
+
+  return null
 }
 
-export async function requireSuperAdmin(session: SessionPayload | null): Promise<RoleCheckResult> {
-  if (!session) {
-    return {
-      authorized: false,
-      errorResponse: NextResponse.json({ error: "Authentication required" }, { status: 401 }),
-    };
+/**
+ * Requires the user to be an ORGANIZER or SUPER_ADMIN.
+ */
+export async function requireOrganizer(_req?: NextRequest): Promise<NextResponse | null> {
+  const session = await getSession()
+
+  if (!session?.userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { id: true, role: true, isAdmin: true, isPro: true, email: true },
-  });
+    select: {
+      id: true,
+      role: true,
+      isAdmin: true,
+    },
+  })
 
   if (!user) {
-    return {
-      authorized: false,
-      errorResponse: NextResponse.json({ error: "User not found" }, { status: 401 }),
-    };
+    return NextResponse.json({ error: "User not found" }, { status: 401 })
   }
 
-  const isSuper = user.role === "SUPER_ADMIN" || user.isAdmin === true;
+  const allowed =
+    user.role === "ORGANIZER" ||
+    user.role === "SUPER_ADMIN" ||
+    user.isAdmin === true
 
-  if (!isSuper) {
-    // Return 404 to hide existence of admin routes from non-admins
-    return {
-      authorized: false,
-      errorResponse: NextResponse.json({ error: "Not found" }, { status: 404 }),
-    };
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden - organizer access required" }, { status: 403 })
   }
 
-  return {
-    authorized: true,
-    errorResponse: null,
-    user: {
-      id: user.id,
-      role: user.role as UserRole,
-      isAdmin: user.isAdmin,
-      isPro: user.isPro,
-      email: user.email,
-    },
-  };
+  return null
 }
 
-export async function requirePro(session: SessionPayload | null): Promise<RoleCheckResult> {
-  if (!session) {
-    return {
-      authorized: false,
-      errorResponse: NextResponse.json({ error: "Authentication required" }, { status: 401 }),
-    };
+/**
+ * Requires the user to have an active Pro subscription.
+ * Server-side check respecting proExpiresAt.
+ */
+export async function requirePro(_req?: NextRequest): Promise<NextResponse | null> {
+  const session = await getSession()
+
+  if (!session?.userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { id: true, role: true, isAdmin: true, isPro: true, email: true },
-  });
+    select: {
+      id: true,
+      isPro: true,
+      proExpiresAt: true,
+      role: true,
+      isAdmin: true,
+    },
+  })
 
   if (!user) {
-    return {
-      authorized: false,
-      errorResponse: NextResponse.json({ error: "User not found" }, { status: 401 }),
-    };
+    return NextResponse.json({ error: "User not found" }, { status: 401 })
   }
 
-  // Super admins always have Pro access
-  const hasPro = user.isPro || user.role === "SUPER_ADMIN" || user.isAdmin;
+  // Super admins have Pro access automatically
+  if (user.role === "SUPER_ADMIN" || user.isAdmin) return null
 
-  if (!hasPro) {
-    return {
-      authorized: false,
-      errorResponse: NextResponse.json(
-        { error: "Pro plan required", upgradeUrl: "/dashboard/upgrade" },
-        { status: 402 }
-      ),
-    };
+  // Check Pro status with expiration
+  const isProActive =
+    user.isPro && (!user.proExpiresAt || new Date(user.proExpiresAt) > new Date())
+
+  if (!isProActive) {
+    return NextResponse.json(
+      { error: "Pro subscription required", upgrade: "/dashboard/upgrade" },
+      { status: 403 }
+    )
   }
 
-  return {
-    authorized: true,
-    errorResponse: null,
-    user: {
-      id: user.id,
-      role: user.role as UserRole,
-      isAdmin: user.isAdmin,
-      isPro: user.isPro,
-      email: user.email,
+  return null
+}
+
+/**
+ * Get the current authenticated user from database.
+ * Returns null if not authenticated.
+ */
+export async function getAuthUser() {
+  const session = await getSession()
+  if (!session?.userId) return null
+
+  return prisma.user.findUnique({
+    where: { id: session.userId },
+    select: {
+      id: true,
+      email: true,
+      username: true,
+      displayName: true,
+      role: true,
+      isAdmin: true,
+      isPro: true,
+      proExpiresAt: true,
+      organizerName: true,
+      organizerLogo: true,
     },
-  };
-}
-
-// ============================================================
-// CLIENT-SAFE HELPERS — for UI hints only, NEVER for security
-// ============================================================
-
-export function hasSuperAdmin(session: SessionPayload | null): boolean {
-  if (!session) return false;
-  return session.role === "SUPER_ADMIN" || session.isAdmin === true;
-}
-
-export function hasPro(session: SessionPayload | null): boolean {
-  if (!session) return false;
-  return session.isPro === true || session.role === "SUPER_ADMIN" || session.isAdmin === true;
+  })
 }
