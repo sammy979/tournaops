@@ -14,27 +14,32 @@ enum Role {
 }
 
 model User {
-  id           String              @id @default(cuid())
-  email        String              @unique
-  username     String              @unique
-  displayName  String
-  password     String
-  avatar       String?
-  googleId     String?  @unique
-  isAdmin      Boolean             @default(false)
-  isPro        Boolean             @default(false)
-  role         Role                @default(USER)
+  id                   String              @id @default(cuid())
+  email                String              @unique
+  username             String              @unique
+  displayName          String
+  password             String
+  avatar               String?
+  googleId             String?             @unique
+  isAdmin              Boolean             @default(false)
+  isPro                Boolean             @default(false)
+  role                 Role                @default(USER)
   stripeCustomerId     String?
   stripeSubscriptionId String?
   dodoCustomerId       String?
   dodoSubscriptionId   String?
-  theme        String              @default("dark")
-  chatHistory  Json?               @default("[]")
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  tournaments  Tournament[]
-  chatMessages ChatMessage[]
-  UserScoringPreset UserScoringPreset[]
+  theme                String              @default("dark")
+  chatHistory          Json?               @default("[]")
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  tournaments          Tournament[]
+  chatMessages         ChatMessage[]
+  UserScoringPreset    UserScoringPreset[]
+  payments             Payment[]           @relation("UserPayments")
+  reviewedPayments     Payment[]           @relation("PaymentReviewer")
+  proGrantedAt         DateTime?
+  proExpiresAt         DateTime?
+  proGrantedBy         String?
 
   @@index([email])
   @@index([username])
@@ -138,11 +143,11 @@ model Match {
   screenshotUrl    String?
   tournament       Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
 
+  @@unique([stageId, groupId, matchNumber])
   @@index([tournamentId])
   @@index([status])
   @@index([roundId])
   @@index([stageId])
-  @@unique([stageId, groupId, matchNumber])
 }
 
 model DiscordImport {
@@ -200,9 +205,9 @@ model Stage {
   groups             StageGroup[]
   progressions       TeamProgression[]
 
+  @@unique([tournamentId, order])
   @@index([tournamentId, order])
   @@index([status])
-  @@unique([tournamentId, order])
 }
 
 model StageGroup {
@@ -217,8 +222,8 @@ model StageGroup {
   updatedAt DateTime @updatedAt
   stage     Stage    @relation(fields: [stageId], references: [id], onDelete: Cascade)
 
-  @@index([stageId])
   @@unique([stageId, order])
+  @@index([stageId])
 }
 
 model TeamProgression {
@@ -275,7 +280,7 @@ model UserScoringPreset {
   isDefault   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id])
 
   @@index([userId])
 }
@@ -287,7 +292,7 @@ model ChatMessage {
   content      String
   tournamentId String?
   createdAt    DateTime @default(now())
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id])
 }
 
 model Player {
@@ -307,4 +312,102 @@ model Player {
   updatedAt    DateTime @updatedAt
 
   @@index([teamId])
+}
+
+// --- PAYMENT SYSTEM -----------------------------------------------------------
+
+enum PaymentMethod {
+  ESEWA
+  KHALTI
+  BANK
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ProSource {
+  PAYMENT
+  ADMIN_MANUAL
+  PROMOTION
+  COMP
+  SYSTEM
+}
+
+model Payment {
+  id                   String        @id @default(cuid())
+  userId               String
+  user                 User          @relation("UserPayments", fields: [userId], references: [id], onDelete: Cascade)
+  amount               Float
+  currency             String        @default("NPR")
+  method               PaymentMethod
+  transactionReference String
+  proofUrl             String?
+  note                 String?
+  status               PaymentStatus @default(PENDING)
+  submittedAt          DateTime      @default(now())
+  reviewedAt           DateTime?
+  reviewedBy           String?
+  reviewer             User?         @relation("PaymentReviewer", fields: [reviewedBy], references: [id])
+  rejectionReason      String?
+  adminNote            String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([method])
+  @@index([transactionReference])
+  @@index([submittedAt])
+}
+
+model PaymentSettings {
+  id                   String   @id @default(cuid())
+  esewaEnabled         Boolean  @default(false)
+  esewaQrUrl           String?
+  esewaAccountName     String?
+  esewaAccountId       String?
+  esewaInstructions    String?
+  khaltiEnabled        Boolean  @default(false)
+  khaltiQrUrl          String?
+  khaltiAccountName    String?
+  khaltiAccountId      String?
+  khaltiInstructions   String?
+  bankEnabled          Boolean  @default(false)
+  bankName             String?
+  bankAccountHolder    String?
+  bankAccountNumber    String?
+  bankBranch           String?
+  bankInstructions     String?
+  internationalEnabled Boolean  @default(false)
+  updatedAt            DateTime @updatedAt
+  updatedBy            String?
+}
+
+model SystemError {
+  id              String    @id @default(cuid())
+  fingerprint     String    @unique
+  severity        String    @default("ERROR")
+  route           String?
+  errorType       String?
+  message         String
+  requestId       String?
+  userId          String?
+  tournamentId    String?
+  occurrenceCount Int       @default(1)
+  firstSeenAt     DateTime  @default(now())
+  lastSeenAt      DateTime  @default(now())
+  resolved        Boolean   @default(false)
+  resolvedAt      DateTime?
+  resolvedBy      String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([severity])
+  @@index([route])
+  @@index([fingerprint])
+  @@index([firstSeenAt])
+  @@index([resolved])
 }
