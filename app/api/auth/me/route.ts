@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
-import { logError } from "@/lib/logger";
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
     const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ user: null }, { status: 200 });
+    if (!session?.userId) {
+      return NextResponse.json({ user: null }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
@@ -21,19 +20,25 @@ export async function GET() {
         isAdmin: true,
         isPro: true,
         role: true,
+        proExpiresAt: true,
+        theme: true,
         createdAt: true,
-        // Never select: password
       },
     });
 
-    if (!user) {
-      // Session references deleted user — clear it
-      return NextResponse.json({ user: null }, { status: 200 });
-    }
+    if (!user) return NextResponse.json({ user: null }, { status: 401 });
 
-    return NextResponse.json({ user });
+    // Check Pro expiration
+    const isProActive =
+      user.isPro && (!user.proExpiresAt || new Date(user.proExpiresAt) > new Date());
+
+    return NextResponse.json({
+      user: {
+        ...user,
+        isPro: isProActive,
+      },
+    });
   } catch (err) {
-    logError(err, "AUTH_ME");
-    return NextResponse.json({ user: null }, { status: 200 });
+    return NextResponse.json({ user: null }, { status: 500 });
   }
 }

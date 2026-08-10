@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { setSessionCookie } from "@/lib/auth/session";
@@ -51,6 +51,9 @@ export async function POST(req: NextRequest) {
         displayName: true,
         password: true,
         isAdmin: true,
+        isPro: true,
+        role: true,
+        proExpiresAt: true,
       },
     });
 
@@ -68,12 +71,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
-    // ── Set session cookie ─────────────────────────────────────
+    // ── Check Pro expiration ───────────────────────────────────
+    // If Pro has expired, treat as non-Pro
+    const isProActive =
+      user.isPro &&
+      (!user.proExpiresAt || new Date(user.proExpiresAt) > new Date());
+
+    // ── Set session cookie with role and Pro status ────────────
     await setSessionCookie({
       userId: user.id,
       email: user.email,
       username: user.username,
       isAdmin: user.isAdmin,
+      isPro: isProActive,
+      role: user.role,
     });
 
     return NextResponse.json({
@@ -84,6 +95,8 @@ export async function POST(req: NextRequest) {
         username: user.username,
         displayName: user.displayName,
         isAdmin: user.isAdmin,
+        isPro: isProActive,
+        role: user.role,
       },
     });
   } catch (err) {

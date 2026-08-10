@@ -8,7 +8,7 @@ import { validateEmail, validatePassword, validateUsername, validateString } fro
 import { logError } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
-  // ── Rate limiting ──────────────────────────────────────────
+  // â”€â”€ Rate limiting â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const ip = getClientIp(req);
   const rl = checkRateLimit(`register:${ip}`, RATE_LIMITS.AUTH_REGISTER);
   if (!rl.allowed) {
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // ── Parse body ─────────────────────────────────────────────
+    // â”€â”€ Parse body â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     let body: unknown;
     try {
       body = await req.json();
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
     const { email, password, username, displayName } = body as Record<string, unknown>;
 
-    // ── Input validation ───────────────────────────────────────
+    // â”€â”€ Input validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const errors: string[] = [];
 
     if (!validateEmail(email)) {
@@ -55,12 +55,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: errors[0], details: errors }, { status: 400 });
     }
 
-    // ── Normalize inputs ───────────────────────────────────────
+    // â”€â”€ Normalize inputs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const normalizedEmail = (email as string).toLowerCase().trim();
     const normalizedUsername = (username as string).toLowerCase().trim();
     const normalizedDisplayName = (displayName as string).trim();
 
-    // ── Check uniqueness ───────────────────────────────────────
+    // â”€â”€ Check uniqueness â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const [existingEmail, existingUsername] = await Promise.all([
       prisma.user.findUnique({
         where: { email: normalizedEmail },
@@ -80,11 +80,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Username already taken" }, { status: 400 });
     }
 
-    // ── Hash password ──────────────────────────────────────────
-    // bcrypt cost 12 — good balance of security vs speed
+    // â”€â”€ Hash password â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // bcrypt cost 12 â€” good balance of security vs speed
     const passwordHash = await bcrypt.hash(password as string, 12);
 
-    // ── Create user ────────────────────────────────────────────
+    // â”€â”€ Create user â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const user = await prisma.user.create({
       data: {
         email: normalizedEmail,
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // ── Set session cookie ─────────────────────────────────────
+    // â”€â”€ Set session cookie â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     await setSessionCookie({
       userId: user.id,
       email: user.email,
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
     });
 
 
-    // ── Send welcome email (fire and forget) ──────────────────
+    // â”€â”€ Send welcome email (fire and forget) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     void sendWelcomeEmail(user.email, user.displayName || user.username).catch((e) => {
       console.error("[REGISTER] Welcome email failed:", e);
     });
