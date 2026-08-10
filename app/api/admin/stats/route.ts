@@ -1,97 +1,93 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth/session";
-import { requireSuperAdmin } from "@/lib/auth/rbac";
-import { logError } from "@/lib/logger";
+// app/api/admin/stats/route.ts
+import { NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import { requireSuperAdmin } from "@/lib/auth/rbac"
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await getSession();
-    const { authorized, errorResponse } = await requireSuperAdmin(session);
-    if (!authorized) return errorResponse!;
+    const authError = await requireSuperAdmin(req)
+    if (authError) return authError
 
-    // ── Fetch stats ────────────────────────────────────────────
+    // Run all counts in parallel
     const [
       totalUsers,
       totalTournaments,
       totalTeams,
       totalMatches,
-      totalDiscordImports,
-      pendingDiscordImports,
-      users,
-      tournaments,
-      recentImports,
+      proUsers,
+      liveTournaments,
+      pendingPayments,
+      approvedPayments,
+      totalPayments,
+      recentUsers,
     ] = await Promise.all([
-      prisma.user.count(),
-      prisma.tournament.count(),
-      prisma.team.count(),
-      prisma.match.count(),
-      prisma.discordImport.count(),
-      prisma.discordImport.count({ where: { status: "pending" } }),
+      prisma.user.count().catch(() => 0),
+      prisma.tournament.count().catch(() => 0),
+      prisma.team.count().catch(() => 0),
+      (prisma as any).match?.count?.().catch(() => 0) ?? 0,
+      prisma.user.count({ where: { isPro: true } }).catch(() => 0),
+      prisma.tournament.count({
+        where: { status: { in: ["live", "LIVE", "registration"] } },
+      }).catch(() => 0),
+      (prisma as any).payment?.count?.({ where: { status: "PENDING" } }).catch(() => 0) ?? 0,
+      (prisma as any).payment?.count?.({ where: { status: "APPROVED" } }).catch(() => 0) ?? 0,
+      (prisma as any).payment?.count?.().catch(() => 0) ?? 0,
       prisma.user.findMany({
+        take: 5,
         orderBy: { createdAt: "desc" },
         select: {
           id: true,
           email: true,
-          username: true,
           displayName: true,
-          isAdmin: true,
+          isPro: true,
+          role: true,
           createdAt: true,
-          _count: { select: { tournaments: true } },
-          // Never select: password
         },
-        take: 100,
-      }),
-      prisma.tournament.findMany({
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          status: true,
-          maxTeams: true,
-          isPublic: true,
-          createdAt: true,
-          createdBy: { select: { email: true, username: true } },
-          _count: { select: { teams: true, matches: true } },
-        },
-        take: 100,
-      }),
-      prisma.discordImport.findMany({
-        orderBy: { receivedAt: "desc" },
-        select: {
-          id: true,
-          discordGuildName: true,
-          discordChannelName: true,
-          discordUsername: true,
-          status: true,
-          receivedAt: true,
-          importedAt: true,
-          // Not selecting messageContent to avoid data bloat
-        },
-        take: 50,
-      }),
-    ]);
+      }).catch(() => []),
+    ])
+
+    // Total revenue from approved payments
+    let totalRevenue = 0
+    try {
+      const revenue = await (prisma as any).payment?.aggregate?.({
+        where: { status: "APPROVED" },
+        _sum: { amount: true },
+      })
+      totalRevenue = revenue?._sum?.amount || 0
+    } catch {}
 
     return NextResponse.json({
-      isAdmin: true,
       stats: {
         totalUsers,
         totalTournaments,
         totalTeams,
         totalMatches,
-        totalDiscordImports,
-        pendingDiscordImports,
+        proUsers,
+        liveTournaments,
+        pendingPayments,
+        approvedPayments,
+        totalPayments,
+        totalRevenue,
       },
-      users,
-      tournaments,
-      recentImports,
-    });
+      recentUsers,
+    })
   } catch (err) {
-    logError(err, "ADMIN_STATS");
-    return NextResponse.json(
-      { error: "Failed to load admin statistics" },
-      { status: 500 }
-    );
+    console.error("Admin stats error:", err)
+    return NextResponse.json({
+      stats: {
+        totalUsers: 0,
+        totalTournaments: 0,
+        totalTeams: 0,
+        totalMatches: 0,
+        proUsers: 0,
+        liveTournaments: 0,
+        pendingPayments: 0,
+        approvedPayments: 0,
+        totalPayments: 0,
+        totalRevenue: 0,
+      },
+      recentUsers: [],
+      error: "Failed to fetch stats",
+    }, { status: 500 })
   }
 }
