@@ -7,8 +7,8 @@ export const PRO_PRICE = {
   currencySymbol: "Rs",
   display: "Rs 299",
   displayFull: "NPR 299",
-  duration: "1 year",
-  durationDays: 365,
+  duration: "1 month",
+  durationDays: 30,
 } as const
 
 export const PRO_FEATURES = [
