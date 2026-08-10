@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -130,22 +130,22 @@ const PRICING = [
   },
   {
     name: "Pro",
-    price: "$9.99",
+    price: "Rs 299",
     period: "per month",
     desc: "For serious organizers",
     badge: "Most Popular",
     features: [
       "Unlimited tournaments",
-      "400 teams per tournament",
+      "Unlimited teams",
       "All scoring systems",
       "AI Tournament Assistant",
       "Screenshot import (AI)",
       "Multi-stage system",
       "Analytics dashboard",
       "Priority support",
-      "7-day free trial",
+      "No auto-renewal",
     ],
-    cta: "Start Free Trial",
+    cta: "Get Started",
     href: "/register",
     highlighted: true,
   },
@@ -817,7 +817,7 @@ export default function LandingPage() {
               },
               {
                 q: "Is TournaOps really 100% free?",
-                a: "Yes. The Free plan supports 3 tournaments with up to 32 teams each, complete with OBS overlays, Discord integration, public tournament pages, and basic scoring (PMGC/PMPL). Upgrade to Pro ($9.99/mo) only when you need unlimited tournaments, 400 teams, AI features, and screenshot import.",
+                a: "Yes. The Free plan supports 3 tournaments with up to 32 teams each, complete with OBS overlays, Discord integration, public tournament pages, and basic scoring (PMGC/PMPL). Upgrade to Pro (Rs 299/mo) only when you need unlimited tournaments, 400 teams, AI features, and screenshot import.",
               },
               {
                 q: "Can I use PMGC or PMPL scoring systems?",
@@ -837,7 +837,7 @@ export default function LandingPage() {
               },
               {
                 q: "How many teams can I add to a tournament?",
-                a: "The Free plan supports up to 32 teams per tournament. The Pro plan expands this to 400 teams per tournament — perfect for large qualifiers and PMGC/PMPL style events. You can bulk import teams via CSV, Discord, or registration forms.",
+                a: "The Free plan supports up to 32 teams per tournament. The Pro plan expands this to Unlimited teams — perfect for large qualifiers and PMGC/PMPL style events. You can bulk import teams via CSV, Discord, or registration forms.",
               },
               {
                 q: "Can players and fans view tournament standings publicly?",
@@ -869,7 +869,7 @@ export default function LandingPage() {
                 "@type": "FAQPage",
                 "mainEntity": [
                   { "@type": "Question", "name": "How do I create a PUBG Mobile tournament for free?", "acceptedAnswer": { "@type": "Answer", "text": "Sign up on TournaOps in 30 seconds — no credit card required. Create a tournament, set format and scoring, and go live in under 2 minutes." } },
-                  { "@type": "Question", "name": "Is TournaOps really 100% free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Free plan supports 3 tournaments with 32 teams each. Pro plan is $9.99/month for unlimited tournaments and 400 teams." } },
+                  { "@type": "Question", "name": "Is TournaOps really 100% free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Free plan supports 3 tournaments with 32 teams each. Pro plan is Rs 299/month for unlimited tournaments and 400 teams." } },
                   { "@type": "Question", "name": "Can I use PMGC or PMPL scoring?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Official PMGC and PMPL scoring presets are built-in, plus custom scoring rules." } },
                   { "@type": "Question", "name": "Does TournaOps work with OBS?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Professional OBS overlays for standings, match info, chicken dinner, and top fraggers." } },
                   { "@type": "Question", "name": "How does AI screenshot import work?", "acceptedAnswer": { "@type": "Answer", "text": "Upload a PUBG Mobile match screenshot and AI extracts placements, kills, and map automatically." } },
