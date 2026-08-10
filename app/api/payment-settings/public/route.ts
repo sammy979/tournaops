@@ -1,13 +1,28 @@
 // app/api/payment-settings/public/route.ts
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const settings = await prisma.paymentSettings.findFirst()
-    if (!settings) return NextResponse.json({ settings: null })
+    let settings = null
+    try {
+      settings = await prisma.paymentSettings.findFirst()
+    } catch {
+      // Table might not exist yet or query failed - return safe defaults
+      settings = null
+    }
 
-    // Only expose public-safe fields, no admin info
+    if (!settings) {
+      return NextResponse.json({
+        settings: {
+          esewaEnabled: false,
+          khaltiEnabled: false,
+          bankEnabled: false,
+        },
+      })
+    }
+
+    // Only expose public-safe fields
     const publicSettings = {
       esewaEnabled: settings.esewaEnabled,
       esewaQrUrl: settings.esewaQrUrl,
@@ -25,11 +40,16 @@ export async function GET(req: NextRequest) {
       bankAccountNumber: settings.bankAccountNumber,
       bankBranch: settings.bankBranch,
       bankInstructions: settings.bankInstructions,
-      // internationalEnabled is never exposed publicly
     }
 
     return NextResponse.json({ settings: publicSettings })
   } catch {
-    return NextResponse.json({ settings: null })
+    return NextResponse.json({
+      settings: {
+        esewaEnabled: false,
+        khaltiEnabled: false,
+        bankEnabled: false,
+      },
+    })
   }
 }

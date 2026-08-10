@@ -7,18 +7,21 @@ import { logSystemError } from "@/lib/system-health/error-logger"
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const session = await getSession()
     if (!session?.userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    const tournamentId = params.id
-    const isSuperAdmin = session.role === "SUPER_ADMIN"
+    const resolvedParams = await Promise.resolve(params)
+    const tournamentId = resolvedParams.id
+    const isAdmin = session.role === "SUPER_ADMIN" || session.isAdmin
 
-    const whereClause = isSuperAdmin
+    // Any authenticated user can view their own tournament's command center
+    // Tournament ownership is via userId field
+    const whereClause = isAdmin
       ? { id: tournamentId }
-      : { id: tournamentId, organizerId: session.userId }
+      : { id: tournamentId, userId: session.userId }
 
     const tournament = await prisma.tournament.findFirst({
       where: whereClause,
@@ -73,8 +76,13 @@ export async function GET(
     const liveMatch = allMatches.find((m) => (m as any).status === "LIVE")
     const nextMatchRaw = liveMatch || upcomingMatch || null
 
-    const health = await checkTournamentHealth(tournamentId)
+    // Tournament health (best effort)
+    let health = { issues: [] as any[], healthy: true }
+    try {
+      health = await checkTournamentHealth(tournamentId) as any
+    } catch {}
 
+    // Recent activity from audit log
     let recentActivity: unknown[] = []
     try {
       const auditModel = (prisma as any).auditLog
@@ -105,7 +113,7 @@ export async function GET(
       completedMatches,
       pendingResults: pendingResultsMatches.length,
       readyTeams: tournament.teams.length,
-      warnings: health.issues.filter((i) => i.severity === "warning").length,
+      warnings: health.issues.filter((i: any) => i.severity === "warning").length,
       discordConnected: !!(process.env.DISCORD_BOT_TOKEN),
       currentStage: currentStage?.name,
       status: (tournament as any).status || "DRAFT",
@@ -116,7 +124,8 @@ export async function GET(
       matchNumber: (m as any).matchNumber ?? 0,
       source: (m.results[0] as any)?.source || "MANUAL",
       status: "PENDING",
-      submittedAt: (m.results[0] as any)?.submittedAt || m.scheduledAt || new Date(),
+      submittedAt:
+        (m.results[0] as any)?.submittedAt || m.scheduledAt || new Date(),
     }))
 
     const nextMatchPayload = nextMatchRaw

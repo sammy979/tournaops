@@ -8,10 +8,13 @@ export async function GET(req: NextRequest) {
     const session = await getSession()
     if (!session?.userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
+    // SUPER_ADMIN sees all tournaments
+    // Otherwise, use tournaments owned by the user
+    // The Tournament model uses userId (owner), not organizerId
     const where =
-      session.role === "SUPER_ADMIN"
+      session.role === "SUPER_ADMIN" || session.isAdmin
         ? {}
-        : { organizerId: session.userId }
+        : { userId: session.userId }
 
     const tournaments = await prisma.tournament.findMany({
       where,
@@ -29,6 +32,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ tournaments })
   } catch (err) {
-    return NextResponse.json({ error: "Failed to fetch tournaments" }, { status: 500 })
+    console.error("Dashboard tournaments error:", err)
+    return NextResponse.json({ tournaments: [] })
   }
 }

@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import {
-  Trophy, Users, Swords, Clock, Shield, Wifi, WifiOff,
-  ChevronDown, RefreshCw, Settings, Eye,
+  Trophy, RefreshCw, Settings, Eye, ChevronDown,
 } from "lucide-react"
 import QuickActions from "./QuickActions"
 import TournamentHealth from "./TournamentHealth"
@@ -117,44 +116,57 @@ export default function OrganizerCommandCenter() {
 
   const { selectedTournament, summary, healthIssues, pendingResults, nextMatch, recentActivity, tournaments } = data
 
-  const statusColor = summary?.status === "LIVE" ? "text-green-500" : summary?.status === "COMPLETED" ? "text-gray-400" : "text-yellow-500"
-
   const summaryCards = [
-    { label: "Teams", value: summary?.totalTeams ?? 0, sub: "", link: selectedId ? `/dashboard/tournaments/${selectedId}/teams` : undefined, color: "text-blue-600" },
-    { label: "Matches", value: summary ? `${summary.completedMatches}/${summary.totalMatches}` : "0/0", sub: "", link: selectedId ? `/dashboard/tournaments/${selectedId}/match-results` : undefined, color: "text-indigo-600" },
-    { label: "Results Pending", value: summary?.pendingResults ?? 0, sub: "", link: selectedId ? `/dashboard/tournaments/${selectedId}/match-results` : undefined, color: summary?.pendingResults ? "text-orange-600" : "text-gray-400", highlight: !!(summary?.pendingResults) },
-    { label: "Teams Ready", value: summary?.readyTeams ?? 0, sub: "", link: selectedId ? `/dashboard/tournaments/${selectedId}/stages` : undefined, color: "text-green-600" },
-    { label: "Warnings", value: summary?.warnings ?? 0, sub: "", link: selectedId ? `/dashboard/tournaments/${selectedId}/overview` : undefined, color: summary?.warnings ? "text-yellow-600" : "text-gray-400", highlight: !!(summary?.warnings) },
-    { label: "Discord", value: summary?.discordConnected ? "Connected" : "Disconnected", sub: "", link: "/dashboard/discord", color: summary?.discordConnected ? "text-green-600" : "text-red-500", isText: true },
+    { label: "Teams", value: summary?.totalTeams ?? 0, link: selectedId ? `/dashboard/tournaments/${selectedId}/teams` : undefined, color: "#60a5fa" },
+    { label: "Matches", value: summary ? `${summary.completedMatches}/${summary.totalMatches}` : "0/0", link: selectedId ? `/dashboard/tournaments/${selectedId}/match-results` : undefined, color: "#818cf8" },
+    { label: "Results Pending", value: summary?.pendingResults ?? 0, link: selectedId ? `/dashboard/tournaments/${selectedId}/match-results` : undefined, color: summary?.pendingResults ? "#fb923c" : "#6b7280", highlight: !!(summary?.pendingResults) },
+    { label: "Teams Ready", value: summary?.readyTeams ?? 0, link: selectedId ? `/dashboard/tournaments/${selectedId}/stages` : undefined, color: "#4ade80" },
+    { label: "Warnings", value: summary?.warnings ?? 0, link: selectedId ? `/dashboard/tournaments/${selectedId}/overview` : undefined, color: summary?.warnings ? "#facc15" : "#6b7280", highlight: !!(summary?.warnings) },
+    { label: "Discord", value: summary?.discordConnected ? "Connected" : "Disconnected", link: "/dashboard/discord", color: summary?.discordConnected ? "#4ade80" : "#f87171", isText: true },
   ]
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto px-4 py-4">
+    <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "1.5rem" }}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-5 text-white">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div style={{
+        background: "linear-gradient(135deg, rgba(20,20,30,0.95), rgba(30,30,45,0.9))",
+        borderRadius: "1rem",
+        padding: "1.5rem",
+        marginBottom: "1rem",
+        border: "1px solid rgba(255,255,255,0.06)",
+      }}>
+        <div style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Trophy className="w-5 h-5 text-yellow-400" />
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">TournaOps Organizer</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
+              <Trophy style={{ width: "1.25rem", height: "1.25rem", color: "#f59e0b" }} />
+              <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.15em", textTransform: "uppercase" }}>TournaOps Organizer</span>
             </div>
-            <h1 className="text-xl font-bold">Command Center</h1>
+            <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#fff", margin: 0 }}>Command Center</h1>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Tournament Selector */}
-            <div className="relative">
-              <button
-                onClick={() => setShowTournamentSelect(!showTournamentSelect)}
-                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 rounded-xl px-3 py-2 text-sm font-semibold transition-colors">
-                <span className="max-w-[140px] truncate">{selectedTournament?.name || "Select Tournament"}</span>
-                <ChevronDown className="w-4 h-4" />
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <div style={{ position: "relative" }}>
+              <button onClick={() => setShowTournamentSelect(!showTournamentSelect)}
+                style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.75rem", padding: "0.5rem 0.75rem",
+                  fontSize: "0.875rem", color: "#fff", fontWeight: 600, cursor: "pointer" }}>
+                <span style={{ maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {selectedTournament?.name || "Select Tournament"}
+                </span>
+                <ChevronDown style={{ width: "1rem", height: "1rem" }} />
               </button>
               {showTournamentSelect && (
-                <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-gray-200 min-w-[200px] z-50 overflow-hidden">
-                  {tournaments.map((t) => (
+                <div style={{ position: "absolute", right: 0, top: "calc(100% + 0.25rem)", background: "#1a1a24",
+                  borderRadius: "0.75rem", border: "1px solid rgba(255,255,255,0.1)", minWidth: "220px",
+                  zIndex: 50, overflow: "hidden", boxShadow: "0 10px 40px rgba(0,0,0,0.5)" }}>
+                  {tournaments.length === 0 ? (
+                    <div style={{ padding: "0.75rem", color: "#9ca3af", fontSize: "0.8rem", textAlign: "center" }}>No tournaments</div>
+                  ) : tournaments.map((t) => (
                     <button key={t.id} onClick={() => handleTournamentChange(t.id)}
-                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${t.id === selectedId ? "bg-purple-50 text-purple-700 font-semibold" : "text-gray-700"}`}>
+                      style={{ width: "100%", textAlign: "left", padding: "0.625rem 0.875rem", fontSize: "0.875rem",
+                        background: t.id === selectedId ? "rgba(139,92,246,0.15)" : "transparent",
+                        color: t.id === selectedId ? "#a78bfa" : "#e5e7eb", border: "none", cursor: "pointer",
+                        fontWeight: t.id === selectedId ? 600 : 400 }}>
                       {t.name}
                     </button>
                   ))}
@@ -162,48 +174,61 @@ export default function OrganizerCommandCenter() {
               )}
             </div>
 
-            {/* Status */}
             {summary && (
-              <div className="flex items-center gap-1.5 bg-white/10 rounded-xl px-3 py-2">
-                <div className={`w-2 h-2 rounded-full ${summary.status === "LIVE" ? "bg-green-400 animate-pulse" : "bg-gray-400"}`} />
-                <span className={`text-xs font-bold ${statusColor}`}>{summary.status}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "rgba(255,255,255,0.08)",
+                borderRadius: "0.75rem", padding: "0.5rem 0.75rem", border: "1px solid rgba(255,255,255,0.1)" }}>
+                <div style={{ width: "0.5rem", height: "0.5rem", borderRadius: "50%",
+                  background: summary.status === "LIVE" ? "#4ade80" : "#6b7280",
+                  animation: summary.status === "LIVE" ? "pulse 2s infinite" : "none" }} />
+                <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#e5e7eb", textTransform: "uppercase" }}>{summary.status}</span>
               </div>
             )}
 
             <button onClick={handleRefresh} disabled={refreshing}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors">
-              <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+              style={{ padding: "0.5rem", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "0.75rem", color: "#fff", cursor: "pointer" }}>
+              <RefreshCw style={{ width: "1rem", height: "1rem", animation: refreshing ? "spin 1s linear infinite" : "none" }} />
             </button>
 
             {selectedId && (
               <button onClick={() => router.push(`/dashboard/tournaments/${selectedId}/settings`)}
-                className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors">
-                <Settings className="w-4 h-4" />
+                style={{ padding: "0.5rem", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "0.75rem", color: "#fff", cursor: "pointer" }}>
+                <Settings style={{ width: "1rem", height: "1rem" }} />
               </button>
             )}
           </div>
         </div>
 
-        {/* Tournament info row */}
         {selectedTournament && summary && (
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-300">
+          <div style={{ marginTop: "0.75rem", display: "flex", flexWrap: "wrap", gap: "0.5rem 1rem", fontSize: "0.8125rem", color: "#9ca3af" }}>
             <span>{summary.totalTeams} Teams</span>
-            {summary.currentStage && <><span>�</span><span>{summary.currentStage}</span></>}
-            <span>�</span>
+            {summary.currentStage && (<><span>•</span><span>{summary.currentStage}</span></>)}
+            <span>•</span>
             <span>{summary.completedMatches}/{summary.totalMatches} Matches</span>
           </div>
         )}
       </div>
 
+      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}} @keyframes spin{to{transform:rotate(360deg)}}`}</style>
+
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "0.75rem", marginBottom: "1rem" }}>
         {summaryCards.map((card) => (
           <button key={card.label}
             onClick={() => card.link && router.push(card.link)}
             disabled={!card.link}
-            className={`bg-white rounded-xl border p-3.5 text-left transition-all ${card.highlight ? "border-orange-300 shadow-sm" : "border-gray-200"} ${card.link ? "hover:shadow-md cursor-pointer" : "cursor-default"}`}>
-            <div className={`text-xl font-bold ${card.color} ${card.isText ? "text-base" : ""}`}>{card.value}</div>
-            <div className="text-xs text-gray-500 font-medium mt-0.5">{card.label}</div>
+            style={{
+              background: card.highlight ? "rgba(251,146,60,0.08)" : "rgba(30,30,40,0.6)",
+              borderRadius: "0.875rem",
+              padding: "0.875rem 1rem",
+              textAlign: "left",
+              border: `1px solid ${card.highlight ? "rgba(251,146,60,0.25)" : "rgba(255,255,255,0.06)"}`,
+              cursor: card.link ? "pointer" : "default",
+              transition: "all 0.15s",
+            }}>
+            <div style={{ fontSize: card.isText ? "1rem" : "1.5rem", fontWeight: 700, color: card.color }}>{card.value}</div>
+            <div style={{ fontSize: "0.75rem", color: "#9ca3af", fontWeight: 500, marginTop: "0.125rem" }}>{card.label}</div>
           </button>
         ))}
       </div>
@@ -212,22 +237,21 @@ export default function OrganizerCommandCenter() {
       {selectedId && <QuickActions tournamentId={selectedId} />}
 
       {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Left column */}
-        <div className="lg:col-span-2 space-y-4">
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "1rem", marginTop: "1rem" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           <ResultsQueue tournamentId={selectedId} results={pendingResults} loading={loading} />
           <RecentActivity activities={recentActivity} loading={loading} />
         </div>
-
-        {/* Right column */}
-        <div className="space-y-4">
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           <NextMatch tournamentId={selectedId} match={nextMatch} loading={loading} />
           <TournamentHealth tournamentId={selectedId} issues={healthIssues} loading={loading} />
           {selectedId && (
             <button
               onClick={() => router.push(`/dashboard/tournaments/${selectedId}/overview`)}
-              className="w-full flex items-center justify-center gap-2 border border-gray-200 rounded-xl py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
-              <Eye className="w-4 h-4" /> Full Tournament Overview
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem",
+                border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.75rem", padding: "0.625rem",
+                fontSize: "0.875rem", fontWeight: 600, color: "#9ca3af", background: "rgba(30,30,40,0.6)", cursor: "pointer" }}>
+              <Eye style={{ width: "1rem", height: "1rem" }} /> Full Tournament Overview
             </button>
           )}
         </div>

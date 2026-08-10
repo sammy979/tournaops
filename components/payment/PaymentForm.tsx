@@ -22,11 +22,24 @@ interface PaymentSettings {
   bankInstructions?: string
 }
 
+const input = {
+  width: "100%",
+  background: "rgba(255,255,255,0.05)",
+  border: "1px solid rgba(255,255,255,0.1)",
+  borderRadius: "0.5rem",
+  padding: "0.5rem 0.75rem",
+  fontSize: "0.875rem",
+  color: "#fff",
+  outline: "none",
+} as const
+
+const label = { display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "#e5e7eb", marginBottom: "0.375rem" } as const
+
 export default function PaymentForm() {
   const [settings, setSettings] = useState<PaymentSettings | null>(null)
   const [method, setMethod] = useState<string>("")
   const [amount, setAmount] = useState<string>("")
-  const [transactionReference, setTransactionReference] = useState<string>("")
+  const [txRef, setTxRef] = useState<string>("")
   const [note, setNote] = useState<string>("")
   const [proofUrl, setProofUrl] = useState<string>("")
   const [loading, setLoading] = useState(false)
@@ -36,8 +49,8 @@ export default function PaymentForm() {
   useEffect(() => {
     fetch("/api/payment-settings/public")
       .then((r) => r.json())
-      .then((d) => { if (d.settings) setSettings(d.settings) })
-      .catch(() => {})
+      .then((d) => setSettings(d?.settings || null))
+      .catch(() => setSettings(null))
   }, [])
 
   const enabledMethods = settings
@@ -48,43 +61,22 @@ export default function PaymentForm() {
       ].filter(Boolean) as string[])
     : []
 
-  const getMethodInfo = () => {
+  const getInfo = () => {
     if (!settings || !method) return null
-    if (method === "ESEWA") return {
-      name: "eSewa",
-      accountName: settings.esewaAccountName,
-      accountId: settings.esewaAccountId,
-      qrUrl: settings.esewaQrUrl,
-      instructions: settings.esewaInstructions,
-    }
-    if (method === "KHALTI") return {
-      name: "Khalti",
-      accountName: settings.khaltiAccountName,
-      accountId: settings.khaltiAccountId,
-      qrUrl: settings.khaltiQrUrl,
-      instructions: settings.khaltiInstructions,
-    }
-    if (method === "BANK") return {
-      name: settings.bankName || "Bank Transfer",
-      accountName: settings.bankAccountHolder,
-      accountId: settings.bankAccountNumber,
-      qrUrl: undefined,
-      instructions: settings.bankInstructions,
-      branch: settings.bankBranch,
-    }
+    if (method === "ESEWA") return { name: "eSewa", accountName: settings.esewaAccountName, accountId: settings.esewaAccountId, qrUrl: settings.esewaQrUrl, instructions: settings.esewaInstructions }
+    if (method === "KHALTI") return { name: "Khalti", accountName: settings.khaltiAccountName, accountId: settings.khaltiAccountId, qrUrl: settings.khaltiQrUrl, instructions: settings.khaltiInstructions }
+    if (method === "BANK") return { name: settings.bankName || "Bank", accountName: settings.bankAccountHolder, accountId: settings.bankAccountNumber, qrUrl: undefined, instructions: settings.bankInstructions, branch: settings.bankBranch }
     return null
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const info = getInfo()
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
-    if (!method) { setError("Please select a payment method"); return }
-    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-      setError("Please enter a valid amount"); return
-    }
-    if (!transactionReference.trim()) {
-      setError("Please enter the transaction reference"); return
-    }
+    if (!method) return setError("Please select a payment method")
+    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) return setError("Please enter a valid amount")
+    if (!txRef.trim()) return setError("Please enter the transaction reference")
 
     setLoading(true)
     try {
@@ -92,226 +84,109 @@ export default function PaymentForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          method,
-          amount: Number(amount),
-          transactionReference: transactionReference.trim(),
-          proofUrl: proofUrl.trim() || undefined,
-          note: note.trim() || undefined,
+          method, amount: Number(amount), transactionReference: txRef.trim(),
+          proofUrl: proofUrl.trim() || undefined, note: note.trim() || undefined,
         }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error || "Submission failed"); return }
+      if (!res.ok) return setError(data.error || "Submission failed")
       setSuccess(true)
     } catch {
-      setError("Network error. Please try again.")
-    } finally {
-      setLoading(false)
-    }
+      setError("Network error. Try again.")
+    } finally { setLoading(false) }
   }
 
-  if (success) {
-    return (
-      <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">
-        <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-        <h3 className="text-lg font-bold text-green-800 mb-2">Payment Submitted!</h3>
-        <p className="text-green-700 text-sm">
-          Your payment is under review. Pro will be activated once approved by our team.
-        </p>
-      </div>
-    )
-  }
+  if (success) return (
+    <div style={{ padding: "2rem", textAlign: "center", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: "0.75rem" }}>
+      <CheckCircle style={{ width: "3rem", height: "3rem", color: "#10b981", margin: "0 auto 0.75rem" }} />
+      <h3 style={{ color: "#10b981", fontWeight: 700, marginBottom: "0.5rem" }}>Payment Submitted!</h3>
+      <p style={{ color: "#6ee7b7", fontSize: "0.875rem", margin: 0 }}>Your payment is under review. Pro will activate once approved.</p>
+    </div>
+  )
 
-  if (settings && enabledMethods.length === 0) {
-    return (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
-        <p className="text-yellow-700 text-sm font-medium">
-          No payment methods are currently available. Please contact support.
-        </p>
-      </div>
-    )
-  }
-
-  const methodInfo = getMethodInfo()
+  if (settings && enabledMethods.length === 0) return (
+    <div style={{ padding: "1.5rem", textAlign: "center", background: "rgba(250,204,21,0.08)", border: "1px solid rgba(250,204,21,0.3)", borderRadius: "0.75rem" }}>
+      <p style={{ color: "#facc15", fontSize: "0.875rem", margin: 0 }}>No payment methods currently available. Please contact support.</p>
+    </div>
+  )
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      {/* Method Selection */}
+    <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Payment Method
-        </label>
+        <div style={label}>Payment Method</div>
         {!settings ? (
-          <div className="h-12 bg-gray-100 rounded-xl animate-pulse" />
+          <div style={{ height: "2.5rem", background: "rgba(255,255,255,0.05)", borderRadius: "0.5rem" }} />
         ) : (
-          <div className="flex gap-2 flex-wrap">
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
             {enabledMethods.includes("ESEWA") && (
-              <button
-                type="button"
-                onClick={() => setMethod("ESEWA")}
-                className={`px-4 py-2.5 rounded-xl border-2 font-semibold text-sm transition-all ${
-                  method === "ESEWA"
-                    ? "border-green-500 bg-green-50 text-green-700"
-                    : "border-gray-200 hover:border-gray-300 text-gray-600"
-                }`}
-              >
-                eSewa
-              </button>
+              <button type="button" onClick={() => setMethod("ESEWA")}
+                style={{ padding: "0.5rem 0.875rem", borderRadius: "0.5rem", border: `2px solid ${method === "ESEWA" ? "#10b981" : "rgba(255,255,255,0.1)"}`,
+                  background: method === "ESEWA" ? "rgba(16,185,129,0.1)" : "rgba(255,255,255,0.03)", color: method === "ESEWA" ? "#10b981" : "#e5e7eb",
+                  fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer" }}>eSewa</button>
             )}
             {enabledMethods.includes("KHALTI") && (
-              <button
-                type="button"
-                onClick={() => setMethod("KHALTI")}
-                className={`px-4 py-2.5 rounded-xl border-2 font-semibold text-sm transition-all ${
-                  method === "KHALTI"
-                    ? "border-purple-500 bg-purple-50 text-purple-700"
-                    : "border-gray-200 hover:border-gray-300 text-gray-600"
-                }`}
-              >
-                Khalti
-              </button>
+              <button type="button" onClick={() => setMethod("KHALTI")}
+                style={{ padding: "0.5rem 0.875rem", borderRadius: "0.5rem", border: `2px solid ${method === "KHALTI" ? "#a855f7" : "rgba(255,255,255,0.1)"}`,
+                  background: method === "KHALTI" ? "rgba(168,85,247,0.1)" : "rgba(255,255,255,0.03)", color: method === "KHALTI" ? "#a855f7" : "#e5e7eb",
+                  fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer" }}>Khalti</button>
             )}
             {enabledMethods.includes("BANK") && (
-              <button
-                type="button"
-                onClick={() => setMethod("BANK")}
-                className={`px-4 py-2.5 rounded-xl border-2 font-semibold text-sm transition-all ${
-                  method === "BANK"
-                    ? "border-blue-500 bg-blue-50 text-blue-700"
-                    : "border-gray-200 hover:border-gray-300 text-gray-600"
-                }`}
-              >
-                Bank Transfer
-              </button>
+              <button type="button" onClick={() => setMethod("BANK")}
+                style={{ padding: "0.5rem 0.875rem", borderRadius: "0.5rem", border: `2px solid ${method === "BANK" ? "#3b82f6" : "rgba(255,255,255,0.1)"}`,
+                  background: method === "BANK" ? "rgba(59,130,246,0.1)" : "rgba(255,255,255,0.03)", color: method === "BANK" ? "#3b82f6" : "#e5e7eb",
+                  fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer" }}>Bank</button>
             )}
           </div>
         )}
       </div>
 
-      {/* Payment Info Card */}
-      {methodInfo && (
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-2">
-          {methodInfo.qrUrl && (
-            <div className="flex justify-center mb-3">
-              <img
-                src={methodInfo.qrUrl}
-                alt="Payment QR Code"
-                className="w-32 h-32 rounded-lg border border-gray-200 object-contain"
-              />
+      {info && (
+        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", padding: "0.75rem", display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+          {info.qrUrl && (
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: "0.5rem" }}>
+              <img src={info.qrUrl} alt="QR" style={{ width: "8rem", height: "8rem", borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.1)" }} />
             </div>
           )}
-          {methodInfo.accountName && (
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-500">Account Name</span>
-              <span className="font-semibold text-gray-900">{methodInfo.accountName}</span>
-            </div>
-          )}
-          {methodInfo.accountId && (
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-500">Account ID</span>
-              <span className="font-semibold font-mono text-gray-900">{methodInfo.accountId}</span>
-            </div>
-          )}
-          {"branch" in methodInfo && methodInfo.branch && (
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-500">Branch</span>
-              <span className="font-semibold text-gray-900">{methodInfo.branch}</span>
-            </div>
-          )}
-          {methodInfo.instructions && (
-            <p className="text-xs text-gray-500 border-t border-gray-200 pt-2 mt-2">
-              {methodInfo.instructions}
-            </p>
-          )}
+          {info.accountName && <div style={{ fontSize: "0.8125rem", color: "#9ca3af", display: "flex", justifyContent: "space-between" }}><span>Account</span><span style={{ color: "#fff", fontWeight: 600 }}>{info.accountName}</span></div>}
+          {info.accountId && <div style={{ fontSize: "0.8125rem", color: "#9ca3af", display: "flex", justifyContent: "space-between" }}><span>ID</span><span style={{ color: "#fff", fontFamily: "monospace" }}>{info.accountId}</span></div>}
+          {"branch" in info && info.branch && <div style={{ fontSize: "0.8125rem", color: "#9ca3af", display: "flex", justifyContent: "space-between" }}><span>Branch</span><span style={{ color: "#fff" }}>{info.branch}</span></div>}
+          {info.instructions && <p style={{ fontSize: "0.75rem", color: "#9ca3af", margin: "0.375rem 0 0", paddingTop: "0.375rem", borderTop: "1px solid rgba(255,255,255,0.08)" }}>{info.instructions}</p>}
         </div>
       )}
 
-      {/* Amount */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1">
-          Amount (NPR)
-        </label>
-        <input
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="e.g. 999"
-          min="1"
-          className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-        />
+        <div style={label}>Amount (NPR)</div>
+        <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="999" style={input} />
       </div>
 
-      {/* Transaction Reference */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1">
-          Transaction Reference / ID
-        </label>
-        <input
-          type="text"
-          value={transactionReference}
-          onChange={(e) => setTransactionReference(e.target.value)}
-          placeholder="Transaction ID from your payment app"
-          className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-        />
+        <div style={label}>Transaction Reference / ID</div>
+        <input type="text" value={txRef} onChange={(e) => setTxRef(e.target.value)} placeholder="From your payment app" style={input} />
       </div>
 
-      {/* Screenshot URL */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1">
-          Screenshot URL <span className="text-gray-400 font-normal">(optional)</span>
-        </label>
-        <input
-          type="url"
-          value={proofUrl}
-          onChange={(e) => setProofUrl(e.target.value)}
-          placeholder="https://..."
-          className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-        />
-        <p className="text-xs text-gray-400 mt-1">
-          Upload your payment screenshot to Imgur or similar and paste the URL here.
-        </p>
+        <div style={label}>Screenshot URL (optional)</div>
+        <input type="url" value={proofUrl} onChange={(e) => setProofUrl(e.target.value)} placeholder="https://..." style={input} />
       </div>
 
-      {/* Note */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1">
-          Note <span className="text-gray-400 font-normal">(optional)</span>
-        </label>
-        <textarea
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          rows={2}
-          placeholder="Any additional information..."
-          className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-        />
+        <div style={label}>Note (optional)</div>
+        <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} style={{ ...input, resize: "none" }} />
       </div>
 
-      {/* Error */}
       {error && (
-        <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "0.5rem", padding: "0.625rem", fontSize: "0.8125rem", color: "#f87171" }}>
+          <AlertCircle style={{ width: "1rem", height: "1rem", flexShrink: 0 }} />
           {error}
         </div>
       )}
 
-      {/* Submit */}
-      <button
-        type="submit"
-        disabled={loading || !method}
-        className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
-      >
-        {loading ? (
-          <>
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Submitting...
-          </>
-        ) : (
-          "Submit Payment for Review"
-        )}
+      <button type="submit" disabled={loading || !method}
+        style={{ width: "100%", background: "#a855f7", color: "#fff", fontWeight: 600, padding: "0.75rem", borderRadius: "0.625rem", border: "none",
+          cursor: loading || !method ? "not-allowed" : "pointer", opacity: loading || !method ? 0.6 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
+        {loading ? <><Loader2 style={{ width: "1rem", height: "1rem", animation: "spin 1s linear infinite" }} /> Submitting...</> : "Submit Payment"}
       </button>
-
-      <p className="text-xs text-gray-400 text-center">
-        Your payment will be reviewed manually. Pro access will be activated within 24 hours of approval.
-      </p>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </form>
   )
 }

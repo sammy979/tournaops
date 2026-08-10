@@ -15,58 +15,53 @@ interface RecentActivityProps {
   loading?: boolean
 }
 
-const ACTIVITY_CONFIG: Record<string, { icon: React.ElementType; color: string }> = {
-  TEAM_ADDED: { icon: UserPlus, color: "text-blue-500 bg-blue-50" },
-  TEAM_IMPORTED: { icon: Upload, color: "text-indigo-500 bg-indigo-50" },
-  RESULT_SUBMITTED: { icon: CheckCircle, color: "text-green-500 bg-green-50" },
-  RESULT_VERIFIED: { icon: CheckCircle, color: "text-green-600 bg-green-50" },
-  RESULT_EDITED: { icon: Edit, color: "text-orange-500 bg-orange-50" },
-  STAGE_ADVANCED: { icon: ArrowUpCircle, color: "text-purple-500 bg-purple-50" },
-  DISCORD_ANNOUNCEMENT_SENT: { icon: Megaphone, color: "text-yellow-500 bg-yellow-50" },
-  DEFAULT: { icon: AlertTriangle, color: "text-gray-500 bg-gray-50" },
+const CFG: Record<string, { icon: any; color: string }> = {
+  TEAM_ADDED: { icon: UserPlus, color: "#60a5fa" },
+  TEAM_IMPORTED: { icon: Upload, color: "#818cf8" },
+  RESULT_SUBMITTED: { icon: CheckCircle, color: "#4ade80" },
+  RESULT_VERIFIED: { icon: CheckCircle, color: "#4ade80" },
+  RESULT_EDITED: { icon: Edit, color: "#fb923c" },
+  STAGE_ADVANCED: { icon: ArrowUpCircle, color: "#a78bfa" },
+  DISCORD_ANNOUNCEMENT_SENT: { icon: Megaphone, color: "#facc15" },
+  DEFAULT: { icon: AlertTriangle, color: "#9ca3af" },
 }
 
-function timeAgo(timestamp: string): string {
-  const diff = Date.now() - new Date(timestamp).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return "just now"
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  return `${Math.floor(hrs / 24)}d ago`
+function timeAgo(t: string): string {
+  const diff = Date.now() - new Date(t).getTime()
+  const m = Math.floor(diff / 60000)
+  if (m < 1) return "just now"
+  if (m < 60) return `${m}m ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h ago`
+  return `${Math.floor(h / 24)}d ago`
 }
 
 export default function RecentActivity({ activities, loading }: RecentActivityProps) {
-  if (loading) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Recent Activity</h3>
-        <div className="space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-10 bg-gray-100 rounded animate-pulse" />)}</div>
-      </div>
-    )
-  }
-
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
-      <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Recent Activity</h3>
-      {!activities.length ? (
-        <p className="text-sm text-gray-400 py-2">No recent activity</p>
+    <div style={{ background: "rgba(30,30,40,0.6)", borderRadius: "0.875rem", padding: "1rem", border: "1px solid rgba(255,255,255,0.06)" }}>
+      <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.75rem" }}>
+        Recent Activity
+      </div>
+      {loading ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+          {[...Array(4)].map((_, i) => <div key={i} style={{ height: "2rem", background: "rgba(255,255,255,0.05)", borderRadius: "0.375rem" }} />)}
+        </div>
+      ) : activities.length === 0 ? (
+        <p style={{ fontSize: "0.875rem", color: "#6b7280", margin: 0 }}>No recent activity</p>
       ) : (
-        <div className="space-y-2">
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
           {activities.map((item) => {
-            const config = ACTIVITY_CONFIG[item.type] || ACTIVITY_CONFIG.DEFAULT
-            const Icon = config.icon
+            const c = CFG[item.type] || CFG.DEFAULT
+            const Icon = c.icon
             return (
-              <div key={item.id} className="flex items-start gap-2.5 py-1.5">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${config.color}`}>
-                  <Icon className="w-3.5 h-3.5" />
+              <div key={item.id} style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", padding: "0.375rem 0" }}>
+                <div style={{ width: "1.5rem", height: "1.5rem", borderRadius: "50%", background: `${c.color}22`,
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Icon style={{ width: "0.75rem", height: "0.75rem", color: c.color }} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-700 leading-snug">{item.message}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {item.actor && <span className="text-xs text-gray-400">{item.actor}</span>}
-                    <span className="text-xs text-gray-400">{timeAgo(item.timestamp)}</span>
-                  </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: "0.8125rem", color: "#e5e7eb", margin: 0, lineHeight: 1.3 }}>{item.message}</p>
+                  <p style={{ fontSize: "0.7rem", color: "#6b7280", margin: 0 }}>{timeAgo(item.timestamp)}</p>
                 </div>
               </div>
             )

@@ -21,77 +21,59 @@ interface NextMatchProps {
 export default function NextMatch({ tournamentId, match, loading }: NextMatchProps) {
   const router = useRouter()
 
-  if (loading) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Next Match</h3>
-        <div className="h-20 bg-gray-100 rounded animate-pulse" />
-      </div>
-    )
-  }
-
-  if (!match) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Next Match</h3>
-        <p className="text-sm text-gray-400 py-2">No upcoming matches scheduled</p>
-      </div>
-    )
-  }
-
-  const isLive = match.status === "LIVE"
+  const isLive = match?.status === "LIVE"
 
   return (
-    <div className={`rounded-xl border p-4 ${isLive ? "border-red-300 bg-red-50" : "border-gray-200 bg-white"}`}>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+    <div style={{ background: isLive ? "rgba(239,68,68,0.08)" : "rgba(30,30,40,0.6)",
+      borderRadius: "0.875rem", padding: "1rem",
+      border: `1px solid ${isLive ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.06)"}` }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+        <div style={{ fontSize: "0.7rem", fontWeight: 700, color: isLive ? "#f87171" : "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em" }}>
           {isLive ? "Live Now" : "Next Match"}
-        </h3>
+        </div>
         {isLive && (
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-xs font-bold text-red-600">LIVE</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+            <div style={{ width: "0.5rem", height: "0.5rem", borderRadius: "50%", background: "#f87171", animation: "pulse 2s infinite" }} />
+            <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#f87171" }}>LIVE</span>
           </div>
         )}
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-lg font-bold text-gray-900">Match #{match.matchNumber}</span>
-          {isLive && <Radio className="w-5 h-5 text-red-500" />}
+      {loading ? (
+        <div style={{ height: "3rem", background: "rgba(255,255,255,0.05)", borderRadius: "0.5rem" }} />
+      ) : !match ? (
+        <p style={{ fontSize: "0.875rem", color: "#6b7280", margin: 0 }}>No upcoming matches scheduled</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: "1.125rem", fontWeight: 700, color: "#fff" }}>Match #{match.matchNumber}</span>
+            {isLive && <Radio style={{ width: "1.25rem", height: "1.25rem", color: "#f87171" }} />}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", fontSize: "0.8125rem", color: "#9ca3af" }}>
+            {match.map && (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                <MapPin style={{ width: "0.875rem", height: "0.875rem" }} /> {match.map}
+              </div>
+            )}
+            {match.scheduledAt && (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                <Clock style={{ width: "0.875rem", height: "0.875rem" }} />
+                {new Date(match.scheduledAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </div>
+            )}
+            {match.teamCount && (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                <Users style={{ width: "0.875rem", height: "0.875rem" }} /> {match.teamCount} teams
+              </div>
+            )}
+          </div>
+          <button onClick={() => router.push(`/dashboard/tournaments/${tournamentId}/match-results?match=${match.id}`)}
+            style={{ width: "100%", padding: "0.5rem", borderRadius: "0.5rem", fontSize: "0.8125rem", fontWeight: 600,
+              background: isLive ? "#ef4444" : "#1f2937", color: "#fff", border: "none", cursor: "pointer", marginTop: "0.25rem" }}>
+            {isLive ? "Manage Live Match" : "Open Match"}
+          </button>
         </div>
-
-        <div className="flex flex-wrap gap-3 text-sm text-gray-600">
-          {match.map && (
-            <div className="flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-gray-400" />
-              <span>{match.map}</span>
-            </div>
-          )}
-          {match.scheduledAt && (
-            <div className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5 text-gray-400" />
-              <span>{new Date(match.scheduledAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-            </div>
-          )}
-          {match.teamCount && (
-            <div className="flex items-center gap-1">
-              <Users className="w-3.5 h-3.5 text-gray-400" />
-              <span>{match.teamCount} teams</span>
-            </div>
-          )}
-        </div>
-
-        <button
-          onClick={() => router.push(`/dashboard/tournaments/${tournamentId}/match-results?match=${match.id}`)}
-          className={`w-full mt-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
-            isLive
-              ? "bg-red-600 hover:bg-red-700 text-white"
-              : "bg-gray-900 hover:bg-gray-800 text-white"
-          }`}>
-          {isLive ? "Manage Live Match" : "Open Match"}
-        </button>
-      </div>
+      )}
     </div>
   )
 }

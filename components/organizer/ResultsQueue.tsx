@@ -1,7 +1,7 @@
 // components/organizer/ResultsQueue.tsx
 "use client"
 import { useRouter } from "next/navigation"
-import { Clock, MessageSquare, Image, FileText } from "lucide-react"
+import { MessageSquare, Image, FileText } from "lucide-react"
 
 export interface PendingResult {
   id: string
@@ -9,7 +9,6 @@ export interface PendingResult {
   source: "MANUAL" | "DISCORD" | "SCREENSHOT" | "CSV" | "API"
   status: "PENDING" | "UNDER_REVIEW"
   submittedAt: string
-  submittedBy?: string
 }
 
 interface ResultsQueueProps {
@@ -18,81 +17,62 @@ interface ResultsQueueProps {
   loading?: boolean
 }
 
-const SOURCE_ICONS = {
-  DISCORD: MessageSquare,
-  SCREENSHOT: Image,
-  CSV: FileText,
-  MANUAL: FileText,
-  API: FileText,
-}
-
-const SOURCE_COLORS = {
-  DISCORD: "text-indigo-600 bg-indigo-50",
-  SCREENSHOT: "text-blue-600 bg-blue-50",
-  CSV: "text-gray-600 bg-gray-50",
-  MANUAL: "text-gray-600 bg-gray-50",
-  API: "text-green-600 bg-green-50",
+const SOURCE_ICONS: Record<string, any> = {
+  DISCORD: MessageSquare, SCREENSHOT: Image, CSV: FileText, MANUAL: FileText, API: FileText,
 }
 
 export default function ResultsQueue({ tournamentId, results, loading }: ResultsQueueProps) {
   const router = useRouter()
 
-  if (loading) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Results Needing Verification</h3>
-        <div className="space-y-2">{[...Array(3)].map((_, i) => <div key={i} className="h-12 bg-gray-100 rounded animate-pulse" />)}</div>
-      </div>
-    )
-  }
-
-  if (!results.length) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Results Needing Verification</h3>
-        <div className="flex items-center gap-2 text-green-600 py-2">
-          <div className="w-2 h-2 rounded-full bg-green-500" />
-          <span className="text-sm font-medium">All results verified</span>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="bg-white rounded-xl border border-orange-200 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-bold text-orange-600 uppercase tracking-wider">
-          Results Needing Verification ({results.length})
-        </h3>
-        <button onClick={() => router.push(`/dashboard/tournaments/${tournamentId}/match-results`)}
-          className="text-xs text-purple-600 hover:text-purple-700 font-semibold">View All</button>
+    <div style={{ background: "rgba(30,30,40,0.6)", borderRadius: "0.875rem", padding: "1rem",
+      border: `1px solid ${results.length > 0 ? "rgba(251,146,60,0.3)" : "rgba(255,255,255,0.06)"}` }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+        <div style={{ fontSize: "0.7rem", fontWeight: 700, color: results.length > 0 ? "#fb923c" : "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+          Results Needing Verification {results.length > 0 && `(${results.length})`}
+        </div>
+        {results.length > 0 && (
+          <button onClick={() => router.push(`/dashboard/tournaments/${tournamentId}/match-results`)}
+            style={{ fontSize: "0.75rem", color: "#a78bfa", fontWeight: 600, background: "none", border: "none", cursor: "pointer" }}>
+            View All
+          </button>
+        )}
       </div>
 
-      <div className="space-y-2">
-        {results.slice(0, 5).map((result) => {
-          const Icon = SOURCE_ICONS[result.source] || FileText
-          const colorClass = SOURCE_COLORS[result.source] || "text-gray-600 bg-gray-50"
-
-          return (
-            <div key={result.id} className="flex items-center gap-3 p-2.5 bg-orange-50 border border-orange-100 rounded-lg">
-              <div className="flex-1 min-w-0">
-                <span className="text-sm font-semibold text-gray-900">Match #{result.matchNumber}</span>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className={`inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded ${colorClass}`}>
-                    <Icon className="w-3 h-3" />{result.source}
-                  </span>
-                  <span className="text-xs text-gray-400">{new Date(result.submittedAt).toLocaleTimeString()}</span>
+      {loading ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          {[...Array(3)].map((_, i) => <div key={i} style={{ height: "2.5rem", background: "rgba(255,255,255,0.05)", borderRadius: "0.5rem" }} />)}
+        </div>
+      ) : results.length === 0 ? (
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 0", color: "#4ade80" }}>
+          <div style={{ width: "0.5rem", height: "0.5rem", borderRadius: "50%", background: "#4ade80" }} />
+          <span style={{ fontSize: "0.875rem" }}>All results verified</span>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          {results.slice(0, 5).map((r) => {
+            const Icon = SOURCE_ICONS[r.source] || FileText
+            return (
+              <div key={r.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.625rem 0.75rem",
+                background: "rgba(251,146,60,0.08)", border: "1px solid rgba(251,146,60,0.2)", borderRadius: "0.5rem" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#fff" }}>Match #{r.matchNumber}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.125rem" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", fontSize: "0.7rem", color: "#fb923c", fontWeight: 600 }}>
+                      <Icon style={{ width: "0.75rem", height: "0.75rem" }} /> {r.source}
+                    </span>
+                  </div>
                 </div>
+                <button onClick={() => router.push(`/dashboard/tournaments/${tournamentId}/match-results?review=${r.id}`)}
+                  style={{ background: "rgba(251,146,60,0.15)", border: "1px solid rgba(251,146,60,0.3)", color: "#fb923c",
+                    fontSize: "0.75rem", fontWeight: 600, padding: "0.375rem 0.75rem", borderRadius: "0.5rem", cursor: "pointer" }}>
+                  Review
+                </button>
               </div>
-              <button
-                onClick={() => router.push(`/dashboard/tournaments/${tournamentId}/match-results?review=${result.id}`)}
-                className="bg-white border border-orange-300 hover:bg-orange-50 text-orange-700 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
-                Review
-              </button>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

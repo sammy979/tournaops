@@ -40,6 +40,9 @@ model User {
   proGrantedAt         DateTime?
   proExpiresAt         DateTime?
   proGrantedBy         String?
+  organizerName        String?
+  organizerLogo        String?
+  organizerBio         String?
 
   @@index([email])
   @@index([username])
