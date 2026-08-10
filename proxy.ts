@@ -15,6 +15,7 @@ const PUBLIC_PREFIXES = [
   "/tournaments/",
   "/api/public/",
   "/api/auth/",
+  "/api/payment-settings/",
   "/api/health",
   "/api/discord/incoming",
   "/api/payments/webhook",

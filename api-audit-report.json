@@ -1,0 +1,1176 @@
+{
+  "timestamp": "2026-08-10T01:01:47.631Z",
+  "apiRoutes": [
+    {
+      "path": "/admin/payment-settings",
+      "methods": [
+        "GET",
+        "PUT"
+      ]
+    },
+    {
+      "path": "/admin/payments",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/admin/payments/[id]",
+      "methods": [
+        "PATCH"
+      ]
+    },
+    {
+      "path": "/admin/stats",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/admin/system-errors",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/admin/users",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/admin/users/[id]",
+      "methods": [
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "path": "/ai/generate",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/ai/generate-image",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/ai/parse-text",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/auth/google",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/auth/google/callback",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/auth/login",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/auth/logout",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/auth/me",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/auth/register",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/chat/history",
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE"
+      ]
+    },
+    {
+      "path": "/dashboard/tournaments",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/dashboard/tournaments/[id]/summary",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/debug-tournament",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/discord/incoming",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "path": "/discord/pending",
+      "methods": [
+        "GET",
+        "DELETE"
+      ]
+    },
+    {
+      "path": "/discord/send",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/health",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/health-tournament",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/matches/[id]",
+      "methods": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "path": "/matches/[id]/extract-screenshot",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/matches/[id]/qualifier",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/matches/[id]/verify",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/organizer/profile",
+      "methods": [
+        "GET",
+        "PUT"
+      ]
+    },
+    {
+      "path": "/overlay/[token]",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/payment-settings/public",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/payments",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "path": "/payments/checkout",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/payments/status",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/payments/webhook",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/players/[id]",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/public/tournaments/[slug]",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/public/tournaments/[slug]/player-stats",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/public/tournaments/[slug]/register",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/scoring-presets",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "path": "/scoring-presets/[id]",
+      "methods": [
+        "PUT",
+        "DELETE"
+      ]
+    },
+    {
+      "path": "/stages/[id]",
+      "methods": [
+        "GET",
+        "PUT",
+        "DELETE"
+      ]
+    },
+    {
+      "path": "/stages/[id]/advance",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "path": "/stages/[id]/assign-teams",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/stages/[id]/audit-log",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/stages/[id]/configure-days",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/stages/[id]/create-next",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/stages/[id]/leaderboard",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/stages/[id]/lock",
+      "methods": [
+        "POST",
+        "DELETE"
+      ]
+    },
+    {
+      "path": "/stages/[id]/override",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/system-health",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/tournament-templates",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/tournaments",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]",
+      "methods": [
+        "GET",
+        "PUT",
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/ai-analysis",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/autofill-demo",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/branding",
+      "methods": [
+        "GET",
+        "PUT"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/broadcast-discord",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/command-status",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/force-advance",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/insights",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/player-stats",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/progression",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/regenerate-stages",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/registrations",
+      "methods": [
+        "GET",
+        "PATCH"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/report",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/retry-discord",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/schedule",
+      "methods": [
+        "GET",
+        "PUT"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/screenshot",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/stages",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/stats",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/teams",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/teams/[teamId]",
+      "methods": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/teams/bulk",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/tournaments/[id]/teams/preview",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/upload",
+      "methods": [
+        "POST"
+      ]
+    }
+  ],
+  "fetchCalls": [
+    {
+      "file": "app/(auth)/login/page.tsx",
+      "url": "/api/auth/login"
+    },
+    {
+      "file": "app/(auth)/register/page.tsx",
+      "url": "/api/auth/register"
+    },
+    {
+      "file": "app/admin/page.tsx",
+      "url": "/api/admin/stats"
+    },
+    {
+      "file": "app/admin/payments/page.tsx",
+      "url": "/api/admin/payments?${params}"
+    },
+    {
+      "file": "app/admin/payments/page.tsx",
+      "url": "/api/admin/payments/${reviewModal.id}"
+    },
+    {
+      "file": "app/admin/settings/payments/page.tsx",
+      "url": "/api/admin/payment-settings"
+    },
+    {
+      "file": "app/admin/settings/payments/page.tsx",
+      "url": "/api/admin/payment-settings"
+    },
+    {
+      "file": "app/admin/system-health/errors/page.tsx",
+      "url": "/api/admin/system-errors"
+    },
+    {
+      "file": "app/admin/system-health/page.tsx",
+      "url": "/api/system-health"
+    },
+    {
+      "file": "app/admin/users/page.tsx",
+      "url": "/api/admin/users"
+    },
+    {
+      "file": "app/admin/users/page.tsx",
+      "url": "/api/admin/users/${id}"
+    },
+    {
+      "file": "app/admin/users/page.tsx",
+      "url": "/api/admin/users/${id}"
+    },
+    {
+      "file": "app/dashboard/ai-images/page.tsx",
+      "url": "/api/ai/generate-image"
+    },
+    {
+      "file": "app/dashboard/analytics/page.tsx",
+      "url": "/api/tournaments"
+    },
+    {
+      "file": "app/dashboard/assets/page.tsx",
+      "url": "/api/tournaments"
+    },
+    {
+      "file": "app/dashboard/assets/page.tsx",
+      "url": "/api/tournaments/${selectedTournament}"
+    },
+    {
+      "file": "app/dashboard/assets/page.tsx",
+      "url": "/api/upload"
+    },
+    {
+      "file": "app/dashboard/assets/page.tsx",
+      "url": "/api/tournaments/${selectedTournament}"
+    },
+    {
+      "file": "app/dashboard/assets/page.tsx",
+      "url": "/api/tournaments/${selectedTournament}/teams/${teamId}"
+    },
+    {
+      "file": "app/dashboard/branding/page.tsx",
+      "url": "/api/tournaments"
+    },
+    {
+      "file": "app/dashboard/branding/page.tsx",
+      "url": "/api/tournaments/"
+    },
+    {
+      "file": "app/dashboard/branding/page.tsx",
+      "url": "/api/tournaments/"
+    },
+    {
+      "file": "app/dashboard/discord/page.tsx",
+      "url": "/api/discord/pending"
+    },
+    {
+      "file": "app/dashboard/discord/page.tsx",
+      "url": "/api/tournaments"
+    },
+    {
+      "file": "app/dashboard/discord/page.tsx",
+      "url": "/api/tournaments/${importTarget}/teams/bulk"
+    },
+    {
+      "file": "app/dashboard/discord/page.tsx",
+      "url": "/api/discord/pending?id=${selectedImport.id}"
+    },
+    {
+      "file": "app/dashboard/discord/page.tsx",
+      "url": "/api/discord/pending?id=${importId}"
+    },
+    {
+      "file": "app/dashboard/layout.tsx",
+      "url": "/api/auth/me"
+    },
+    {
+      "file": "app/dashboard/layout.tsx",
+      "url": "/api/auth/logout"
+    },
+    {
+      "file": "app/dashboard/notifications/page.tsx",
+      "url": "/api/notifications"
+    },
+    {
+      "file": "app/dashboard/notifications/page.tsx",
+      "url": "/api/notifications/${id}/read"
+    },
+    {
+      "file": "app/dashboard/notifications/page.tsx",
+      "url": "/api/notifications/read-all"
+    },
+    {
+      "file": "app/dashboard/overlay/page.tsx",
+      "url": "/api/tournaments"
+    },
+    {
+      "file": "app/dashboard/page.tsx",
+      "url": "/api/auth/me"
+    },
+    {
+      "file": "app/dashboard/page.tsx",
+      "url": "/api/tournaments"
+    },
+    {
+      "file": "app/dashboard/registrations/page.tsx",
+      "url": "/api/tournaments"
+    },
+    {
+      "file": "app/dashboard/registrations/page.tsx",
+      "url": "/api/tournaments/"
+    },
+    {
+      "file": "app/dashboard/registrations/page.tsx",
+      "url": "/api/tournaments/"
+    },
+    {
+      "file": "app/dashboard/schedule/page.tsx",
+      "url": "/api/tournaments"
+    },
+    {
+      "file": "app/dashboard/schedule/page.tsx",
+      "url": "/api/tournaments/"
+    },
+    {
+      "file": "app/dashboard/schedule/page.tsx",
+      "url": "/api/tournaments/"
+    },
+    {
+      "file": "app/dashboard/scoring/page.tsx",
+      "url": "/api/scoring-presets"
+    },
+    {
+      "file": "app/dashboard/scoring/page.tsx",
+      "url": "/api/scoring-presets/${id}"
+    },
+    {
+      "file": "app/dashboard/settings/organizer/page.tsx",
+      "url": "/api/organizer/profile"
+    },
+    {
+      "file": "app/dashboard/settings/organizer/page.tsx",
+      "url": "/api/organizer/profile"
+    },
+    {
+      "file": "app/dashboard/settings/page.tsx",
+      "url": "/api/auth/me"
+    },
+    {
+      "file": "app/dashboard/settings/page.tsx",
+      "url": "/api/auth/me"
+    },
+    {
+      "file": "app/dashboard/settings/page.tsx",
+      "url": "/api/auth/logout"
+    },
+    {
+      "file": "app/dashboard/tournaments/page.tsx",
+      "url": "/api/tournaments"
+    },
+    {
+      "file": "app/dashboard/tournaments/page.tsx",
+      "url": "/api/tournaments/${id}"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/branding/page.tsx",
+      "url": "/api/tournaments/${tournamentId}"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/branding/page.tsx",
+      "url": "/api/tournaments/${tournamentId}/branding"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/branding/page.tsx",
+      "url": "/api/tournaments/${tournamentId}/branding"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/broadcast/page.tsx",
+      "url": "/api/tournaments/"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/bulk-import/page.tsx",
+      "url": "/api/tournaments/"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/discord/page.tsx",
+      "url": "/api/tournaments/${id}"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/discord/page.tsx",
+      "url": "/api/tournaments/${id}"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/discord/page.tsx",
+      "url": "/api/tournaments/${id}"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/discord/page.tsx",
+      "url": "/api/discord/send"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/discord/page.tsx",
+      "url": "/api/tournaments/${id}/broadcast-discord"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/export/page.tsx",
+      "url": "/api/tournaments/"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/insights/page.tsx",
+      "url": "/api/tournaments/${id}/insights"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/match-results/page.tsx",
+      "url": "/api/tournaments/${tournamentId}"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/match-results/page.tsx",
+      "url": "/api/matches/${selectedMatch.id}"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/match-results/page.tsx",
+      "url": "/api/tournaments/${tournamentId}/force-advance"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/matches/page.tsx",
+      "url": "/api/tournaments/${id}"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/overlays/page.tsx",
+      "url": "/api/tournaments/${id}"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/overview/page.tsx",
+      "url": "/api/tournaments/${id}/command-status"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/overview/page.tsx",
+      "url": "/api/tournaments/${id}/force-advance"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/page.tsx",
+      "url": "/api/tournaments/"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/page.tsx",
+      "url": "/api/matches/"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/page.tsx",
+      "url": "/api/tournaments/${tournament.id}/registrations"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/settings/page.tsx",
+      "url": "/api/tournaments/${id}"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/settings/page.tsx",
+      "url": "/api/tournaments/${id}"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/settings/page.tsx",
+      "url": "/api/tournaments/${id}"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/settings/page.tsx",
+      "url": "/api/tournaments/${id}/autofill-demo"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/stages/page.tsx",
+      "url": "/api/tournaments/"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/stages/page.tsx",
+      "url": "/api/tournaments/"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/stages/page.tsx",
+      "url": "/api/tournaments/${id}/regenerate-stages"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/standings/page.tsx",
+      "url": "/api/tournaments/"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/teams/page.tsx",
+      "url": "/api/tournaments/${id}"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/teams/page.tsx",
+      "url": "/api/tournaments/${id}/teams/${teamId}"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/teams/page.tsx",
+      "url": "/api/tournaments/${id}/teams/${team.id}"
+    },
+    {
+      "file": "app/dashboard/tournaments/[id]/teams/page.tsx",
+      "url": "/api/tournaments/${id}/teams"
+    },
+    {
+      "file": "app/dashboard/upgrade/page.tsx",
+      "url": "/api/auth/me"
+    },
+    {
+      "file": "app/overlay/[token]/chicken-dinner/page.tsx",
+      "url": "/api/overlay/${token}"
+    },
+    {
+      "file": "app/overlay/[token]/final-results/page.tsx",
+      "url": "/api/overlay/${token}"
+    },
+    {
+      "file": "app/overlay/[token]/match/page.tsx",
+      "url": "/api/overlay/${token}"
+    },
+    {
+      "file": "app/overlay/[token]/next-match/page.tsx",
+      "url": "/api/overlay/${token}"
+    },
+    {
+      "file": "app/overlay/[token]/page.tsx",
+      "url": "/api/overlay/${token}"
+    },
+    {
+      "file": "app/overlay/[token]/top-fragger/page.tsx",
+      "url": "/api/overlay/${token}"
+    },
+    {
+      "file": "app/players/[id]/page.tsx",
+      "url": "/api/players/${id}"
+    },
+    {
+      "file": "app/preview/[id]/page.tsx",
+      "url": "/api/tournaments/"
+    },
+    {
+      "file": "app/tournaments/[slug]/grand-final/page.tsx",
+      "url": "/api/tournaments/${t.id}/stages"
+    },
+    {
+      "file": "app/tournaments/[slug]/grand-final/page.tsx",
+      "url": "/api/stages/${grandFinal.id}/leaderboard"
+    },
+    {
+      "file": "app/tournaments/[slug]/page.tsx",
+      "url": "/api/public/tournaments/${slug}"
+    },
+    {
+      "file": "app/tournaments/[slug]/qualifiers/page.tsx",
+      "url": "/api/tournaments/${t.id}/stages"
+    },
+    {
+      "file": "app/tournaments/[slug]/qualifiers/page.tsx",
+      "url": "/api/stages/${selectedStage}/leaderboard?group=${groupFilter}&status=${statusFilter}"
+    },
+    {
+      "file": "app/tournaments/[slug]/register/page.tsx",
+      "url": "/api/public/tournaments/${params.slug}/register"
+    },
+    {
+      "file": "app/tournaments/[slug]/report/page.tsx",
+      "url": "/api/tournaments/${slug}"
+    },
+    {
+      "file": "app/tournaments/[slug]/report/page.tsx",
+      "url": "/api/tournaments/${tData.tournament.id}/report"
+    },
+    {
+      "file": "app/tournaments/[slug]/results/page.tsx",
+      "url": "/api/public/tournaments/${slug}"
+    },
+    {
+      "file": "components/ai/AIPointsTable.tsx",
+      "url": "/api/tournaments/"
+    },
+    {
+      "file": "components/ai/OpsAI.tsx",
+      "url": "/api/chat/history"
+    },
+    {
+      "file": "components/ai/OpsAI.tsx",
+      "url": "/api/chat/history"
+    },
+    {
+      "file": "components/ai/OpsAI.tsx",
+      "url": "/api/chat/history"
+    },
+    {
+      "file": "components/ai/OpsAI.tsx",
+      "url": "/api/ai/generate"
+    },
+    {
+      "file": "components/grandfinal/GrandFinalDashboard.tsx",
+      "url": "/api/stages/${stageId}/leaderboard"
+    },
+    {
+      "file": "components/grandfinal/GrandFinalDashboard.tsx",
+      "url": "/api/matches/${matchId}/verify"
+    },
+    {
+      "file": "components/integrations/DiscordWebhook.tsx",
+      "url": "/api/discord/send"
+    },
+    {
+      "file": "components/organizer/OrganizerCommandCenter.tsx",
+      "url": "/api/dashboard/tournaments"
+    },
+    {
+      "file": "components/organizer/OrganizerCommandCenter.tsx",
+      "url": "/api/dashboard/tournaments/${id}/summary"
+    },
+    {
+      "file": "components/organizer/OrganizerCommandCenter.tsx",
+      "url": "/api/organizer/profile"
+    },
+    {
+      "file": "components/payment/PaymentForm.tsx",
+      "url": "/api/payment-settings/public"
+    },
+    {
+      "file": "components/payment/PaymentForm.tsx",
+      "url": "/api/payments"
+    },
+    {
+      "file": "components/payment/PaymentHistory.tsx",
+      "url": "/api/payments"
+    },
+    {
+      "file": "components/ProBadge.tsx",
+      "url": "/api/payments/status"
+    },
+    {
+      "file": "components/qualifier/GroupAssignment.tsx",
+      "url": "/api/stages/${stageId}/assign-teams"
+    },
+    {
+      "file": "components/qualifier/GroupAssignment.tsx",
+      "url": "/api/stages/${stageId}/assign-teams"
+    },
+    {
+      "file": "components/qualifier/OverrideModal.tsx",
+      "url": "/api/stages/${stageId}/override"
+    },
+    {
+      "file": "components/qualifier/OverrideModal.tsx",
+      "url": "/api/stages/${stageId}/audit-log"
+    },
+    {
+      "file": "components/qualifier/QualifierMatchEntry.tsx",
+      "url": "/api/matches/${match.id}/qualifier"
+    },
+    {
+      "file": "components/screenshots/ScreenshotImporter.tsx",
+      "url": "/api/matches/${match.id}/extract-screenshot"
+    },
+    {
+      "file": "components/screenshots/ScreenshotImporter.tsx",
+      "url": "/api/matches/${match.id}/qualifier"
+    },
+    {
+      "file": "components/stages/DayConfigModal.tsx",
+      "url": "/api/stages/${stageId}/configure-days"
+    },
+    {
+      "file": "components/stages/GrandFinalPreview.tsx",
+      "url": "/api/stages/${stageId}"
+    },
+    {
+      "file": "components/stages/GrandFinalPreview.tsx",
+      "url": "/api/stages/${stageId}/create-next"
+    },
+    {
+      "file": "components/stages/StageManager.tsx",
+      "url": "/api/tournaments/${tournament.id}/stages"
+    },
+    {
+      "file": "components/stages/StageManager.tsx",
+      "url": "/api/stages/${stage.id}/lock"
+    },
+    {
+      "file": "components/stages/StageManager.tsx",
+      "url": "/api/stages/${stage.id}"
+    },
+    {
+      "file": "components/stages/StageManager.tsx",
+      "url": "/api/stages/${stage.id}"
+    },
+    {
+      "file": "components/stages/StageManager.tsx",
+      "url": "/api/stages/${stage.id}/advance"
+    },
+    {
+      "file": "components/stages/StageManager.tsx",
+      "url": "/api/stages/${stage.id}/advance"
+    },
+    {
+      "file": "components/stages/StageProgressionTimeline.tsx",
+      "url": "/api/tournaments/${tournamentId}/stages"
+    },
+    {
+      "file": "components/stages/VisualStageBuilder.tsx",
+      "url": "/api/tournaments/${tournament.id}/stages"
+    },
+    {
+      "file": "components/stages/VisualStageBuilder.tsx",
+      "url": "/api/tournaments/${tournament.id}/stages"
+    },
+    {
+      "file": "components/stages/VisualStageBuilder.tsx",
+      "url": "/api/stages/${stage.id}"
+    },
+    {
+      "file": "components/stages/VisualStageBuilder.tsx",
+      "url": "/api/tournaments/${tournament.id}/stages"
+    },
+    {
+      "file": "components/stages/VisualStageBuilder.tsx",
+      "url": "/api/stages/${stage.id}"
+    },
+    {
+      "file": "components/stages/VisualStageBuilder.tsx",
+      "url": "/api/stages/${stage.id}"
+    },
+    {
+      "file": "components/stages/VisualStageBuilder.tsx",
+      "url": "/api/stages/${stage.id}"
+    },
+    {
+      "file": "components/stages/VisualStageBuilder.tsx",
+      "url": "/api/stages/${showDashboard.id}/lock"
+    },
+    {
+      "file": "components/stages/VisualStageBuilder.tsx",
+      "url": "/api/stages/${stage.id}"
+    },
+    {
+      "file": "components/stages/VisualStageBuilder.tsx",
+      "url": "/api/stages/${stage.id}/advance"
+    },
+    {
+      "file": "components/stages/VisualStageBuilder.tsx",
+      "url": "/api/stages/${stage.id}/advance"
+    },
+    {
+      "file": "components/tournament/RegistrationSharePanel.tsx",
+      "url": "/api/tournaments/${tournamentId}/registrations"
+    },
+    {
+      "file": "components/tournament/TournamentStatusManager.tsx",
+      "url": "/api/tournaments/"
+    },
+    {
+      "file": "components/tournament/TournamentStatusManager.tsx",
+      "url": "/api/tournaments/"
+    }
+  ],
+  "pages": [],
+  "summary": {
+    "totalApis": 77,
+    "totalFetches": 148,
+    "uniqueFetches": 78,
+    "working": 0,
+    "broken": 78,
+    "brokenUrls": [
+      "/api/auth/login",
+      "/api/auth/register",
+      "/api/admin/stats",
+      "/api/admin/payments?${params}",
+      "/api/admin/payments/${reviewModal.id}",
+      "/api/admin/payment-settings",
+      "/api/admin/system-errors",
+      "/api/system-health",
+      "/api/admin/users",
+      "/api/admin/users/${id}",
+      "/api/ai/generate-image",
+      "/api/tournaments",
+      "/api/tournaments/${selectedTournament}",
+      "/api/upload",
+      "/api/tournaments/${selectedTournament}/teams/${teamId}",
+      "/api/tournaments/",
+      "/api/discord/pending",
+      "/api/tournaments/${importTarget}/teams/bulk",
+      "/api/discord/pending?id=${selectedImport.id}",
+      "/api/discord/pending?id=${importId}",
+      "/api/auth/me",
+      "/api/auth/logout",
+      "/api/notifications",
+      "/api/notifications/${id}/read",
+      "/api/notifications/read-all",
+      "/api/scoring-presets",
+      "/api/scoring-presets/${id}",
+      "/api/organizer/profile",
+      "/api/tournaments/${id}",
+      "/api/tournaments/${tournamentId}",
+      "/api/tournaments/${tournamentId}/branding",
+      "/api/discord/send",
+      "/api/tournaments/${id}/broadcast-discord",
+      "/api/tournaments/${id}/insights",
+      "/api/matches/${selectedMatch.id}",
+      "/api/tournaments/${tournamentId}/force-advance",
+      "/api/tournaments/${id}/command-status",
+      "/api/tournaments/${id}/force-advance",
+      "/api/matches/",
+      "/api/tournaments/${tournament.id}/registrations",
+      "/api/tournaments/${id}/autofill-demo",
+      "/api/tournaments/${id}/regenerate-stages",
+      "/api/tournaments/${id}/teams/${teamId}",
+      "/api/tournaments/${id}/teams/${team.id}",
+      "/api/tournaments/${id}/teams",
+      "/api/overlay/${token}",
+      "/api/players/${id}",
+      "/api/tournaments/${t.id}/stages",
+      "/api/stages/${grandFinal.id}/leaderboard",
+      "/api/public/tournaments/${slug}",
+      "/api/stages/${selectedStage}/leaderboard?group=${groupFilter}&status=${statusFilter}",
+      "/api/public/tournaments/${params.slug}/register",
+      "/api/tournaments/${slug}",
+      "/api/tournaments/${tData.tournament.id}/report",
+      "/api/chat/history",
+      "/api/ai/generate",
+      "/api/stages/${stageId}/leaderboard",
+      "/api/matches/${matchId}/verify",
+      "/api/dashboard/tournaments",
+      "/api/dashboard/tournaments/${id}/summary",
+      "/api/payment-settings/public",
+      "/api/payments",
+      "/api/payments/status",
+      "/api/stages/${stageId}/assign-teams",
+      "/api/stages/${stageId}/override",
+      "/api/stages/${stageId}/audit-log",
+      "/api/matches/${match.id}/qualifier",
+      "/api/matches/${match.id}/extract-screenshot",
+      "/api/stages/${stageId}/configure-days",
+      "/api/stages/${stageId}",
+      "/api/stages/${stageId}/create-next",
+      "/api/tournaments/${tournament.id}/stages",
+      "/api/stages/${stage.id}/lock",
+      "/api/stages/${stage.id}",
+      "/api/stages/${stage.id}/advance",
+      "/api/tournaments/${tournamentId}/stages",
+      "/api/stages/${showDashboard.id}/lock",
+      "/api/tournaments/${tournamentId}/registrations"
+    ]
+  }
+}
