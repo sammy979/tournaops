@@ -68,7 +68,7 @@ export default function LiveTournamentsSection({ tournaments }: Props) {
             <h2 className="text-display">Live &amp; Upcoming</h2>
           </div>
           <Link href="/tournaments" className="btn-secondary" style={{ padding: "8px 18px" }}>
-            All Tournaments →
+            All Tournaments â†’
           </Link>
         </div>
 
@@ -103,7 +103,7 @@ function TournamentTile({ tournament: t }: { tournament: any }) {
   };
 
   return (
-    <Link href={`/tournaments/${t.id}`} className="tournament-tile" style={{ textDecoration: "none" }}>
+    <Link href={`/tournaments/${t.slug || t.id}`} className="tournament-tile" style={{ textDecoration: "none" }}>
       {/* TILE HEADER */}
       <div style={{
         height: "120px",

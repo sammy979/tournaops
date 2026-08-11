@@ -329,7 +329,7 @@ function TournamentCard({ tournament: t }: { tournament: Tournament }) {
 
   return (
     <Link
-      href={`/tournaments/${t.id}`}
+      href={`/tournaments/${t.slug || t.id}`}
       style={{ textDecoration: "none", display: "block", background: "var(--surface)" }}
     >
       {/* CARD TOP */}
@@ -530,7 +530,7 @@ function TournamentCard({ tournament: t }: { tournament: Tournament }) {
             color: "var(--gold)",
             textTransform: "uppercase",
           }}>
-            {isCompleted ? "View Results →" : isReg ? "Register →" : "View →"}
+            {isCompleted ? "View Results â†’" : isReg ? "Register â†’" : "View â†’"}
           </span>
         </div>
       </div>

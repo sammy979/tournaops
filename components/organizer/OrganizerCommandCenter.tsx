@@ -6,7 +6,7 @@ interface Props {
   tournamentId: string;
 }
 
-export default function OrganizerCommandCenter({ tournamentId }: Props) {
+export function OrganizerCommandCenter({ tournamentId }: Props) {
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -64,10 +64,10 @@ export default function OrganizerCommandCenter({ tournamentId }: Props) {
         </div>
       </div>
 
-      {/* CURRENT MATCH — PRIMARY MODULE */}
+      {/* CURRENT MATCH â€” PRIMARY MODULE */}
       <CurrentMatchModule summary={summary} tournamentId={tournamentId} />
 
-      {/* TWO COLUMN — RESULTS + NEXT MATCH */}
+      {/* TWO COLUMN â€” RESULTS + NEXT MATCH */}
       <div style={{
         display: "grid",
         gridTemplateColumns: "1fr 1fr",
@@ -124,7 +124,7 @@ function CurrentMatchModule({ summary, tournamentId }: any) {
             textTransform: "uppercase",
             lineHeight: 1,
             marginBottom: "4px",
-          }}>Match {currentMatch.matchNumber || "—"}</div>
+          }}>Match {currentMatch.matchNumber || "â€”"}</div>
 
           <div style={{
             fontFamily: "JetBrains Mono, monospace",
@@ -132,7 +132,7 @@ function CurrentMatchModule({ summary, tournamentId }: any) {
             color: "var(--white-40)",
             marginBottom: "16px",
           }}>
-            {currentMatch.map || "—"} · {currentMatch.submissionsReceived || 0}/{currentMatch.totalTeams || 0} SUBMISSIONS
+            {currentMatch.map || "â€”"} Â· {currentMatch.submissionsReceived || 0}/{currentMatch.totalTeams || 0} SUBMISSIONS
           </div>
 
           {currentMatch.pendingCount > 0 && (
@@ -234,7 +234,7 @@ function ResultsQueueModule({ summary, tournamentId }: any) {
                   fontFamily: "JetBrains Mono, monospace",
                   fontSize: "0.7rem",
                   color: "var(--white-40)",
-                }}>{item.map} · {item.timeAgo}</div>
+                }}>{item.map} Â· {item.timeAgo}</div>
               </div>
               <div style={{ display: "flex", gap: "6px" }}>
                 {item.status === "PENDING" ? (
@@ -285,7 +285,7 @@ function NextMatchModule({ summary, tournamentId }: any) {
             fontSize: "0.75rem",
             color: "var(--white-40)",
             marginBottom: "16px",
-          }}>{next.map || "TBD"} · {next.scheduledTime || "Time TBD"}</div>
+          }}>{next.map || "TBD"} Â· {next.scheduledTime || "Time TBD"}</div>
           <Link href={`/dashboard/tournaments/${tournamentId}/matches/${next.id}`}
             className="btn-secondary" style={{ padding: "8px 16px" }}>
             Manage Match
@@ -402,3 +402,5 @@ function RecentActivityModule({ summary }: any) {
     </div>
   );
 }
+
+export default OrganizerCommandCenter;
