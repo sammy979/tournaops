@@ -1,373 +1,336 @@
-﻿"use client";
-import { useState, useEffect, useRef } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
-import TournamentNav from "@/components/tournament/TournamentNav";
-import TeamLogo from "@/components/tournament/TeamLogo";
-import { useDialog } from "@/lib/use-confirm";
+"use client";
+
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import DashboardShell from "@/components/ui/DashboardShell";
 import {
-  Users, Plus, Search, X, Edit, Trash2, Save,
-  Loader2, ChevronLeft, Upload, Shield, Crown,
-  Copy, Check, Download, Filter, AlertCircle
+  Users,
+  Search,
+  Plus,
+  Filter,
+  ChevronRight,
+  Shield,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  MoreVertical,
+  Mail,
+  Trash2,
+  Eye,
+  UserCheck,
+  AlertTriangle,
+  Download,
 } from "lucide-react";
 
-interface Player {
-  id: string;
+// ─── Types ────────────────────────────────────────────────────────────────────
+type CheckInStatus = "checked-in" | "pending" | "missed" | "disqualified";
+
+interface TeamMember {
   name: string;
-  ign?: string;
-  role?: string;
-  isCaptain?: boolean;
-  isSubstitute?: boolean;
+  role: string;
+  ign: string;
 }
 
 interface Team {
   id: string;
   name: string;
-  tag?: string;
-  logo?: string;
-  country?: string;
+  tag: string;
+  captain: string;
+  email: string;
+  memberCount: number;
+  members: TeamMember[];
+  status: CheckInStatus;
+  registeredAt: string;
   seed?: number;
-  contact?: string;
-  players: Player[];
-  playersList?: Player[];
+  region: string;
+  wins: number;
+  losses: number;
 }
 
-const ROLES = ["IGL", "Fragger", "Support", "Entry", "Scout"];
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+const MOCK_TEAMS: Team[] = [
+  { id: "1", name: "Team Alpha",   tag: "ALPH", captain: "ShadowX",   email: "alpha@example.com",   memberCount: 5, members: [{ name: "ShadowX", role: "IGL", ign: "ShadowX#NA1" }, { name: "NightOwl", role: "Entry", ign: "Night#NA2" }, { name: "Flux", role: "Support", ign: "Flux#NA3" }, { name: "Venom", role: "Duelist", ign: "Venom#NA4" }, { name: "Cipher", role: "Sentinel", ign: "Cipher#NA5" }], status: "checked-in",    registeredAt: "2025-06-15", seed: 1, region: "NA", wins: 6, losses: 0 },
+  { id: "2", name: "Team Nexus",   tag: "NEX",  captain: "ProStrike",  email: "nexus@example.com",   memberCount: 5, members: [{ name: "ProStrike", role: "IGL", ign: "ProS#NA1" }, { name: "Blaze", role: "Duelist", ign: "Blaze#NA2" }, { name: "Echo", role: "Support", ign: "Echo#NA3" }, { name: "Frost", role: "Sentinel", ign: "Frost#NA4" }, { name: "Rush", role: "Entry", ign: "Rush#NA5" }], status: "checked-in",    registeredAt: "2025-06-15", seed: 2, region: "NA", wins: 5, losses: 1 },
+  { id: "3", name: "Team Phantom", tag: "PHN",  captain: "GhostRider", email: "phantom@example.com", memberCount: 5, members: [{ name: "GhostRider", role: "IGL", ign: "Ghost#NA1" }, { name: "Shade", role: "Entry", ign: "Shade#NA2" }, { name: "Drift", role: "Duelist", ign: "Drift#NA3" }, { name: "Wraith", role: "Support", ign: "Wraith#NA4" }, { name: "Specter", role: "Sentinel", ign: "Specter#NA5" }], status: "checked-in",    registeredAt: "2025-06-16", seed: 3, region: "NA", wins: 4, losses: 1 },
+  { id: "4", name: "Team Storm",   tag: "STM",  captain: "ThunderBolt", email: "storm@example.com",  memberCount: 5, members: [{ name: "ThunderBolt", role: "IGL", ign: "Thunder#NA1" }, { name: "Rain", role: "Duelist", ign: "Rain#NA2" }, { name: "Gale", role: "Entry", ign: "Gale#NA3" }, { name: "Cloud", role: "Support", ign: "Cloud#NA4" }, { name: "Hail", role: "Sentinel", ign: "Hail#NA5" }], status: "checked-in",    registeredAt: "2025-06-17", seed: 4, region: "NA", wins: 4, losses: 2 },
+  { id: "5", name: "Team Void",    tag: "VOD",  captain: "DarkMatter",  email: "void@example.com",   memberCount: 5, members: [{ name: "DarkMatter", role: "IGL", ign: "Dark#NA1" }, { name: "Null", role: "Entry", ign: "Null#NA2" }, { name: "Zero", role: "Duelist", ign: "Zero#NA3" }, { name: "Abyss", role: "Support", ign: "Abyss#NA4" }, { name: "Void", role: "Sentinel", ign: "Void#NA5" }], status: "pending",       registeredAt: "2025-06-18", seed: 5, region: "NA", wins: 3, losses: 2 },
+  { id: "6", name: "Team Nova",    tag: "NOV",  captain: "StarBlast",   email: "nova@example.com",   memberCount: 5, members: [{ name: "StarBlast", role: "IGL", ign: "Star#NA1" }, { name: "Quasar", role: "Entry", ign: "Quasar#NA2" }, { name: "Pulsar", role: "Duelist", ign: "Pulsar#NA3" }, { name: "Nebula", role: "Support", ign: "Nebula#NA4" }, { name: "Comet", role: "Sentinel", ign: "Comet#NA5" }], status: "missed",        registeredAt: "2025-06-18", seed: 6, region: "NA", wins: 3, losses: 3 },
+  { id: "7", name: "Team Blaze",   tag: "BLZ",  captain: "Inferno",     email: "blaze@example.com",  memberCount: 5, members: [{ name: "Inferno", role: "IGL", ign: "Inf#NA1" }, { name: "Ember", role: "Duelist", ign: "Ember#NA2" }, { name: "Scorch", role: "Entry", ign: "Scorch#NA3" }, { name: "Flame", role: "Support", ign: "Flame#NA4" }, { name: "Ash", role: "Sentinel", ign: "Ash#NA5" }], status: "checked-in",    registeredAt: "2025-06-19", seed: 7, region: "NA", wins: 2, losses: 3 },
+  { id: "8", name: "Team Titan",   tag: "TTN",  captain: "Colossus",    email: "titan@example.com",  memberCount: 5, members: [{ name: "Colossus", role: "IGL", ign: "Colos#NA1" }, { name: "Atlas", role: "Entry", ign: "Atlas#NA2" }, { name: "Goliath", role: "Duelist", ign: "Goliath#NA3" }, { name: "Kronos", role: "Support", ign: "Kronos#NA4" }, { name: "Titan", role: "Sentinel", ign: "Titan#NA5" }], status: "disqualified",  registeredAt: "2025-06-19", seed: 8, region: "NA", wins: 1, losses: 4 },
+];
 
-export default function TeamsPage() {
-  const dialog = useDialog();
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const STATUS_CONFIG: Record<CheckInStatus, { label: string; icon: React.ElementType; badge: string; row: string }> = {
+  "checked-in":   { label: "Checked In",    icon: CheckCircle2,  badge: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30", row: "" },
+  pending:        { label: "Pending",        icon: Clock,         badge: "bg-amber-500/15 text-amber-400 border-amber-500/30",       row: "" },
+  missed:         { label: "Missed",         icon: AlertTriangle, badge: "bg-rose-500/15 text-rose-400 border-rose-500/30",           row: "bg-rose-500/[0.03]" },
+  disqualified:   { label: "Disqualified",   icon: XCircle,       badge: "bg-slate-500/15 text-slate-400 border-slate-500/30",       row: "bg-slate-500/[0.03]" },
+};
+
+function StatusBadge({ status }: { status: CheckInStatus }) {
+  const cfg = STATUS_CONFIG[status];
+  const Icon = cfg.icon;
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.badge}`}>
+      <Icon className="w-3 h-3" />
+      {cfg.label}
+    </span>
+  );
+}
+
+// ─── Team Row Component ───────────────────────────────────────────────────────
+function TeamRow({ team, onExpand, expanded }: { team: Team; onExpand: (id: string) => void; expanded: boolean }) {
+  const cfg = STATUS_CONFIG[team.status];
+  return (
+    <>
+      <tr
+        className={`border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors cursor-pointer ${cfg.row}`}
+        onClick={() => onExpand(team.id)}
+      >
+        <td className="py-3.5 px-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500/20 to-indigo-500/20 border border-violet-500/20 flex items-center justify-center text-xs font-bold text-violet-400 flex-shrink-0">
+              {team.tag.slice(0, 2)}
+            </div>
+            <div>
+              <p className="text-white text-sm font-medium">{team.name}</p>
+              <p className="text-slate-500 text-xs">[{team.tag}]</p>
+            </div>
+          </div>
+        </td>
+        <td className="py-3.5 px-4 text-slate-400 text-sm">{team.captain}</td>
+        <td className="py-3.5 px-4">
+          <div className="flex items-center gap-1 text-slate-400 text-sm">
+            <Users className="w-3.5 h-3.5" />
+            {team.memberCount}
+          </div>
+        </td>
+        <td className="py-3.5 px-4 text-slate-500 text-sm">{team.seed ? `#${team.seed}` : "—"}</td>
+        <td className="py-3.5 px-4">
+          <span className="text-emerald-400 text-sm font-medium">{team.wins}W</span>
+          <span className="text-slate-600 mx-1">—</span>
+          <span className="text-rose-400 text-sm font-medium">{team.losses}L</span>
+        </td>
+        <td className="py-3.5 px-4"><StatusBadge status={team.status} /></td>
+        <td className="py-3.5 px-4 text-slate-500 text-xs">{team.registeredAt}</td>
+        <td className="py-3.5 px-4">
+          <div className="flex items-center gap-1">
+            <button className="p-1.5 hover:bg-white/[0.06] rounded-lg transition-colors text-slate-500 hover:text-slate-300">
+              <Eye className="w-3.5 h-3.5" />
+            </button>
+            <button className="p-1.5 hover:bg-white/[0.06] rounded-lg transition-colors text-slate-500 hover:text-slate-300">
+              <Mail className="w-3.5 h-3.5" />
+            </button>
+            <button className="p-1.5 hover:bg-white/[0.06] rounded-lg transition-colors text-slate-500 hover:text-rose-400">
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </td>
+      </tr>
+      {expanded && (
+        <tr className="bg-violet-500/[0.03] border-b border-violet-500/10">
+          <td colSpan={8} className="px-4 py-3">
+            <div className="flex flex-wrap gap-2">
+              {team.members.map((m) => (
+                <div key={m.ign} className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5">
+                  <div className="w-6 h-6 rounded-full bg-violet-500/20 flex items-center justify-center text-violet-400 text-xs font-bold">
+                    {m.name[0]}
+                  </div>
+                  <div>
+                    <p className="text-white text-xs font-medium">{m.name}</p>
+                    <p className="text-slate-500 text-xs">{m.role} · {m.ign}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+export default function TournamentTeamsPage() {
   const params = useParams();
-  const id = params?.id as string;
-  const [tournament, setTournament] = useState<any>(null);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [search, setSearch] = useState("");
-  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
-  const [addingTeam, setAddingTeam] = useState(false);
-  const [saved, setSaved] = useState<string | null>(null);
-  const [newTeam, setNewTeam] = useState({ name: "", tag: "", contact: "", seed: "" });
-  const fileRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
+  const id     = params?.id as string;
 
-  useEffect(() => {
-    if (!id) return;
-    fetch(`/api/tournaments/${id}`)
-      .then(r => r.json())
-      .then(d => {
-        setTournament(d.tournament);
-        const t = d.tournament?.teams || [];
-        setTeams(t.map((team: any) => ({
-          ...team,
-          players: team.playersList || team.players || [],
-        })));
-      })
-      .finally(() => setLoading(false));
-  }, [id]);
+  const [search,       setSearch]       = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | CheckInStatus>("all");
+  const [expandedId,   setExpandedId]   = useState<string | null>(null);
 
-  const filtered = teams.filter(t =>
-    t.name.toLowerCase().includes(search.toLowerCase()) ||
-    (t.tag || "").toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = MOCK_TEAMS.filter((t) => {
+    const matchSearch = t.name.toLowerCase().includes(search.toLowerCase()) ||
+                        t.captain.toLowerCase().includes(search.toLowerCase()) ||
+                        t.tag.toLowerCase().includes(search.toLowerCase());
+    const matchStatus = filterStatus === "all" || t.status === filterStatus;
+    return matchSearch && matchStatus;
+  });
 
-  async function deleteTeam(teamId: string) {
-    const ok = await dialog.confirm({
-      title: "Delete team?",
-      description: "This team and its players will be permanently removed. This cannot be undone.",
-      confirmLabel: "Delete team",
-      variant: "danger",
-    });
-    if (!ok) return;
-    const res = await fetch(`/api/tournaments/${id}/teams/${teamId}`, { method: "DELETE" });
-    if (res.ok) {
-      setTeams(prev => prev.filter(t => t.id !== teamId));
-      if (editingTeam?.id === teamId) setEditingTeam(null);
-    } else {
-      await dialog.alert({ title: "Delete Failed", description: "Failed to delete team. Please try again.", variant: "danger" });
-    }
-  }
+  const stats = {
+    total:       MOCK_TEAMS.length,
+    checkedIn:   MOCK_TEAMS.filter((t) => t.status === "checked-in").length,
+    pending:     MOCK_TEAMS.filter((t) => t.status === "pending").length,
+    missed:      MOCK_TEAMS.filter((t) => t.status === "missed").length,
+    disqualified:MOCK_TEAMS.filter((t) => t.status === "disqualified").length,
+  };
 
-  async function saveTeam(team: Team) {
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/tournaments/${id}/teams/${team.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: team.name,
-          tag: team.tag,
-          logo: team.logo,
-          contact: team.contact,
-          seed: team.seed,
-          players: team.players,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setTeams(prev => prev.map(t => t.id === team.id ? { ...data.team, players: data.team.playersList || data.team.players || [] } : t));
-        setSaved(team.id);
-        setTimeout(() => setSaved(null), 2000);
-        setEditingTeam(null);
-      } else {
-        await dialog.alert({ title: "Save Failed", description: "Failed to save team changes. Please try again.", variant: "danger" });
-      }
-    } finally {
-      setSaving(false);
-    }
-  }
+  const toggleExpand = (id: string) => setExpandedId(prev => prev === id ? null : id);
 
-  async function addTeam() {
-    if (!newTeam.name.trim()) {
-      await dialog.alert({ title: "Name Required", description: "Please enter a team name before adding.", variant: "warning" });
-      return;
-    }
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/tournaments/${id}/teams`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: newTeam.name.trim(),
-          tag: newTeam.tag.trim() || null,
-          contact: newTeam.contact.trim() || null,
-          seed: newTeam.seed ? Number(newTeam.seed) : null,
-          players: [
-            { id: Math.random().toString(36).slice(2), name: "Player 1", ign: "", role: "IGL" },
-            { id: Math.random().toString(36).slice(2), name: "Player 2", ign: "", role: "Fragger" },
-            { id: Math.random().toString(36).slice(2), name: "Player 3", ign: "", role: "Support" },
-            { id: Math.random().toString(36).slice(2), name: "Player 4", ign: "", role: "Entry" },
-          ],
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const t = data.team;
-        setTeams(prev => [...prev, { ...t, players: t.playersList || t.players || [] }]);
-        setNewTeam({ name: "", tag: "", contact: "", seed: "" });
-        setAddingTeam(false);
-      } else {
-        const err = await res.json();
-        await dialog.alert({ title: "Add Failed", description: err.error || "Failed to add team. Please try again.", variant: "danger" });
-      }
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>, teamId?: string) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      void dialog.alert({ title: "File Too Large", description: "Please use an image under 2MB.", variant: "warning" });
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const url = reader.result as string;
-      if (teamId && editingTeam?.id === teamId) {
-        setEditingTeam(prev => prev ? { ...prev, logo: url } : null);
-      }
-    };
-    reader.readAsDataURL(file);
-  }
-
-  if (loading) return (
-    <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <Loader2 style={{ width: "2rem", height: "2rem", color: "#f59e0b", animation: "spin 0.8s linear infinite" }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
-  );
+  const navTabs = [
+    { label: "Overview",      href: `/dashboard/tournaments/${id}/overview` },
+    { label: "Teams",         href: `/dashboard/tournaments/${id}/teams` },
+    { label: "Stages",        href: `/dashboard/tournaments/${id}/stages` },
+    { label: "Matches",       href: `/dashboard/tournaments/${id}/matches` },
+    { label: "Match Results", href: `/dashboard/tournaments/${id}/match-results` },
+    { label: "Standings",     href: `/dashboard/tournaments/${id}/standings` },
+    { label: "Broadcast",     href: `/dashboard/tournaments/${id}/broadcast` },
+    { label: "Discord",       href: `/dashboard/tournaments/${id}/discord` },
+    { label: "Insights",      href: `/dashboard/tournaments/${id}/insights` },
+    { label: "Export",        href: `/dashboard/tournaments/${id}/export` },
+    { label: "Settings",      href: `/dashboard/tournaments/${id}/settings` },
+  ];
 
   return (
-    <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
-      <Link href={`/dashboard/tournaments/${id}`} style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", color: "#9ca3af", fontSize: "0.75rem", textDecoration: "none", marginBottom: "1rem" }}>
-        <ChevronLeft style={{ width: "0.875rem", height: "0.875rem" }} />Back to Tournament
-      </Link>
+    <DashboardShell>
+      <div className="min-h-screen bg-[#080a0e] text-white">
 
-      <TournamentNav tournamentId={id} />
+        {/* ── Header ──────────────────────────────────────── */}
+        <div className="border-b border-white/[0.06] bg-[#0a0c10]">
+          <div className="max-w-7xl mx-auto px-6 py-5">
+            <div className="flex items-center gap-2 text-slate-500 text-sm mb-3">
+              <button onClick={() => router.push("/dashboard/tournaments")} className="hover:text-slate-300 transition-colors">Tournaments</button>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <button onClick={() => router.push(`/dashboard/tournaments/${id}/overview`)} className="hover:text-slate-300 transition-colors">Champions Circuit S4</button>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <span className="text-slate-300">Teams</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-white">Teams</h1>
+                <p className="text-slate-500 text-sm mt-0.5">{stats.total} registered · {stats.checkedIn} checked in</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="flex items-center gap-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 px-3 py-2 rounded-lg text-sm transition-colors">
+                  <Download className="w-4 h-4" /> Export
+                </button>
+                <button className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                  <Plus className="w-4 h-4" /> Add Team
+                </button>
+              </div>
+            </div>
+          </div>
 
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
-        <div>
-          <h1 style={{ fontSize: "clamp(1.5rem,4vw,2rem)", fontWeight: 800, color: "#fff", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <Users style={{ width: "1.75rem", height: "1.75rem", color: "#f59e0b" }} />
-            Teams
-          </h1>
-          <p style={{ color: "#6b7280", fontSize: "0.85rem", marginTop: "0.25rem" }}>
-            {tournament?.name} Â· {teams.length}/{tournament?.maxTeams} teams
-          </p>
+          {/* Sub-nav */}
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="flex gap-0 overflow-x-auto scrollbar-hide">
+              {navTabs.map((tab) => (
+                <button
+                  key={tab.label}
+                  onClick={() => router.push(tab.href)}
+                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${
+                    tab.label === "Teams"
+                      ? "border-violet-500 text-violet-400"
+                      : "border-transparent text-slate-500 hover:text-slate-300"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
-          <Link href={`/dashboard/tournaments/${id}/bulk-import`}
-            style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.625rem", padding: "0.5rem 0.875rem", color: "#d1d5db", fontSize: "0.75rem", fontWeight: 600, textDecoration: "none" }}>
-            <Upload style={{ width: "0.875rem", height: "0.875rem" }} />Bulk Import
-          </Link>
-          <button onClick={() => setAddingTeam(true)}
-            style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", background: "#f59e0b", color: "#000", borderRadius: "0.625rem", padding: "0.5rem 0.875rem", border: "none", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer" }}>
-            <Plus style={{ width: "0.875rem", height: "0.875rem" }} />Add Team
-          </button>
-        </div>
-      </div>
 
-      {/* Search */}
-      <div style={{ position: "relative", marginBottom: "1.25rem" }}>
-        <Search style={{ position: "absolute", left: "0.875rem", top: "50%", transform: "translateY(-50%)", width: "1rem", height: "1rem", color: "#6b7280" }} />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search teams..."
-          style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "0.75rem 0.75rem 0.75rem 2.75rem", color: "#fff", fontSize: "0.875rem", outline: "none", boxSizing: "border-box" }} />
-        {search && <button onClick={() => setSearch("")} style={{ position: "absolute", right: "0.875rem", top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", color: "#6b7280", cursor: "pointer" }}><X style={{ width: "1rem", height: "1rem" }} /></button>}
-      </div>
+        <div className="max-w-7xl mx-auto px-6 py-6">
 
-      {/* Add Team Form */}
-      {addingTeam && (
-        <div style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "1rem", padding: "1.25rem", marginBottom: "1.25rem" }}>
-          <h3 style={{ color: "#fff", fontWeight: 700, marginBottom: "1rem" }}>Add New Team</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem", marginBottom: "1rem" }}>
+          {/* Stat pills */}
+          <div className="flex flex-wrap gap-3 mb-6">
             {[
-              { label: "Team Name *", key: "name", placeholder: "e.g. Team Alpha" },
-              { label: "Tag", key: "tag", placeholder: "e.g. ALPHA" },
-              { label: "Contact", key: "contact", placeholder: "Discord or email" },
-              { label: "Seed #", key: "seed", placeholder: "1", type: "number" },
-            ].map(f => (
-              <div key={f.key}>
-                <label style={{ fontSize: "0.7rem", color: "#9ca3af", fontWeight: 600, display: "block", marginBottom: "0.375rem" }}>{f.label}</label>
-                <input
-                  type={f.type || "text"}
-                  value={(newTeam as any)[f.key]}
-                  onChange={e => setNewTeam(prev => ({ ...prev, [f.key]: e.target.value }))}
-                  placeholder={f.placeholder}
-                  style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.5rem", padding: "0.5rem 0.75rem", color: "#fff", fontSize: "0.875rem", boxSizing: "border-box" }}
-                />
+              { label: "Total",        val: stats.total,        color: "text-slate-300", bg: "bg-white/[0.04]",          border: "border-white/[0.08]" },
+              { label: "Checked In",   val: stats.checkedIn,    color: "text-emerald-400",bg: "bg-emerald-500/10",       border: "border-emerald-500/20" },
+              { label: "Pending",      val: stats.pending,      color: "text-amber-400",  bg: "bg-amber-500/10",         border: "border-amber-500/20" },
+              { label: "Missed",       val: stats.missed,       color: "text-rose-400",   bg: "bg-rose-500/10",          border: "border-rose-500/20" },
+              { label: "Disqualified", val: stats.disqualified, color: "text-slate-400",  bg: "bg-slate-500/10",         border: "border-slate-500/20" },
+            ].map((s) => (
+              <div key={s.label} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${s.bg} ${s.border}`}>
+                <span className={`text-lg font-bold ${s.color}`}>{s.val}</span>
+                <span className="text-slate-500 text-sm">{s.label}</span>
               </div>
             ))}
           </div>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button onClick={addTeam} disabled={saving}
-              style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", background: "#f59e0b", color: "#000", borderRadius: "0.625rem", padding: "0.5rem 1.25rem", border: "none", fontSize: "0.8rem", fontWeight: 700, cursor: "pointer" }}>
-              {saving ? <Loader2 style={{ width: "0.875rem", height: "0.875rem", animation: "spin 0.8s linear infinite" }} /> : <Plus style={{ width: "0.875rem", height: "0.875rem" }} />}
-              Add Team
-            </button>
-            <button onClick={() => setAddingTeam(false)}
-              style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.625rem", padding: "0.5rem 1rem", color: "#9ca3af", fontSize: "0.8rem", cursor: "pointer" }}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
 
-      {/* Teams Grid */}
-      {filtered.length === 0 ? (
-        <div style={{ background: "rgba(255,255,255,0.02)", border: "2px dashed rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "4rem 2rem", textAlign: "center" }}>
-          <Users style={{ width: "3rem", height: "3rem", color: "#374151", margin: "0 auto 1rem" }} />
-          <p style={{ color: "#9ca3af", fontWeight: 600 }}>{search ? "No teams match your search" : "No teams yet"}</p>
-          {!search && <button onClick={() => setAddingTeam(true)} style={{ marginTop: "1rem", background: "#f59e0b", color: "#000", borderRadius: "0.625rem", padding: "0.5rem 1.25rem", border: "none", fontSize: "0.8rem", fontWeight: 700, cursor: "pointer" }}>Add First Team</button>}
-        </div>
-      ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1rem" }}>
-          {filtered.map(team => (
-            <div key={team.id} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1.25rem", position: "relative" }}>
-              {saved === team.id && (
-                <div style={{ position: "absolute", top: "0.75rem", right: "0.75rem", display: "flex", alignItems: "center", gap: "0.25rem", color: "#4ade80", fontSize: "0.7rem", fontWeight: 700 }}>
-                  <Check style={{ width: "0.75rem", height: "0.75rem" }} />Saved
-                </div>
-              )}
-
-              {editingTeam?.id === team.id ? (
-                /* Edit Mode */
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
-                    <div style={{ position: "relative", cursor: "pointer" }} onClick={() => fileRef.current?.click()}>
-                      <TeamLogo name={editingTeam.name || "?"} logo={editingTeam.logo} tag={editingTeam.tag} size={48} />
-                      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", borderRadius: "0.5rem", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <Upload style={{ width: "0.875rem", height: "0.875rem", color: "#fff" }} />
-                      </div>
-                      <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => handleLogoUpload(e, team.id)} />
-                    </div>
-                    <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 80px", gap: "0.5rem" }}>
-                      <input value={editingTeam.name} onChange={e => setEditingTeam(prev => prev ? { ...prev, name: e.target.value } : null)}
-                        style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "0.5rem", padding: "0.375rem 0.625rem", color: "#fff", fontSize: "0.875rem", fontWeight: 700 }} />
-                      <input value={editingTeam.tag || ""} onChange={e => setEditingTeam(prev => prev ? { ...prev, tag: e.target.value } : null)} placeholder="TAG"
-                        style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "0.5rem", padding: "0.375rem 0.625rem", color: "#f59e0b", fontSize: "0.8rem", fontWeight: 700 }} />
-                    </div>
-                  </div>
-
-                  {/* Players */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem", marginBottom: "1rem" }}>
-                    {editingTeam.players.map((p, i) => (
-                      <div key={p.id} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 80px", gap: "0.375rem" }}>
-                        <input value={p.name} onChange={e => setEditingTeam(prev => prev ? { ...prev, players: prev.players.map((pl, j) => j === i ? { ...pl, name: e.target.value } : pl) } : null)}
-                          placeholder="Name" style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.375rem", padding: "0.3rem 0.5rem", color: "#fff", fontSize: "0.75rem" }} />
-                        <input value={p.ign || ""} onChange={e => setEditingTeam(prev => prev ? { ...prev, players: prev.players.map((pl, j) => j === i ? { ...pl, ign: e.target.value } : pl) } : null)}
-                          placeholder="IGN" style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.375rem", padding: "0.3rem 0.5rem", color: "#d1d5db", fontSize: "0.75rem" }} />
-                        <select value={p.role || ""} onChange={e => setEditingTeam(prev => prev ? { ...prev, players: prev.players.map((pl, j) => j === i ? { ...pl, role: e.target.value } : pl) } : null)}
-                          style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.375rem", padding: "0.3rem 0.25rem", color: "#9ca3af", fontSize: "0.7rem" }}>
-                          <option value="">Role</option>
-                          {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                        </select>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div style={{ display: "flex", gap: "0.375rem" }}>
-                    <button onClick={() => saveTeam(editingTeam)} disabled={saving}
-                      style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.375rem", background: "#f59e0b", color: "#000", borderRadius: "0.5rem", padding: "0.5rem", border: "none", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer" }}>
-                      {saving ? <Loader2 style={{ width: "0.75rem", height: "0.75rem", animation: "spin 0.8s linear infinite" }} /> : <Save style={{ width: "0.75rem", height: "0.75rem" }} />}
-                      Save
-                    </button>
-                    <button onClick={() => setEditingTeam(null)}
-                      style={{ padding: "0.5rem 0.75rem", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.5rem", color: "#9ca3af", fontSize: "0.75rem", cursor: "pointer" }}>
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                /* View Mode */
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.875rem" }}>
-                    <TeamLogo name={team.name} logo={team.logo} tag={team.tag} size={44} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        {team.tag && <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "#f59e0b" }}>[{team.tag}]</span>}
-                        <span style={{ fontSize: "0.9rem", fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{team.name}</span>
-                      </div>
-                      <div style={{ fontSize: "0.7rem", color: "#6b7280", marginTop: "0.125rem" }}>
-                        {team.players.length} players{team.seed ? ` Â· Seed #${team.seed}` : ""}
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", gap: "0.25rem" }}>
-                      <button onClick={() => setEditingTeam({ ...team, players: team.players || [] })}
-                        style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.375rem", padding: "0.375rem", color: "#9ca3af", cursor: "pointer" }}>
-                        <Edit style={{ width: "0.875rem", height: "0.875rem" }} />
-                      </button>
-                      <button onClick={() => deleteTeam(team.id)}
-                        style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "0.375rem", padding: "0.375rem", color: "#f87171", cursor: "pointer" }}>
-                        <Trash2 style={{ width: "0.875rem", height: "0.875rem" }} />
-                      </button>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                    {team.players.slice(0, 4).map(p => (
-                      <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.375rem 0.5rem", background: "rgba(255,255,255,0.02)", borderRadius: "0.375rem" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
-                          {p.isCaptain && <Crown style={{ width: "0.65rem", height: "0.65rem", color: "#f59e0b" }} />}
-                          <span style={{ fontSize: "0.75rem", color: "#d1d5db", fontWeight: 500 }}>{p.name}</span>
-                          {p.ign && p.ign !== p.name && <span style={{ fontSize: "0.65rem", color: "#6b7280" }}>({p.ign})</span>}
-                        </div>
-                        {p.role && (
-                          <span style={{ fontSize: "0.6rem", fontWeight: 700, padding: "0.1rem 0.4rem", borderRadius: "9999px", background: p.role === "IGL" ? "rgba(168,85,247,0.15)" : p.role === "Fragger" ? "rgba(239,68,68,0.15)" : "rgba(107,114,128,0.1)", color: p.role === "IGL" ? "#c084fc" : p.role === "Fragger" ? "#f87171" : "#9ca3af" }}>
-                            {p.role}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                    {team.players.length > 4 && <div style={{ fontSize: "0.65rem", color: "#6b7280", textAlign: "center", padding: "0.25rem" }}>+{team.players.length - 4} more</div>}
-                  </div>
-                </div>
-              )}
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-5">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <input
+                type="text"
+                placeholder="Search teams, captains, tags…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-[#0f1117] border border-white/[0.08] rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20"
+              />
             </div>
-          ))}
-        </div>
-      )}
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-slate-500 flex-shrink-0" />
+              {(["all", "checked-in", "pending", "missed", "disqualified"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setFilterStatus(s)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${
+                    filterStatus === s
+                      ? "bg-violet-600 text-white"
+                      : "bg-white/[0.04] text-slate-400 hover:text-slate-200 border border-white/[0.08]"
+                  }`}
+                >
+                  {s === "all" ? "All" : s.replace("-", " ")}
+                </button>
+              ))}
+            </div>
+          </div>
 
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
+          {/* Table */}
+          <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-white/[0.06]">
+                    {["Team", "Captain", "Members", "Seed", "Record", "Status", "Registered", "Actions"].map((h) => (
+                      <th key={h} className="text-left py-3 px-4 text-slate-500 text-xs font-medium uppercase tracking-wide">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.length > 0 ? (
+                    filtered.map((team) => (
+                      <TeamRow
+                        key={team.id}
+                        team={team}
+                        onExpand={toggleExpand}
+                        expanded={expandedId === team.id}
+                      />
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={8} className="py-16 text-center">
+                        <Users className="w-10 h-10 text-slate-700 mx-auto mb-3" />
+                        <p className="text-slate-500 text-sm">No teams match your filters.</p>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <p className="text-slate-600 text-xs mt-3 text-center">
+            Click any row to expand team members
+          </p>
+        </div>
+      </div>
+    </DashboardShell>
   );
 }

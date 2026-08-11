@@ -1,762 +1,343 @@
-﻿"use client";
-import { useState, useEffect, useMemo } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
-import TournamentNav from "@/components/tournament/TournamentNav";
-import TeamLogo from "@/components/tournament/TeamLogo";
-import { useDialog } from "@/lib/use-confirm";
+"use client";
+
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import DashboardShell from "@/components/ui/DashboardShell";
 import {
-  Trophy, Save, Loader2, Check, ChevronLeft, Trash2, Zap,
-  MapPin, Search, Target, PlayCircle, Layers, AlertCircle,
-  Crown, Crosshair, Users, Lock
+  ClipboardList,
+  ChevronRight,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  Search,
+  Filter,
+  Upload,
+  ChevronDown,
+  Trophy,
+  Zap,
+  BarChart2,
+  Edit3,
+  X,
+  Plus,
 } from "lucide-react";
 
-interface Team {
-  id: string;
-  name: string;
-  tag?: string;
-  logo?: string;
-}
+// ─── Types ────────────────────────────────────────────────────────────────────
+type ResultStatus = "verified" | "pending" | "disputed" | "submitted";
 
-interface Match {
-  id: string;
-  name: string;
-  status: string;
-  matchNumber: number;
+interface MapResult {
   map: string;
-  stageId?: string;
-  groupId?: string;
-  results: any;
-  notes?: string | any;
+  team1Score: number;
+  team2Score: number;
+  winner: string;
+  duration: string;
 }
 
-interface Stage {
+interface MatchResult {
   id: string;
-  name: string;
-  type: string;
-  order: number;
-  status: string;
-  groups: Array<{
-    id: string;
-    name: string;
-    teamIds: string[];
-  }>;
+  matchNumber: number;
+  stage: string;
+  round: string;
+  team1: string;
+  team2: string;
+  winner: string;
+  score: string;
+  status: ResultStatus;
+  submittedAt: string;
+  submittedBy: string;
+  maps: MapResult[];
+  notes?: string;
 }
 
-interface Result {
-  teamId: string;
-  placement: number;
-  kills: number;
-  wwcd: boolean;
-}
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+const MOCK_RESULTS: MatchResult[] = [
+  {
+    id: "r1", matchNumber: 1, stage: "Quarterfinals", round: "Round 1",
+    team1: "Team Alpha", team2: "Team Titan", winner: "Team Alpha", score: "2-0",
+    status: "verified", submittedAt: "2025-07-14 15:48", submittedBy: "ShadowX",
+    maps: [
+      { map: "Ascent",  team1Score: 13, team2Score: 5,  winner: "Team Alpha", duration: "21m" },
+      { map: "Bind",    team1Score: 13, team2Score: 9,  winner: "Team Alpha", duration: "26m" },
+    ],
+  },
+  {
+    id: "r2", matchNumber: 2, stage: "Quarterfinals", round: "Round 1",
+    team1: "Team Nexus", team2: "Team Blaze", winner: "Team Nexus", score: "2-1",
+    status: "verified", submittedAt: "2025-07-14 17:58", submittedBy: "ProStrike",
+    maps: [
+      { map: "Haven",   team1Score: 13, team2Score: 8,  winner: "Team Nexus", duration: "24m" },
+      { map: "Split",   team1Score: 9,  team2Score: 13, winner: "Team Blaze",  duration: "20m" },
+      { map: "Icebox",  team1Score: 13, team2Score: 11, winner: "Team Nexus", duration: "32m" },
+    ],
+  },
+  {
+    id: "r3", matchNumber: 3, stage: "Quarterfinals", round: "Round 1",
+    team1: "Team Phantom", team2: "Team Void", winner: "Team Void", score: "1-2",
+    status: "disputed", submittedAt: "2025-07-15 15:51", submittedBy: "GhostRider",
+    maps: [
+      { map: "Pearl",   team1Score: 13, team2Score: 10, winner: "Team Phantom", duration: "28m" },
+      { map: "Lotus",   team1Score: 8,  team2Score: 13, winner: "Team Void",    duration: "22m" },
+      { map: "Fracture",team1Score: 10, team2Score: 13, winner: "Team Void",    duration: "31m" },
+    ],
+    notes: "Team Phantom disputes map 3 result — screenshot evidence provided",
+  },
+  {
+    id: "r4", matchNumber: 4, stage: "Quarterfinals", round: "Round 1",
+    team1: "Team Storm", team2: "Team Nova", winner: "", score: "—",
+    status: "pending", submittedAt: "—", submittedBy: "—",
+    maps: [],
+  },
+];
 
-export default function MatchResultsPage() {
-  const dialog = useDialog();
-  const params = useParams();
-  const tournamentId = params?.id as string;
-  const [tournament, setTournament] = useState<any>(null);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [stages, setStages] = useState<Stage[]>([]);
-  const [selectedStageId, setSelectedStageId] = useState<string | "all">("all");
-  const [selectedGroupId, setSelectedGroupId] = useState<string | "all">("all");
-  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
-  const [results, setResults] = useState<Result[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [savedMsg, setSavedMsg] = useState(false);
-  const [matchSearch, setMatchSearch] = useState("");
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const STATUS_CFG: Record<ResultStatus, { label: string; badge: string; icon: React.ElementType }> = {
+  verified:  { label: "Verified",  badge: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30", icon: CheckCircle2  },
+  pending:   { label: "Pending",   badge: "bg-amber-500/15 text-amber-400 border-amber-500/30",       icon: Clock         },
+  disputed:  { label: "Disputed",  badge: "bg-rose-500/15 text-rose-400 border-rose-500/30",          icon: AlertTriangle },
+  submitted: { label: "Submitted", badge: "bg-blue-500/15 text-blue-400 border-blue-500/30",          icon: Upload        },
+};
 
-  useEffect(() => {
-    if (!tournamentId) return;
-    loadData();
-  }, [tournamentId]);
-
-  async function loadData() {
-    try {
-      const res = await fetch(`/api/tournaments/${tournamentId}`);
-      if (res.ok) {
-        const data = await res.json();
-        const t = data.tournament;
-        setTournament(t);
-        setTeams(t?.teams || []);
-        setMatches(t?.matches || []);
-        setStages((t?.stages || []).map((s: any) => ({ ...s, groups: s.groups || [] })));
-        // Auto-select first stage if stages exist
-        if (t?.stages && t.stages.length > 0 && selectedStageId === "all") {
-          setSelectedStageId(t.stages[0].id);
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Determine which matches to show based on selected stage/group
-  const filteredMatches = useMemo(() => {
-    let list = matches;
-    if (selectedStageId !== "all") {
-      list = list.filter(m => m.stageId === selectedStageId);
-      if (selectedGroupId !== "all") {
-        list = list.filter(m => m.groupId === selectedGroupId);
-      }
-    }
-    if (matchSearch) {
-      list = list.filter(m =>
-        m.name.toLowerCase().includes(matchSearch.toLowerCase()) ||
-        (m.map || "").toLowerCase().includes(matchSearch.toLowerCase())
-      );
-    }
-    return list.sort((a, b) => (a.matchNumber || 0) - (b.matchNumber || 0));
-  }, [matches, selectedStageId, selectedGroupId, matchSearch]);
-
-  // Group matches by day (if any have day metadata)
-  const matchesByDay = useMemo(() => {
-    const groups = new Map<string, Match[]>();
-    for (const m of filteredMatches) {
-      let day = "All Matches";
-      try {
-        const notes = m.notes ? (typeof m.notes === "string" ? JSON.parse(m.notes) : m.notes) : null;
-        if (notes && notes.dayName) {
-          day = notes.dayDate ? `${notes.dayName} · ${notes.dayDate}` : notes.dayName;
-        }
-      } catch {}
-      if (!groups.has(day)) groups.set(day, []);
-      groups.get(day)!.push(m);
-    }
-    return Array.from(groups.entries());
-  }, [filteredMatches]);
-
-  // Get teams eligible for the selected match (from its stage/group)
-  function getEligibleTeams(match: Match | null): Team[] {
-    if (!match) return teams;
-
-    // Match has stage + group: use only that group's teams
-    if (match.stageId && match.groupId) {
-      const stage = stages.find(s => s.id === match.stageId);
-      const group = stage?.groups.find(g => g.id === match.groupId);
-      if (group) {
-        // If group has teams, use them
-        if (group.teamIds.length > 0) {
-          return teams.filter(t => group.teamIds.includes(t.id));
-        }
-        // Group has no teams assigned yet - return empty (blocks entry)
-        return [];
-      }
-    }
-
-    // Match has stage but no group: use all teams across the stage's groups
-    if (match.stageId) {
-      const stage = stages.find(s => s.id === match.stageId);
-      if (stage) {
-        const stageTeamIds = new Set<string>();
-        for (const g of stage.groups) g.teamIds.forEach(id => stageTeamIds.add(id));
-        if (stageTeamIds.size > 0) {
-          return teams.filter(t => stageTeamIds.has(t.id));
-        }
-        // Stage has no teams assigned - return empty (blocks entry)
-        return [];
-      }
-    }
-
-    // Legacy match with no stage: allow all teams (old tournaments)
-    return teams;
-  }
-
-  function selectMatch(match: Match) {
-    setSelectedMatch(match);
-    const eligibleTeams = getEligibleTeams(match);
-
-    if (Array.isArray(match.results) && match.results.length > 0) {
-      // Existing results — populate
-      setResults(match.results.map((r: any) => ({
-        teamId: r.teamId,
-        placement: r.placement || 0,
-        kills: r.kills || 0,
-        wwcd: r.wwcd || r.placement === 1,
-      })));
-    } else {
-      // Fresh entry — only eligible teams
-      setResults(
-        eligibleTeams.map(team => ({
-          teamId: team.id,
-          placement: 0,
-          kills: 0,
-          wwcd: false,
-        }))
-      );
-    }
-  }
-
-  function updateResult(teamId: string, field: keyof Result, value: any) {
-    setResults(prev =>
-      prev.map(r => {
-        if (r.teamId === teamId) {
-          if (field === "wwcd" && value === true) {
-            return { ...r, wwcd: true, placement: 1 };
-          }
-          if (field === "placement") {
-            const numVal = Number(value);
-            return { ...r, placement: numVal, wwcd: numVal === 1 };
-          }
-          return { ...r, [field]: field === "kills" ? Number(value) : value };
-        }
-        if (field === "wwcd" && value === true) {
-          return { ...r, wwcd: false };
-        }
-        return r;
-      })
-    );
-  }
-
-  async function saveResults() {
-    if (!selectedMatch) return;
-    setSaving(true);
-    const validResults = results.filter(r => r.placement > 0);
-
-    try {
-      const res = await fetch(`/api/matches/${selectedMatch.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          results: validResults,
-          status: "completed",
-        }),
-      });
-
-      if (res.ok) {
-        setSavedMsg(true);
-        setTimeout(() => setSavedMsg(false), 3000);
-        await loadData();
-      } else {
-        const err = await res.json();
-        await dialog.alert({ title: "Save Failed", description: err.error || "Failed to save results.", variant: "danger" });
-      }
-    } catch {
-      await dialog.alert({ title: "Save Failed", description: "An unexpected error occurred while saving results.", variant: "danger" });
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function autoFillPlacements() {
-    const sorted = [...results].sort((a, b) => b.kills - a.kills);
-    setResults(
-      sorted.map((r, i) => ({
-        ...r,
-        placement: i + 1,
-        wwcd: i === 0,
-      }))
-    );
-  }
-
-  function autoSimulate() {
-    if (!selectedMatch) return;
-    const eligible = getEligibleTeams(selectedMatch);
-    const shuffled = [...eligible].sort(() => Math.random() - 0.5);
-    const newResults = shuffled.map((team, idx) => {
-      const placement = idx + 1;
-      const baseKills = Math.max(0, Math.floor(Math.random() * 15) - Math.floor(idx / 3));
-      const kills = Math.min(20, baseKills + Math.floor(Math.random() * 4));
-      return {
-        teamId: team.id,
-        placement,
-        kills,
-        wwcd: placement === 1,
-      };
-    });
-    setResults(newResults);
-  }
-
-  async function clearResults() {
-    const ok = await dialog.confirm({
-      title: "Clear all match results?",
-      description: "All entered placements and kills for this match will be reset. You can re-enter them afterwards.",
-      confirmLabel: "Clear results",
-      variant: "warning",
-    });
-    if (!ok) return;
-    const eligibleTeams = getEligibleTeams(selectedMatch);
-    setResults(
-      eligibleTeams.map(team => ({
-        teamId: team.id,
-        placement: 0,
-        kills: 0,
-        wwcd: false,
-      }))
-    );
-  }
-
-  const activeStage = selectedStageId === "all"
-    ? null
-    : stages.find(s => s.id === selectedStageId);
-  const activeGroup = activeStage && selectedGroupId !== "all"
-    ? activeStage.groups.find(g => g.id === selectedGroupId)
-    : null;
-
-  const eligibleForSelected = getEligibleTeams(selectedMatch);
-  const filledCount = results.filter(r => r.placement > 0).length;
-  const totalCompleted = filteredMatches.filter(m => Array.isArray(m.results) && m.results.length > 0).length;
-
-  if (loading) return (
-    <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <Loader2 style={{ width: "2rem", height: "2rem", color: "#f59e0b", animation: "spin 0.8s linear infinite" }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @media(min-width:700px){.match-results-grid{grid-template-columns:minmax(280px,320px) 1fr!important}}`}</style>
-    </div>
+function StatusBadge({ status }: { status: ResultStatus }) {
+  const cfg  = STATUS_CFG[status];
+  const Icon = cfg.icon;
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${cfg.badge}`}>
+      <Icon className="w-3 h-3" />
+      {cfg.label}
+    </span>
   );
+}
+
+// ─── Result Card ──────────────────────────────────────────────────────────────
+function ResultCard({ result }: { result: MatchResult }) {
+  const [expanded, setExpanded] = useState(result.status === "disputed");
+  const isDisputed = result.status === "disputed";
 
   return (
-    <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
-      <Link href={`/dashboard/tournaments/${tournamentId}`} style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", color: "#9ca3af", fontSize: "0.75rem", textDecoration: "none", marginBottom: "1rem" }}>
-        <ChevronLeft style={{ width: "0.875rem", height: "0.875rem" }} />
-        Back to Tournament
-      </Link>
+    <div className={`bg-[#0f1117] border rounded-xl overflow-hidden transition-all ${isDisputed ? "border-rose-500/30 ring-1 ring-rose-500/10" : "border-white/[0.06] hover:border-white/[0.12]"}`}>
+      {/* Main row */}
+      <div
+        className="flex items-center gap-4 p-5 cursor-pointer hover:bg-white/[0.02] transition-colors"
+        onClick={() => setExpanded(!expanded)}
+      >
+        {/* Match # */}
+        <div className="w-10 h-10 rounded-lg bg-white/[0.04] border border-white/[0.06] flex flex-col items-center justify-center flex-shrink-0">
+          <span className="text-slate-600 text-xs leading-none">#</span>
+          <span className="text-slate-300 text-sm font-bold leading-none">{result.matchNumber}</span>
+        </div>
 
-      <TournamentNav tournamentId={tournamentId} />
+        {/* Teams */}
+        <div className="flex-1 min-w-0">
+          <p className="text-slate-500 text-xs mb-1">{result.stage} · {result.round}</p>
+          <div className="flex items-center gap-2">
+            <span className={`text-sm font-semibold ${result.winner === result.team1 ? "text-white" : "text-slate-500"}`}>
+              {result.team1}
+            </span>
+            <div className={`px-2.5 py-0.5 rounded-md text-xs font-black ${result.status === "pending" ? "bg-white/[0.04] text-slate-600" : "bg-white/[0.06] text-white"}`}>
+              {result.score}
+            </div>
+            <span className={`text-sm font-semibold ${result.winner === result.team2 ? "text-white" : "text-slate-500"}`}>
+              {result.team2}
+            </span>
+          </div>
+          {result.winner && (
+            <p className="text-slate-600 text-xs mt-0.5 flex items-center gap-1">
+              <Trophy className="w-3 h-3 text-amber-500" /> {result.winner} wins
+            </p>
+          )}
+        </div>
 
-      {/* Header */}
-      <div style={{ marginBottom: "1.5rem" }}>
-        <h1 style={{ fontSize: "clamp(1.75rem, 4vw, 2.25rem)", fontWeight: 800, color: "#fff", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <Trophy style={{ width: "2rem", height: "2rem", color: "#f59e0b" }} />
-          Match Results
-        </h1>
-        <p style={{ color: "#6b7280", fontSize: "0.85rem", marginTop: "0.25rem" }}>
-          {tournament?.name} · Enter results per stage · Points auto-calculated
-        </p>
+        {/* Status + Meta */}
+        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+          <StatusBadge status={result.status} />
+          {result.submittedAt !== "—" && (
+            <p className="text-slate-600 text-xs">{result.submittedAt}</p>
+          )}
+          {result.submittedBy !== "—" && (
+            <p className="text-slate-600 text-xs">by {result.submittedBy}</p>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {result.status === "pending" && (
+            <button className="flex items-center gap-1.5 bg-violet-600 hover:bg-violet-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors">
+              <Plus className="w-3 h-3" /> Submit
+            </button>
+          )}
+          {result.status === "disputed" && (
+            <button className="flex items-center gap-1.5 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-400 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors">
+              <AlertTriangle className="w-3 h-3" /> Resolve
+            </button>
+          )}
+          {result.status === "verified" && (
+            <button className="p-1.5 hover:bg-white/[0.06] rounded-lg text-slate-500 hover:text-slate-300 transition-colors">
+              <Edit3 className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <ChevronDown className={`w-4 h-4 text-slate-600 transition-transform ${expanded ? "rotate-180" : ""}`} />
+        </div>
       </div>
 
-      {/* STAGE TABS - only show active/completed stages, gate upcoming stages */}
-      {stages.length > 0 && (() => {
-        // Filter: show stages that have teams assigned OR completed matches
-        const visibleStages = stages.filter((s: any) => {
-          const teamsInStage = (s.groups || []).reduce((sum: number, g: any) => sum + (g.teamIds?.length || 0), 0);
-          const matchesInStage = matches.filter(m => m.stageId === s.id);
-          const hasCompleted = matchesInStage.some(m => Array.isArray(m.results) && m.results.length > 0);
-          return teamsInStage > 0 || hasCompleted;
-        });
-        const upcomingStages = stages.filter((s: any) => !visibleStages.find((v: any) => v.id === s.id));
-
-        return (
-          <>
-            <div style={{ display: "flex", gap: "0.375rem", marginBottom: "0.5rem", overflowX: "auto", padding: "0.375rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.875rem" }} className="scrollbar-hide">
-              <button
-                onClick={() => { setSelectedStageId("all"); setSelectedGroupId("all"); setSelectedMatch(null); }}
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: "0.375rem",
-                  padding: "0.5rem 0.875rem", borderRadius: "0.625rem",
-                  background: selectedStageId === "all" ? "rgba(245,158,11,0.15)" : "transparent",
-                  color: selectedStageId === "all" ? "#f59e0b" : "#9ca3af",
-                  border: "none", fontSize: "0.8rem", fontWeight: 700,
-                  cursor: "pointer", whiteSpace: "nowrap",
-                }}
-              >
-                <Trophy style={{ width: "0.875rem", height: "0.875rem" }} />
-                All Active ({matches.filter(m => visibleStages.find((v: any) => v.id === m.stageId)).length})
-              </button>
-              {visibleStages.map((stage: any) => {
-                const stageMatches = matches.filter(m => m.stageId === stage.id);
-                const stageDone = stageMatches.filter(m => Array.isArray(m.results) && m.results.length > 0).length;
-                const totalTeamsInStage = (stage.groups || []).reduce((s: number, g: any) => s + (g.teamIds?.length || 0), 0);
-                const active = selectedStageId === stage.id;
-                const isComplete = stageMatches.length > 0 && stageDone === stageMatches.length;
-                return (
-                  <button
-                    key={stage.id}
-                    onClick={() => { setSelectedStageId(stage.id); setSelectedGroupId("all"); setSelectedMatch(null); }}
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: "0.5rem",
-                      padding: "0.5rem 0.875rem", borderRadius: "0.625rem",
-                      background: active ? "rgba(139,92,246,0.15)" : (isComplete ? "rgba(34,197,94,0.08)" : "transparent"),
-                      color: active ? "#a78bfa" : (isComplete ? "#4ade80" : "#9ca3af"),
-                      border: "none", fontSize: "0.8rem", fontWeight: 700,
-                      cursor: "pointer", whiteSpace: "nowrap",
-                    }}
-                  >
-                    {isComplete ? <Check style={{ width: "0.875rem", height: "0.875rem" }} /> : <Layers style={{ width: "0.875rem", height: "0.875rem" }} />}
-                    {stage.name}
-                    <span style={{
-                      fontSize: "0.65rem",
-                      background: active ? "rgba(139,92,246,0.2)" : "rgba(255,255,255,0.06)",
-                      padding: "0.1rem 0.45rem", borderRadius: "9999px",
-                      fontWeight: 700,
-                    }}>
-                      {totalTeamsInStage}T · {stageDone}/{stageMatches.length}M
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {upcomingStages.length > 0 && (
-              <div style={{ display: "flex", gap: "0.375rem", marginBottom: "1rem", overflowX: "auto", padding: "0.375rem", background: "rgba(107,114,128,0.05)", border: "1px dashed rgba(107,114,128,0.2)", borderRadius: "0.875rem" }} className="scrollbar-hide">
-                <div style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", padding: "0.5rem 0.75rem", color: "#6b7280", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  <Lock style={{ width: "0.75rem", height: "0.75rem" }} />
-                  Locked until teams advance:
-                </div>
-                {upcomingStages.map((stage: any) => (
-                  <div key={stage.id}
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: "0.375rem",
-                      padding: "0.5rem 0.875rem", borderRadius: "0.625rem",
-                      background: "rgba(107,114,128,0.08)",
-                      color: "#6b7280",
-                      fontSize: "0.75rem", fontWeight: 600,
-                      whiteSpace: "nowrap",
-                      opacity: 0.6,
-                    }}
-                    title={"This stage unlocks after teams are advanced from the previous stage. Go to Stages page > Advance Teams."}
-                  >
-                    <Layers style={{ width: "0.75rem", height: "0.75rem" }} />
-                    {stage.name}
-                    <span style={{ fontSize: "0.6rem", background: "rgba(255,255,255,0.05)", padding: "0.1rem 0.4rem", borderRadius: "9999px" }}>
-                      LOCKED
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        );
-      })()}
-
-      {/* GROUP TABS (only if stage selected and has multiple groups) */}
-      {activeStage && (activeStage.groups?.length || 0) > 1 && (
-        <div style={{ display: "flex", gap: "0.375rem", marginBottom: "1.5rem", overflowX: "auto", padding: "0.25rem", background: "rgba(139,92,246,0.05)", border: "1px solid rgba(139,92,246,0.15)", borderRadius: "0.75rem" }} className="scrollbar-hide">
-          <button
-            onClick={() => { setSelectedGroupId("all"); setSelectedMatch(null); }}
-            style={{
-              padding: "0.375rem 0.75rem", borderRadius: "0.5rem",
-              background: selectedGroupId === "all" ? "rgba(139,92,246,0.2)" : "transparent",
-              color: selectedGroupId === "all" ? "#a78bfa" : "#9ca3af",
-              border: "none", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
-            }}
-          >
-            All Groups ({activeStage.groups.length})
-          </button>
-          {activeStage.groups.map(group => {
-            const groupMatches = matches.filter(m => m.groupId === group.id);
-            const active = selectedGroupId === group.id;
-            return (
-              <button
-                key={group.id}
-                onClick={() => { setSelectedGroupId(group.id); setSelectedMatch(null); }}
-                style={{
-                  padding: "0.375rem 0.75rem", borderRadius: "0.5rem",
-                  background: active ? "rgba(139,92,246,0.2)" : "transparent",
-                  color: active ? "#a78bfa" : "#9ca3af",
-                  border: "none", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
-                }}
-              >
-                {group.name} ({group.teamIds.length}T · {groupMatches.length}M)
-              </button>
-            );
-          })}
+      {/* Dispute notice */}
+      {isDisputed && (
+        <div className="mx-5 mb-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
+          <p className="text-rose-400 text-xs flex items-start gap-2">
+            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+            {result.notes}
+          </p>
         </div>
       )}
 
-      {/* Force Advance button — appears when active stage is complete */}
-      {activeStage && (() => {
-        const stageMatches = matches.filter(m => m.stageId === activeStage.id);
-        const stageDone = stageMatches.filter(m => Array.isArray(m.results) && m.results.length > 0).length;
-        const allDone = stageMatches.length > 0 && stageDone === stageMatches.length;
-        const nextStage = stages.find((s: any) => s.order === activeStage.order + 1);
-        const nextHasTeams = nextStage && nextStage.groups.some((g: any) => (g.teamIds || []).length > 0);
+      {/* Expanded: Map breakdown */}
+      {expanded && result.maps.length > 0 && (
+        <div className="px-5 pb-5 border-t border-white/[0.04] mt-2 pt-4">
+          <h4 className="text-slate-400 text-xs font-semibold uppercase tracking-wide mb-3">Map Results</h4>
+          <div className="space-y-2">
+            {result.maps.map((map, i) => (
+              <div key={i} className="flex items-center gap-4 bg-white/[0.02] border border-white/[0.04] rounded-lg px-4 py-2.5">
+                <span className="text-slate-600 text-xs font-medium w-4">{i + 1}</span>
+                <span className="text-slate-300 text-sm font-medium flex-1">{map.map}</span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-bold ${map.winner === result.team1 ? "text-white" : "text-slate-500"}`}>{map.team1Score}</span>
+                  <span className="text-slate-600 text-xs">—</span>
+                  <span className={`text-sm font-bold ${map.winner === result.team2 ? "text-white" : "text-slate-500"}`}>{map.team2Score}</span>
+                </div>
+                <span className="text-slate-600 text-xs w-8 text-right">{map.duration}</span>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-md ${map.winner === result.team1 ? "bg-violet-500/15 text-violet-400" : "bg-indigo-500/15 text-indigo-400"}`}>
+                  {map.winner === result.team1 ? result.team1.split(" ")[1] : result.team2.split(" ")[1]}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-        if (allDone && nextStage && !nextHasTeams) {
-          return (
-            <div style={{ background: "linear-gradient(135deg, rgba(34,197,94,0.1), rgba(16,185,129,0.05))", border: "1px solid rgba(34,197,94,0.3)", borderRadius: "1rem", padding: "1.25rem", marginBottom: "1.25rem", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
+      {expanded && result.maps.length === 0 && (
+        <div className="px-5 pb-5 border-t border-white/[0.04] mt-2 pt-4 text-center">
+          <p className="text-slate-600 text-sm">No map results submitted yet.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Submit Result Modal (minimal) ────────────────────────────────────────────
+// (Placeholder — full modal can be built separately)
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+export default function MatchResultsPage() {
+  const params = useParams();
+  const router = useRouter();
+  const id     = params?.id as string;
+
+  const [search,       setSearch]       = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const filtered = MOCK_RESULTS.filter((r) => {
+    const q = search.toLowerCase();
+    const matchQ = r.team1.toLowerCase().includes(q) || r.team2.toLowerCase().includes(q) || String(r.matchNumber).includes(q);
+    const matchS = statusFilter === "all" || r.status === statusFilter;
+    return matchQ && matchS;
+  });
+
+  const stats = {
+    total:    MOCK_RESULTS.length,
+    verified: MOCK_RESULTS.filter(r => r.status === "verified").length,
+    pending:  MOCK_RESULTS.filter(r => r.status === "pending").length,
+    disputed: MOCK_RESULTS.filter(r => r.status === "disputed").length,
+  };
+
+  const navTabs = [
+    { label: "Overview",      href: `/dashboard/tournaments/${id}/overview` },
+    { label: "Teams",         href: `/dashboard/tournaments/${id}/teams` },
+    { label: "Stages",        href: `/dashboard/tournaments/${id}/stages` },
+    { label: "Matches",       href: `/dashboard/tournaments/${id}/matches` },
+    { label: "Match Results", href: `/dashboard/tournaments/${id}/match-results` },
+    { label: "Standings",     href: `/dashboard/tournaments/${id}/standings` },
+    { label: "Broadcast",     href: `/dashboard/tournaments/${id}/broadcast` },
+    { label: "Discord",       href: `/dashboard/tournaments/${id}/discord` },
+    { label: "Insights",      href: `/dashboard/tournaments/${id}/insights` },
+    { label: "Export",        href: `/dashboard/tournaments/${id}/export` },
+    { label: "Settings",      href: `/dashboard/tournaments/${id}/settings` },
+  ];
+
+  return (
+    <DashboardShell>
+      <div className="min-h-screen bg-[#080a0e] text-white">
+        <div className="border-b border-white/[0.06] bg-[#0a0c10]">
+          <div className="max-w-7xl mx-auto px-6 py-5">
+            <div className="flex items-center gap-2 text-slate-500 text-sm mb-3">
+              <button onClick={() => router.push("/dashboard/tournaments")} className="hover:text-slate-300 transition-colors">Tournaments</button>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <button onClick={() => router.push(`/dashboard/tournaments/${id}/overview`)} className="hover:text-slate-300 transition-colors">Champions Circuit S4</button>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <span className="text-slate-300">Match Results</span>
+            </div>
+            <div className="flex items-center justify-between">
               <div>
-                <div style={{ fontSize: "0.9rem", fontWeight: 800, color: "#4ade80", marginBottom: "0.25rem" }}>
-                  ✅ {activeStage.name} Complete!
-                </div>
-                <div style={{ fontSize: "0.75rem", color: "#a7f3d0" }}>
-                  All {stageMatches.length} matches done. Click below to advance top teams to <strong>{nextStage.name}</strong>.
+                <h1 className="text-2xl font-bold text-white">Match Results</h1>
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="text-emerald-400 text-sm">{stats.verified} Verified</span>
+                  <span className="text-slate-600">·</span>
+                  <span className="text-amber-400 text-sm">{stats.pending} Pending</span>
+                  {stats.disputed > 0 && (
+                    <>
+                      <span className="text-slate-600">·</span>
+                      <span className="text-rose-400 text-sm font-medium flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5" />{stats.disputed} Disputed
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
-              <button
-                onClick={async () => {
-                  // Step 1: Confirm intent
-                  const ok = await dialog.confirm({
-                    title: `Advance to ${nextStage.name}?`,
-                    description: `Top teams from ${activeStage.name} will be calculated, snake-seeded into ${nextStage.name} groups, and ${activeStage.name} will be locked. A Discord announcement will be posted.`,
-                    confirmLabel: `Advance to ${nextStage.name}`,
-                    variant: "info",
-                  });
-                  if (!ok) return;
-
-                  // Step 2: Collect reason (required by API, minimum 5 chars)
-                  const reason = await dialog.prompt({
-                    title: "Advancement Reason",
-                    description: "Provide a reason for this advancement. This is recorded in the audit log.",
-                    placeholder: "e.g. All matches complete, advancing top 8 teams",
-                    minLength: 5,
-                    maxLength: 250,
-                    submitLabel: "Confirm Advance",
-                    variant: "warning",
-                    helperText: "Minimum 5 characters required",
-                  });
-                  if (!reason) return;
-
-                  try {
-                    const res = await fetch(`/api/tournaments/${tournamentId}/force-advance`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ stageId: activeStage.id, reason }),
-                    });
-                    const data = await res.json();
-                    if (res.ok && data.success) {
-                      await dialog.alert({
-                        title: "Stage Advanced",
-                        description: data.message || `Successfully advanced to ${nextStage.name}.`,
-                        variant: "success",
-                      });
-                      loadData();
-                    } else {
-                      await dialog.alert({
-                        title: "Advancement Failed",
-                        description: data.error || "Failed to advance stage. Please try again.",
-                        variant: "danger",
-                      });
-                    }
-                  } catch (e: any) {
-                    await dialog.alert({
-                      title: "Error",
-                      description: e.message || "An unexpected error occurred.",
-                      variant: "danger",
-                    });
-                  }
-                }}
-                style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "#4ade80", color: "#000", padding: "0.75rem 1.5rem", borderRadius: "0.75rem", border: "none", fontSize: "0.9rem", fontWeight: 800, cursor: "pointer", boxShadow: "0 8px 20px rgba(34,197,94,0.3)" }}
-              >
-                🚀 Advance to {nextStage.name}
+              <button className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                <Upload className="w-4 h-4" /> Submit Result
               </button>
             </div>
-          );
-        }
-        return null;
-      })()}
-
-      {/* Warning if no matches in this stage */}
-      {stages.length > 0 && filteredMatches.length === 0 && (
-        <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: "0.875rem", padding: "1rem 1.25rem", marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <AlertCircle style={{ width: "1.25rem", height: "1.25rem", color: "#fbbf24" }} />
-          <span style={{ fontSize: "0.85rem", color: "#fcd34d" }}>
-            No matches found for this selection. If this stage should have matches, go to Stages → Regenerate.
-          </span>
-        </div>
-      )}
-
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: "1.25rem" }} className="match-results-grid">
-
-        {/* Match List */}
-        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1rem", maxHeight: "80vh", display: "flex", flexDirection: "column" }}>
-          <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.5rem" }}>
-            Matches ({filteredMatches.length}) · {totalCompleted} done
           </div>
-          <div style={{ position: "relative", marginBottom: "0.75rem" }}>
-            <Search style={{ position: "absolute", left: "0.625rem", top: "50%", transform: "translateY(-50%)", width: "0.875rem", height: "0.875rem", color: "#6b7280" }} />
-            <input
-              value={matchSearch}
-              onChange={e => setMatchSearch(e.target.value)}
-              placeholder="Search matches..."
-              style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", padding: "0.5rem 0.5rem 0.5rem 2rem", color: "#fff", fontSize: "0.75rem", outline: "none", boxSizing: "border-box" }}
-            />
-          </div>
-
-          <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.375rem" }} className="scrollbar-hide">
-            {filteredMatches.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "2rem 0.5rem", color: "#6b7280", fontSize: "0.8rem" }}>
-                No matches
-              </div>
-            ) : filteredMatches.map(match => {
-              const hasResults = Array.isArray(match.results) && match.results.length > 0;
-              const active = selectedMatch?.id === match.id;
-              return (
-                <button
-                  key={match.id}
-                  onClick={() => selectMatch(match)}
-                  style={{
-                    display: "block", width: "100%", textAlign: "left",
-                    padding: "0.625rem 0.75rem", borderRadius: "0.5rem",
-                    background: active ? "rgba(245,158,11,0.1)" : "rgba(255,255,255,0.02)",
-                    border: active ? "1px solid rgba(245,158,11,0.3)" : "1px solid rgba(255,255,255,0.06)",
-                    color: "#fff", cursor: "pointer",
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
-                    <span style={{ fontSize: "0.8rem", fontWeight: 700, color: active ? "#f59e0b" : "#fff" }}>
-                      {match.name}
-                    </span>
-                    {hasResults ? (
-                      <Check style={{ width: "0.875rem", height: "0.875rem", color: "#4ade80" }} />
-                    ) : (
-                      <div style={{ width: "0.5rem", height: "0.5rem", borderRadius: "50%", background: "#4b5563" }} />
-                    )}
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.65rem", color: "#6b7280" }}>
-                    <MapPin style={{ width: "0.65rem", height: "0.65rem" }} />
-                    {match.map}
-                  </div>
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="flex gap-0 overflow-x-auto scrollbar-hide">
+              {navTabs.map((tab) => (
+                <button key={tab.label} onClick={() => router.push(tab.href)}
+                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Match Results" ? "border-violet-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
+                  {tab.label}
                 </button>
-              );
-            })}
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Editor */}
-        <div>
-          {!selectedMatch ? (
-            <div style={{ background: "rgba(255,255,255,0.02)", border: "2px dashed rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "4rem 2rem", textAlign: "center" }}>
-              <Trophy style={{ width: "3rem", height: "3rem", color: "#374151", margin: "0 auto 1rem" }} />
-              <h3 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#fff", marginBottom: "0.5rem" }}>Select a Match</h3>
-              <p style={{ color: "#6b7280", fontSize: "0.85rem" }}>
-                {stages.length > 0
-                  ? "Choose a stage tab above, then click a match to enter results"
-                  : "Choose a match from the list"}
-              </p>
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-5">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <input type="text" placeholder="Search by team or match #…" value={search} onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-[#0f1117] border border-white/[0.08] rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500/50" />
+            </div>
+            <div className="flex items-center gap-2">
+              {["all", "verified", "pending", "disputed", "submitted"].map((s) => (
+                <button key={s} onClick={() => setStatusFilter(s)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${statusFilter === s ? "bg-violet-600 text-white" : "bg-white/[0.04] text-slate-400 hover:text-slate-200 border border-white/[0.08]"}`}>
+                  {s === "all" ? "All" : s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Results */}
+          {filtered.length > 0 ? (
+            <div className="space-y-3">
+              {filtered.map((r) => <ResultCard key={r.id} result={r} />)}
             </div>
           ) : (
-            <>
-              {/* Match Header with stage context */}
-              <div style={{ background: "linear-gradient(135deg, rgba(245,158,11,0.08), rgba(249,115,22,0.03))", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "1rem", padding: "1rem 1.25rem", marginBottom: "1rem" }}>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem" }}>
-                  <div>
-                    <div style={{ fontSize: "1.125rem", fontWeight: 800, color: "#fff", marginBottom: "0.25rem" }}>
-                      {selectedMatch.name}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.75rem", color: "#9ca3af", flexWrap: "wrap" }}>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
-                        <MapPin style={{ width: "0.75rem", height: "0.75rem" }} />
-                        {selectedMatch.map}
-                      </span>
-                      {activeStage && (
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", color: "#a78bfa" }}>
-                          <Layers style={{ width: "0.75rem", height: "0.75rem" }} />
-                          {activeStage.name}
-                        </span>
-                      )}
-                      {activeGroup && <span style={{ color: "#a78bfa" }}>· {activeGroup.name}</span>}
-                      <span>· <Users style={{ width: "0.75rem", height: "0.75rem", display: "inline" }} /> {eligibleForSelected.length} teams</span>
-                      <span>· {filledCount}/{results.length} filled</span>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                    <button onClick={autoSimulate}
-                      style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.25)", color: "#60a5fa", padding: "0.5rem 0.75rem", borderRadius: "0.5rem", fontSize: "0.7rem", fontWeight: 700, cursor: "pointer" }}
-                    >
-                      <Zap style={{ width: "0.75rem", height: "0.75rem" }} />Simulate
-                    </button>
-                    <button onClick={autoFillPlacements}
-                      style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.25)", color: "#60a5fa", padding: "0.5rem 0.75rem", borderRadius: "0.5rem", fontSize: "0.7rem", fontWeight: 700, cursor: "pointer" }}
-                    >
-                      Rank by Kills
-                    </button>
-                    <button onClick={clearResults}
-                      style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171", padding: "0.5rem 0.75rem", borderRadius: "0.5rem", fontSize: "0.7rem", fontWeight: 700, cursor: "pointer" }}
-                    >
-                      <Trash2 style={{ width: "0.75rem", height: "0.75rem" }} />Clear
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Results Table */}
-              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", overflow: "hidden" }}>
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", fontSize: "0.85rem", borderCollapse: "collapse" }}>
-                    <thead style={{ background: "rgba(255,255,255,0.03)" }}>
-                      <tr>
-                        <th style={{ padding: "0.75rem 1rem", textAlign: "left", fontSize: "0.65rem", fontWeight: 700, color: "#f59e0b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Team</th>
-                        <th style={{ padding: "0.75rem 1rem", textAlign: "center", fontSize: "0.65rem", fontWeight: 700, color: "#f59e0b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Place</th>
-                        <th style={{ padding: "0.75rem 1rem", textAlign: "center", fontSize: "0.65rem", fontWeight: 700, color: "#f59e0b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Kills</th>
-                        <th style={{ padding: "0.75rem 1rem", textAlign: "center", fontSize: "0.65rem", fontWeight: 700, color: "#f59e0b", textTransform: "uppercase", letterSpacing: "0.05em" }}>WWCD</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {results.length === 0 ? (
-                        <tr><td colSpan={4} style={{ padding: "2rem", textAlign: "center", color: "#6b7280" }}>
-                          No teams assigned to this stage yet. Go to Stages page → advance teams from previous stage, or use Stage 1 first.
-                        </td></tr>
-                      ) : results.map(result => {
-                        const team = teams.find(t => t.id === result.teamId);
-                        if (!team) return null;
-                        const isWWCD = result.wwcd || result.placement === 1;
-                        return (
-                          <tr key={result.teamId} style={{
-                            borderTop: "1px solid rgba(255,255,255,0.04)",
-                            background: isWWCD ? "rgba(245,158,11,0.05)" : "transparent",
-                          }}>
-                            <td style={{ padding: "0.625rem 1rem" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
-                                <TeamLogo name={team.name} tag={team.tag} logo={team.logo} size={30} />
-                                <div>
-                                  {team.tag && <span style={{ color: "#f59e0b", marginRight: "0.25rem", fontWeight: 700, fontSize: "0.7rem" }}>[{team.tag}]</span>}
-                                  <span style={{ color: "#fff", fontWeight: 600, fontSize: "0.85rem" }}>{team.name}</span>
-                                </div>
-                              </div>
-                            </td>
-                            <td style={{ padding: "0.625rem 1rem", textAlign: "center" }}>
-                              <input type="number" min={1} max={100} value={result.placement || ""}
-                                onChange={e => updateResult(result.teamId, "placement", e.target.value)}
-                                style={{ width: "3.5rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.375rem", padding: "0.375rem", color: "#fff", textAlign: "center", fontSize: "0.85rem", fontWeight: 700, outline: "none" }}
-                              />
-                            </td>
-                            <td style={{ padding: "0.625rem 1rem", textAlign: "center" }}>
-                              <input type="number" min={0} max={100} value={result.kills}
-                                onChange={e => updateResult(result.teamId, "kills", e.target.value)}
-                                style={{ width: "3.5rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.375rem", padding: "0.375rem", color: "#f87171", textAlign: "center", fontSize: "0.85rem", fontWeight: 700, outline: "none" }}
-                              />
-                            </td>
-                            <td style={{ padding: "0.625rem 1rem", textAlign: "center" }}>
-                              <input type="checkbox" checked={isWWCD}
-                                onChange={e => updateResult(result.teamId, "wwcd", e.target.checked)}
-                                style={{ width: "1.1rem", height: "1.1rem", accentColor: "#f59e0b", cursor: "pointer" }}
-                              />
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Save */}
-              <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "0.75rem", marginTop: "1rem" }}>
-                {savedMsg && (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", color: "#4ade80", fontSize: "0.85rem", fontWeight: 600, marginRight: "auto" }}>
-                    <Check style={{ width: "1rem", height: "1rem" }} />Saved! Discord posted.
-                  </span>
-                )}
-                {filledCount === 0 && (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", color: "#fbbf24", fontSize: "0.8rem", marginRight: "auto" }}>
-                    <AlertCircle style={{ width: "0.875rem", height: "0.875rem" }} />Fill at least one placement
-                  </span>
-                )}
-                <button onClick={saveResults} disabled={saving || filledCount === 0}
-                  style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: filledCount === 0 ? "rgba(245,158,11,0.4)" : "#f59e0b", color: "#000", padding: "0.75rem 1.5rem", borderRadius: "0.75rem", fontWeight: 800, fontSize: "0.875rem", border: "none", cursor: saving || filledCount === 0 ? "not-allowed" : "pointer", boxShadow: "0 4px 20px rgba(245,158,11,0.3)" }}
-                >
-                  {saving
-                    ? <><Loader2 style={{ width: "1rem", height: "1rem", animation: "spin 0.8s linear infinite" }} />Saving...</>
-                    : <><Save style={{ width: "1rem", height: "1rem" }} />Save Results</>
-                  }
-                </button>
-              </div>
-            </>
+            <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl py-16 text-center">
+              <ClipboardList className="w-10 h-10 text-slate-700 mx-auto mb-3" />
+              <p className="text-slate-500 text-sm">No results found for your search.</p>
+            </div>
           )}
         </div>
       </div>
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-        @media (max-width: 768px) {
-          .match-results-grid { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
-    </div>
+    </DashboardShell>
   );
 }

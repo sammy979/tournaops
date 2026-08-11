@@ -1,152 +1,280 @@
-﻿"use client";
-import { useDialog } from "@/lib/use-confirm";
-import { useEffect, useState, use } from "react";
-import { useRouter } from "next/navigation";
-import { Download, ArrowLeft, Loader2, Monitor, Sparkles } from "lucide-react";
-import TournamentNav from "@/components/tournament/TournamentNav";
+"use client";
 
-const SIZES = [
-  { name: "youtube", width: 1920, height: 1080, label: "YouTube / Twitter (16:9)" },
-  { name: "instagram", width: 1080, height: 1080, label: "Instagram Post (1:1)" },
-  { name: "story", width: 1080, height: 1920, label: "Instagram Story (9:16)" },
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import DashboardShell from "@/components/ui/DashboardShell";
+import {
+  Download,
+  ChevronRight,
+  FileText,
+  FileSpreadsheet,
+  Image,
+  Code,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  Loader2,
+  Package,
+  BarChart2,
+  Users,
+  Trophy,
+  Zap,
+  Calendar,
+} from "lucide-react";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+type ExportStatus = "idle" | "generating" | "ready" | "error";
+type ExportFormat = "csv" | "json" | "pdf" | "xlsx" | "png";
+
+interface ExportJob {
+  id: string;
+  name: string;
+  format: ExportFormat;
+  status: ExportStatus;
+  size?: string;
+  generatedAt?: string;
+  description: string;
+}
+
+interface ExportTemplate {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ElementType;
+  formats: ExportFormat[];
+  includes: string[];
+  color: string;
+}
+
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+const EXPORT_TEMPLATES: ExportTemplate[] = [
+  {
+    id: "t1", name: "Full Tournament Report", description: "Complete data export including all matches, results, and standings",
+    icon: Package, formats: ["pdf", "xlsx"], color: "bg-violet-500/15 text-violet-400 border-violet-500/20",
+    includes: ["All matches", "Results", "Standings", "Team roster", "Stage breakdown"],
+  },
+  {
+    id: "t2", name: "Standings Export", description: "Current standings table with all statistics",
+    icon: Trophy, formats: ["csv", "xlsx", "pdf"], color: "bg-amber-500/15 text-amber-400 border-amber-500/20",
+    includes: ["Rank", "Team", "W/L/D", "Points", "Map record", "Round differential"],
+  },
+  {
+    id: "t3", name: "Match Schedule", description: "All matches with dates, times, and team assignments",
+    icon: Calendar, formats: ["csv", "xlsx", "pdf"], color: "bg-blue-500/15 text-blue-400 border-blue-500/20",
+    includes: ["Match number", "Stage/Round", "Teams", "Date/Time", "Status"],
+  },
+  {
+    id: "t4", name: "Team Roster Data", description: "All registered teams and their members",
+    icon: Users, formats: ["csv", "json", "xlsx"], color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
+    includes: ["Team name/tag", "Captain", "Members", "IGNs", "Check-in status"],
+  },
+  {
+    id: "t5", name: "Match Results", description: "All completed match results with map breakdown",
+    icon: Zap, formats: ["csv", "json", "xlsx"], color: "bg-rose-500/15 text-rose-400 border-rose-500/20",
+    includes: ["Match results", "Map scores", "Winner", "Duration", "Stage"],
+  },
+  {
+    id: "t6", name: "Analytics Data", description: "Raw statistics for external analysis",
+    icon: BarChart2, formats: ["json", "csv"], color: "bg-indigo-500/15 text-indigo-400 border-indigo-500/20",
+    includes: ["Win rates", "Map statistics", "Performance metrics", "Round data"],
+  },
 ];
 
-export default function ExportPage({ params }: { params: Promise<{ id: string }> }) {
-  const dialog = useDialog();
-  const { id } = use(params);
+const RECENT_EXPORTS: ExportJob[] = [
+  { id: "e1", name: "Standings Export",      format: "xlsx", status: "ready",     size: "24 KB",  generatedAt: "Today, 14:32",    description: "Current standings with full stats" },
+  { id: "e2", name: "Match Schedule",        format: "pdf",  status: "ready",     size: "156 KB", generatedAt: "Today, 11:05",    description: "All matches through QF Round 2" },
+  { id: "e3", name: "Full Tournament Report",format: "pdf",  status: "generating",                                                description: "Complete tournament package" },
+  { id: "e4", name: "Team Roster Data",      format: "csv",  status: "ready",     size: "8 KB",   generatedAt: "Yesterday, 18:20",description: "All 14 registered teams" },
+  { id: "e5", name: "Analytics Data",        format: "json", status: "error",                                                     description: "Failed — insufficient data" },
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const FORMAT_ICONS: Record<ExportFormat, React.ElementType> = {
+  csv:  FileSpreadsheet,
+  xlsx: FileSpreadsheet,
+  json: Code,
+  pdf:  FileText,
+  png:  Image,
+};
+
+const FORMAT_COLORS: Record<ExportFormat, string> = {
+  csv:  "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
+  xlsx: "bg-blue-500/15 text-blue-400 border-blue-500/20",
+  json: "bg-amber-500/15 text-amber-400 border-amber-500/20",
+  pdf:  "bg-rose-500/15 text-rose-400 border-rose-500/20",
+  png:  "bg-violet-500/15 text-violet-400 border-violet-500/20",
+};
+
+function ExportStatusIcon({ status }: { status: ExportStatus }) {
+  if (status === "ready")      return <CheckCircle2 className="w-4 h-4 text-emerald-400" />;
+  if (status === "generating") return <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />;
+  if (status === "error")      return <AlertCircle className="w-4 h-4 text-rose-400" />;
+  return <Clock className="w-4 h-4 text-slate-500" />;
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+export default function ExportPage() {
+  const params = useParams();
   const router = useRouter();
-  const [tournament, setTournament] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [downloading, setDownloading] = useState(false);
-  const [topN, setTopN] = useState(10);
-  const [size, setSize] = useState(SIZES[0]);
-  const [subtitle, setSubtitle] = useState("Overall Standings");
-  const [showSponsors, setShowSponsors] = useState(true);
-  const [showSocial, setShowSocial] = useState(true);
-  const [previewUrl, setPreviewUrl] = useState("");
+  const id     = params?.id as string;
 
-  useEffect(() => {
-    fetch("/api/tournaments/" + id).then(r => r.json()).then(d => setTournament(d.tournament)).finally(() => setLoading(false));
-  }, [id]);
+  const [selectedFormat, setSelectedFormat] = useState<Record<string, ExportFormat>>({});
+  const [jobs, setJobs] = useState(RECENT_EXPORTS);
 
-  useEffect(() => {
-    if (!tournament) return;
-    const p = new URLSearchParams({
-      top: String(topN), subtitle, format: size.name,
-      sponsors: showSponsors ? "1" : "0", social: showSocial ? "1" : "0",
-      t: String(Date.now()),
-    });
-    setPreviewUrl("/api/tournaments/" + id + "/screenshot?" + p.toString());
-  }, [tournament, topN, size, subtitle, showSponsors, showSocial, id]);
+  const getFormat = (templateId: string, formats: ExportFormat[]) =>
+    selectedFormat[templateId] ?? formats[0];
 
-  const download = async () => {
-    if (!previewUrl) return;
-    setDownloading(true);
-    try {
-      const res = await fetch(previewUrl);
-      if (!res.ok) throw new Error("Server returned " + res.status);
-      const blob = await res.blob();
-      const link = document.createElement("a");
-      link.download = (tournament?.name || "standings") + "-" + size.name + "-" + Date.now() + ".png";
-      link.href = URL.createObjectURL(blob);
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(link.href), 100);
-    } catch (e: any) {
-      void dialog.alert({ title: "Download Failed", description: "Download failed: " + (e?.message || "Unknown error"), variant: "danger" });
-    } finally {
-      setDownloading(false);
-    }
+  const handleExport = (template: ExportTemplate) => {
+    const fmt = getFormat(template.id, template.formats);
+    const newJob: ExportJob = {
+      id:          `e${Date.now()}`,
+      name:        template.name,
+      format:      fmt,
+      status:      "generating",
+      description: template.description,
+    };
+    setJobs(prev => [newJob, ...prev]);
+    setTimeout(() => {
+      setJobs(prev => prev.map(j => j.id === newJob.id ? { ...j, status: "ready", size: "48 KB", generatedAt: "Just now" } : j));
+    }, 2500);
   };
 
-  if (loading) return (
-    <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <Loader2 style={{ width: "2rem", height: "2rem", color: "#f59e0b", animation: "spin 0.8s linear infinite" }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
-  );
-
-  if (!tournament) return <div style={{ padding: "2rem", textAlign: "center", color: "#9ca3af" }}>Not found</div>;
+  const navTabs = [
+    { label: "Overview",      href: `/dashboard/tournaments/${id}/overview` },
+    { label: "Teams",         href: `/dashboard/tournaments/${id}/teams` },
+    { label: "Stages",        href: `/dashboard/tournaments/${id}/stages` },
+    { label: "Matches",       href: `/dashboard/tournaments/${id}/matches` },
+    { label: "Match Results", href: `/dashboard/tournaments/${id}/match-results` },
+    { label: "Standings",     href: `/dashboard/tournaments/${id}/standings` },
+    { label: "Broadcast",     href: `/dashboard/tournaments/${id}/broadcast` },
+    { label: "Discord",       href: `/dashboard/tournaments/${id}/discord` },
+    { label: "Insights",      href: `/dashboard/tournaments/${id}/insights` },
+    { label: "Export",        href: `/dashboard/tournaments/${id}/export` },
+    { label: "Settings",      href: `/dashboard/tournaments/${id}/settings` },
+  ];
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-      <button onClick={() => router.push("/dashboard/tournaments/" + id)} style={{
-        display: "inline-flex", alignItems: "center", gap: "0.375rem",
-        color: "#9ca3af", fontSize: "0.75rem", fontWeight: 500,
-        background: "transparent", border: "none", cursor: "pointer", marginBottom: "1rem",
-      }}>
-        <ArrowLeft style={{ width: "0.875rem", height: "0.875rem" }} />
-        Back to Tournament
-      </button>
+    <DashboardShell>
+      <div className="min-h-screen bg-[#080a0e] text-white">
 
-      <div style={{ marginBottom: "1.5rem" }}>
-        <TournamentNav tournamentId={id} />
-      </div>
-
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem", marginBottom: "1.5rem" }}>
-        <div>
-          <h1 style={{ fontSize: "clamp(1.75rem, 4vw, 2.25rem)", fontWeight: 800, color: "#fff", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <Download style={{ width: "1.75rem", height: "1.75rem", color: "#f59e0b" }} />
-            Export Image
-          </h1>
-          <p style={{ color: "#6b7280", fontSize: "0.85rem", marginTop: "0.25rem" }}>Server-rendered PNG • Perfect quality guaranteed</p>
-        </div>
-        <button onClick={download} disabled={downloading} style={{
-          display: "inline-flex", alignItems: "center", gap: "0.5rem",
-          background: downloading ? "rgba(245,158,11,0.4)" : "#f59e0b",
-          color: "#000", padding: "0.75rem 1.5rem", borderRadius: "0.75rem",
-          fontSize: "0.875rem", fontWeight: 800, border: "none",
-          cursor: downloading ? "not-allowed" : "pointer",
-          boxShadow: "0 8px 25px rgba(245,158,11,0.3)",
-        }}>
-          {downloading
-            ? <><Loader2 style={{ width: "1rem", height: "1rem", animation: "spin 0.8s linear infinite" }} />Downloading...</>
-            : <><Download style={{ width: "1rem", height: "1rem" }} />Download {size.width}x{size.height}</>
-          }
-        </button>
-      </div>
-
-      {/* Controls */}
-      <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.875rem", padding: "1rem", marginBottom: "1rem" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.75rem" }}>
-          <div>
-            <label style={{ fontSize: "0.7rem", color: "#9ca3af", display: "block", marginBottom: "0.375rem" }}>FORMAT</label>
-            <select value={size.name} onChange={e => setSize(SIZES.find(s => s.name === e.target.value) || SIZES[0])} style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", padding: "0.5rem", color: "#fff", fontSize: "0.8rem", outline: "none" }}>
-              {SIZES.map(s => <option key={s.name} value={s.name} style={{ background: "#111116" }}>{s.label}</option>)}
-            </select>
+        {/* Header */}
+        <div className="border-b border-white/[0.06] bg-[#0a0c10]">
+          <div className="max-w-7xl mx-auto px-6 py-5">
+            <div className="flex items-center gap-2 text-slate-500 text-sm mb-3">
+              <button onClick={() => router.push("/dashboard/tournaments")} className="hover:text-slate-300 transition-colors">Tournaments</button>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <button onClick={() => router.push(`/dashboard/tournaments/${id}/overview`)} className="hover:text-slate-300 transition-colors">Champions Circuit S4</button>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <span className="text-slate-300">Export</span>
+            </div>
+            <h1 className="text-2xl font-bold text-white">Export Data</h1>
+            <p className="text-slate-500 text-sm mt-0.5">Generate reports and download tournament data</p>
           </div>
-          <div>
-            <label style={{ fontSize: "0.7rem", color: "#9ca3af", display: "block", marginBottom: "0.375rem" }}>SHOW TOP</label>
-            <select value={topN} onChange={e => setTopN(Number(e.target.value))} style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", padding: "0.5rem", color: "#fff", fontSize: "0.8rem", outline: "none" }}>
-              {[5,8,10,12,16,20].map(n => <option key={n} value={n} style={{ background: "#111116" }}>Top {n}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{ fontSize: "0.7rem", color: "#9ca3af", display: "block", marginBottom: "0.375rem" }}>SUBTITLE</label>
-            <input type="text" value={subtitle} onChange={e => setSubtitle(e.target.value)} style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", padding: "0.5rem 0.75rem", color: "#fff", fontSize: "0.8rem", outline: "none", boxSizing: "border-box" }} />
-          </div>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: "0.75rem" }}>
-            <label style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", fontSize: "0.75rem", color: "#d1d5db", cursor: "pointer" }}>
-              <input type="checkbox" checked={showSponsors} onChange={e => setShowSponsors(e.target.checked)} style={{ width: "1rem", height: "1rem", accentColor: "#f59e0b" }} /> Sponsors
-            </label>
-            <label style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", fontSize: "0.75rem", color: "#d1d5db", cursor: "pointer" }}>
-              <input type="checkbox" checked={showSocial} onChange={e => setShowSocial(e.target.checked)} style={{ width: "1rem", height: "1rem", accentColor: "#f59e0b" }} /> Social
-            </label>
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="flex gap-0 overflow-x-auto scrollbar-hide">
+              {navTabs.map((tab) => (
+                <button key={tab.label} onClick={() => router.push(tab.href)}
+                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Export" ? "border-violet-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Preview */}
-      <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.875rem", padding: "1rem" }}>
-        <div style={{ fontSize: "0.7rem", color: "#6b7280", marginBottom: "0.75rem", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
-          <Monitor style={{ width: "0.875rem", height: "0.875rem" }} />
-          Live Preview — {size.width}x{size.height} • Server rendered
-        </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#000", borderRadius: "0.5rem", padding: "0.5rem", minHeight: "24rem" }}>
-          {previewUrl && (
-            <img key={previewUrl} src={previewUrl} alt="Preview" style={{ maxWidth: "100%", height: "auto", maxHeight: "70vh", borderRadius: "0.375rem" }} />
-          )}
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            {/* Export Templates */}
+            <div className="lg:col-span-2">
+              <h2 className="text-white font-semibold mb-4">Export Templates</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {EXPORT_TEMPLATES.map((template) => {
+                  const fmt     = getFormat(template.id, template.formats);
+                  const FmtIcon = FORMAT_ICONS[fmt];
+                  return (
+                    <div key={template.id} className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-5 hover:border-white/[0.12] transition-all">
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center border ${template.color}`}>
+                          <template.icon className="w-4.5 h-4.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm font-semibold">{template.name}</p>
+                          <p className="text-slate-500 text-xs mt-0.5">{template.description}</p>
+                        </div>
+                      </div>
+
+                      {/* Includes */}
+                      <div className="mb-3">
+                        <p className="text-slate-600 text-xs mb-1.5">Includes:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {template.includes.map((inc) => (
+                            <span key={inc} className="bg-white/[0.04] border border-white/[0.06] text-slate-400 text-xs px-1.5 py-0.5 rounded">
+                              {inc}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Format selector + Export button */}
+                      <div className="flex items-center gap-2 pt-3 border-t border-white/[0.04]">
+                        <div className="flex gap-1">
+                          {template.formats.map((f) => {
+                            const FI = FORMAT_ICONS[f];
+                            return (
+                              <button key={f} onClick={() => setSelectedFormat(prev => ({ ...prev, [template.id]: f }))}
+                                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border transition-colors ${fmt === f ? FORMAT_COLORS[f] : "border-white/[0.06] text-slate-600 hover:text-slate-400"}`}>
+                                <FI className="w-3 h-3" />
+                                {f.toUpperCase()}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <button onClick={() => handleExport(template)}
+                          className="ml-auto flex items-center gap-1.5 bg-violet-600 hover:bg-violet-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
+                          <Download className="w-3.5 h-3.5" /> Export
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Recent Exports */}
+            <div>
+              <h2 className="text-white font-semibold mb-4">Recent Exports</h2>
+              <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl overflow-hidden">
+                {jobs.map((job, i) => {
+                  const FmtIcon = FORMAT_ICONS[job.format];
+                  return (
+                    <div key={job.id} className={`flex items-start gap-3 p-4 ${i < jobs.length - 1 ? "border-b border-white/[0.04]" : ""}`}>
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border ${FORMAT_COLORS[job.format]}`}>
+                        <FmtIcon className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-medium truncate">{job.name}</p>
+                        <p className="text-slate-600 text-xs mt-0.5">{job.description}</p>
+                        {job.generatedAt && <p className="text-slate-700 text-xs mt-0.5">{job.generatedAt}</p>}
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {job.size && <span className="text-slate-600 text-xs">{job.size}</span>}
+                        <ExportStatusIcon status={job.status} />
+                        {job.status === "ready" && (
+                          <button className="p-1.5 hover:bg-white/[0.06] rounded-lg text-slate-500 hover:text-slate-300 transition-colors">
+                            <Download className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
-    </div>
+    </DashboardShell>
   );
 }

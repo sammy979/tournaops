@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth/session";
 
-export default function CreatePage() {
+export default async function CreatePage() {
+  const session = await getSession();
+  if (!session) redirect("/login");
   redirect("/dashboard/tournaments/create");
 }

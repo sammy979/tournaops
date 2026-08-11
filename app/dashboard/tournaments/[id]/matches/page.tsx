@@ -1,237 +1,311 @@
-﻿"use client";
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
-import TournamentNav from "@/components/tournament/TournamentNav";
-import TeamLogo from "@/components/tournament/TeamLogo";
+"use client";
+
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import DashboardShell from "@/components/ui/DashboardShell";
 import {
-  Play, Check, Clock, MapPin, ChevronLeft, Loader2,
-  Trophy, Crosshair, Search, X, Filter, Edit,
-  BarChart3, Target, Zap, Lock, Unlock
+  Zap,
+  Search,
+  Filter,
+  ChevronRight,
+  Clock,
+  CheckCircle2,
+  Circle,
+  Play,
+  MoreVertical,
+  Calendar,
+  Hash,
+  Users,
+  Edit3,
+  Eye,
+  AlertTriangle,
 } from "lucide-react";
 
-interface MatchResult {
-  teamId: string;
-  teamName?: string;
-  placement: number;
-  kills: number;
-  totalPoints?: number;
-  wwcd?: boolean;
+// ─── Types ────────────────────────────────────────────────────────────────────
+type MatchStatus = "live" | "scheduled" | "completed" | "cancelled" | "bye";
+
+interface MatchTeam {
+  name: string;
+  tag: string;
+  score?: number;
 }
 
 interface Match {
   id: string;
-  name: string;
-  matchNumber?: number;
-  map: string;
-  status: string;
-  roundId?: string;
-  stageId?: string;
-  groupId?: string;
-  results?: MatchResult[];
-  startTime?: string;
+  number: number;
+  stage: string;
+  round: string;
+  team1: MatchTeam;
+  team2: MatchTeam;
+  status: MatchStatus;
+  scheduledAt: string;
+  bestOf: number;
+  caster?: string;
+  winner?: string;
+  duration?: string;
 }
 
-export default function MatchesPage() {
-  const params = useParams();
-  const id = params?.id as string;
-  const [tournament, setTournament] = useState<any>(null);
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [teams, setTeams] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "completed" | "pending">("all");
-  const [selected, setSelected] = useState<Match | null>(null);
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+const MOCK_MATCHES: Match[] = [
+  { id: "m1",  number: 1,  stage: "Quarterfinals", round: "Round 1", team1: { name: "Team Alpha",   tag: "ALPH", score: 2 }, team2: { name: "Team Titan",   tag: "TTN",  score: 0 }, status: "completed",  scheduledAt: "2025-07-14 14:00", bestOf: 3, winner: "Team Alpha",   duration: "42m" },
+  { id: "m2",  number: 2,  stage: "Quarterfinals", round: "Round 1", team1: { name: "Team Nexus",   tag: "NEX",  score: 2 }, team2: { name: "Team Blaze",   tag: "BLZ",  score: 1 }, status: "completed",  scheduledAt: "2025-07-14 16:00", bestOf: 3, winner: "Team Nexus",   duration: "58m" },
+  { id: "m3",  number: 3,  stage: "Quarterfinals", round: "Round 1", team1: { name: "Team Phantom", tag: "PHN",  score: 1 }, team2: { name: "Team Void",    tag: "VOD",  score: 2 }, status: "completed",  scheduledAt: "2025-07-15 14:00", bestOf: 3, winner: "Team Void",    duration: "67m" },
+  { id: "m4",  number: 4,  stage: "Quarterfinals", round: "Round 1", team1: { name: "Team Storm",   tag: "STM"             }, team2: { name: "Team Nova",    tag: "NOV"             }, status: "live",       scheduledAt: "2025-07-15 16:00", bestOf: 3, caster: "Commentator X" },
+  { id: "m5",  number: 5,  stage: "Quarterfinals", round: "Round 2", team1: { name: "Team Alpha",   tag: "ALPH"            }, team2: { name: "Team Nexus",   tag: "NEX"             }, status: "live",       scheduledAt: "2025-07-16 14:00", bestOf: 3, caster: "Commentator Y" },
+  { id: "m6",  number: 6,  stage: "Quarterfinals", round: "Round 2", team1: { name: "TBD",          tag: "TBD"             }, team2: { name: "TBD",          tag: "TBD"             }, status: "scheduled",  scheduledAt: "2025-07-16 16:00", bestOf: 3 },
+  { id: "m7",  number: 7,  stage: "Quarterfinals", round: "Round 2", team1: { name: "TBD",          tag: "TBD"             }, team2: { name: "TBD",          tag: "TBD"             }, status: "scheduled",  scheduledAt: "2025-07-17 14:00", bestOf: 3 },
+  { id: "m8",  number: 8,  stage: "Quarterfinals", round: "Round 2", team1: { name: "TBD",          tag: "TBD"             }, team2: { name: "TBD",          tag: "TBD"             }, status: "scheduled",  scheduledAt: "2025-07-17 16:00", bestOf: 3 },
+  { id: "m9",  number: 9,  stage: "Semifinals",    round: "Round 1", team1: { name: "TBD",          tag: "TBD"             }, team2: { name: "TBD",          tag: "TBD"             }, status: "scheduled",  scheduledAt: "2025-07-21 14:00", bestOf: 5 },
+  { id: "m10", number: 10, stage: "Semifinals",    round: "Round 1", team1: { name: "TBD",          tag: "TBD"             }, team2: { name: "TBD",          tag: "TBD"             }, status: "scheduled",  scheduledAt: "2025-07-21 17:00", bestOf: 5 },
+];
 
-  useEffect(() => {
-    if (!id) return;
-    fetch(`/api/tournaments/${id}`)
-      .then(r => r.json())
-      .then(d => {
-        setTournament(d.tournament);
-        setMatches(d.tournament?.matches || []);
-        setTeams(d.tournament?.teams || []);
-      })
-      .finally(() => setLoading(false));
-  }, [id]);
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const STATUS_CFG: Record<MatchStatus, { label: string; badge: string; row: string }> = {
+  live:      { label: "LIVE",       badge: "bg-amber-500/15 text-amber-400 border-amber-500/30",       row: "bg-amber-500/[0.03] border-amber-500/10" },
+  scheduled: { label: "Scheduled",  badge: "bg-blue-500/15 text-blue-400 border-blue-500/30",          row: "" },
+  completed: { label: "Completed",  badge: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30", row: "" },
+  cancelled: { label: "Cancelled",  badge: "bg-rose-500/15 text-rose-400 border-rose-500/30",          row: "bg-rose-500/[0.02]" },
+  bye:       { label: "Bye",        badge: "bg-slate-500/15 text-slate-400 border-slate-500/30",       row: "" },
+};
 
-  const teamMap = new Map(teams.map((t: any) => [t.id, t]));
-
-  const filtered = matches.filter(m => {
-    const hasResults = Array.isArray(m.results) && m.results.length > 0;
-    if (filter === "completed" && !hasResults) return false;
-    if (filter === "pending" && hasResults) return false;
-    if (search && !m.name.toLowerCase().includes(search.toLowerCase()) &&
-        !(m.map || "").toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
-
-  const completedCount = matches.filter(m => Array.isArray(m.results) && m.results.length > 0).length;
-  const progress = matches.length > 0 ? Math.round((completedCount / matches.length) * 100) : 0;
-
-  if (loading) return (
-    <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <Loader2 style={{ width: "2rem", height: "2rem", color: "#f59e0b", animation: "spin 0.8s linear infinite" }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
+function StatusBadge({ status }: { status: MatchStatus }) {
+  const cfg = STATUS_CFG[status];
+  const Icon = status === "live" ? Zap : status === "completed" ? CheckCircle2 : status === "cancelled" ? AlertTriangle : Clock;
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${cfg.badge}`}>
+      <Icon className="w-3 h-3" />
+      {cfg.label}
+    </span>
   );
+}
+
+// ─── Match Card ───────────────────────────────────────────────────────────────
+function MatchCard({ match }: { match: Match }) {
+  const cfg     = STATUS_CFG[match.status];
+  const isLive  = match.status === "live";
+  const isDone  = match.status === "completed";
 
   return (
-    <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
-      <Link href={`/dashboard/tournaments/${id}`} style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", color: "#9ca3af", fontSize: "0.75rem", textDecoration: "none", marginBottom: "1rem" }}>
-        <ChevronLeft style={{ width: "0.875rem", height: "0.875rem" }} />Back to Tournament
-      </Link>
-
-      <TournamentNav tournamentId={id} />
-
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
-        <div>
-          <h1 style={{ fontSize: "clamp(1.5rem,4vw,2rem)", fontWeight: 800, color: "#fff", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <Play style={{ width: "1.75rem", height: "1.75rem", color: "#f59e0b" }} />
-            Matches
-          </h1>
-          <p style={{ color: "#6b7280", fontSize: "0.85rem", marginTop: "0.25rem" }}>
-            {tournament?.name} · {completedCount}/{matches.length} completed · {progress}%
-          </p>
-        </div>
-        <Link href={`/dashboard/tournaments/${id}/match-results`}
-          style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", background: "#f59e0b", color: "#000", borderRadius: "0.625rem", padding: "0.5rem 1rem", fontSize: "0.8rem", fontWeight: 700, textDecoration: "none" }}>
-          <Trophy style={{ width: "0.875rem", height: "0.875rem" }} />Enter Results
-        </Link>
-      </div>
-
-      {/* Progress */}
-      <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1rem 1.25rem", marginBottom: "1.25rem" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "#9ca3af", marginBottom: "0.5rem" }}>
-          <span>Overall Progress</span>
-          <span style={{ color: "#f59e0b", fontWeight: 700 }}>{completedCount}/{matches.length} matches · {progress}%</span>
-        </div>
-        <div style={{ height: "0.5rem", background: "rgba(255,255,255,0.06)", borderRadius: "9999px", overflow: "hidden" }}>
-          <div style={{ width: `${progress}%`, height: "100%", background: "linear-gradient(to right, #f59e0b, #f97316)", borderRadius: "9999px", transition: "width 0.5s" }} />
-        </div>
-      </div>
-
-      {/* Stats row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: "0.75rem", marginBottom: "1.25rem" }}>
-        {[
-          { label: "Total", value: matches.length, color: "#60a5fa", bg: "rgba(59,130,246,0.1)" },
-          { label: "Completed", value: completedCount, color: "#4ade80", bg: "rgba(34,197,94,0.1)" },
-          { label: "Pending", value: matches.length - completedCount, color: "#fbbf24", bg: "rgba(245,158,11,0.1)" },
-          { label: "Progress", value: `${progress}%`, color: "#c084fc", bg: "rgba(168,85,247,0.1)" },
-        ].map(s => (
-          <div key={s.label} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.875rem", padding: "0.875rem" }}>
-            <div style={{ fontSize: "1.5rem", fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
-            <div style={{ fontSize: "0.65rem", color: "#6b7280", marginTop: "0.25rem", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>{s.label}</div>
+    <div className={`bg-[#0f1117] border rounded-xl p-4 transition-all hover:border-white/[0.12] ${cfg.row || "border-white/[0.06]"} ${isLive ? "ring-1 ring-amber-500/20" : ""}`}>
+      <div className="flex items-start gap-4">
+        {/* Match number */}
+        <div className="flex-shrink-0 text-center">
+          <div className="w-9 h-9 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+            <span className="text-slate-500 text-xs font-bold">#{match.number}</span>
           </div>
-        ))}
-      </div>
-
-      {/* Search + Filter */}
-      <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
-        <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
-          <Search style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", width: "0.875rem", height: "0.875rem", color: "#6b7280" }} />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search matches..."
-            style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "0.625rem 0.625rem 0.625rem 2.25rem", color: "#fff", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }} />
+          {isLive && (
+            <div className="mt-1 flex justify-center">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+            </div>
+          )}
         </div>
-        <div style={{ display: "flex", gap: "0.25rem", padding: "0.25rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.625rem" }}>
-          {(["all", "completed", "pending"] as const).map(f => (
-            <button key={f} onClick={() => setFilter(f)}
-              style={{ padding: "0.375rem 0.75rem", borderRadius: "0.375rem", fontSize: "0.7rem", fontWeight: 700, textTransform: "capitalize", background: filter === f ? "rgba(245,158,11,0.15)" : "transparent", color: filter === f ? "#f59e0b" : "#9ca3af", border: "none", cursor: "pointer" }}>
-              {f}
-            </button>
-          ))}
-        </div>
-      </div>
 
-      {/* Matches Grid */}
-      {filtered.length === 0 ? (
-        <div style={{ background: "rgba(255,255,255,0.02)", border: "2px dashed rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "4rem 2rem", textAlign: "center" }}>
-          <Play style={{ width: "3rem", height: "3rem", color: "#374151", margin: "0 auto 1rem" }} />
-          <p style={{ color: "#9ca3af", fontWeight: 600 }}>No matches found</p>
-        </div>
-      ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "0.875rem" }}>
-          {filtered.map(match => {
-            const hasResults = Array.isArray(match.results) && match.results.length > 0;
-            const winner = hasResults ? match.results!.find(r => r.placement === 1) : null;
-            const winnerTeam = winner ? teamMap.get(winner.teamId) : null;
-            const totalKills = hasResults ? match.results!.reduce((s, r) => s + (r.kills || 0), 0) : 0;
+        {/* Teams + Score */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className="text-slate-600 text-xs">{match.stage}</span>
+            <span className="text-slate-700">·</span>
+            <span className="text-slate-600 text-xs">{match.round}</span>
+            <span className="text-slate-700">·</span>
+            <span className="text-slate-600 text-xs">BO{match.bestOf}</span>
+          </div>
 
-            return (
-              <div key={match.id} style={{
-                background: hasResults ? "rgba(34,197,94,0.04)" : "rgba(255,255,255,0.03)",
-                border: hasResults ? "1px solid rgba(34,197,94,0.15)" : "1px solid rgba(255,255,255,0.08)",
-                borderRadius: "1rem", padding: "1rem",
-              }}>
-                {/* Match header */}
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "0.75rem" }}>
-                  <div>
-                    <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#fff" }}>{match.name}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.7rem", color: "#6b7280", marginTop: "0.125rem" }}>
-                      <MapPin style={{ width: "0.65rem", height: "0.65rem" }} />
-                      {match.map}
-                      {match.matchNumber && <span>· Match #{match.matchNumber}</span>}
-                    </div>
-                  </div>
-                  <span style={{
-                    padding: "0.2rem 0.6rem", borderRadius: "9999px", fontSize: "0.6rem", fontWeight: 700,
-                    background: hasResults ? "rgba(34,197,94,0.15)" : "rgba(107,114,128,0.12)",
-                    color: hasResults ? "#4ade80" : "#9ca3af",
-                    border: hasResults ? "1px solid rgba(34,197,94,0.25)" : "1px solid rgba(107,114,128,0.2)",
-                  }}>
-                    {hasResults ? "DONE" : "PENDING"}
-                  </span>
+          {/* Versus display */}
+          <div className="flex items-center gap-3">
+            <div className={`flex-1 text-right ${isDone && match.winner === match.team1.name ? "text-white" : "text-slate-400"}`}>
+              <p className={`text-sm font-semibold truncate ${isDone && match.winner === match.team1.name ? "text-white" : "text-slate-400"}`}>
+                {match.team1.name}
+              </p>
+              <p className="text-slate-600 text-xs">[{match.team1.tag}]</p>
+            </div>
+
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {isDone ? (
+                <div className="flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1">
+                  <span className={`text-lg font-black ${match.winner === match.team1.name ? "text-white" : "text-slate-500"}`}>{match.team1.score}</span>
+                  <span className="text-slate-700 text-sm">:</span>
+                  <span className={`text-lg font-black ${match.winner === match.team2.name ? "text-white" : "text-slate-500"}`}>{match.team2.score}</span>
                 </div>
+              ) : isLive ? (
+                <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1">
+                  <Zap className="w-3 h-3 text-amber-400" />
+                  <span className="text-amber-400 text-xs font-bold">LIVE</span>
+                </div>
+              ) : (
+                <div className="text-slate-600 text-xs font-medium">vs</div>
+              )}
+            </div>
 
-                {/* Results preview */}
-                {hasResults && match.results && (
-                  <div style={{ marginBottom: "0.75rem" }}>
-                    {/* Winner */}
-                    {winner && (
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", padding: "0.5rem 0.625rem", background: "rgba(245,158,11,0.08)", borderRadius: "0.5rem", marginBottom: "0.375rem" }}>
-                        <Trophy style={{ width: "0.875rem", height: "0.875rem", color: "#fbbf24", flexShrink: 0 }} />
-                        {winnerTeam && <TeamLogo name={winnerTeam.name} logo={winnerTeam.logo} tag={winnerTeam.tag} size={24} />}
-                        <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#fbbf24", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {winner.teamName || winnerTeam?.name || "Unknown"}
-                        </span>
-                        <span style={{ fontSize: "0.7rem", color: "#f87171" }}>{winner.kills}K</span>
-                      </div>
-                    )}
-                    {/* Top 3 */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                      {match.results.slice(0, 3).filter(r => r.placement > 1).map(r => {
-                        const t = teamMap.get(r.teamId);
-                        return (
-                          <div key={r.teamId} style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem" }}>
-                            <span style={{ width: "1.25rem", textAlign: "center", color: "#6b7280", fontWeight: 700 }}>#{r.placement}</span>
-                            {t && <TeamLogo name={t.name} logo={t.logo} tag={t.tag} size={20} />}
-                            <span style={{ flex: 1, color: "#d1d5db", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.teamName || t?.name}</span>
-                            <span style={{ color: "#f87171" }}>{r.kills}K</span>
-                            <span style={{ color: "#60a5fa", fontWeight: 700 }}>{r.totalPoints}p</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div style={{ display: "flex", gap: "1rem", marginTop: "0.5rem", fontSize: "0.7rem", color: "#6b7280", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "0.5rem" }}>
-                      <span>{match.results.length} teams</span>
-                      <span style={{ color: "#f87171" }}>{totalKills} total kills</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Actions */}
-                <Link href={`/dashboard/tournaments/${id}/match-results`}
-                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.375rem", padding: "0.5rem", background: hasResults ? "rgba(255,255,255,0.05)" : "rgba(245,158,11,0.1)", border: hasResults ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(245,158,11,0.2)", borderRadius: "0.5rem", color: hasResults ? "#9ca3af" : "#f59e0b", fontSize: "0.75rem", fontWeight: 600, textDecoration: "none" }}>
-                  <Edit style={{ width: "0.75rem", height: "0.75rem" }} />
-                  {hasResults ? "Edit Results" : "Enter Results"}
-                </Link>
-              </div>
-            );
-          })}
+            <div className="flex-1 text-left">
+              <p className={`text-sm font-semibold truncate ${isDone && match.winner === match.team2.name ? "text-white" : "text-slate-400"}`}>
+                {match.team2.name}
+              </p>
+              <p className="text-slate-600 text-xs">[{match.team2.tag}]</p>
+            </div>
+          </div>
         </div>
-      )}
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+
+        {/* Right side */}
+        <div className="flex-shrink-0 text-right space-y-1">
+          <StatusBadge status={match.status} />
+          <p className="text-slate-600 text-xs flex items-center gap-1 justify-end">
+            <Clock className="w-3 h-3" />
+            {match.scheduledAt}
+          </p>
+          {match.caster && (
+            <p className="text-violet-400 text-xs">{match.caster}</p>
+          )}
+          {match.duration && (
+            <p className="text-slate-600 text-xs">{match.duration}</p>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex-shrink-0 flex items-center gap-1">
+          <button className="p-1.5 hover:bg-white/[0.06] rounded-lg text-slate-500 hover:text-slate-300 transition-colors">
+            <Eye className="w-3.5 h-3.5" />
+          </button>
+          <button className="p-1.5 hover:bg-white/[0.06] rounded-lg text-slate-500 hover:text-slate-300 transition-colors">
+            <Edit3 className="w-3.5 h-3.5" />
+          </button>
+          <button className="p-1.5 hover:bg-white/[0.06] rounded-lg text-slate-500 hover:text-slate-300 transition-colors">
+            <MoreVertical className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
     </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+export default function TournamentMatchesPage() {
+  const params = useParams();
+  const router = useRouter();
+  const id     = params?.id as string;
+
+  const [search,      setSearch]      = useState("");
+  const [stageFilter, setStageFilter] = useState("all");
+  const [statusFilter,setStatusFilter]= useState("all");
+
+  const stages  = ["all", ...Array.from(new Set(MOCK_MATCHES.map((m) => m.stage)))];
+  const statuses= ["all", "live", "scheduled", "completed", "cancelled"];
+
+  const filtered = MOCK_MATCHES.filter((m) => {
+    const q = search.toLowerCase();
+    const matchSearch = m.team1.name.toLowerCase().includes(q) || m.team2.name.toLowerCase().includes(q) || String(m.number).includes(q);
+    const matchStage  = stageFilter === "all"  || m.stage  === stageFilter;
+    const matchStatus = statusFilter === "all" || m.status === statusFilter;
+    return matchSearch && matchStage && matchStatus;
+  });
+
+  const liveCount      = MOCK_MATCHES.filter((m) => m.status === "live").length;
+  const scheduledCount = MOCK_MATCHES.filter((m) => m.status === "scheduled").length;
+  const completedCount = MOCK_MATCHES.filter((m) => m.status === "completed").length;
+
+  const navTabs = [
+    { label: "Overview",      href: `/dashboard/tournaments/${id}/overview` },
+    { label: "Teams",         href: `/dashboard/tournaments/${id}/teams` },
+    { label: "Stages",        href: `/dashboard/tournaments/${id}/stages` },
+    { label: "Matches",       href: `/dashboard/tournaments/${id}/matches` },
+    { label: "Match Results", href: `/dashboard/tournaments/${id}/match-results` },
+    { label: "Standings",     href: `/dashboard/tournaments/${id}/standings` },
+    { label: "Broadcast",     href: `/dashboard/tournaments/${id}/broadcast` },
+    { label: "Discord",       href: `/dashboard/tournaments/${id}/discord` },
+    { label: "Insights",      href: `/dashboard/tournaments/${id}/insights` },
+    { label: "Export",        href: `/dashboard/tournaments/${id}/export` },
+    { label: "Settings",      href: `/dashboard/tournaments/${id}/settings` },
+  ];
+
+  return (
+    <DashboardShell>
+      <div className="min-h-screen bg-[#080a0e] text-white">
+
+        {/* Header */}
+        <div className="border-b border-white/[0.06] bg-[#0a0c10]">
+          <div className="max-w-7xl mx-auto px-6 py-5">
+            <div className="flex items-center gap-2 text-slate-500 text-sm mb-3">
+              <button onClick={() => router.push("/dashboard/tournaments")} className="hover:text-slate-300 transition-colors">Tournaments</button>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <button onClick={() => router.push(`/dashboard/tournaments/${id}/overview`)} className="hover:text-slate-300 transition-colors">Champions Circuit S4</button>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <span className="text-slate-300">Matches</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-white">Matches</h1>
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="text-amber-400 text-sm font-medium flex items-center gap-1"><Zap className="w-3.5 h-3.5" />{liveCount} Live</span>
+                  <span className="text-slate-600">·</span>
+                  <span className="text-blue-400 text-sm">{scheduledCount} Scheduled</span>
+                  <span className="text-slate-600">·</span>
+                  <span className="text-emerald-400 text-sm">{completedCount} Done</span>
+                </div>
+              </div>
+              <button className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                <Calendar className="w-4 h-4" /> Schedule Match
+              </button>
+            </div>
+          </div>
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="flex gap-0 overflow-x-auto scrollbar-hide">
+              {navTabs.map((tab) => (
+                <button key={tab.label} onClick={() => router.push(tab.href)}
+                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Matches" ? "border-violet-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6 py-6">
+
+          {/* Filters */}
+          <div className="flex flex-col md:flex-row gap-3 mb-5">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <input
+                type="text"
+                placeholder="Search by team or match number…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-[#0f1117] border border-white/[0.08] rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500/50"
+              />
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Filter className="w-4 h-4 text-slate-500 flex-shrink-0" />
+              {stages.map((s) => (
+                <button key={s} onClick={() => setStageFilter(s)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${stageFilter === s ? "bg-violet-600 text-white" : "bg-white/[0.04] text-slate-400 hover:text-slate-200 border border-white/[0.08]"}`}>
+                  {s === "all" ? "All Stages" : s}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {statuses.map((s) => (
+                <button key={s} onClick={() => setStatusFilter(s)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${statusFilter === s ? "bg-indigo-600 text-white" : "bg-white/[0.04] text-slate-400 hover:text-slate-200 border border-white/[0.08]"}`}>
+                  {s === "all" ? "All Status" : s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Match list */}
+          {filtered.length > 0 ? (
+            <div className="space-y-3">
+              {filtered.map((match) => (
+                <MatchCard key={match.id} match={match} />
+              ))}
+            </div>
+          ) : (
+            <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl py-16 text-center">
+              <Zap className="w-10 h-10 text-slate-700 mx-auto mb-3" />
+              <p className="text-slate-500 text-sm">No matches found for your filters.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </DashboardShell>
   );
 }

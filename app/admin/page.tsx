@@ -1,261 +1,203 @@
-// app/admin/page.tsx
-"use client"
-import { useEffect, useState } from "react"
-import Link from "next/link"
+"use client";
+
+import { useRouter } from "next/navigation";
+import AdminShell from "@/components/ui/AdminShell";
 import {
-  Shield, Users, Trophy, Activity, Database, Zap, Crown,
-  DollarSign, CheckCircle, Clock, AlertCircle, TrendingUp,
-  Settings, BarChart3, ArrowRight, Loader2,
-} from "lucide-react"
+  Users,
+  Trophy,
+  CreditCard,
+  Activity,
+  TrendingUp,
+  TrendingDown,
+  AlertTriangle,
+  CheckCircle2,
+  ArrowUpRight,
+  Zap,
+  Globe,
+  Clock,
+  BarChart2,
+} from "lucide-react";
 
-interface Stats {
-  totalUsers: number
-  totalTournaments: number
-  totalTeams: number
-  totalMatches: number
-  proUsers: number
-  liveTournaments: number
-  pendingPayments: number
-  approvedPayments: number
-  totalPayments: number
-  totalRevenue: number
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+const STATS = [
+  { label: "Total Users",        value: "2,847",  change: "+124 this week",  trend: "up",   icon: Users,      color: "bg-violet-500/15 text-violet-400",  border: "border-violet-500/20" },
+  { label: "Active Tournaments", value: "38",      change: "+5 this month",   trend: "up",   icon: Trophy,     color: "bg-amber-500/15 text-amber-400",    border: "border-amber-500/20"  },
+  { label: "Revenue (MTD)",      value: "$14,280", change: "+18% vs last mo", trend: "up",   icon: CreditCard, color: "bg-emerald-500/15 text-emerald-400", border: "border-emerald-500/20"},
+  { label: "Error Rate",         value: "0.12%",   change: "-0.04% today",    trend: "down", icon: Activity,   color: "bg-rose-500/15 text-rose-400",       border: "border-rose-500/20"   },
+];
+
+const RECENT_USERS = [
+  { id: "u1", name: "ShadowX",     email: "shadow@email.com", plan: "Pro",   status: "active",   joined: "2h ago"   },
+  { id: "u2", name: "ProStrike",   email: "pro@email.com",    plan: "Free",  status: "active",   joined: "5h ago"   },
+  { id: "u3", name: "GhostRider",  email: "ghost@email.com",  plan: "Pro",   status: "active",   joined: "12h ago"  },
+  { id: "u4", name: "ThunderBolt", email: "thunder@email.com",plan: "Free",  status: "suspended",joined: "1d ago"   },
+  { id: "u5", name: "DarkMatter",  email: "dark@email.com",   plan: "Pro+",  status: "active",   joined: "2d ago"   },
+];
+
+const RECENT_PAYMENTS = [
+  { id: "p1", user: "ShadowX",     plan: "Pro Monthly",   amount: "$19.99", status: "success",  time: "2h ago"  },
+  { id: "p2", user: "GhostRider",  plan: "Pro Annual",    amount: "$179",   status: "success",  time: "8h ago"  },
+  { id: "p3", user: "StarBlast",   plan: "Pro Monthly",   amount: "$19.99", status: "failed",   time: "12h ago" },
+  { id: "p4", user: "DarkMatter",  plan: "Pro+ Monthly",  amount: "$49.99", status: "success",  time: "1d ago"  },
+  { id: "p5", user: "Inferno",     plan: "Pro Monthly",   amount: "$19.99", status: "refunded", time: "2d ago"  },
+];
+
+const SYSTEM_HEALTH = [
+  { service: "API Gateway",       status: "healthy",  latency: "12ms",  uptime: "99.98%" },
+  { service: "Database",          status: "healthy",  latency: "3ms",   uptime: "99.99%" },
+  { service: "Discord Bot",       status: "healthy",  latency: "45ms",  uptime: "99.95%" },
+  { service: "AI Service",        status: "degraded", latency: "890ms", uptime: "98.12%" },
+  { service: "Payment Gateway",   status: "healthy",  latency: "220ms", uptime: "99.97%" },
+  { service: "Media CDN",         status: "healthy",  latency: "28ms",  uptime: "100%"   },
+];
+
+const ALERTS = [
+  { type: "warning", message: "AI service latency elevated — investigating", time: "23m ago" },
+  { type: "info",    message: "Scheduled maintenance window: Jul 20, 02:00–04:00 UTC", time: "1h ago" },
+  { type: "error",   message: "Payment failure spike: 3 failed in 10min", time: "12h ago" },
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function ServiceDot({ status }: { status: string }) {
+  return (
+    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+      status === "healthy"  ? "bg-emerald-400" :
+      status === "degraded" ? "bg-amber-400 animate-pulse" :
+      "bg-rose-400 animate-pulse"
+    }`} />
+  );
 }
 
-interface RecentUser {
-  id: string
-  email: string
-  displayName: string
-  isPro: boolean
-  role: string
-  createdAt: string
-}
-
-export default function AdminDashboard() {
-  const [stats, setStats] = useState<Stats | null>(null)
-  const [recentUsers, setRecentUsers] = useState<RecentUser[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetch("/api/admin/stats")
-      .then((r) => r.json())
-      .then((d) => {
-        setStats(d.stats || null)
-        setRecentUsers(d.recentUsers || [])
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
-
-  if (loading) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
-      <Loader2 style={{ width: "2rem", height: "2rem", color: "#f59e0b", animation: "spin 1s linear infinite" }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
-  )
-
-  const primaryCards = [
-    { icon: Users, label: "Total Users", value: stats?.totalUsers ?? 0, color: "#60a5fa", link: "/admin/users" },
-    { icon: Trophy, label: "Tournaments", value: stats?.totalTournaments ?? 0, color: "#f59e0b" },
-    { icon: Activity, label: "Live Now", value: stats?.liveTournaments ?? 0, color: "#4ade80" },
-    { icon: Database, label: "Total Teams", value: stats?.totalTeams ?? 0, color: "#c084fc" },
-    { icon: Zap, label: "Total Matches", value: stats?.totalMatches ?? 0, color: "#ec4899" },
-    { icon: Crown, label: "Pro Users", value: stats?.proUsers ?? 0, color: "#facc15" },
-  ]
-
-  const paymentCards = [
-    { icon: Clock, label: "Pending Payments", value: stats?.pendingPayments ?? 0, color: "#fb923c", link: "/admin/payments", highlight: (stats?.pendingPayments ?? 0) > 0 },
-    { icon: CheckCircle, label: "Approved Payments", value: stats?.approvedPayments ?? 0, color: "#4ade80", link: "/admin/payments" },
-    { icon: DollarSign, label: "Total Revenue", value: `Rs ${(stats?.totalRevenue ?? 0).toLocaleString()}`, color: "#10b981", isText: true },
-  ]
+// ─── Main Page ────────────────────────────────────────────────────────────────
+export default function AdminOverviewPage() {
+  const router = useRouter();
 
   return (
-    <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "1.5rem" }}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}`}</style>
-
-      {/* Header */}
-      <div style={{ marginBottom: "2rem" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", background: "rgba(245,158,11,0.1)",
-          border: "1px solid rgba(245,158,11,0.25)", borderRadius: "9999px", padding: "0.3rem 0.875rem",
-          fontSize: "0.7rem", fontWeight: 700, color: "#f59e0b", marginBottom: "0.875rem" }}>
-          <Shield style={{ width: "0.875rem", height: "0.875rem" }} />
-          SYSTEM ADMIN
+    <AdminShell>
+      <div className="p-6 max-w-7xl mx-auto">
+        {/* Page header */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-white">Admin Overview</h1>
+          <p className="text-white/40 text-sm mt-0.5">Platform health, users, and revenue at a glance</p>
         </div>
-        <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <Shield style={{ width: "1.75rem", height: "1.75rem", color: "#f59e0b" }} />
-          Platform Administration
-        </h1>
-        <p style={{ color: "#9ca3af", marginTop: "0.5rem", fontSize: "0.875rem" }}>
-          Complete system overview and management
-        </p>
-      </div>
 
-      {/* Primary Stats Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
-        {primaryCards.map((card) => {
-          const Icon = card.icon
-          const inner = (
-            <div style={{
-              background: "rgba(30,30,40,0.6)", borderRadius: "0.875rem", padding: "1.25rem",
-              border: "1px solid rgba(255,255,255,0.05)", position: "relative", overflow: "hidden",
-              cursor: card.link ? "pointer" : "default", transition: "all 0.15s",
-            }}>
-              <div style={{
-                position: "absolute", top: 0, right: 0, width: "6rem", height: "6rem",
-                background: `radial-gradient(circle, ${card.color}22, transparent 70%)`,
-              }} />
-              <div style={{ position: "relative", zIndex: 1 }}>
-                <div style={{
-                  width: "2.25rem", height: "2.25rem", borderRadius: "0.5rem",
-                  background: `${card.color}22`, border: `1px solid ${card.color}44`,
-                  display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "0.75rem",
-                }}>
-                  <Icon style={{ width: "1.125rem", height: "1.125rem", color: card.color }} />
-                </div>
-                <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "#fff", lineHeight: 1 }}>
-                  {card.value}
-                </div>
-                <div style={{ fontSize: "0.75rem", color: "#9ca3af", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginTop: "0.5rem" }}>
-                  {card.label}
-                </div>
-              </div>
-            </div>
-          )
-          return card.link ? <Link key={card.label} href={card.link} style={{ textDecoration: "none" }}>{inner}</Link> : <div key={card.label}>{inner}</div>
-        })}
-      </div>
-
-      {/* Payment Stats */}
-      <div style={{ marginBottom: "1.5rem" }}>
-        <h2 style={{ fontSize: "0.8125rem", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.75rem" }}>
-          💰 Payments & Revenue
-        </h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1rem" }}>
-          {paymentCards.map((card) => {
-            const Icon = card.icon
-            const inner = (
-              <div style={{
-                background: card.highlight ? "rgba(251,146,60,0.08)" : "rgba(30,30,40,0.6)",
-                borderRadius: "0.875rem", padding: "1.25rem",
-                border: `1px solid ${card.highlight ? "rgba(251,146,60,0.3)" : "rgba(255,255,255,0.05)"}`,
-                display: "flex", alignItems: "center", gap: "1rem",
-                cursor: card.link ? "pointer" : "default",
-              }}>
-                <div style={{
-                  width: "2.5rem", height: "2.5rem", borderRadius: "0.625rem",
-                  background: `${card.color}22`, border: `1px solid ${card.color}44`,
-                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                }}>
-                  <Icon style={{ width: "1.25rem", height: "1.25rem", color: card.color }} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: card.isText ? "1.25rem" : "1.5rem", fontWeight: 700, color: card.color, lineHeight: 1 }}>
-                    {card.value}
-                  </div>
-                  <div style={{ fontSize: "0.75rem", color: "#9ca3af", fontWeight: 600, marginTop: "0.375rem" }}>
-                    {card.label}
-                  </div>
-                </div>
-                {card.link && <ArrowRight style={{ width: "1rem", height: "1rem", color: "#6b7280" }} />}
-              </div>
-            )
-            return card.link ? <Link key={card.label} href={card.link} style={{ textDecoration: "none" }}>{inner}</Link> : <div key={card.label}>{inner}</div>
-          })}
-        </div>
-      </div>
-
-      {/* Admin Access & Quick Links */}
-      <div style={{
-        background: "linear-gradient(135deg, rgba(245,158,11,0.08), rgba(251,146,60,0.03))",
-        borderRadius: "1rem", padding: "1.5rem",
-        border: "1px solid rgba(245,158,11,0.2)", marginBottom: "1.5rem",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-          <AlertCircle style={{ width: "1.125rem", height: "1.125rem", color: "#f59e0b" }} />
-          <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#f59e0b", margin: 0 }}>Admin Access</h3>
-        </div>
-        <p style={{ color: "#9ca3af", fontSize: "0.875rem", marginTop: 0, marginBottom: "1rem" }}>
-          You have elevated system privileges. Use responsibly. All admin actions are logged for audit purposes.
-        </p>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem" }}>
-          {[
-            { icon: Trophy, label: "All Tournaments", href: "/dashboard/tournaments" },
-            { icon: Users, label: "Manage Users", href: "/admin/users" },
-            { icon: DollarSign, label: "Payment Center", href: "/admin/payments" },
-            { icon: Settings, label: "Payment Settings", href: "/admin/settings/payments" },
-            { icon: Activity, label: "System Health", href: "/admin/system-health" },
-            { icon: AlertCircle, label: "Error Logs", href: "/admin/system-health/errors" },
-            { icon: BarChart3, label: "System Analytics", href: "/admin" },
-          ].map((link) => {
-            const Icon = link.icon
-            return (
-              <Link key={link.label} href={link.href} style={{ textDecoration: "none" }}>
-                <div style={{
-                  background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: "0.625rem", padding: "0.75rem 0.875rem",
-                  display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer",
-                  transition: "all 0.15s",
-                }}>
-                  <Icon style={{ width: "1rem", height: "1rem", color: "#f59e0b" }} />
-                  <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#e5e7eb", flex: 1 }}>{link.label}</span>
-                  <ArrowRight style={{ width: "0.875rem", height: "0.875rem", color: "#6b7280" }} />
-                </div>
-              </Link>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Recent Users */}
-      {recentUsers.length > 0 && (
-        <div style={{ background: "rgba(30,30,40,0.6)", borderRadius: "1rem", padding: "1.25rem", border: "1px solid rgba(255,255,255,0.05)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-            <h3 style={{ fontSize: "0.9375rem", fontWeight: 700, color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <TrendingUp style={{ width: "1rem", height: "1rem", color: "#60a5fa" }} />
-              Recent Signups
-            </h3>
-            <Link href="/admin/users" style={{ fontSize: "0.75rem", color: "#a78bfa", textDecoration: "none", fontWeight: 600 }}>
-              View All →
-            </Link>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
-            {recentUsers.map((u) => (
-              <div key={u.id} style={{
-                display: "flex", alignItems: "center", gap: "0.75rem",
-                padding: "0.625rem 0.75rem", background: "rgba(0,0,0,0.2)",
-                borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.03)",
-              }}>
-                <div style={{
-                  width: "2rem", height: "2rem", borderRadius: "50%",
-                  background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "0.75rem", fontWeight: 700, color: "#fff", flexShrink: 0,
-                }}>
-                  {(u.displayName || u.email)[0].toUpperCase()}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {u.displayName || u.email}
-                  </div>
-                  <div style={{ fontSize: "0.7rem", color: "#6b7280" }}>{u.email}</div>
-                </div>
-                <div style={{ display: "flex", gap: "0.375rem", flexShrink: 0 }}>
-                  {u.isPro && (
-                    <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "#f59e0b", background: "rgba(245,158,11,0.1)", padding: "0.125rem 0.5rem", borderRadius: "0.25rem" }}>PRO</span>
-                  )}
-                  {u.role === "SUPER_ADMIN" && (
-                    <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "#a78bfa", background: "rgba(167,139,250,0.1)", padding: "0.125rem 0.5rem", borderRadius: "0.25rem" }}>ADMIN</span>
-                  )}
-                </div>
-                <div style={{ fontSize: "0.7rem", color: "#6b7280", flexShrink: 0 }}>
-                  {new Date(u.createdAt).toLocaleDateString()}
-                </div>
+        {/* Alerts */}
+        {ALERTS.length > 0 && (
+          <div className="space-y-2 mb-6">
+            {ALERTS.map((alert, i) => (
+              <div key={i} className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-sm ${
+                alert.type === "error"   ? "bg-rose-500/[0.08] border-rose-500/20 text-rose-300" :
+                alert.type === "warning" ? "bg-amber-500/[0.08] border-amber-500/20 text-amber-300" :
+                "bg-blue-500/[0.08] border-blue-500/20 text-blue-300"
+              }`}>
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span className="flex-1">{alert.message}</span>
+                <span className="text-white/30 text-xs flex-shrink-0">{alert.time}</span>
               </div>
             ))}
           </div>
+        )}
+
+        {/* Stat Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {STATS.map((stat) => (
+            <div key={stat.label} className={`bg-[#0f1117] border border-white/[0.06] rounded-xl p-5 hover:border-white/[0.12] transition-all`}>
+              <div className="flex items-start justify-between mb-3">
+                <div className={`w-9 h-9 rounded-lg border flex items-center justify-center ${stat.color} ${stat.border}`}>
+                  <stat.icon className="w-4.5 h-4.5" />
+                </div>
+                {stat.trend === "up"
+                  ? <TrendingUp   className="w-4 h-4 text-emerald-400" />
+                  : <TrendingDown className="w-4 h-4 text-rose-400" />
+                }
+              </div>
+              <p className="text-2xl font-black text-white mb-0.5">{stat.value}</p>
+              <p className="text-white/40 text-xs">{stat.label}</p>
+              <p className={`text-xs mt-1 ${stat.trend === "up" ? "text-emerald-400" : "text-rose-400"}`}>{stat.change}</p>
+            </div>
+          ))}
         </div>
-      )}
-    </div>
-  )
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* Recent Users */}
+          <div className="lg:col-span-1">
+            <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+                <h2 className="text-white font-semibold">Recent Users</h2>
+                <button onClick={() => router.push("/admin/users")} className="text-rose-400 hover:text-rose-300 text-xs flex items-center gap-1 transition-colors">
+                  View all <ArrowUpRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              {RECENT_USERS.map((user, i) => (
+                <div key={user.id} className={`flex items-center gap-3 px-5 py-3 ${i < RECENT_USERS.length - 1 ? "border-b border-white/[0.04]" : ""} hover:bg-white/[0.02] transition-colors`}>
+                  <div className="w-8 h-8 rounded-full bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-sm font-bold text-white/60 flex-shrink-0">
+                    {user.name[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-medium truncate">{user.name}</p>
+                    <p className="text-white/30 text-xs truncate">{user.email}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${user.plan === "Pro+" ? "bg-amber-500/15 text-amber-400 border-amber-500/20" : user.plan === "Pro" ? "bg-violet-500/15 text-violet-400 border-violet-500/20" : "bg-white/[0.04] text-white/30 border-white/[0.08]"}`}>
+                      {user.plan}
+                    </span>
+                    <p className="text-white/20 text-xs mt-0.5">{user.joined}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Recent Payments */}
+          <div className="lg:col-span-1">
+            <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+                <h2 className="text-white font-semibold">Recent Payments</h2>
+                <button onClick={() => router.push("/admin/payments")} className="text-rose-400 hover:text-rose-300 text-xs flex items-center gap-1 transition-colors">
+                  View all <ArrowUpRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              {RECENT_PAYMENTS.map((p, i) => (
+                <div key={p.id} className={`flex items-center gap-3 px-5 py-3 ${i < RECENT_PAYMENTS.length - 1 ? "border-b border-white/[0.04]" : ""}`}>
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${p.status === "success" ? "bg-emerald-400" : p.status === "failed" ? "bg-rose-400" : "bg-amber-400"}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-medium truncate">{p.user}</p>
+                    <p className="text-white/30 text-xs truncate">{p.plan}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className={`text-sm font-bold ${p.status === "failed" ? "text-rose-400 line-through opacity-50" : p.status === "refunded" ? "text-amber-400" : "text-emerald-400"}`}>{p.amount}</p>
+                    <p className="text-white/20 text-xs">{p.time}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* System Health */}
+          <div className="lg:col-span-1">
+            <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+                <h2 className="text-white font-semibold">System Health</h2>
+                <button onClick={() => router.push("/admin/system-health")} className="text-rose-400 hover:text-rose-300 text-xs flex items-center gap-1 transition-colors">
+                  Details <ArrowUpRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              {SYSTEM_HEALTH.map((svc, i) => (
+                <div key={svc.service} className={`flex items-center gap-3 px-5 py-3 ${i < SYSTEM_HEALTH.length - 1 ? "border-b border-white/[0.04]" : ""}`}>
+                  <ServiceDot status={svc.status} />
+                  <span className="text-white text-sm flex-1 min-w-0 truncate">{svc.service}</span>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-white/50 text-xs font-mono">{svc.latency}</p>
+                    <p className="text-white/25 text-xs">{svc.uptime}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </AdminShell>
+  );
 }

@@ -1,358 +1,172 @@
-// app/admin/payments/page.tsx
-"use client"
-import { useState, useEffect, useCallback } from "react"
-import { useRouter } from "next/navigation"
-import { Search, CheckCircle, XCircle, Clock, Eye, Loader2, ExternalLink, Image as ImageIcon } from "lucide-react"
+"use client";
+
+import { useState } from "react";
+import AdminShell from "@/components/ui/AdminShell";
+import {
+  CreditCard,
+  Search,
+  Download,
+  TrendingUp,
+  CheckCircle2,
+  XCircle,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  DollarSign,
+  ArrowUpRight,
+} from "lucide-react";
+
+type PaymentStatus = "success" | "failed" | "refunded" | "pending";
 
 interface Payment {
-  id: string
-  amount: number
-  currency: string
-  method: string
-  transactionReference: string
-  proofUrl?: string
-  status: string
-  submittedAt: string
-  reviewedAt?: string
-  rejectionReason?: string
-  adminNote?: string
-  note?: string
-  user: { id: string; name?: string; email: string } | null
-  reviewer?: { id: string; name?: string; email: string } | null
+  id:        string;
+  user:      string;
+  email:     string;
+  plan:      string;
+  amount:    number;
+  status:    PaymentStatus;
+  method:    string;
+  date:      string;
+  invoiceId: string;
 }
 
-const STATUS_BADGE: Record<string, { color: string; bg: string }> = {
-  PENDING: { color: "#facc15", bg: "rgba(250,204,21,0.1)" },
-  APPROVED: { color: "#10b981", bg: "rgba(16,185,129,0.1)" },
-  REJECTED: { color: "#f87171", bg: "rgba(239,68,68,0.1)" },
-}
+const MOCK_PAYMENTS: Payment[] = [
+  { id: "pay1",  user: "DarkMatter",  email: "dark@email.com",       plan: "Pro+ Monthly",  amount: 49.99,  status: "success",  method: "Visa •••• 4242",    date: "2025-07-15 09:32", invoiceId: "INV-001234" },
+  { id: "pay2",  user: "ShadowX",     email: "shadow@email.com",     plan: "Pro Monthly",   amount: 19.99,  status: "success",  method: "Mastercard •••• 8888",date: "2025-07-14 14:11", invoiceId: "INV-001233" },
+  { id: "pay3",  user: "StarBlast",   email: "star@email.com",       plan: "Pro Monthly",   amount: 19.99,  status: "failed",   method: "Visa •••• 1234",    date: "2025-07-13 11:05", invoiceId: "INV-001232" },
+  { id: "pay4",  user: "GhostRider",  email: "ghost@email.com",      plan: "Pro Annual",    amount: 179,    status: "success",  method: "PayPal",             date: "2025-07-12 16:44", invoiceId: "INV-001231" },
+  { id: "pay5",  user: "NightOwl",    email: "nightowl@email.com",   plan: "Pro Monthly",   amount: 19.99,  status: "refunded", method: "Visa •••• 5555",    date: "2025-07-10 08:21", invoiceId: "INV-001230" },
+  { id: "pay6",  user: "Apex",        email: "apex@email.com",       plan: "Pro+ Annual",   amount: 479,    status: "success",  method: "Mastercard •••• 7777",date: "2025-07-08 13:58", invoiceId: "INV-001229" },
+  { id: "pay7",  user: "Inferno",     email: "inferno@email.com",    plan: "Pro Monthly",   amount: 19.99,  status: "success",  method: "Visa •••• 3333",    date: "2025-07-06 10:14", invoiceId: "INV-001228" },
+  { id: "pay8",  user: "ProStrike",   email: "pro@email.com",        plan: "Pro Monthly",   amount: 19.99,  status: "pending",  method: "Bank Transfer",      date: "2025-07-05 17:30", invoiceId: "INV-001227" },
+];
+
+const STATUS_CFG: Record<PaymentStatus, { label: string; badge: string }> = {
+  success:  { label: "Success",  badge: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" },
+  failed:   { label: "Failed",   badge: "bg-rose-500/15 text-rose-400 border-rose-500/20"         },
+  refunded: { label: "Refunded", badge: "bg-amber-500/15 text-amber-400 border-amber-500/20"      },
+  pending:  { label: "Pending",  badge: "bg-blue-500/15 text-blue-400 border-blue-500/20"         },
+};
 
 export default function AdminPaymentsPage() {
-  const router = useRouter()
-  const [payments, setPayments] = useState<Payment[]>([])
-  const [summary, setSummary] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [statusFilter, setStatusFilter] = useState("")
-  const [methodFilter, setMethodFilter] = useState("")
-  const [search, setSearch] = useState("")
-  const [searchInput, setSearchInput] = useState("")
-  const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(1)
-  const [reviewModal, setReviewModal] = useState<Payment | null>(null)
-  const [action, setAction] = useState<"approve" | "reject" | "">("")
-  const [rejectionReason, setRejectionReason] = useState("")
-  const [adminNote, setAdminNote] = useState("")
-  const [processing, setProcessing] = useState(false)
-  const [actionError, setActionError] = useState("")
-  const [pageError, setPageError] = useState("")
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [search,       setSearch]       = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | PaymentStatus>("all");
 
-  const fetchPayments = useCallback(async () => {
-    setLoading(true)
-    setPageError("")
-    try {
-      const params = new URLSearchParams()
-      if (statusFilter) params.set("status", statusFilter)
-      if (methodFilter) params.set("method", methodFilter)
-      if (search) params.set("search", search)
-      params.set("page", String(page))
-      params.set("limit", "20")
+  const filtered = MOCK_PAYMENTS.filter(p => {
+    const q = search.toLowerCase();
+    const matchQ = p.user.toLowerCase().includes(q) || p.email.toLowerCase().includes(q) || p.invoiceId.toLowerCase().includes(q);
+    const matchS = statusFilter === "all" || p.status === statusFilter;
+    return matchQ && matchS;
+  });
 
-      const res = await fetch(`/api/admin/payments?${params}`)
-      const data = await res.json()
-
-      if (!res.ok) {
-        setPageError(data.error || `HTTP ${res.status}`)
-        setPayments([])
-      } else {
-        setPayments(Array.isArray(data.payments) ? data.payments : [])
-        setTotal(data.total || 0)
-        setSummary(Array.isArray(data.summary) ? data.summary : [])
-      }
-    } catch (err: any) {
-      setPageError(err?.message || "Network error")
-      setPayments([])
-    } finally {
-      setLoading(false)
-    }
-  }, [statusFilter, methodFilter, search, page])
-
-  useEffect(() => { fetchPayments() }, [fetchPayments])
-
-  const handleAction = async () => {
-    if (!reviewModal || !action) return
-    if (action === "reject" && !rejectionReason.trim()) {
-      setActionError("Rejection reason is required")
-      return
-    }
-    setProcessing(true)
-    setActionError("")
-
-    try {
-      const res = await fetch(`/api/admin/payments/${reviewModal.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action,
-          rejectionReason: rejectionReason.trim(),
-          adminNote: adminNote.trim(),
-        }),
-      })
-      const data = await res.json()
-
-      if (!res.ok) {
-        setActionError(data.error || "Action failed")
-        setProcessing(false)
-        return
-      }
-
-      setReviewModal(null)
-      setAction("")
-      setRejectionReason("")
-      setAdminNote("")
-      fetchPayments()
-    } catch (err: any) {
-      setActionError(err?.message || "Network error")
-    } finally {
-      setProcessing(false)
-    }
-  }
-
-  const getSummaryCount = (status: string) => {
-    const found = summary.find((s: any) => s.status === status)
-    return found?._count?.status || 0
-  }
+  const successTotal  = MOCK_PAYMENTS.filter(p => p.status === "success").reduce((a, p) => a + p.amount, 0);
+  const refundTotal   = MOCK_PAYMENTS.filter(p => p.status === "refunded").reduce((a, p) => a + p.amount, 0);
+  const failedCount   = MOCK_PAYMENTS.filter(p => p.status === "failed").length;
+  const pendingCount  = MOCK_PAYMENTS.filter(p => p.status === "pending").length;
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "1.5rem" }}>
-      <div style={{ marginBottom: "1.5rem" }}>
-        <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "#fff", margin: 0 }}>Payment Center</h1>
-        <p style={{ color: "#9ca3af", fontSize: "0.875rem", marginTop: "0.375rem" }}>Review and manage Pro payment submissions</p>
-      </div>
-
-      {pageError && (
-        <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "0.75rem", padding: "1rem", color: "#f87171", marginBottom: "1rem" }}>
-          Error: {pageError}
-        </div>
-      )}
-
-      {/* Summary Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem", marginBottom: "1.5rem" }}>
-        {[
-          { label: "Pending", status: "PENDING", color: "#facc15", icon: Clock },
-          { label: "Approved", status: "APPROVED", color: "#10b981", icon: CheckCircle },
-          { label: "Rejected", status: "REJECTED", color: "#f87171", icon: XCircle },
-        ].map(({ label, status, color, icon: Icon }) => (
-          <button key={status} onClick={() => { setStatusFilter(status === statusFilter ? "" : status); setPage(1) }}
-            style={{ background: statusFilter === status ? `${color}22` : "rgba(30,30,40,0.6)", border: `1px solid ${statusFilter === status ? color : "rgba(255,255,255,0.06)"}`, borderRadius: "0.75rem", padding: "1rem", cursor: "pointer", textAlign: "left" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color }}>
-              <Icon style={{ width: "1rem", height: "1rem" }} />
-              <span style={{ fontSize: "1.5rem", fontWeight: 700 }}>{getSummaryCount(status)}</span>
-            </div>
-            <div style={{ fontSize: "0.75rem", color: "#9ca3af", fontWeight: 600, marginTop: "0.375rem" }}>{label}</div>
+    <AdminShell>
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Payments</h1>
+            <p className="text-white/40 text-sm mt-0.5">Transaction history and revenue tracking</p>
+          </div>
+          <button className="flex items-center gap-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-white/60 px-3 py-2 rounded-lg text-sm transition-colors">
+            <Download className="w-4 h-4" /> Export CSV
           </button>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div style={{ background: "rgba(30,30,40,0.6)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "0.75rem", padding: "0.875rem", marginBottom: "1rem", display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-        <div style={{ flex: 1, minWidth: "200px", position: "relative" }}>
-          <Search style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", width: "1rem", height: "1rem", color: "#6b7280" }} />
-          <input value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { setSearch(searchInput); setPage(1) } }}
-            placeholder="Search email, reference..."
-            style={{ width: "100%", paddingLeft: "2.25rem", paddingRight: "0.75rem", paddingTop: "0.5rem", paddingBottom: "0.5rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", color: "#fff", fontSize: "0.875rem", outline: "none" }} />
         </div>
-        <select value={methodFilter} onChange={(e) => { setMethodFilter(e.target.value); setPage(1) }}
-          style={{ padding: "0.5rem 0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", color: "#fff", fontSize: "0.875rem", outline: "none" }}>
-          <option value="">All Methods</option>
-          <option value="ESEWA">eSewa</option>
-          <option value="KHALTI">Khalti</option>
-          <option value="BANK">Bank</option>
-        </select>
-      </div>
 
-      {/* Table */}
-      <div style={{ background: "rgba(30,30,40,0.6)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "0.75rem", overflow: "hidden" }}>
-        {loading ? (
-          <div style={{ padding: "3rem", textAlign: "center" }}>
-            <Loader2 style={{ width: "1.5rem", height: "1.5rem", color: "#a855f7", animation: "spin 1s linear infinite" }} />
-            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-          </div>
-        ) : payments.length === 0 ? (
-          <div style={{ padding: "3rem", textAlign: "center", color: "#6b7280" }}>No payments found</div>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", fontSize: "0.875rem", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ background: "rgba(0,0,0,0.3)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                  {["User", "Method", "Amount", "Reference", "Proof", "Status", "Submitted", ""].map((h) => (
-                    <th key={h} style={{ textAlign: "left", padding: "0.75rem", fontSize: "0.7rem", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {payments.map((p) => {
-                  const badge = STATUS_BADGE[p.status] || { color: "#9ca3af", bg: "rgba(107,114,128,0.1)" }
-                  return (
-                    <tr key={p.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                      <td style={{ padding: "0.75rem" }}>
-                        <div style={{ fontWeight: 600, color: "#fff" }}>{p.user?.name || p.user?.email || "Unknown"}</div>
-                        <div style={{ fontSize: "0.7rem", color: "#6b7280" }}>{p.user?.email}</div>
-                      </td>
-                      <td style={{ padding: "0.75rem" }}>
-                        <span style={{ fontSize: "0.7rem", fontWeight: 600, color: "#e5e7eb", background: "rgba(255,255,255,0.05)", padding: "0.125rem 0.5rem", borderRadius: "0.25rem" }}>{p.method}</span>
-                      </td>
-                      <td style={{ padding: "0.75rem", fontWeight: 700, color: "#fff" }}>{p.currency} {p.amount.toLocaleString()}</td>
-                      <td style={{ padding: "0.75rem", fontFamily: "monospace", fontSize: "0.75rem", color: "#9ca3af", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.transactionReference}</td>
-                      <td style={{ padding: "0.75rem" }}>
-                        {p.proofUrl ? (
-                          <button onClick={() => setImagePreview(p.proofUrl!)}
-                            style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.7rem", color: "#a78bfa", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", padding: "0.25rem 0.5rem", borderRadius: "0.375rem", cursor: "pointer" }}>
-                            <ImageIcon style={{ width: "0.75rem", height: "0.75rem" }} /> View
-                          </button>
-                        ) : (
-                          <span style={{ fontSize: "0.7rem", color: "#6b7280" }}>—</span>
-                        )}
-                      </td>
-                      <td style={{ padding: "0.75rem" }}>
-                        <span style={{ fontSize: "0.7rem", fontWeight: 700, color: badge.color, background: badge.bg, padding: "0.25rem 0.5rem", borderRadius: "0.375rem" }}>{p.status}</span>
-                      </td>
-                      <td style={{ padding: "0.75rem", fontSize: "0.75rem", color: "#6b7280" }}>{new Date(p.submittedAt).toLocaleDateString()}</td>
-                      <td style={{ padding: "0.75rem" }}>
-                        <button onClick={() => { setReviewModal(p); setAction(""); setRejectionReason(""); setAdminNote(""); setActionError("") }}
-                          style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.75rem", color: "#a855f7", background: "transparent", border: "none", cursor: "pointer", fontWeight: 600 }}>
-                          <Eye style={{ width: "0.875rem", height: "0.875rem" }} /> Review
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* Review Modal */}
-      {reviewModal && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", background: "rgba(0,0,0,0.6)" }}>
-          <div style={{ background: "#1a1a24", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1.5rem", width: "100%", maxWidth: "520px", maxHeight: "90vh", overflowY: "auto" }}>
-            <h2 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#fff", margin: 0, marginBottom: "1rem" }}>Review Payment</h2>
-
-            {/* Payment Screenshot Preview */}
-            {reviewModal.proofUrl && (
-              <div style={{ marginBottom: "1rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "0.75rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-                  <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    📸 Payment Screenshot
-                  </span>
-                  <a href={reviewModal.proofUrl} target="_blank" rel="noopener noreferrer"
-                    style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.7rem", color: "#a78bfa", textDecoration: "none" }}>
-                    Open full size <ExternalLink style={{ width: "0.75rem", height: "0.75rem" }} />
-                  </a>
-                </div>
-                <div style={{ background: "#000", borderRadius: "0.5rem", overflow: "hidden", cursor: "pointer" }}
-                  onClick={() => setImagePreview(reviewModal.proofUrl!)}>
-                  <img src={reviewModal.proofUrl} alt="Payment screenshot"
-                    style={{ width: "100%", maxHeight: "300px", objectFit: "contain", display: "block" }}
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }} />
-                </div>
-                <p style={{ fontSize: "0.7rem", color: "#6b7280", margin: "0.5rem 0 0", textAlign: "center" }}>Click to enlarge</p>
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {[
+            { label: "Total Revenue",  value: `$${successTotal.toLocaleString("en", {minimumFractionDigits:2})}`, color: "text-emerald-400", icon: DollarSign   },
+            { label: "Total Refunds",  value: `$${refundTotal.toFixed(2)}`,   color: "text-amber-400",  icon: RefreshCw    },
+            { label: "Failed Payments",value: failedCount,                    color: "text-rose-400",   icon: XCircle      },
+            { label: "Pending",        value: pendingCount,                   color: "text-blue-400",   icon: CreditCard   },
+          ].map(s => (
+            <div key={s.label} className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-white/40 text-xs">{s.label}</p>
+                <s.icon className={`w-4 h-4 ${s.color}`} />
               </div>
-            )}
-
-            {/* Payment Details */}
-            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "0.625rem", padding: "0.875rem", marginBottom: "1rem", fontSize: "0.8125rem" }}>
-              {[
-                ["User", reviewModal.user?.email || "Unknown"],
-                ["Method", reviewModal.method],
-                ["Amount", `${reviewModal.currency} ${reviewModal.amount}`],
-                ["Reference", reviewModal.transactionReference],
-                ["Note", reviewModal.note || "—"],
-                ["Submitted", new Date(reviewModal.submittedAt).toLocaleString()],
-              ].map(([k, v]) => (
-                <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "0.25rem 0", gap: "0.5rem" }}>
-                  <span style={{ color: "#9ca3af", flexShrink: 0 }}>{k}</span>
-                  <span style={{ color: "#fff", fontWeight: 600, fontFamily: k === "Reference" ? "monospace" : "inherit", fontSize: k === "Reference" ? "0.75rem" : "inherit", textAlign: "right", wordBreak: "break-all" }}>{v}</span>
-                </div>
-              ))}
-              {!reviewModal.proofUrl && (
-                <div style={{ marginTop: "0.5rem", padding: "0.5rem", background: "rgba(250,204,21,0.08)", border: "1px solid rgba(250,204,21,0.2)", borderRadius: "0.375rem", fontSize: "0.75rem", color: "#facc15" }}>
-                  ⚠ No screenshot attached
-                </div>
-              )}
+              <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
             </div>
+          ))}
+        </div>
 
-            {reviewModal.status === "PENDING" ? (
-              <>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginBottom: "0.875rem" }}>
-                  <button onClick={() => setAction("approve")}
-                    style={{ padding: "0.625rem", borderRadius: "0.5rem", border: `2px solid ${action === "approve" ? "#10b981" : "rgba(255,255,255,0.1)"}`, background: action === "approve" ? "rgba(16,185,129,0.1)" : "transparent", color: action === "approve" ? "#10b981" : "#e5e7eb", fontWeight: 600, cursor: "pointer", fontSize: "0.875rem" }}>
-                    ✓ Approve
-                  </button>
-                  <button onClick={() => setAction("reject")}
-                    style={{ padding: "0.625rem", borderRadius: "0.5rem", border: `2px solid ${action === "reject" ? "#f87171" : "rgba(255,255,255,0.1)"}`, background: action === "reject" ? "rgba(239,68,68,0.1)" : "transparent", color: action === "reject" ? "#f87171" : "#e5e7eb", fontWeight: 600, cursor: "pointer", fontSize: "0.875rem" }}>
-                    ✕ Reject
-                  </button>
-                </div>
-
-                {action === "reject" && (
-                  <div style={{ marginBottom: "0.875rem" }}>
-                    <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "#e5e7eb", marginBottom: "0.25rem" }}>Rejection Reason *</label>
-                    <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} rows={2}
-                      style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.5rem", color: "#fff", fontSize: "0.8125rem", outline: "none", resize: "none" }}
-                      placeholder="Explain why this payment is being rejected..." />
-                  </div>
-                )}
-
-                <div style={{ marginBottom: "0.875rem" }}>
-                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "#e5e7eb", marginBottom: "0.25rem" }}>Admin Note (optional)</label>
-                  <input value={adminNote} onChange={(e) => setAdminNote(e.target.value)}
-                    style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.5rem", color: "#fff", fontSize: "0.8125rem", outline: "none" }}
-                    placeholder="Internal note..." />
-                </div>
-
-                {actionError && <p style={{ fontSize: "0.75rem", color: "#f87171", marginBottom: "0.5rem" }}>{actionError}</p>}
-
-                <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <button onClick={() => setReviewModal(null)}
-                    style={{ flex: 1, padding: "0.625rem", borderRadius: "0.5rem", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#e5e7eb", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem" }}>
-                    Cancel
-                  </button>
-                  <button onClick={handleAction} disabled={!action || processing}
-                    style={{ flex: 1, padding: "0.625rem", borderRadius: "0.5rem", color: "#fff", cursor: !action || processing ? "not-allowed" : "pointer", opacity: !action || processing ? 0.5 : 1, background: action === "approve" ? "#10b981" : action === "reject" ? "#ef4444" : "#6b7280", border: "none", fontWeight: 600, fontSize: "0.875rem" }}>
-                    {processing ? "Processing..." : action === "approve" ? "Approve & Activate Pro" : action === "reject" ? "Reject Payment" : "Select Action"}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div style={{ padding: "0.75rem", borderRadius: "0.5rem", background: STATUS_BADGE[reviewModal.status]?.bg, color: STATUS_BADGE[reviewModal.status]?.color, fontSize: "0.8125rem", marginBottom: "0.75rem" }}>
-                  Status: <strong>{reviewModal.status}</strong>
-                </div>
-                {reviewModal.rejectionReason && <p style={{ fontSize: "0.75rem", color: "#f87171", marginBottom: "0.75rem" }}>Reason: {reviewModal.rejectionReason}</p>}
-                <button onClick={() => setReviewModal(null)}
-                  style={{ width: "100%", padding: "0.625rem", borderRadius: "0.5rem", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#e5e7eb", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem" }}>
-                  Close
-                </button>
-              </>
-            )}
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by user, email, or invoice ID…"
+              className="w-full bg-[#0f1117] border border-white/[0.08] rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-rose-500/40" />
+          </div>
+          <div className="flex gap-2">
+            {(["all", "success", "failed", "refunded", "pending"] as const).map(s => (
+              <button key={s} onClick={() => setStatusFilter(s)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium capitalize transition-colors ${statusFilter === s ? "bg-rose-600 text-white" : "bg-white/[0.04] text-white/30 border border-white/[0.08] hover:text-white/60"}`}>
+                {s === "all" ? "All" : s}
+              </button>
+            ))}
           </div>
         </div>
-      )}
 
-      {/* Fullscreen Image Preview */}
-      {imagePreview && (
-        <div onClick={() => setImagePreview(null)}
-          style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.95)", display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem", cursor: "pointer" }}>
-          <img src={imagePreview} alt="Full size" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
-          <button onClick={(e) => { e.stopPropagation(); setImagePreview(null) }}
-            style={{ position: "absolute", top: "1rem", right: "1rem", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "0.5rem 1rem", borderRadius: "0.5rem", cursor: "pointer", fontSize: "0.875rem" }}>
-            Close ✕
-          </button>
+        {/* Table */}
+        <div className="bg-[#0f1117] border border-white/[0.06] rounded-2xl overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-white/[0.06]">
+                {["Invoice", "User", "Plan", "Amount", "Method", "Status", "Date", ""].map(h => (
+                  <th key={h} className="text-left py-3 px-4 text-white/30 text-xs font-medium uppercase tracking-wide">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((p, i) => {
+                const cfg = STATUS_CFG[p.status];
+                return (
+                  <tr key={p.id} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors">
+                    <td className="py-3.5 px-4 text-white/30 text-xs font-mono">{p.invoiceId}</td>
+                    <td className="py-3.5 px-4">
+                      <p className="text-white text-sm font-medium">{p.user}</p>
+                      <p className="text-white/30 text-xs">{p.email}</p>
+                    </td>
+                    <td className="py-3.5 px-4 text-white/60 text-sm">{p.plan}</td>
+                    <td className="py-3.5 px-4">
+                      <span className={`text-sm font-bold ${p.status === "failed" ? "text-rose-400 line-through opacity-50" : p.status === "refunded" ? "text-amber-400" : "text-emerald-400"}`}>
+                        ${p.amount.toFixed(2)}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-white/40 text-sm">{p.method}</td>
+                    <td className="py-3.5 px-4">
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${cfg.badge}`}>{cfg.label}</span>
+                    </td>
+                    <td className="py-3.5 px-4 text-white/30 text-xs font-mono">{p.date}</td>
+                    <td className="py-3.5 px-4">
+                      <div className="flex gap-1">
+                        {p.status === "failed" && (
+                          <button className="p-1.5 hover:bg-white/[0.06] rounded-lg text-white/25 hover:text-amber-400 transition-colors" title="Retry">
+                            <RefreshCw className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {p.status === "success" && (
+                          <button className="p-1.5 hover:bg-white/[0.06] rounded-lg text-white/25 hover:text-rose-400 transition-colors" title="Refund">
+                            <XCircle className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        <button className="p-1.5 hover:bg-white/[0.06] rounded-lg text-white/25 hover:text-white/60 transition-colors" title="View">
+                          <ArrowUpRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      )}
-    </div>
-  )
+      </div>
+    </AdminShell>
+  );
 }

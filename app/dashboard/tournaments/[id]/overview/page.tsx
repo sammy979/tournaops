@@ -1,555 +1,377 @@
-﻿"use client";
-import { useState, useEffect, useCallback } from "react";
-import { useDialog } from "@/lib/use-confirm";
-import { useParams } from "next/navigation";
-import Link from "next/link";
-import TournamentNav from "@/components/tournament/TournamentNav";
-import TeamLogo from "@/components/tournament/TeamLogo";
+"use client";
+
+import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import DashboardShell from "@/components/ui/DashboardShell";
 import {
-  Trophy, Users, Play, BarChart3, Radio, Sparkles,
-  Loader2, ExternalLink, Copy, Check, Settings2,
-  Layers, Crown, Zap, Clock, Globe, AlertCircle,
-  ChevronRight, MessageSquare, Palette, FileText,
-  TrendingUp, Target, Shield, ArrowRight, RefreshCw
+  Trophy,
+  Users,
+  Calendar,
+  Zap,
+  Clock,
+  MapPin,
+  Globe,
+  Edit3,
+  ChevronRight,
+  BarChart2,
+  Shield,
+  AlertCircle,
+  CheckCircle2,
+  Circle,
+  ArrowUpRight,
 } from "lucide-react";
 
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+const MOCK_TOURNAMENT = {
+  id: "t1",
+  name: "Champions Circuit Season 4",
+  game: "Valorant",
+  status: "live",
+  startDate: "2025-07-01",
+  endDate: "2025-07-28",
+  region: "North America",
+  format: "Double Elimination",
+  prizePool: "$10,000",
+  maxTeams: 16,
+  registeredTeams: 14,
+  checkedInTeams: 12,
+  totalMatches: 31,
+  completedMatches: 18,
+  pendingMatches: 8,
+  liveMatches: 5,
+  description:
+    "The premier seasonal championship circuit for top-tier Valorant teams across North America. Featuring a full double-elimination bracket with live broadcast support.",
+  organizer: "TournaOps Official",
+  bannerColor: "from-violet-600 to-indigo-700",
+  stages: [
+    { name: "Group Stage", status: "completed", matchCount: 12 },
+    { name: "Quarterfinals", status: "live", matchCount: 8 },
+    { name: "Semifinals", status: "upcoming", matchCount: 4 },
+    { name: "Grand Finals", status: "upcoming", matchCount: 1 },
+  ],
+  recentActivity: [
+    { type: "match", message: "Team Alpha defeated Team Nexus 2-1", time: "5m ago", icon: "win" },
+    { type: "checkin", message: "Team Phantom checked in", time: "12m ago", icon: "checkin" },
+    { type: "match", message: "Team Void vs Team Storm — Live now", time: "18m ago", icon: "live" },
+    { type: "result", message: "Match #19 result submitted", time: "31m ago", icon: "result" },
+    { type: "alert", message: "Team Nova missed check-in deadline", time: "1h ago", icon: "alert" },
+  ],
+  topTeams: [
+    { rank: 1, name: "Team Alpha", wins: 6, losses: 0, points: 180 },
+    { rank: 2, name: "Team Nexus", wins: 5, losses: 1, points: 150 },
+    { rank: 3, name: "Team Phantom", wins: 4, losses: 1, points: 130 },
+    { rank: 4, name: "Team Storm", wins: 4, losses: 2, points: 110 },
+  ],
+};
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; classes: string; dot: string }> = {
+    live:      { label: "Live",      classes: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30", dot: "bg-emerald-400 animate-pulse" },
+    upcoming:  { label: "Upcoming",  classes: "bg-blue-500/15 text-blue-400 border-blue-500/30",         dot: "bg-blue-400" },
+    completed: { label: "Completed", classes: "bg-slate-500/15 text-slate-400 border-slate-500/30",      dot: "bg-slate-400" },
+    draft:     { label: "Draft",     classes: "bg-amber-500/15 text-amber-400 border-amber-500/30",      dot: "bg-amber-400" },
+  };
+  const cfg = map[status] ?? map.draft;
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${cfg.classes}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+      {cfg.label}
+    </span>
+  );
+}
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  sub,
+  color,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string | number;
+  sub?: string;
+  color: string;
+}) {
+  return (
+    <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-5 flex items-start gap-4 hover:border-white/[0.12] transition-colors">
+      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${color}`}>
+        <Icon className="w-5 h-5" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-slate-400 text-xs font-medium mb-0.5">{label}</p>
+        <p className="text-white text-xl font-bold leading-tight">{value}</p>
+        {sub && <p className="text-slate-500 text-xs mt-0.5">{sub}</p>}
+      </div>
+    </div>
+  );
+}
+
+function StageRow({ stage, index }: { stage: (typeof MOCK_TOURNAMENT.stages)[0]; index: number }) {
+  const iconMap = {
+    completed: <CheckCircle2 className="w-4 h-4 text-emerald-400" />,
+    live:      <Zap className="w-4 h-4 text-amber-400" />,
+    upcoming:  <Circle className="w-4 h-4 text-slate-500" />,
+  };
+  const icon = iconMap[stage.status as keyof typeof iconMap] ?? iconMap.upcoming;
+
+  return (
+    <div className="flex items-center gap-3 py-3 border-b border-white/[0.04] last:border-0">
+      <div className="w-6 h-6 rounded-full bg-white/[0.04] flex items-center justify-center text-slate-500 text-xs font-bold">
+        {index + 1}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-white text-sm font-medium">{stage.name}</p>
+        <p className="text-slate-500 text-xs">{stage.matchCount} matches</p>
+      </div>
+      {icon}
+      <StatusBadge status={stage.status} />
+    </div>
+  );
+}
+
+function ActivityItem({ item }: { item: (typeof MOCK_TOURNAMENT.recentActivity)[0] }) {
+  const iconMap: Record<string, React.ReactNode> = {
+    win:    <CheckCircle2 className="w-4 h-4 text-emerald-400" />,
+    live:   <Zap className="w-4 h-4 text-amber-400" />,
+    result: <BarChart2 className="w-4 h-4 text-blue-400" />,
+    checkin:<Shield className="w-4 h-4 text-violet-400" />,
+    alert:  <AlertCircle className="w-4 h-4 text-rose-400" />,
+  };
+  return (
+    <div className="flex items-start gap-3 py-2.5 border-b border-white/[0.04] last:border-0">
+      <div className="w-7 h-7 rounded-lg bg-white/[0.04] flex items-center justify-center flex-shrink-0 mt-0.5">
+        {iconMap[item.icon] ?? <Circle className="w-4 h-4 text-slate-500" />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-slate-300 text-sm leading-snug">{item.message}</p>
+        <p className="text-slate-600 text-xs mt-0.5">{item.time}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function TournamentOverviewPage() {
-  const dialog = useDialog();
-  const [advancing, setAdvancing] = useState(false);
-  const params = useParams();
-  const id = params?.id as string;
+  const params  = useParams();
+  const router  = useRouter();
+  const id      = params?.id as string;
+  const t       = MOCK_TOURNAMENT;
 
-  const [status, setStatus] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const completionPct = Math.round((t.completedMatches / t.totalMatches) * 100);
+  const registrationPct = Math.round((t.registeredTeams / t.maxTeams) * 100);
 
-  const load = useCallback(async (showRefreshing = false) => {
-    if (!id) return;
-    if (showRefreshing) setRefreshing(true);
-    try {
-      const res = await fetch(`/api/tournaments/${id}/command-status`, {
-        cache: "no-store",
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setStatus(data);
-        setLastRefresh(new Date());
-      }
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    load();
-    const interval = setInterval(() => load(), 30000);
-    return () => clearInterval(interval);
-  }, [load]);
-
-  function copyLink() {
-    if (!status?.tournament?.slug) return;
-    navigator.clipboard.writeText(
-      `${window.location.origin}/tournaments/${status.tournament.slug}`
-    );
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-  const handleForceAdvance = async () => {
-    if (!status?.activeStage?.id) return;
-    if (advancing) return;
-
-    const nextStage = status.stageProgress?.find(
-      (s: any) => s.stageOrder === (status.activeStage.order + 1)
-    );
-    const nextStageName = nextStage?.stageName || "next stage";
-
-    const ok = await dialog.confirm({
-      title: `Force Advance to ${nextStageName}?`,
-      description: `This will calculate standings, seed teams into ${nextStageName}, and lock the current stage. A Discord announcement will be posted if configured.`,
-      confirmLabel: `Advance to ${nextStageName}`,
-      variant: "warning",
-    });
-    if (!ok) return;
-
-    const reason = await dialog.prompt({
-      title: "Advancement Reason",
-      description: "Provide a reason for this advancement. This is recorded in the audit log.",
-      placeholder: "e.g. All matches complete, advancing top 8 teams",
-      submitLabel: "Confirm Advance",
-      variant: "warning",
-    });
-    if (reason === null) return;
-    if (reason.trim().length < 5) {
-      await dialog.alert({
-        title: "Reason Too Short",
-        description: "Please provide a reason of at least 5 characters.",
-        variant: "warning",
-      });
-      return;
-    }
-
-    setAdvancing(true);
-    try {
-      const res = await fetch(`/api/tournaments/${id}/force-advance`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stageId: status.activeStage.id, reason: reason.trim() }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        await dialog.alert({
-          title: "Stage Advanced",
-          description: data.message || `Successfully advanced to ${nextStageName}.`,
-          variant: "success",
-        });
-        load(true);
-      } else {
-        await dialog.alert({
-          title: "Advancement Failed",
-          description: data.error || "Failed to advance stage. Please try again.",
-          variant: "danger",
-        });
-      }
-    } catch (e: any) {
-      await dialog.alert({
-        title: "Error",
-        description: e?.message || "An unexpected error occurred.",
-        variant: "danger",
-      });
-    } finally {
-      setAdvancing(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Loader2 style={{ width: "2rem", height: "2rem", color: "#f59e0b", animation: "spin 0.8s linear infinite" }} />
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}} @media(min-width:900px){.overview-main-grid{grid-template-columns:1fr 340px!important}}`}</style>
-      </div>
-    );
-  }
-
-  if (!status) {
-    return (
-      <div style={{ textAlign: "center", padding: "4rem 1rem" }}>
-        <Trophy style={{ width: "3rem", height: "3rem", color: "#374151", margin: "0 auto 1rem" }} />
-        <p style={{ color: "#9ca3af" }}>Tournament not found</p>
-      </div>
-    );
-  }
-
-  const t = status.tournament;
-  const primaryColor = t.brandingData?.primaryColor || "#f59e0b";
-
-  const statusConfig: Record<string, any> = {
-    live: { label: "LIVE", color: "#4ade80", bg: "rgba(34,197,94,0.15)", border: "rgba(34,197,94,0.3)", dot: true },
-    draft: { label: "DRAFT", color: "#9ca3af", bg: "rgba(107,114,128,0.1)", border: "rgba(107,114,128,0.2)" },
-    registration: { label: "REGISTRATION", color: "#60a5fa", bg: "rgba(59,130,246,0.1)", border: "rgba(59,130,246,0.25)" },
-    completed: { label: "COMPLETED", color: "#c084fc", bg: "rgba(168,85,247,0.1)", border: "rgba(168,85,247,0.25)" },
-    cancelled: { label: "CANCELLED", color: "#f87171", bg: "rgba(239,68,68,0.1)", border: "rgba(239,68,68,0.25)" },
-  };
-  const sc = statusConfig[t.status] || statusConfig.draft;
-
-  const nextAction = status.nextAction;
-  const urgencyColor =
-    nextAction.urgency === "high"
-      ? "#f87171"
-      : nextAction.urgency === "medium"
-      ? "#fbbf24"
-      : "#4ade80";
-  const urgencyBg =
-    nextAction.urgency === "high"
-      ? "rgba(239,68,68,0.08)"
-      : nextAction.urgency === "medium"
-      ? "rgba(245,158,11,0.08)"
-      : "rgba(34,197,94,0.08)";
-  const urgencyBorder =
-    nextAction.urgency === "high"
-      ? "rgba(239,68,68,0.25)"
-      : nextAction.urgency === "medium"
-      ? "rgba(245,158,11,0.25)"
-      : "rgba(34,197,94,0.25)";
-
-  const quickActions = [
-    { icon: Trophy, label: "Match Results", desc: "Enter results", href: `/dashboard/tournaments/${id}/match-results`, color: "#f59e0b", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.2)" },
-    { icon: BarChart3, label: "Standings", desc: "Live leaderboard", href: `/dashboard/tournaments/${id}/standings`, color: "#60a5fa", bg: "rgba(59,130,246,0.1)", border: "rgba(59,130,246,0.2)" },
-    { icon: Users, label: "Teams", desc: `${status.teams.total} registered`, href: `/dashboard/tournaments/${id}/teams`, color: "#4ade80", bg: "rgba(34,197,94,0.1)", border: "rgba(34,197,94,0.2)" },
-    { icon: Layers, label: "Stages", desc: "Manage stages", href: `/dashboard/tournaments/${id}/stages`, color: "#c084fc", bg: "rgba(168,85,247,0.1)", border: "rgba(168,85,247,0.2)" },
-    { icon: Play, label: "Matches", desc: `${status.matches.total} total`, href: `/dashboard/tournaments/${id}/matches`, color: "#fb923c", bg: "rgba(249,115,22,0.1)", border: "rgba(249,115,22,0.2)" },
-    { icon: Radio, label: "OBS Overlays", desc: "Broadcast tools", href: `/dashboard/tournaments/${id}/overlays`, color: "#f472b6", bg: "rgba(244,114,182,0.1)", border: "rgba(244,114,182,0.2)" },
-    { icon: MessageSquare, label: "Discord", desc: status.integrations.discord ? "Connected" : "Not configured", href: `/dashboard/tournaments/${id}/discord`, color: "#818cf8", bg: "rgba(129,140,248,0.1)", border: "rgba(129,140,248,0.2)" },
-    { icon: Palette, label: "Branding", desc: "Colors & sponsors", href: `/dashboard/tournaments/${id}/branding`, color: "#34d399", bg: "rgba(52,211,153,0.1)", border: "rgba(52,211,153,0.2)" },
-    { icon: Sparkles, label: "AI Insights", desc: "Smart analysis", href: `/dashboard/tournaments/${id}/insights`, color: "#a78bfa", bg: "rgba(167,139,250,0.1)", border: "rgba(167,139,250,0.2)" },
-    { icon: FileText, label: "Public Report", desc: "View results", href: `/tournaments/${t.slug}/results`, color: "#38bdf8", bg: "rgba(56,189,248,0.1)", border: "rgba(56,189,248,0.2)", external: true },
-    { icon: Settings2, label: "Settings", desc: "Tournament config", href: `/dashboard/tournaments/${id}/settings`, color: "#94a3b8", bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.2)" },
-    { icon: Globe, label: "Public Page", desc: "View public site", href: `/tournaments/${t.slug}`, color: "#fb923c", bg: "rgba(249,115,22,0.1)", border: "rgba(249,115,22,0.2)", external: true },
+  const navTabs = [
+    { label: "Overview",      href: `/dashboard/tournaments/${id}/overview` },
+    { label: "Teams",         href: `/dashboard/tournaments/${id}/teams` },
+    { label: "Stages",        href: `/dashboard/tournaments/${id}/stages` },
+    { label: "Matches",       href: `/dashboard/tournaments/${id}/matches` },
+    { label: "Match Results", href: `/dashboard/tournaments/${id}/match-results` },
+    { label: "Standings",     href: `/dashboard/tournaments/${id}/standings` },
+    { label: "Broadcast",     href: `/dashboard/tournaments/${id}/broadcast` },
+    { label: "Discord",       href: `/dashboard/tournaments/${id}/discord` },
+    { label: "Insights",      href: `/dashboard/tournaments/${id}/insights` },
+    { label: "Export",        href: `/dashboard/tournaments/${id}/export` },
+    { label: "Settings",      href: `/dashboard/tournaments/${id}/settings` },
   ];
 
   return (
-    <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
-      <TournamentNav tournamentId={id} />
+    <DashboardShell>
+      <div className="min-h-screen bg-[#080a0e] text-white">
 
-      {/* HERO */}
-      <div style={{
-        background: t.bannerImage
-          ? `linear-gradient(180deg,rgba(10,10,15,.65),rgba(10,10,15,.97)),url(${t.bannerImage}) center/cover`
-          : `linear-gradient(135deg,${primaryColor}08,rgba(249,115,22,.02))`,
-        borderRadius: "1.25rem",
-        border: "1px solid rgba(255,255,255,0.08)",
-        padding: "1.5rem",
-        marginBottom: "1.5rem",
-        position: "relative",
-      }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
-          <div style={{ flex: 1, minWidth: "240px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem", flexWrap: "wrap" }}>
-              <span style={{
-                display: "inline-flex", alignItems: "center", gap: "0.375rem",
-                padding: "0.2rem 0.75rem", borderRadius: "9999px",
-                fontSize: "0.65rem", fontWeight: 800,
-                background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`,
-                textTransform: "uppercase", letterSpacing: "0.05em",
-              }}>
-                {sc.dot && <span style={{ width: "0.4rem", height: "0.4rem", borderRadius: "50%", background: sc.color, animation: "pulse 2s infinite" }} />}
-                {sc.label}
-              </span>
+        {/* ── Hero Banner ─────────────────────────────────── */}
+        <div className={`relative bg-gradient-to-r ${t.bannerColor} overflow-hidden`}>
+          <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/40" />
+          <div className="relative max-w-7xl mx-auto px-6 py-8">
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-2 text-white/60 text-sm mb-4">
+              <button onClick={() => router.push("/dashboard/tournaments")} className="hover:text-white transition-colors">
+                Tournaments
+              </button>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <span className="text-white font-medium">{t.name}</span>
             </div>
-            <h1 style={{ fontSize: "clamp(1.5rem,4vw,2.25rem)", fontWeight: 800, color: "#fff", marginBottom: "0.5rem", lineHeight: 1.1 }}>
-              {t.name}
-            </h1>
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem", color: "#9ca3af", fontSize: "0.8rem", flexWrap: "wrap" }}>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem" }}>
-                <Users style={{ width: "0.875rem", height: "0.875rem" }} />
-                {status.teams.total}/{t.maxTeams} Teams
-              </span>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem" }}>
-                <Play style={{ width: "0.875rem", height: "0.875rem" }} />
-                {status.matches.completed}/{status.matches.total} Matches
-              </span>
-              {t.prizePool && (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", color: "#fbbf24" }}>
-                  <Trophy style={{ width: "0.875rem", height: "0.875rem" }} />
-                  {t.prizePool}
-                </span>
-              )}
-            </div>
-          </div>
 
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
-            <button
-              onClick={() => load(true)}
-              disabled={refreshing}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: "0.375rem",
-                background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: "0.625rem", padding: "0.5rem 0.875rem",
-                color: "#9ca3af", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer",
-              }}
-            >
-              <RefreshCw style={{ width: "0.875rem", height: "0.875rem", animation: refreshing ? "spin 0.8s linear infinite" : "none" }} />
-              {refreshing ? "Refreshing..." : "Refresh"}
-            </button>
-            <button onClick={copyLink} style={{
-              display: "inline-flex", alignItems: "center", gap: "0.375rem",
-              background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "0.625rem", padding: "0.5rem 0.875rem",
-              color: copied ? "#4ade80" : "#d1d5db", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer",
-            }}>
-              {copied ? <><Check style={{ width: "0.875rem", height: "0.875rem" }} />Copied!</> : <><Copy style={{ width: "0.875rem", height: "0.875rem" }} />Copy Link</>}
-            </button>
-            {t.slug && (
-              <Link href={`/tournaments/${t.slug}`} target="_blank" style={{
-                display: "inline-flex", alignItems: "center", gap: "0.375rem",
-                background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: "0.625rem", padding: "0.5rem 0.875rem",
-                color: "#d1d5db", fontSize: "0.75rem", fontWeight: 600, textDecoration: "none",
-              }}>
-                <ExternalLink style={{ width: "0.875rem", height: "0.875rem" }} />View Public
-              </Link>
-            )}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <StatusBadge status={t.status} />
+                  <span className="text-white/60 text-sm">{t.game}</span>
+                </div>
+                <h1 className="text-3xl font-bold text-white mb-1">{t.name}</h1>
+                <p className="text-white/70 text-sm max-w-xl">{t.description}</p>
+              </div>
+              <button className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors self-start md:self-auto">
+                <Edit3 className="w-4 h-4" />
+                Edit Tournament
+              </button>
+            </div>
+
+            {/* Meta row */}
+            <div className="flex flex-wrap gap-4 mt-4 text-sm text-white/70">
+              <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" />{t.startDate} — {t.endDate}</span>
+              <span className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" />{t.region}</span>
+              <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" />{t.format}</span>
+              <span className="flex items-center gap-1.5"><Trophy className="w-3.5 h-3.5" />{t.prizePool} Prize Pool</span>
+            </div>
           </div>
         </div>
 
-        {/* Progress bar */}
-        {status.matches.total > 0 && (
-          <div style={{ marginTop: "1.25rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.7rem", color: "#9ca3af", marginBottom: "0.375rem" }}>
-              <span>Tournament Progress</span>
-              <span style={{ color: primaryColor, fontWeight: 700 }}>
-                {status.matches.progressPercent}% ({status.matches.completed}/{status.matches.total} matches)
-              </span>
-            </div>
-            <div style={{ height: "0.375rem", background: "rgba(255,255,255,0.08)", borderRadius: "9999px", overflow: "hidden" }}>
-              <div style={{
-                width: `${status.matches.progressPercent}%`, height: "100%",
-                background: `linear-gradient(to right,${primaryColor},#f97316)`,
-                borderRadius: "9999px", transition: "width 0.5s ease",
-              }} />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* NEXT ACTION BANNER */}
-      {nextAction && nextAction.action !== "ALL_GOOD" && (
-        <Link href={nextAction.href || "#"} style={{ textDecoration: "none", display: "block", marginBottom: "1.5rem" }}>
-          <div style={{
-            background: urgencyBg,
-            border: `1px solid ${urgencyBorder}`,
-            borderRadius: "1rem",
-            padding: "1rem 1.25rem",
-            display: "flex", alignItems: "center", gap: "1rem",
-            cursor: "pointer",
-          }}>
-            <div style={{
-              width: "2.5rem", height: "2.5rem", borderRadius: "0.625rem",
-              background: `${urgencyColor}15`,
-              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-            }}>
-              <Zap style={{ width: "1.25rem", height: "1.25rem", color: urgencyColor }} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: "0.75rem", fontWeight: 700, color: urgencyColor, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.125rem" }}>
-                Next Action
-              </div>
-              <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#fff" }}>{nextAction.label}</div>
-              <div style={{ fontSize: "0.75rem", color: "#9ca3af", marginTop: "0.125rem" }}>{nextAction.description}</div>
-            </div>
-            <ArrowRight style={{ width: "1.25rem", height: "1.25rem", color: urgencyColor, flexShrink: 0 }} />
-          </div>
-        </Link>
-      )}
-
-      {/* QUICK STATS */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: "0.75rem", marginBottom: "1.5rem" }}>
-        {[
-          { label: "Teams", value: status.teams.total, icon: Users, color: "#60a5fa", bg: "rgba(59,130,246,0.1)" },
-          { label: "Completed", value: status.matches.completed, icon: Check, color: "#4ade80", bg: "rgba(34,197,94,0.1)" },
-          { label: "Remaining", value: status.matches.pending, icon: Clock, color: "#fbbf24", bg: "rgba(245,158,11,0.1)" },
-          { label: "Stages", value: status.stageProgress.length, icon: Layers, color: "#c084fc", bg: "rgba(168,85,247,0.1)" },
-        ].map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <div key={stat.label} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1rem" }}>
-              <div style={{ width: "1.75rem", height: "1.75rem", borderRadius: "0.5rem", background: stat.bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "0.625rem" }}>
-                <Icon style={{ width: "0.875rem", height: "0.875rem", color: stat.color }} />
-              </div>
-              <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#fff", lineHeight: 1 }}>{stat.value}</div>
-              <div style={{ fontSize: "0.65rem", color: "#6b7280", marginTop: "0.375rem", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>{stat.label}</div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr)", gap: "1.5rem" }} className="overview-main-grid">
-
-        {/* COMMAND CENTER */}
-        <div>
-          <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.75rem" }}>
-            Command Center
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: "0.625rem" }}>
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-              const content = (
-                <div style={{
-                  display: "flex", alignItems: "center", gap: "0.75rem",
-                  padding: "0.875rem 1rem",
-                  background: "rgba(255,255,255,0.03)",
-                  border: `1px solid ${action.border}`,
-                  borderRadius: "0.875rem",
-                  textDecoration: "none",
-                  cursor: "pointer", width: "100%", textAlign: "left",
-                }}>
-                  <div style={{ width: "2.25rem", height: "2.25rem", borderRadius: "0.625rem", background: action.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Icon style={{ width: "1.125rem", height: "1.125rem", color: action.color }} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                      {action.label}
-                      {(action as any).external && <ExternalLink style={{ width: "0.625rem", height: "0.625rem", color: "#6b7280" }} />}
-                    </div>
-                    <div style={{ fontSize: "0.7rem", color: "#6b7280", marginTop: "0.125rem" }}>{action.desc}</div>
-                  </div>
-                  <ChevronRight style={{ width: "0.875rem", height: "0.875rem", color: "#4b5563", flexShrink: 0 }} />
-                </div>
-              );
-              return (action as any).external
-                ? <a key={action.label} href={action.href} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>{content}</a>
-                : <Link key={action.label} href={action.href} style={{ textDecoration: "none" }}>{content}</Link>;
-            })}
-          </div>
-        </div>
-
-        {/* RIGHT SIDEBAR */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-
-          {/* Active Stage */}
-          {status.activeStage && (
-            <div style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${primaryColor}30`, borderRadius: "1rem", padding: "1.25rem" }}>
-              <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "0.375rem" }}>
-                <Layers style={{ width: "0.75rem", height: "0.75rem", color: primaryColor }} />
-                Current Stage
-              </div>
-              <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "#fff", marginBottom: "0.375rem" }}>
-                {status.activeStage.name}
-              </div>
-              <div style={{ fontSize: "0.75rem", color: "#9ca3af", marginBottom: "0.875rem" }}>
-                {status.activeStage.numGroups} group{status.activeStage.numGroups !== 1 ? "s" : ""} Â· {status.activeStage.teamsPerGroup} teams/group
-              </div>
-              {status.activeStageCompletion && (
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.7rem", color: "#9ca3af", marginBottom: "0.25rem" }}>
-                    <span>Match progress</span>
-                    <span style={{ color: status.activeStageCompletion.isComplete ? "#4ade80" : primaryColor, fontWeight: 700 }}>
-                      {status.activeStageCompletion.completedMatches}/{status.activeStageCompletion.totalMatches}
-                    </span>
-                  </div>
-                  <div style={{ height: "0.25rem", background: "rgba(255,255,255,0.08)", borderRadius: "9999px", overflow: "hidden" }}>
-                    <div style={{
-                      width: `${status.activeStageCompletion.totalMatches > 0 ? Math.round(status.activeStageCompletion.completedMatches / status.activeStageCompletion.totalMatches * 100) : 0}%`,
-                      height: "100%",
-                      background: status.activeStageCompletion.isComplete ? "#4ade80" : primaryColor,
-                      borderRadius: "9999px",
-                    }} />
-                  </div>
-                  {status.activeStageCompletion.isComplete && (
-                    <div style={{ marginTop: "0.625rem", padding: "0.5rem 0.75rem", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: "0.5rem", fontSize: "0.75rem", color: "#4ade80", fontWeight: 600 }}>
-                      âœ… Stage complete{status.canAdvance ? " â€” ready to advance" : ""}
-                    </div>
-                  )}
-                </div>
-              )}
-              {status.canAdvance && (
-                <button
-                  onClick={handleForceAdvance}
-                  disabled={advancing}
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: "0.375rem",
-                    marginTop: "0.75rem", padding: "0.5rem 1rem",
-                    background: advancing ? "rgba(74,222,128,0.5)" : "#4ade80", color: "#000",
-                    borderRadius: "0.625rem", fontSize: "0.75rem", fontWeight: 700,
-                    border: "none", cursor: advancing ? "not-allowed" : "pointer",
-                    opacity: advancing ? 0.7 : 1,
-                  }}
-                >
-                  {advancing
-                    ? <><Loader2 style={{ width: "0.875rem", height: "0.875rem", animation: "spin 0.8s linear infinite" }} />Advancing...</>
-                    : <><TrendingUp style={{ width: "0.875rem", height: "0.875rem" }} />Advance Stage</>
-                  }
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Top 5 Standings */}
-          {status.standings.length > 0 && (
-            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1.25rem" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.875rem" }}>
-                <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.1em" }}>
-                  Top Teams
-                </div>
-                <Link href={`/dashboard/tournaments/${id}/standings`} style={{ fontSize: "0.65rem", color: primaryColor, fontWeight: 700, textDecoration: "none" }}>
-                  View All
-                </Link>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                {status.standings.map((s: any) => {
-                  const rc = s.rank === 1 ? "#fbbf24" : s.rank === 2 ? "#d1d5db" : s.rank === 3 ? "#f97316" : "#6b7280";
-                  return (
-                    <div key={s.teamId} style={{ display: "flex", alignItems: "center", gap: "0.625rem", padding: "0.5rem 0.375rem" }}>
-                      <span style={{ width: "1.5rem", textAlign: "center", fontWeight: 800, fontSize: "0.85rem", color: rc }}>
-                        #{s.rank}
-                      </span>
-                      <TeamLogo name={s.teamName} tag={s.teamTag} logo={s.teamLogo} size={28} />
-                      <span style={{ flex: 1, fontSize: "0.8rem", fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {s.teamName}
-                      </span>
-                      <span style={{ fontSize: "0.85rem", fontWeight: 800, color: primaryColor }}>
-                        {s.points}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Integrations */}
-          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1.25rem" }}>
-            <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.875rem" }}>
-              Integrations
-            </div>
-            {[
-              { label: "Discord Webhook", ok: status.integrations.discord, href: `/dashboard/tournaments/${id}/discord` },
-              { label: "OBS Overlay", ok: status.integrations.overlayConfigured, href: `/dashboard/tournaments/${id}/overlays` },
-            ].map((item) => (
-              <Link key={item.label} href={item.href} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem", textDecoration: "none" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <div style={{ width: "0.5rem", height: "0.5rem", borderRadius: "50%", background: item.ok ? "#4ade80" : "#374151" }} />
-                  <span style={{ fontSize: "0.8rem", color: "#d1d5db" }}>{item.label}</span>
-                </div>
-                <span style={{ fontSize: "0.7rem", color: item.ok ? "#4ade80" : "#6b7280", fontWeight: 600 }}>
-                  {item.ok ? "Connected" : "Configure â†’"}
-                </span>
-              </Link>
-            ))}
-          </div>
-
-          {/* Stage Pipeline */}
-          {status.stageProgress.length > 0 && (
-            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1.25rem" }}>
-              <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.875rem" }}>
-                Stage Pipeline
-              </div>
-              {status.stageProgress.map((sp: any, i: number) => {
-                const isActive = sp.stageId === status.activeStage?.id;
-                const isDone = sp.stageStatus === "COMPLETED";
-                const dotColor = isDone ? "#4ade80" : isActive ? primaryColor : "#374151";
+        {/* ── Navigation Tabs ──────────────────────────────── */}
+        <div className="border-b border-white/[0.06] bg-[#080a0e] sticky top-0 z-20">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="flex gap-0 overflow-x-auto scrollbar-hide">
+              {navTabs.map((tab) => {
+                const isActive = tab.label === "Overview";
                 return (
-                  <div key={sp.stageId} style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: i < status.stageProgress.length - 1 ? "0.625rem" : 0 }}>
-                    <div style={{ width: "0.5rem", height: "0.5rem", borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "0.8rem", fontWeight: 600, color: isActive ? "#fff" : isDone ? "#9ca3af" : "#6b7280" }}>
-                        {sp.stageName}
-                      </div>
-                      <div style={{ fontSize: "0.65rem", color: "#4b5563" }}>
-                        {isDone ? "Complete" : isActive ? `${sp.completedMatches}/${sp.totalMatches} matches` : "Upcoming"}
-                      </div>
-                    </div>
-                    {isActive && (
-                      <span style={{ fontSize: "0.6rem", fontWeight: 700, color: primaryColor, background: `${primaryColor}15`, padding: "0.125rem 0.5rem", borderRadius: "9999px" }}>
-                        ACTIVE
-                      </span>
-                    )}
-                    {isDone && (
-                      <span style={{ fontSize: "0.6rem", fontWeight: 700, color: "#4ade80", background: "rgba(34,197,94,0.1)", padding: "0.125rem 0.5rem", borderRadius: "9999px" }}>
-                        DONE
-                      </span>
-                    )}
-                  </div>
+                  <button
+                    key={tab.label}
+                    onClick={() => router.push(tab.href)}
+                    className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${
+                      isActive
+                        ? "border-violet-500 text-violet-400"
+                        : "border-transparent text-slate-500 hover:text-slate-300"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
                 );
               })}
             </div>
-          )}
+          </div>
+        </div>
 
-          {/* Last refresh */}
-          {lastRefresh && (
-            <div style={{ fontSize: "0.65rem", color: "#374151", textAlign: "center" }}>
-              Last updated {lastRefresh.toLocaleTimeString()} Â· auto-refreshes every 30s
+        {/* ── Page Body ────────────────────────────────────── */}
+        <div className="max-w-7xl mx-auto px-6 py-8">
+
+          {/* Stat Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <StatCard icon={Users}   label="Teams Registered" value={`${t.registeredTeams}/${t.maxTeams}`} sub={`${t.checkedInTeams} checked in`}    color="bg-violet-500/15 text-violet-400" />
+            <StatCard icon={Zap}     label="Live Matches"      value={t.liveMatches}                         sub="In progress"                           color="bg-amber-500/15 text-amber-400"  />
+            <StatCard icon={CheckCircle2} label="Completed"   value={t.completedMatches}                    sub={`of ${t.totalMatches} total`}          color="bg-emerald-500/15 text-emerald-400" />
+            <StatCard icon={Trophy}  label="Prize Pool"        value={t.prizePool}                           sub="Total distributed"                     color="bg-rose-500/15 text-rose-400"    />
+          </div>
+
+          {/* Progress bars row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-5">
+              <div className="flex justify-between items-center mb-3">
+                <p className="text-slate-300 text-sm font-medium">Tournament Progress</p>
+                <span className="text-white font-bold text-sm">{completionPct}%</span>
+              </div>
+              <div className="w-full bg-white/[0.06] rounded-full h-2 mb-2">
+                <div
+                  className="bg-gradient-to-r from-violet-500 to-indigo-500 h-2 rounded-full transition-all duration-700"
+                  style={{ width: `${completionPct}%` }}
+                />
+              </div>
+              <p className="text-slate-500 text-xs">{t.completedMatches} of {t.totalMatches} matches completed</p>
             </div>
-          )}
+            <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-5">
+              <div className="flex justify-between items-center mb-3">
+                <p className="text-slate-300 text-sm font-medium">Registration Fill</p>
+                <span className="text-white font-bold text-sm">{registrationPct}%</span>
+              </div>
+              <div className="w-full bg-white/[0.06] rounded-full h-2 mb-2">
+                <div
+                  className="bg-gradient-to-r from-emerald-500 to-teal-500 h-2 rounded-full transition-all duration-700"
+                  style={{ width: `${registrationPct}%` }}
+                />
+              </div>
+              <p className="text-slate-500 text-xs">{t.registeredTeams} of {t.maxTeams} slots filled</p>
+            </div>
+          </div>
+
+          {/* Main grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            {/* Stages */}
+            <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-white font-semibold">Stages</h2>
+                <button
+                  onClick={() => router.push(`/dashboard/tournaments/${id}/stages`)}
+                  className="text-violet-400 hover:text-violet-300 text-xs flex items-center gap-1 transition-colors"
+                >
+                  View all <ArrowUpRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              {t.stages.map((stage, i) => (
+                <StageRow key={stage.name} stage={stage} index={i} />
+              ))}
+            </div>
+
+            {/* Recent Activity */}
+            <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-white font-semibold">Recent Activity</h2>
+                <span className="text-slate-600 text-xs">Live feed</span>
+              </div>
+              {t.recentActivity.map((item, i) => (
+                <ActivityItem key={i} item={item} />
+              ))}
+            </div>
+
+            {/* Top Teams */}
+            <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-white font-semibold">Top Teams</h2>
+                <button
+                  onClick={() => router.push(`/dashboard/tournaments/${id}/standings`)}
+                  className="text-violet-400 hover:text-violet-300 text-xs flex items-center gap-1 transition-colors"
+                >
+                  Standings <ArrowUpRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="space-y-0">
+                {t.topTeams.map((team) => (
+                  <div key={team.rank} className="flex items-center gap-3 py-3 border-b border-white/[0.04] last:border-0">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                      team.rank === 1 ? "bg-amber-500/20 text-amber-400" :
+                      team.rank === 2 ? "bg-slate-400/20 text-slate-400" :
+                      team.rank === 3 ? "bg-orange-500/20 text-orange-400" :
+                      "bg-white/[0.04] text-slate-500"
+                    }`}>
+                      {team.rank}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-medium truncate">{team.name}</p>
+                      <p className="text-slate-500 text-xs">{team.wins}W — {team.losses}L</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-violet-400 text-sm font-bold">{team.points}</p>
+                      <p className="text-slate-600 text-xs">pts</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+
+          {/* Quick Actions */}
+          <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { label: "Manage Teams",   href: "teams",         icon: Users,    color: "hover:border-violet-500/40 hover:bg-violet-500/5" },
+              { label: "View Matches",   href: "matches",       icon: Zap,      color: "hover:border-amber-500/40 hover:bg-amber-500/5" },
+              { label: "Standings",      href: "standings",     icon: BarChart2,color: "hover:border-emerald-500/40 hover:bg-emerald-500/5" },
+              { label: "Broadcast",      href: "broadcast",     icon: Globe,    color: "hover:border-blue-500/40 hover:bg-blue-500/5" },
+            ].map((action) => (
+              <button
+                key={action.label}
+                onClick={() => router.push(`/dashboard/tournaments/${id}/${action.href}`)}
+                className={`flex items-center gap-3 p-4 bg-[#0f1117] border border-white/[0.06] rounded-xl text-sm font-medium text-slate-300 transition-all ${action.color}`}
+              >
+                <action.icon className="w-4 h-4 flex-shrink-0" />
+                {action.label}
+              </button>
+            ))}
+          </div>
+
         </div>
       </div>
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-      `}</style>
-    </div>
+    </DashboardShell>
   );
 }

@@ -1,330 +1,303 @@
-﻿"use client";
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
-import TournamentNav from "@/components/tournament/TournamentNav";
+"use client";
+
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import DashboardShell from "@/components/ui/DashboardShell";
 import {
-  MessageSquare, Save, Check, ChevronLeft, Loader2,
-  ExternalLink, Zap, Bell, AlertCircle, Send, Bot,
-  Trophy, Users, Radio, Crown, Copy
+  MessageSquare,
+  ChevronRight,
+  CheckCircle2,
+  XCircle,
+  RefreshCw,
+  Send,
+  Copy,
+  Settings,
+  Bell,
+  Users,
+  Hash,
+  Zap,
+  AlertTriangle,
+  Plus,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 
-export default function TournamentDiscordPage() {
-  const params = useParams();
-  const id = params?.id as string;
-  const [tournament, setTournament] = useState<any>(null);
-  const [webhookUrl, setWebhookUrl] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+// ─── Types ────────────────────────────────────────────────────────────────────
+type BotStatus = "connected" | "disconnected" | "error";
 
-  useEffect(() => {
-    if (!id) return;
-    fetch(`/api/tournaments/${id}`)
-      .then(r => r.json())
-      .then(d => {
-        setTournament(d.tournament);
-        setWebhookUrl(d.tournament?.discord || "");
-      })
-      .finally(() => setLoading(false));
-  }, [id]);
+interface DiscordChannel {
+  id: string;
+  name: string;
+  type: "text" | "announcement" | "voice";
+  purpose: string;
+  autoPost: boolean;
+}
 
-  async function saveWebhook() {
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/tournaments/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ discord: webhookUrl.trim() }),
-      });
-      if (res.ok) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
-      }
-    } finally {
-      setSaving(false);
-    }
-  }
+interface AutoMessage {
+  id: string;
+  trigger: string;
+  channel: string;
+  message: string;
+  enabled: boolean;
+  lastSent?: string;
+}
 
-  async function sendTest() {
-    if (!webhookUrl.trim()) {
-      setTestResult({ success: false, message: "Enter a webhook URL first" });
-      return;
-    }
-    if (!webhookUrl.startsWith("https://discord.com/api/webhooks/") &&
-        !webhookUrl.startsWith("https://discordapp.com/api/webhooks/")) {
-      setTestResult({ success: false, message: "Invalid Discord webhook URL format" });
-      return;
-    }
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+const MOCK_BOT = {
+  status:      "connected" as BotStatus,
+  guildName:   "Champions Circuit S4",
+  guildId:     "1234567890",
+  botName:     "TournaOps Bot",
+  memberCount: 1247,
+  inviteUrl:   "https://discord.com/oauth2/authorize?client_id=xxx",
+};
 
-    setTesting(true);
-    setTestResult(null);
-    // Auto-save webhook first
-    try {
-      await fetch(`/api/tournaments/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ discord: webhookUrl.trim() }),
-      });
-    } catch {}
+const MOCK_CHANNELS: DiscordChannel[] = [
+  { id: "c1", name: "announcements",       type: "announcement", purpose: "Match announcements & results",    autoPost: true  },
+  { id: "c2", name: "match-results",       type: "text",         purpose: "Automated result posts",           autoPost: true  },
+  { id: "c3", name: "standings",           type: "text",         purpose: "Live standings updates",           autoPost: true  },
+  { id: "c4", name: "check-in",            type: "text",         purpose: "Team check-in notifications",      autoPost: true  },
+  { id: "c5", name: "general",             type: "text",         purpose: "General chat (read-only posts)",   autoPost: false },
+  { id: "c6", name: "bracket-updates",     type: "text",         purpose: "Bracket progression updates",     autoPost: false },
+];
 
+const MOCK_AUTOMATIONS: AutoMessage[] = [
+  { id: "a1", trigger: "Match Start",         channel: "#announcements",   message: "🎮 Match #{number} is now LIVE! {team1} vs {team2} — Bo{bestOf}",             enabled: true,  lastSent: "5m ago" },
+  { id: "a2", trigger: "Match Result",        channel: "#match-results",   message: "✅ Match #{number} Result: {winner} wins {score}! GGs to both teams.",          enabled: true,  lastSent: "18m ago" },
+  { id: "a3", trigger: "Check-In Open",       channel: "#check-in",        message: "⏰ Check-in is now OPEN for {team}! You have 15 minutes to check in.",          enabled: true,  lastSent: "1h ago" },
+  { id: "a4", trigger: "Standings Update",    channel: "#standings",       message: "📊 Standings updated after Round {round}. See the latest rankings below.",       enabled: true,  lastSent: "23m ago" },
+  { id: "a5", trigger: "Tournament Complete", channel: "#announcements",   message: "🏆 {winner} are your Season 4 Champions! Thank you to all participants!",       enabled: false  },
+  { id: "a6", trigger: "Stage Advance",       channel: "#bracket-updates", message: "🔥 {team} advances to the {stage}! Next match: {nextOpponent}",                 enabled: false  },
+];
 
-
-    try {
-      const testPayload = {
-        embeds: [{
-          title: "\uD83C\uDFC6 TournaOps Discord Test",
-          description: `Successfully connected **${tournament?.name || "your tournament"}** to Discord!\n\nMatch results, standings, and announcements will now be posted automatically.`,
-          color: 0xf59e0b,
-          fields: [
-            { name: "\u2705 Status", value: "Connected", inline: true },
-            { name: "\uD83D\uDD17 Tournament", value: tournament?.name || "Unknown", inline: true },
-          ],
-          footer: { text: "TournaOps.com" },
-          timestamp: new Date().toISOString(),
-        }],
-      };
-
-      const res = await fetch("/api/discord/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tournamentId: id, payload: testPayload }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setTestResult({ success: true, message: "\u2705 Test message sent! Check your Discord channel." });
-      } else {
-        setTestResult({ success: false, message: data.error || "Failed to send test message" });
-      }
-    } catch {
-      setTestResult({ success: false, message: "Network error. Please try again." });
-    } finally {
-      setTesting(false);
-    }
-  }
-
-  async function broadcast(type: "slot_list" | "standings_image" | "tournament_started" | "registration_open") {
-    setTesting(true);
-    setTestResult(null);
-    try {
-      const res = await fetch(`/api/tournaments/${id}/broadcast-discord`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setTestResult({ success: true, message: "\u2705 " + (data.message || "Broadcast sent!") });
-      } else {
-        setTestResult({ success: false, message: data.error || "Broadcast failed" });
-      }
-    } catch {
-      setTestResult({ success: false, message: "Network error" });
-    } finally {
-      setTesting(false);
-    }
-  }
-
-  if (loading) return (
-    <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <Loader2 style={{ width: "2rem", height: "2rem", color: "#f59e0b", animation: "spin 0.8s linear infinite" }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function BotStatusBadge({ status }: { status: BotStatus }) {
+  const map = {
+    connected:    { label: "Connected",    classes: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30", dot: "bg-emerald-400 animate-pulse" },
+    disconnected: { label: "Disconnected", classes: "bg-slate-500/15 text-slate-400 border-slate-500/30",       dot: "bg-slate-500" },
+    error:        { label: "Error",        classes: "bg-rose-500/15 text-rose-400 border-rose-500/30",          dot: "bg-rose-400 animate-pulse" },
+  };
+  const cfg = map[status];
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-semibold border ${cfg.classes}`}>
+      <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
+      {cfg.label}
+    </span>
   );
+}
 
-  const isConfigured = webhookUrl && (webhookUrl.startsWith("https://discord.com/api/webhooks/") || webhookUrl.startsWith("https://discordapp.com/api/webhooks/"));
+const CHANNEL_ICONS = {
+  text:         <Hash  className="w-3.5 h-3.5 text-slate-500" />,
+  announcement: <Bell  className="w-3.5 h-3.5 text-amber-500" />,
+  voice:        <Users className="w-3.5 h-3.5 text-blue-500"  />,
+};
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+export default function TournamentDiscordPage() {
+  const params  = useParams();
+  const router  = useRouter();
+  const id      = params?.id as string;
+
+  const [automations, setAutomations] = useState(MOCK_AUTOMATIONS);
+  const [channels,    setChannels]    = useState(MOCK_CHANNELS);
+  const [testMsg,     setTestMsg]     = useState("");
+
+  const toggleAutomation = (aid: string) =>
+    setAutomations(prev => prev.map(a => a.id === aid ? { ...a, enabled: !a.enabled } : a));
+
+  const toggleAutoPost = (cid: string) =>
+    setChannels(prev => prev.map(c => c.id === cid ? { ...c, autoPost: !c.autoPost } : c));
+
+  const navTabs = [
+    { label: "Overview",      href: `/dashboard/tournaments/${id}/overview` },
+    { label: "Teams",         href: `/dashboard/tournaments/${id}/teams` },
+    { label: "Stages",        href: `/dashboard/tournaments/${id}/stages` },
+    { label: "Matches",       href: `/dashboard/tournaments/${id}/matches` },
+    { label: "Match Results", href: `/dashboard/tournaments/${id}/match-results` },
+    { label: "Standings",     href: `/dashboard/tournaments/${id}/standings` },
+    { label: "Broadcast",     href: `/dashboard/tournaments/${id}/broadcast` },
+    { label: "Discord",       href: `/dashboard/tournaments/${id}/discord` },
+    { label: "Insights",      href: `/dashboard/tournaments/${id}/insights` },
+    { label: "Export",        href: `/dashboard/tournaments/${id}/export` },
+    { label: "Settings",      href: `/dashboard/tournaments/${id}/settings` },
+  ];
 
   return (
-    <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-      <Link href={`/dashboard/tournaments/${id}`} style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", color: "#9ca3af", fontSize: "0.75rem", textDecoration: "none", marginBottom: "1rem" }}>
-        <ChevronLeft style={{ width: "0.875rem", height: "0.875rem" }} />Back to Tournament
-      </Link>
+    <DashboardShell>
+      <div className="min-h-screen bg-[#080a0e] text-white">
 
-      <TournamentNav tournamentId={id} />
-
-      <div style={{ marginBottom: "1.5rem" }}>
-        <h1 style={{ fontSize: "clamp(1.5rem,4vw,2rem)", fontWeight: 800, color: "#fff", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <MessageSquare style={{ width: "1.75rem", height: "1.75rem", color: "#5865F2" }} />
-          Discord Integration
-        </h1>
-        <p style={{ color: "#6b7280", fontSize: "0.85rem", marginTop: "0.25rem" }}>
-          Auto-post match results and announcements to your Discord server
-        </p>
-      </div>
-
-      {/* Status Card */}
-      <div style={{
-        background: isConfigured ? "linear-gradient(135deg, rgba(34,197,94,0.1), rgba(16,185,129,0.05))" : "rgba(107,114,128,0.05)",
-        border: isConfigured ? "1px solid rgba(34,197,94,0.25)" : "1px solid rgba(255,255,255,0.08)",
-        borderRadius: "1rem", padding: "1.25rem", marginBottom: "1.5rem",
-        display: "flex", alignItems: "center", gap: "1rem",
-      }}>
-        <div style={{
-          width: "3rem", height: "3rem", borderRadius: "0.75rem",
-          background: isConfigured ? "rgba(34,197,94,0.15)" : "rgba(107,114,128,0.15)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          {isConfigured
-            ? <Check style={{ width: "1.5rem", height: "1.5rem", color: "#4ade80" }} />
-            : <Bell style={{ width: "1.5rem", height: "1.5rem", color: "#9ca3af" }} />
-          }
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#fff" }}>
-            {isConfigured ? "Discord Connected" : "Not Connected"}
-          </div>
-          <div style={{ fontSize: "0.8rem", color: "#9ca3af", marginTop: "0.125rem" }}>
-            {isConfigured
-              ? "Match results will auto-post to Discord when completed"
-              : "Add a webhook URL below to enable Discord notifications"}
-          </div>
-        </div>
-      </div>
-
-      {/* Webhook Config */}
-      <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1.5rem", marginBottom: "1.5rem" }}>
-        <h3 style={{ color: "#fff", fontWeight: 700, fontSize: "0.95rem", marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <Zap style={{ width: "1rem", height: "1rem", color: "#f59e0b" }} />
-          Webhook URL
-        </h3>
-        <input
-          type="url"
-          value={webhookUrl}
-          onChange={e => setWebhookUrl(e.target.value)}
-          placeholder="https://discord.com/api/webhooks/1234567890/abc..."
-          style={{
-            width: "100%", background: "rgba(0,0,0,0.3)",
-            border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.5rem",
-            padding: "0.75rem", color: "#fff", fontSize: "0.85rem",
-            fontFamily: "monospace", boxSizing: "border-box",
-          }}
-        />
-
-        {testResult && (
-          <div style={{
-            marginTop: "0.75rem", padding: "0.75rem 1rem",
-            background: testResult.success ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
-            border: testResult.success ? "1px solid rgba(34,197,94,0.25)" : "1px solid rgba(239,68,68,0.25)",
-            borderRadius: "0.5rem",
-            fontSize: "0.8rem",
-            color: testResult.success ? "#4ade80" : "#f87171",
-            display: "flex", alignItems: "center", gap: "0.5rem",
-          }}>
-            {testResult.success ? <Check style={{ width: "0.875rem", height: "0.875rem" }} /> : <AlertCircle style={{ width: "0.875rem", height: "0.875rem" }} />}
-            {testResult.message}
-          </div>
-        )}
-
-        <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem", flexWrap: "wrap" }}>
-          <button onClick={saveWebhook} disabled={saving}
-            style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", background: saved ? "#22c55e" : "#f59e0b", color: "#000", borderRadius: "0.625rem", padding: "0.625rem 1.25rem", border: "none", fontSize: "0.8rem", fontWeight: 700, cursor: saving ? "wait" : "pointer" }}>
-            {saved ? <><Check style={{ width: "0.875rem", height: "0.875rem" }} />Saved!</>
-              : saving ? <><Loader2 style={{ width: "0.875rem", height: "0.875rem", animation: "spin 0.8s linear infinite" }} />Saving...</>
-              : <><Save style={{ width: "0.875rem", height: "0.875rem" }} />Save Webhook</>}
-          </button>
-          <button onClick={sendTest} disabled={testing || !webhookUrl.trim()}
-            style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", background: "rgba(88,101,242,0.15)", color: "#818cf8", border: "1px solid rgba(88,101,242,0.3)", borderRadius: "0.625rem", padding: "0.625rem 1.25rem", fontSize: "0.8rem", fontWeight: 700, cursor: testing || !webhookUrl.trim() ? "not-allowed" : "pointer" }}>
-            {testing ? <><Loader2 style={{ width: "0.875rem", height: "0.875rem", animation: "spin 0.8s linear infinite" }} />Testing...</> : <><Send style={{ width: "0.875rem", height: "0.875rem" }} />Send Test Message</>}
-          </button>
-        </div>
-      </div>
-
-      {/* Manual Broadcast */}
-      <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1.5rem", marginBottom: "1.5rem" }}>
-        <h3 style={{ color: "#fff", fontWeight: 700, fontSize: "0.95rem", marginBottom: "0.5rem" }}>
-          Manual Broadcast
-        </h3>
-        <p style={{ color: "#6b7280", fontSize: "0.75rem", marginBottom: "1rem" }}>
-          Instantly post to Discord (in addition to automatic match posts)
-        </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.5rem" }}>
-          {[
-            { type: "slot_list", label: "Post Slot List", desc: "All registered teams", color: "#3b82f6" },
-            { type: "standings_image", label: "Post Standings Image", desc: "Visual leaderboard", color: "#f59e0b" },
-            { type: "registration_open", label: "Announce Registration", desc: "@everyone ping", color: "#4ade80" },
-            { type: "tournament_started", label: "Announce Tournament Live", desc: "@everyone ping", color: "#ef4444" },
-          ].map(btn => (
-            <button
-              key={btn.type}
-              onClick={() => broadcast(btn.type as any)}
-              disabled={testing || !isConfigured}
-              style={{
-                display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "0.25rem",
-                padding: "0.75rem 1rem",
-                background: `${btn.color}10`, border: `1px solid ${btn.color}30`,
-                borderRadius: "0.625rem", color: btn.color,
-                fontSize: "0.8rem", fontWeight: 700,
-                cursor: testing || !isConfigured ? "not-allowed" : "pointer",
-                opacity: testing || !isConfigured ? 0.5 : 1,
-                textAlign: "left",
-              }}
-            >
-              <span>{btn.label}</span>
-              <span style={{ fontSize: "0.65rem", fontWeight: 500, color: "#9ca3af" }}>{btn.desc}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Setup Guide */}
-      <div style={{ background: "rgba(88,101,242,0.05)", border: "1px solid rgba(88,101,242,0.2)", borderRadius: "1rem", padding: "1.5rem", marginBottom: "1.5rem" }}>
-        <h3 style={{ color: "#fff", fontWeight: 700, fontSize: "0.95rem", marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <Bot style={{ width: "1rem", height: "1rem", color: "#818cf8" }} />
-          How to Get a Discord Webhook URL
-        </h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-          {[
-            { step: "1", text: "Open Discord and go to your server settings" },
-            { step: "2", text: "Navigate to Integrations \u2192 Webhooks \u2192 New Webhook" },
-            { step: "3", text: "Give it a name (e.g. \"TournaOps Bot\") and select the channel" },
-            { step: "4", text: "Click Copy Webhook URL, paste it above, then Save" },
-            { step: "5", text: "Click Send Test Message to verify" },
-          ].map(s => (
-            <div key={s.step} style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
-              <div style={{ width: "1.5rem", height: "1.5rem", borderRadius: "50%", background: "rgba(88,101,242,0.2)", color: "#818cf8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.7rem", fontWeight: 800, flexShrink: 0 }}>{s.step}</div>
-              <p style={{ fontSize: "0.85rem", color: "#d1d5db", lineHeight: 1.5 }}>{s.text}</p>
+        {/* Header */}
+        <div className="border-b border-white/[0.06] bg-[#0a0c10]">
+          <div className="max-w-7xl mx-auto px-6 py-5">
+            <div className="flex items-center gap-2 text-slate-500 text-sm mb-3">
+              <button onClick={() => router.push("/dashboard/tournaments")} className="hover:text-slate-300 transition-colors">Tournaments</button>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <button onClick={() => router.push(`/dashboard/tournaments/${id}/overview`)} className="hover:text-slate-300 transition-colors">Champions Circuit S4</button>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <span className="text-slate-300">Discord</span>
             </div>
-          ))}
-        </div>
-        <a href="https://support.discord.com/hc/en-us/articles/228383668" target="_blank" rel="noopener noreferrer"
-          style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", marginTop: "1rem", padding: "0.5rem 1rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.5rem", color: "#818cf8", fontSize: "0.75rem", fontWeight: 600, textDecoration: "none" }}>
-          <ExternalLink style={{ width: "0.75rem", height: "0.75rem" }} />
-          Discord Official Guide
-        </a>
-      </div>
-
-      {/* What Gets Posted */}
-      <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "1rem", padding: "1.5rem" }}>
-        <h3 style={{ color: "#fff", fontWeight: 700, fontSize: "0.95rem", marginBottom: "1rem" }}>
-          What Gets Auto-Posted
-        </h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem" }}>
-          {[
-            { icon: Trophy, label: "Match Results", desc: "Top 5 + WWCD + top fragger", color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
-            { icon: Crown, label: "Chicken Dinner", desc: "Winner announcement", color: "#fbbf24", bg: "rgba(251,191,36,0.1)" },
-            { icon: Users, label: "Sponsors", desc: "Featured in every post", color: "#4ade80", bg: "rgba(34,197,94,0.1)" },
-            { icon: Radio, label: "Broadcast Links", desc: "OBS overlay URLs", color: "#a855f7", bg: "rgba(168,85,247,0.1)" },
-          ].map(item => {
-            const Icon = item.icon;
-            return (
-              <div key={item.label} style={{ display: "flex", gap: "0.625rem", alignItems: "flex-start", padding: "0.75rem", background: "rgba(255,255,255,0.02)", borderRadius: "0.625rem", border: "1px solid rgba(255,255,255,0.06)" }}>
-                <div style={{ width: "2rem", height: "2rem", borderRadius: "0.5rem", background: item.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Icon style={{ width: "1rem", height: "1rem", color: item.color }} />
-                </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
                 <div>
-                  <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#fff" }}>{item.label}</div>
-                  <div style={{ fontSize: "0.7rem", color: "#6b7280", marginTop: "0.125rem" }}>{item.desc}</div>
+                  <h1 className="text-2xl font-bold text-white">Discord Integration</h1>
+                  <p className="text-slate-500 text-sm mt-0.5">Auto-post match updates to your server</p>
+                </div>
+                <BotStatusBadge status={MOCK_BOT.status} />
+              </div>
+              {MOCK_BOT.status !== "connected" && (
+                <button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                  <Plus className="w-4 h-4" /> Connect Bot
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="flex gap-0 overflow-x-auto scrollbar-hide">
+              {navTabs.map((tab) => (
+                <button key={tab.label} onClick={() => router.push(tab.href)}
+                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Discord" ? "border-violet-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            {/* Left: Server info + channels */}
+            <div className="space-y-5">
+              {/* Server info */}
+              <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-5">
+                <h2 className="text-white font-semibold mb-4">Connected Server</h2>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-xl font-black text-white">
+                    C
+                  </div>
+                  <div>
+                    <p className="text-white font-semibold">{MOCK_BOT.guildName}</p>
+                    <p className="text-slate-500 text-xs flex items-center gap-1">
+                      <Users className="w-3 h-3" />{MOCK_BOT.memberCount.toLocaleString()} members
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 text-xs">Bot Name</span>
+                    <span className="text-slate-300 text-xs font-medium">{MOCK_BOT.botName}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 text-xs">Guild ID</span>
+                    <code className="text-slate-400 text-xs font-mono">{MOCK_BOT.guildId}</code>
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-4 pt-3 border-t border-white/[0.04]">
+                  <button className="flex-1 flex items-center justify-center gap-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 py-1.5 rounded-lg text-xs transition-colors">
+                    <RefreshCw className="w-3.5 h-3.5" /> Reconnect
+                  </button>
+                  <button className="flex-1 flex items-center justify-center gap-1.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 py-1.5 rounded-lg text-xs transition-colors">
+                    <XCircle className="w-3.5 h-3.5" /> Disconnect
+                  </button>
                 </div>
               </div>
-            );
-          })}
+
+              {/* Channels */}
+              <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-white font-semibold">Channels</h2>
+                  <button className="text-violet-400 hover:text-violet-300 text-xs transition-colors flex items-center gap-1">
+                    <Plus className="w-3.5 h-3.5" /> Add
+                  </button>
+                </div>
+                {channels.map((ch) => (
+                  <div key={ch.id} className="flex items-center gap-3 py-2.5 border-b border-white/[0.04] last:border-0">
+                    {CHANNEL_ICONS[ch.type]}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-xs font-medium">#{ch.name}</p>
+                      <p className="text-slate-600 text-xs truncate">{ch.purpose}</p>
+                    </div>
+                    <button
+                      onClick={() => toggleAutoPost(ch.id)}
+                      className={`flex-shrink-0 ${ch.autoPost ? "text-emerald-400" : "text-slate-700 hover:text-slate-500"} transition-colors`}
+                      title="Toggle auto-post"
+                    >
+                      {ch.autoPost ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: Automations + test message */}
+            <div className="lg:col-span-2 space-y-5">
+              {/* Automations */}
+              <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-white font-semibold">Auto-Messages</h2>
+                  <button className="flex items-center gap-1.5 bg-violet-600 hover:bg-violet-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
+                    <Plus className="w-3.5 h-3.5" /> New Rule
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {automations.map((auto) => (
+                    <div key={auto.id} className={`border rounded-xl p-4 transition-all ${auto.enabled ? "border-white/[0.08] bg-white/[0.01]" : "border-white/[0.04] opacity-60"}`}>
+                      <div className="flex items-start gap-3">
+                        <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${auto.enabled ? "bg-emerald-400" : "bg-slate-700"}`} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className="text-white text-sm font-medium">{auto.trigger}</span>
+                            <span className="text-violet-400 text-xs bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full">→ {auto.channel}</span>
+                            {auto.lastSent && (
+                              <span className="text-slate-600 text-xs">sent {auto.lastSent}</span>
+                            )}
+                          </div>
+                          <p className="text-slate-500 text-xs font-mono leading-relaxed bg-white/[0.02] rounded-lg px-3 py-2 border border-white/[0.04]">
+                            {auto.message}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button className="p-1.5 hover:bg-white/[0.06] rounded-lg text-slate-500 hover:text-slate-300 transition-colors">
+                            <Settings className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => toggleAutomation(auto.id)}
+                            className={`relative w-8 h-4 rounded-full transition-colors flex-shrink-0 ${auto.enabled ? "bg-violet-600" : "bg-white/[0.08]"}`}>
+                            <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${auto.enabled ? "left-4" : "left-0.5"}`} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Send test message */}
+              <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-5">
+                <h2 className="text-white font-semibold mb-3">Send Test Message</h2>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Type a test message to send to #announcements…"
+                    value={testMsg}
+                    onChange={(e) => setTestMsg(e.target.value)}
+                    className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500/50"
+                  />
+                  <button
+                    onClick={() => setTestMsg("")}
+                    disabled={!testMsg.trim()}
+                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <Send className="w-4 h-4" /> Send
+                  </button>
+                </div>
+                <p className="text-slate-600 text-xs mt-2">Message will be posted to #announcements as a test</p>
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
-
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
+    </DashboardShell>
   );
 }
