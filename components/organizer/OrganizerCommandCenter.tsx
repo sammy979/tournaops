@@ -1,267 +1,321 @@
-// components/organizer/OrganizerCommandCenter.tsx
-"use client"
-import { useState, useEffect, useCallback } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import {
-  Trophy, RefreshCw, Settings, Eye, ChevronDown, User,
-} from "lucide-react"
-import QuickActions from "./QuickActions"
-import TournamentHealth from "./TournamentHealth"
-import ResultsQueue, { PendingResult } from "./ResultsQueue"
-import NextMatch, { MatchInfo } from "./NextMatch"
-import RecentActivity, { ActivityItem } from "./RecentActivity"
-import type { HealthIssue } from "./TournamentHealth"
-import TournamentStatusManager from "@/components/tournament/TournamentStatusManager"
+"use client";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 
 interface Tournament {
-  id: string
-  name: string
-  status: string
+  id: string;
+  name: string;
+  status: string;
+  slug?: string;
 }
 
-interface OrganizerProfile {
-  displayName: string
-  organizerName?: string
-  organizerLogo?: string
+interface HealthItem {
+  label: string;
+  status: "good" | "warn" | "error" | "unknown";
+  note?: string;
 }
 
-interface TournamentSummary {
-  totalTeams: number
-  totalMatches: number
-  completedMatches: number
-  pendingResults: number
-  readyTeams: number
-  warnings: number
-  discordConnected: boolean
-  currentStage?: string
-  status: string
-}
+export function OrganizerCommandCenter() {
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [selected, setSelected] = useState<string>("");
+  const [summary, setSummary] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
-export default function OrganizerCommandCenter() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [selectedId, setSelectedId] = useState<string>("")
-  const [showSelect, setShowSelect] = useState(false)
-  const [tournaments, setTournaments] = useState<Tournament[]>([])
-  const [selected, setSelected] = useState<Tournament | null>(null)
-  const [profile, setProfile] = useState<OrganizerProfile | null>(null)
-  const [summary, setSummary] = useState<TournamentSummary | null>(null)
-  const [healthIssues, setHealthIssues] = useState<HealthIssue[]>([])
-  const [pendingResults, setPendingResults] = useState<PendingResult[]>([])
-  const [nextMatch, setNextMatch] = useState<MatchInfo | null>(null)
-  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([])
+  useEffect(() => {
+    fetch("/api/dashboard/tournaments")
+      .then(r => r.json())
+      .then(d => {
+        const list = d.tournaments ?? d ?? [];
+        setTournaments(list);
+        const live = list.find((t: Tournament) => t.status === "LIVE");
+        const first = live ?? list[0];
+        if (first) setSelected(first.id);
+      })
+      .catch(() => {});
+  }, []);
 
-  const fetchData = useCallback(async (tournamentId?: string) => {
-    try {
-      const id = tournamentId || selectedId
-      const [tournamentsRes, summaryRes, profileRes] = await Promise.all([
-        fetch("/api/dashboard/tournaments"),
-        id ? fetch(`/api/dashboard/tournaments/${id}/summary`) : Promise.resolve(null),
-        fetch("/api/organizer/profile"),
-      ])
+  useEffect(() => {
+    if (!selected) return;
+    setLoading(true);
+    fetch(`/api/dashboard/tournaments/${selected}/summary`)
+      .then(r => r.json())
+      .then(d => setSummary(d))
+      .catch(() => setSummary(null))
+      .finally(() => setLoading(false));
+  }, [selected]);
 
-      const td = await tournamentsRes.json()
-      const list: Tournament[] = td.tournaments || []
-      setTournaments(list)
+  const health: HealthItem[] = summary ? [
+    { label: "Teams",       status: summary.teamCount > 0 ? "good" : "warn",    note: `${summary.teamCount ?? 0} registered`       },
+    { label: "Stages",      status: summary.stageCount > 0 ? "good" : "warn",   note: `${summary.stageCount ?? 0} configured`      },
+    { label: "Results",     status: summary.pendingResults > 0 ? "warn" : "good", note: `${summary.pendingResults ?? 0} pending`   },
+    { label: "Discord",     status: summary.discordConnected ? "good" : "unknown", note: summary.discordConnected ? "Connected" : "Not configured" },
+    { label: "Standings",   status: "good",    note: "Auto-calculated"            },
+    { label: "Progression", status: summary.stageCount > 0 ? "good" : "unknown", note: summary.stageCount > 0 ? "Configured" : "Not set" },
+  ] : [];
 
-      const pd = await profileRes.json().catch(() => ({ profile: null }))
-      if (pd.profile) setProfile(pd.profile)
+  const QUICK = [
+    { label: "Add Match Result",   href: (id: string) => `/dashboard/tournaments/${id}/match-results`  },
+    { label: "AI Screenshot",      href: (id: string) => `/dashboard/tournaments/${id}/ai-import`       },
+    { label: "Manage Teams",       href: (id: string) => `/dashboard/tournaments/${id}/teams`           },
+    { label: "Group Seeding",      href: (id: string) => `/dashboard/tournaments/${id}/stages`          },
+    { label: "Standings",          href: (id: string) => `/dashboard/tournaments/${id}/standings`       },
+    { label: "OBS Overlays",       href: (id: string) => `/dashboard/tournaments/${id}/overlays`        },
+    { label: "Discord",            href: (id: string) => `/dashboard/tournaments/${id}/discord`         },
+    { label: "Broadcast",          href: (id: string) => `/dashboard/tournaments/${id}/broadcast`       },
+    { label: "Export",             href: (id: string) => `/dashboard/tournaments/${id}/export`          },
+    { label: "Settings",           href: (id: string) => `/dashboard/tournaments/${id}/settings`        },
+  ];
 
-      if (id && summaryRes) {
-        const sd = await summaryRes.json()
-        setSummary(sd.summary || null)
-        setHealthIssues(sd.healthIssues || [])
-        setPendingResults(sd.pendingResults || [])
-        setNextMatch(sd.nextMatch || null)
-        setRecentActivity(sd.recentActivity || [])
-      }
-
-      const sel = list.find((t) => t.id === id) || list[0] || null
-      setSelected(sel)
-      if (!selectedId && sel) setSelectedId(sel.id)
-    } catch (err) {
-      console.error("Command Center fetch error:", err)
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
-    }
-  }, [selectedId])
-
-  useEffect(() => { fetchData() }, [])
-
-  const handleChange = (id: string) => {
-    setSelectedId(id)
-    setShowSelect(false)
-    setLoading(true)
-    fetchData(id)
-  }
-
-  const handleRefresh = () => {
-    setRefreshing(true)
-    fetchData()
-  }
-
-  const organizerDisplayName = profile?.organizerName || profile?.displayName || "Organizer"
-
-  const cards = [
-    { label: "Teams", value: summary?.totalTeams ?? 0, link: selectedId ? `/dashboard/tournaments/${selectedId}/teams` : undefined, color: "#60a5fa" },
-    { label: "Matches", value: summary ? `${summary.completedMatches}/${summary.totalMatches}` : "0/0", link: selectedId ? `/dashboard/tournaments/${selectedId}/match-results` : undefined, color: "#818cf8" },
-    { label: "Results Pending", value: summary?.pendingResults ?? 0, link: selectedId ? `/dashboard/tournaments/${selectedId}/match-results` : undefined, color: summary?.pendingResults ? "#fb923c" : "#6b7280", highlight: !!(summary?.pendingResults) },
-    { label: "Teams Ready", value: summary?.readyTeams ?? 0, link: selectedId ? `/dashboard/tournaments/${selectedId}/stages` : undefined, color: "#4ade80" },
-    { label: "Warnings", value: summary?.warnings ?? 0, link: selectedId ? `/dashboard/tournaments/${selectedId}/overview` : undefined, color: summary?.warnings ? "#facc15" : "#6b7280", highlight: !!(summary?.warnings) },
-    { label: "Discord", value: summary?.discordConnected ? "Connected" : "Disconnected", link: "/dashboard/discord", color: summary?.discordConnected ? "#4ade80" : "#f87171", isText: true },
-  ]
+  const dotColor = (s: HealthItem["status"]) =>
+    s === "good" ? "var(--success)" : s === "warn" ? "var(--warning)" : s === "error" ? "var(--danger)" : "var(--muted-light)";
 
   return (
-    <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "1.5rem" }}>
+    <div style={{ minHeight: "100vh", background: "var(--black-rich)", paddingTop: "var(--nav-height)" }}>
+
       {/* Header */}
-      <div style={{
-        background: "linear-gradient(135deg, rgba(20,20,30,0.95), rgba(30,30,45,0.9))",
-        borderRadius: "1rem", padding: "1.25rem 1.5rem", marginBottom: "1rem",
-        border: "1px solid rgba(255,255,255,0.06)",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.875rem" }}>
-            {profile?.organizerLogo ? (
-              <img
-                src={profile.organizerLogo} alt=""
-                style={{ width: "2.75rem", height: "2.75rem", borderRadius: "0.625rem", objectFit: "cover", border: "1px solid rgba(255,255,255,0.1)" }}
-                onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }}
-              />
-            ) : (
-              <div style={{ width: "2.75rem", height: "2.75rem", borderRadius: "0.625rem",
-                background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-                display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Trophy style={{ width: "1.375rem", height: "1.375rem", color: "#fff" }} />
-              </div>
-            )}
+      <div style={{ background: "var(--charcoal-deep)", borderBottom: "1px solid var(--border)", padding: "24px 0" }}>
+        <div className="container">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "16px" }}>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.125rem" }}>
-                <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.15em", textTransform: "uppercase" }}>
-                  TournaOps Organizer
-                </span>
-                <Link href="/dashboard/settings/organizer" style={{ fontSize: "0.65rem", color: "#a78bfa", textDecoration: "none", padding: "0.125rem 0.375rem", background: "rgba(167,139,250,0.1)", borderRadius: "0.25rem" }}>
-                  Edit
-                </Link>
-              </div>
-              <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#fff", margin: 0, lineHeight: 1.2 }}>
-                {organizerDisplayName}
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted-light)", marginBottom: "6px" }}>
+                Organizer
+              </p>
+              <h1 style={{ fontFamily: "var(--font-display)", fontWeight: 900, fontSize: "28px", textTransform: "uppercase", letterSpacing: "0.02em", color: "var(--white)" }}>
+                Command Center
               </h1>
-              <div style={{ fontSize: "0.75rem", color: "#9ca3af", marginTop: "0.125rem" }}>Command Center</div>
             </div>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-            <div style={{ position: "relative" }}>
-              <button onClick={() => setShowSelect(!showSelect)}
-                style={{ display: "flex", alignItems: "center", gap: "0.5rem",
-                  background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: "0.75rem", padding: "0.5rem 0.75rem", fontSize: "0.875rem", color: "#fff",
-                  fontWeight: 600, cursor: "pointer" }}>
-                <span style={{ maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {selected?.name || "Select Tournament"}
-                </span>
-                <ChevronDown style={{ width: "1rem", height: "1rem" }} />
-              </button>
-              {showSelect && (
-                <div style={{ position: "absolute", right: 0, top: "calc(100% + 0.25rem)", background: "#1a1a24",
-                  borderRadius: "0.75rem", border: "1px solid rgba(255,255,255,0.1)", minWidth: "220px",
-                  zIndex: 50, overflow: "hidden", boxShadow: "0 10px 40px rgba(0,0,0,0.5)" }}>
-                  {tournaments.length === 0 ? (
-                    <div style={{ padding: "0.75rem", color: "#9ca3af", fontSize: "0.8rem", textAlign: "center" }}>No tournaments</div>
-                  ) : tournaments.map((t) => (
-                    <button key={t.id} onClick={() => handleChange(t.id)}
-                      style={{ width: "100%", textAlign: "left", padding: "0.625rem 0.875rem", fontSize: "0.875rem",
-                        background: t.id === selectedId ? "rgba(139,92,246,0.15)" : "transparent",
-                        color: t.id === selectedId ? "#a78bfa" : "#e5e7eb", border: "none", cursor: "pointer",
-                        fontWeight: t.id === selectedId ? 600 : 400 }}>
-                      {t.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {selectedId && summary && (
-              <TournamentStatusManager
-                tournamentId={selectedId}
-                currentStatus={summary.status}
-                onStatusChange={() => fetchData(selectedId)}
-              />
-            )}
-
-            <button onClick={handleRefresh} disabled={refreshing}
-              style={{ padding: "0.5rem", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: "0.75rem", color: "#fff", cursor: "pointer" }}>
-              <RefreshCw style={{ width: "1rem", height: "1rem", animation: refreshing ? "spin 1s linear infinite" : "none" }} />
-            </button>
-
-            {selectedId && (
-              <button onClick={() => router.push(`/dashboard/tournaments/${selectedId}/settings`)}
-                style={{ padding: "0.5rem", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: "0.75rem", color: "#fff", cursor: "pointer" }}>
-                <Settings style={{ width: "1rem", height: "1rem" }} />
-              </button>
-            )}
+            {/* Tournament selector */}
+            <select
+              value={selected}
+              onChange={e => setSelected(e.target.value)}
+              className="ops-select"
+              style={{ width: "280px" }}
+            >
+              {tournaments.map(t => (
+                <option key={t.id} value={t.id}>{t.name} — {t.status}</option>
+              ))}
+            </select>
           </div>
         </div>
+      </div>
 
-        {selected && summary && (
-          <div style={{ marginTop: "0.75rem", display: "flex", flexWrap: "wrap", gap: "0.5rem 1rem", fontSize: "0.8125rem", color: "#9ca3af" }}>
-            <span style={{ color: "#fff", fontWeight: 600 }}>{selected.name}</span>
-            <span>•</span>
-            <span>{summary.totalTeams} Teams</span>
-            {summary.currentStage && (<><span>•</span><span>{summary.currentStage}</span></>)}
-            <span>•</span>
-            <span>{summary.completedMatches}/{summary.totalMatches} Matches</span>
+      <div className="container" style={{ padding: "24px" }}>
+        {loading ? (
+          <div style={{ padding: "60px", textAlign: "center" }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--muted-light)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+              Loading...
+            </p>
+          </div>
+        ) : !summary && !loading ? (
+          <div style={{ padding: "60px", textAlign: "center", background: "var(--charcoal)", border: "1px solid var(--border)" }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--muted-light)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "12px" }}>
+              No Tournament Selected
+            </p>
+            <Link href="/dashboard/tournaments/create" className="btn btn-primary btn-sm">
+              Create Tournament
+            </Link>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 300px", gap: "16px" }}>
+
+            {/* Col 1 — Current & Results */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+
+              {/* Current Match */}
+              <div className="control-module">
+                <div className="control-module-header">
+                  <span className="control-module-title">Current Match</span>
+                  {summary?.currentMatch?.status === "LIVE" && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                      <span className="live-dot" />
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", fontWeight: 700, color: "var(--live)" }}>Live</span>
+                    </div>
+                  )}
+                </div>
+                <div className="control-module-body">
+                  {summary?.currentMatch ? (
+                    <>
+                      <p style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "22px", textTransform: "uppercase", color: "var(--white)", marginBottom: "4px" }}>
+                        Match {summary.currentMatch.matchNumber}
+                      </p>
+                      <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--muted-light)", marginBottom: "16px" }}>
+                        {summary.currentMatch.map ?? "—"}
+                      </p>
+                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                        <Link href={`/dashboard/tournaments/${selected}/match-results`} className="btn btn-primary btn-sm">
+                          Add Result
+                        </Link>
+                        <Link href={`/dashboard/tournaments/${selected}/standings`} className="btn btn-secondary btn-sm">
+                          Standings
+                        </Link>
+                      </div>
+                    </>
+                  ) : (
+                    <p style={{ fontSize: "13px", color: "var(--muted-light)" }}>No active match</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Results Queue */}
+              <div className="control-module">
+                <div className="control-module-header">
+                  <span className="control-module-title">Results Queue</span>
+                  {(summary?.pendingResults ?? 0) > 0 && (
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", fontWeight: 700, color: "var(--warning)", border: "1px solid var(--warning)", padding: "2px 8px" }}>
+                      {summary.pendingResults} Pending
+                    </span>
+                  )}
+                </div>
+                <div className="control-module-body">
+                  {(summary?.pendingResults ?? 0) > 0 ? (
+                    <>
+                      <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "14px" }}>
+                        {summary.pendingResults} result{summary.pendingResults !== 1 ? "s" : ""} awaiting review.
+                      </p>
+                      <Link href={`/dashboard/tournaments/${selected}/match-results`} className="btn btn-primary btn-sm">
+                        Review Results
+                      </Link>
+                    </>
+                  ) : (
+                    <p style={{ fontSize: "13px", color: "var(--muted-light)" }}>All results verified</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Next Match */}
+              <div className="control-module">
+                <div className="control-module-header">
+                  <span className="control-module-title">Next Match</span>
+                </div>
+                <div className="control-module-body">
+                  {summary?.nextMatch ? (
+                    <>
+                      <p style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "20px", textTransform: "uppercase", color: "var(--white)", marginBottom: "4px" }}>
+                        Match {summary.nextMatch.matchNumber}
+                      </p>
+                      <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--muted-light)" }}>
+                        {summary.nextMatch.map ?? "—"}
+                      </p>
+                    </>
+                  ) : (
+                    <p style={{ fontSize: "13px", color: "var(--muted-light)" }}>No upcoming match scheduled</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Col 2 — Standings & Activity */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+
+              {/* Live Standings */}
+              <div className="control-module" style={{ flex: 1 }}>
+                <div className="control-module-header">
+                  <span className="control-module-title">Live Standings</span>
+                  <Link href={`/dashboard/tournaments/${selected}/standings`} style={{ fontFamily: "var(--font-mono)", fontSize: "10px", fontWeight: 700, color: "var(--accent)", textDecoration: "none", letterSpacing: "0.06em" }}>
+                    Full →
+                  </Link>
+                </div>
+                <div style={{ padding: "0" }}>
+                  {(summary?.standings ?? []).length === 0 ? (
+                    <div style={{ padding: "20px 16px" }}>
+                      <p style={{ fontSize: "12px", color: "var(--muted-light)" }}>No results yet</p>
+                    </div>
+                  ) : (
+                    (summary.standings as any[]).slice(0, 8).map((s: any, i: number) => (
+                      <div key={s.teamId ?? i} style={{
+                        display: "flex", alignItems: "center", gap: "10px",
+                        padding: "9px 16px",
+                        borderBottom: "1px solid var(--border-subtle)",
+                        background: i === 0 ? "rgba(255,215,0,0.03)" : "transparent",
+                      }}>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: i < 3 ? "var(--gold-bright)" : "var(--muted-light)", minWidth: "22px", fontWeight: 700 }}>
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <span style={{ flex: 1, fontSize: "12px", fontWeight: 600, color: "var(--white)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {s.teamName}
+                        </span>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: "12px", fontWeight: 700, color: "var(--white)" }}>
+                          {s.totalPoints ?? s.points ?? 0}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Recent Activity */}
+              <div className="control-module">
+                <div className="control-module-header">
+                  <span className="control-module-title">Recent Activity</span>
+                </div>
+                <div className="control-module-body">
+                  {(summary?.recentActivity ?? []).length === 0 ? (
+                    <p style={{ fontSize: "12px", color: "var(--muted-light)" }}>No recent activity</p>
+                  ) : (
+                    (summary.recentActivity as any[]).slice(0, 4).map((a: any, i: number) => (
+                      <div key={i} style={{ marginBottom: "10px", paddingBottom: "10px", borderBottom: i < 3 ? "1px solid var(--border-subtle)" : "none" }}>
+                        <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{a.message ?? a.action}</p>
+                        <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--muted-light)", marginTop: "2px" }}>{a.time ?? a.createdAt}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Col 3 — Health + Quick Actions */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+
+              {/* Tournament Health */}
+              <div className="control-module">
+                <div className="control-module-header">
+                  <span className="control-module-title">Tournament Health</span>
+                </div>
+                <div style={{ padding: "8px 16px 16px" }}>
+                  {health.map(h => (
+                    <div key={h.label} className="health-row">
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <div className="health-dot" style={{ background: dotColor(h.status) }} />
+                        <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--white)" }}>{h.label}</span>
+                      </div>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--muted-light)" }}>{h.note}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="control-module">
+                <div className="control-module-header">
+                  <span className="control-module-title">Quick Actions</span>
+                </div>
+                <div style={{ padding: "8px" }}>
+                  {QUICK.map(a => (
+                    <Link
+                      key={a.label}
+                      href={selected ? a.href(selected) : "#"}
+                      style={{
+                        display: "block", padding: "9px 12px",
+                        fontSize: "12px", fontWeight: 600,
+                        color: "var(--text-secondary)",
+                        textDecoration: "none",
+                        borderBottom: "1px solid var(--border-subtle)",
+                        transition: "color 0.15s",
+                        letterSpacing: "0.01em",
+                      }}
+                    >
+                      {a.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+            </div>
           </div>
         )}
       </div>
-
-      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}} @keyframes spin{to{transform:rotate(360deg)}}`}</style>
-
-      {/* Summary Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "0.75rem", marginBottom: "1rem" }}>
-        {cards.map((card) => (
-          <button key={card.label}
-            onClick={() => card.link && router.push(card.link)}
-            disabled={!card.link}
-            style={{
-              background: card.highlight ? "rgba(251,146,60,0.08)" : "rgba(30,30,40,0.6)",
-              borderRadius: "0.875rem", padding: "0.875rem 1rem", textAlign: "left",
-              border: `1px solid ${card.highlight ? "rgba(251,146,60,0.25)" : "rgba(255,255,255,0.06)"}`,
-              cursor: card.link ? "pointer" : "default",
-            }}>
-            <div style={{ fontSize: card.isText ? "1rem" : "1.5rem", fontWeight: 700, color: card.color }}>{card.value}</div>
-            <div style={{ fontSize: "0.75rem", color: "#9ca3af", fontWeight: 500, marginTop: "0.125rem" }}>{card.label}</div>
-          </button>
-        ))}
-      </div>
-
-      {/* Quick Actions */}
-      {selectedId && <QuickActions tournamentId={selectedId} />}
-
-      {/* Main Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "1rem", marginTop: "1rem" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          <ResultsQueue tournamentId={selectedId} results={pendingResults} loading={loading} />
-          <RecentActivity activities={recentActivity} loading={loading} />
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          <NextMatch tournamentId={selectedId} match={nextMatch} loading={loading} />
-          <TournamentHealth tournamentId={selectedId} issues={healthIssues} loading={loading} />
-          {selectedId && (
-            <button onClick={() => router.push(`/dashboard/tournaments/${selectedId}/overview`)}
-              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem",
-                border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.75rem", padding: "0.625rem",
-                fontSize: "0.875rem", fontWeight: 600, color: "#9ca3af", background: "rgba(30,30,40,0.6)", cursor: "pointer" }}>
-              <Eye style={{ width: "1rem", height: "1rem" }} /> Full Tournament Overview
-            </button>
-          )}
-        </div>
-      </div>
     </div>
-  )
+  );
 }
+
+export default OrganizerCommandCenter;
