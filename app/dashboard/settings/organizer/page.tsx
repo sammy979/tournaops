@@ -1,252 +1,256 @@
-// app/dashboard/settings/organizer/page.tsx
-"use client"
-import { useEffect, useState } from "react"
-import { Save, Loader2, CheckCircle, Trophy, Image as ImageIcon, User } from "lucide-react"
+import { getSession } from "@/lib/auth/session";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import Link from "next/link";
+import OrganizerProfileForm from "@/components/organizer/OrganizerProfileForm";
 
-interface Profile {
-  displayName: string
-  organizerName: string
-  organizerLogo?: string | null
-  organizerBio?: string | null
+export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Organizer Profile — TournaOps",
+  description: "Manage your organizer identity.",
+};
+
+async function getUserAndStats(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      username: true,
+      displayName: true,
+      avatar: true,
+      isPro: true,
+      organizerName: true,
+      organizerLogo: true,
+      organizerBio: true,
+    },
+  });
+
+  const tournaments = await prisma.tournament.findMany({
+    where: { userId },
+    select: {
+      id: true,
+      status: true,
+    },
+  });
+
+  const stats = {
+    total: tournaments.length,
+    live: tournaments.filter((t) => (t.status || "").toLowerCase() === "live").length,
+    upcoming: tournaments.filter((t) => {
+      const s = (t.status || "").toLowerCase();
+      return s === "upcoming" || s === "registration" || s === "draft";
+    }).length,
+    completed: tournaments.filter((t) => (t.status || "").toLowerCase() === "completed").length,
+  };
+
+  return { user, stats };
 }
 
-export default function OrganizerSettingsPage() {
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState("")
+export default async function OrganizerProfilePage() {
+  const session = await getSession();
+  if (!session) redirect("/auth/signin");
 
-  const [organizerName, setOrganizerName] = useState("")
-  const [organizerLogo, setOrganizerLogo] = useState("")
-  const [organizerBio, setOrganizerBio] = useState("")
-
-  useEffect(() => {
-    fetch("/api/organizer/profile")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.profile) {
-          setProfile(d.profile)
-          setOrganizerName(d.profile.organizerName || "")
-          setOrganizerLogo(d.profile.organizerLogo || "")
-          setOrganizerBio(d.profile.organizerBio || "")
-        }
-      })
-      .catch(() => setError("Failed to load profile"))
-      .finally(() => setLoading(false))
-  }, [])
-
-  const handleSave = async () => {
-    setError("")
-    setSaving(true)
-    setSaved(false)
-
-    try {
-      const res = await fetch("/api/organizer/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ organizerName, organizerLogo, organizerBio }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || "Save failed")
-      } else {
-        setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
-      }
-    } catch {
-      setError("Network error")
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  if (loading) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "40vh" }}>
-      <Loader2 style={{ width: "2rem", height: "2rem", color: "#f59e0b", animation: "spin 1s linear infinite" }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
-  )
-
-  const input = {
-    width: "100%",
-    background: "rgba(255,255,255,0.05)",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: "0.5rem",
-    padding: "0.625rem 0.75rem",
-    fontSize: "0.875rem",
-    color: "#fff",
-    outline: "none",
-  } as const
+  const { user, stats } = await getUserAndStats(session.userId);
+  if (!user) redirect("/auth/signin");
 
   return (
-    <div style={{ maxWidth: "700px", margin: "0 auto", padding: "2rem 1.5rem" }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2rem" }}>
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
-            <Trophy style={{ width: "1.25rem", height: "1.25rem", color: "#f59e0b" }} />
-            <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em" }}>
-              Organizer Identity
-            </span>
-          </div>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#fff", margin: 0 }}>Organizer Profile</h1>
-          <p style={{ color: "#9ca3af", fontSize: "0.875rem", marginTop: "0.375rem", margin: 0 }}>
-            Set the name and branding that appears on your tournaments
-          </p>
-        </div>
-
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          style={{
-            display: "flex", alignItems: "center", gap: "0.5rem",
-            background: saved ? "#10b981" : "#a855f7",
-            color: "#fff", fontWeight: 600,
-            padding: "0.625rem 1rem", borderRadius: "0.625rem",
-            fontSize: "0.875rem", border: "none",
-            cursor: saving ? "wait" : "pointer",
-            opacity: saving ? 0.6 : 1,
-          }}
-        >
-          {saving ? (
-            <><Loader2 style={{ width: "1rem", height: "1rem", animation: "spin 1s linear infinite" }} /> Saving...</>
-          ) : saved ? (
-            <><CheckCircle style={{ width: "1rem", height: "1rem" }} /> Saved!</>
-          ) : (
-            <><Save style={{ width: "1rem", height: "1rem" }} /> Save Profile</>
-          )}
-        </button>
-      </div>
-
-      {/* Preview Card */}
+    <div style={{ minHeight: "100vh", background: "var(--black)" }}>
+      {/* HEADER */}
       <div style={{
-        background: "linear-gradient(135deg, rgba(139,92,246,0.1), rgba(59,130,246,0.05))",
-        border: "1px solid rgba(139,92,246,0.2)",
-        borderRadius: "1rem",
-        padding: "1.5rem",
-        marginBottom: "1.5rem",
+        background: "var(--charcoal)",
+        borderBottom: "1px solid var(--border)",
       }}>
-        <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#a78bfa", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "1rem" }}>
-          Preview
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          {organizerLogo ? (
-            <img
-              src={organizerLogo}
-              alt="Logo"
-              style={{ width: "3.5rem", height: "3.5rem", borderRadius: "0.75rem", objectFit: "cover", border: "1px solid rgba(255,255,255,0.1)" }}
-              onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }}
-            />
-          ) : (
-            <div style={{
-              width: "3.5rem", height: "3.5rem", borderRadius: "0.75rem",
-              background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <User style={{ width: "1.5rem", height: "1.5rem", color: "#6b7280" }} />
-            </div>
-          )}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "#fff" }}>
-              {organizerName.trim() || profile?.displayName || "Your Organizer Name"}
-            </div>
-            {organizerBio && (
-              <div style={{ fontSize: "0.8125rem", color: "#9ca3af", marginTop: "0.25rem" }}>
-                {organizerBio}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Form */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-        {/* Organizer Name */}
-        <div>
-          <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "#e5e7eb", marginBottom: "0.375rem" }}>
-            Organizer / Brand Name *
-          </label>
-          <input
-            type="text"
-            value={organizerName}
-            onChange={(e) => setOrganizerName(e.target.value)}
-            placeholder="e.g. Nepal Esports Arena, Team RHYN, Kais Gaming"
-            maxLength={60}
-            style={input}
-          />
-          <p style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.375rem", margin: 0 }}>
-            This name will appear on your tournaments, overlays, and Discord announcements.
-            {" "}<span style={{ color: "#9ca3af" }}>{organizerName.length}/60</span>
-          </p>
-        </div>
-
-        {/* Logo */}
-        <div>
-          <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "#e5e7eb", marginBottom: "0.375rem" }}>
-            Organizer Logo URL
-          </label>
-          <input
-            type="url"
-            value={organizerLogo}
-            onChange={(e) => setOrganizerLogo(e.target.value)}
-            placeholder="https://... (paste image URL)"
-            style={input}
-          />
-          <p style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.375rem", margin: 0 }}>
-            Square image works best. Upload to Imgur, ImgBB, or your hosting.
-          </p>
-        </div>
-
-        {/* Bio */}
-        <div>
-          <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "#e5e7eb", marginBottom: "0.375rem" }}>
-            Bio / Description
-          </label>
-          <textarea
-            value={organizerBio}
-            onChange={(e) => setOrganizerBio(e.target.value)}
-            placeholder="Tell people about your tournaments and community..."
-            maxLength={500}
-            rows={4}
-            style={{ ...input, resize: "vertical" }}
-          />
-          <p style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.375rem", margin: 0 }}>
-            <span style={{ color: "#9ca3af" }}>{organizerBio.length}/500</span>
-          </p>
-        </div>
-
-        {error && (
+        <div className="container-ops" style={{ padding: "24px 24px 0" }}>
+          {/* BREADCRUMB */}
           <div style={{
-            background: "rgba(239,68,68,0.08)",
-            border: "1px solid rgba(239,68,68,0.3)",
-            borderRadius: "0.5rem",
-            padding: "0.625rem 0.875rem",
-            fontSize: "0.8125rem",
-            color: "#f87171",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            marginBottom: "12px",
+            fontFamily: "Barlow Condensed, sans-serif",
+            fontSize: "0.72rem",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
           }}>
-            {error}
+            <Link href="/dashboard" style={{ color: "var(--white-40)", textDecoration: "none" }}>Dashboard</Link>
+            <span style={{ color: "var(--white-20)" }}>→</span>
+            <Link href="/dashboard/settings" style={{ color: "var(--white-40)", textDecoration: "none" }}>Settings</Link>
+            <span style={{ color: "var(--white-20)" }}>→</span>
+            <span style={{ color: "var(--gold)" }}>Organizer Profile</span>
           </div>
-        )}
+
+          <div className="section-label">Public Identity</div>
+          <h1 style={{
+            fontFamily: "Barlow Condensed, sans-serif",
+            fontWeight: 900,
+            fontSize: "1.8rem",
+            letterSpacing: "0.02em",
+            textTransform: "uppercase",
+            color: "var(--white)",
+            lineHeight: 1,
+            paddingBottom: "24px",
+          }}>Organizer Profile</h1>
+        </div>
       </div>
 
-      {/* Tips */}
-      <div style={{
-        marginTop: "2rem",
-        background: "rgba(59,130,246,0.05)",
-        border: "1px solid rgba(59,130,246,0.15)",
-        borderRadius: "0.75rem",
-        padding: "1rem",
-      }}>
-        <div style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#60a5fa", marginBottom: "0.5rem" }}>
-          💡 Tips for a Great Organizer Profile
+      {/* PROFILE CARD PREVIEW + FORM */}
+      <div className="container-ops" style={{ padding: "32px 24px" }}>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "360px 1fr",
+          gap: "32px",
+          alignItems: "start",
+        }}>
+          {/* LEFT — PREVIEW */}
+          <div>
+            <div className="section-label">Preview</div>
+            <div style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderTop: "3px solid var(--gold)",
+              overflow: "hidden",
+            }}>
+              {/* Cover strip */}
+              <div style={{
+                height: "60px",
+                background: "linear-gradient(135deg, rgba(201,168,76,0.1) 0%, rgba(230,57,70,0.05) 100%)",
+                borderBottom: "1px solid var(--border)",
+              }} />
+
+              <div style={{ padding: "0 20px 20px", position: "relative" }}>
+                {/* Logo/Avatar */}
+                <div style={{
+                  width: "72px",
+                  height: "72px",
+                  background: "var(--surface-2)",
+                  border: "2px solid var(--charcoal)",
+                  marginTop: "-36px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
+                }}>
+                  {user.organizerLogo ? (
+                    <img
+                      src={user.organizerLogo}
+                      alt="Logo"
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  ) : (
+                    <span style={{
+                      fontFamily: "Barlow Condensed, sans-serif",
+                      fontWeight: 900,
+                      fontSize: "1.8rem",
+                      color: "var(--gold)",
+                    }}>
+                      {(user.organizerName || user.displayName || user.username || "O")[0].toUpperCase()}
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ marginTop: "12px" }}>
+                  <div style={{
+                    fontFamily: "Barlow Condensed, sans-serif",
+                    fontWeight: 800,
+                    fontSize: "1.2rem",
+                    letterSpacing: "0.02em",
+                    color: "var(--white)",
+                    textTransform: "uppercase",
+                  }}>
+                    {user.organizerName || user.displayName || user.username}
+                  </div>
+                  {user.isPro && (
+                    <div style={{
+                      display: "inline-block",
+                      background: "var(--gold-dim)",
+                      border: "1px solid var(--gold)",
+                      padding: "2px 8px",
+                      marginTop: "4px",
+                      fontFamily: "Barlow Condensed, sans-serif",
+                      fontWeight: 700,
+                      fontSize: "0.65rem",
+                      letterSpacing: "0.15em",
+                      color: "var(--gold)",
+                      textTransform: "uppercase",
+                    }}>Pro Organizer</div>
+                  )}
+                </div>
+
+                {user.organizerBio && (
+                  <p style={{
+                    fontSize: "0.82rem",
+                    color: "var(--white-70)",
+                    lineHeight: 1.6,
+                    marginTop: "12px",
+                    whiteSpace: "pre-wrap",
+                  }}>{user.organizerBio}</p>
+                )}
+
+                {/* Stats */}
+                <div style={{
+                  marginTop: "20px",
+                  paddingTop: "16px",
+                  borderTop: "1px solid var(--border)",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4, 1fr)",
+                  gap: "12px",
+                }}>
+                  {[
+                    { label: "Total", value: stats.total },
+                    { label: "Live", value: stats.live, color: "var(--red)" },
+                    { label: "Upcoming", value: stats.upcoming, color: "var(--blue)" },
+                    { label: "Done", value: stats.completed, color: "var(--green)" },
+                  ].map((stat) => (
+                    <div key={stat.label} style={{ textAlign: "center" }}>
+                      <div style={{
+                        fontFamily: "JetBrains Mono, monospace",
+                        fontWeight: 700,
+                        fontSize: "1.1rem",
+                        color: stat.color || "var(--white)",
+                      }}>{stat.value}</div>
+                      <div style={{
+                        fontFamily: "Barlow Condensed, sans-serif",
+                        fontSize: "0.6rem",
+                        letterSpacing: "0.12em",
+                        color: "var(--white-40)",
+                        textTransform: "uppercase",
+                        marginTop: "2px",
+                      }}>{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              marginTop: "16px",
+              padding: "12px 14px",
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderLeft: "3px solid var(--border-2)",
+              fontSize: "0.75rem",
+              color: "var(--white-40)",
+              lineHeight: 1.6,
+            }}>
+              This preview shows how your organizer identity appears on public tournament pages.
+            </div>
+          </div>
+
+          {/* RIGHT — FORM */}
+          <div>
+            <div className="section-label">Edit Profile</div>
+            <OrganizerProfileForm
+              initial={{
+                organizerName: user.organizerName || "",
+                organizerLogo: user.organizerLogo || "",
+                organizerBio: user.organizerBio || "",
+              }}
+            />
+          </div>
         </div>
-        <ul style={{ margin: 0, paddingLeft: "1.25rem", fontSize: "0.8125rem", color: "#9ca3af", lineHeight: 1.6 }}>
-          <li>Use a memorable name that reflects your community or brand</li>
-          <li>Add a clean square logo (200x200px or larger works best)</li>
-          <li>Keep your bio short and clear about what tournaments you run</li>
-        </ul>
       </div>
     </div>
-  )
+  );
 }
