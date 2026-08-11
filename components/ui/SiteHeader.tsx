@@ -61,6 +61,15 @@ export default function SiteHeader({ session }: { session?: any }) {
         </nav>
 
         {/* RIGHT ACTIONS */}
+          <div className="hide-mobile" style={{
+            fontFamily: "JetBrains Mono, monospace",
+            fontSize: "0.68rem",
+            color: "var(--white-40)",
+            border: "1px solid var(--border)",
+            padding: "3px 8px",
+            marginRight: "4px",
+          }}>Ctrl+K</div>
+
         <div className="hide-mobile" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           {session ? (
             <>

@@ -3,6 +3,7 @@ import "./globals.css";
 import { ToastProvider } from "@/components/ui/Toast";
 import { DialogProvider } from "@/lib/use-confirm";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import CommandPalette from "@/components/CommandPalette";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.tournaops.com"),
@@ -67,6 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <DialogProvider>
           <ToastProvider>
             {children}
+            <CommandPalette />
           </ToastProvider>
         </DialogProvider>
         <GoogleAnalytics gaId="G-03N4EE8LBN" />
