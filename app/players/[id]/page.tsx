@@ -1,8 +1,11 @@
-import PublicNav from "@/components/marketing/PublicNav";
-import PublicFooter from "@/components/marketing/PublicFooter";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { getSession } from "@/lib/auth/session";
+import SiteHeader from "@/components/ui/SiteHeader";
+import SiteFooter from "@/components/ui/SiteFooter";
+
+export const dynamic = "force-dynamic";
 
 async function getPlayer(id: string) {
   try {
@@ -13,14 +16,9 @@ async function getPlayer(id: string) {
           select: {
             id: true,
             name: true,
+            logo: true,
             tournament: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
-                status: true,
-                game: true,
-              },
+              select: { id: true, slug: true, name: true, status: true },
             },
           },
         },
@@ -31,191 +29,186 @@ async function getPlayer(id: string) {
   }
 }
 
-async function getPlayerStats(playerId: string) {
-  try {
-    return await prisma.playerStat.findMany({
-      where: { playerId },
-      include: {
-        match: {
-          include: {
-            round: {
-              include: {
-                tournament: {
-                  select: { id: true, name: true, slug: true },
-                },
-              },
-            },
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-  } catch {
-    return [];
-  }
-}
-
-export default async function PlayerProfilePage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function PlayerPage({ params }: { params: { id: string } }) {
+  const session = await getSession();
   const player = await getPlayer(params.id);
   if (!player) notFound();
 
-  const stats = await getPlayerStats(params.id);
-
-  const totalKills  = stats.reduce((s: number, r: any) => s + (r.kills || 0), 0);
-  const totalMatches = stats.length;
-  const avgKills    = totalMatches > 0 ? (totalKills / totalMatches).toFixed(1) : "0";
-
   return (
     <>
-      <PublicNav />
-
-      <main style={{ paddingTop: "56px", minHeight: "100vh", background: "var(--black-rich)" }}>
-
-        {/* Header */}
-        <div style={{ background: "var(--charcoal-deep)", borderBottom: "1px solid var(--border)", padding: "40px 0" }}>
-          <div className="container">
-            <p className="label-section" style={{ marginBottom: "10px" }}>Player Profile</p>
-            <h1 style={{
+      <SiteHeader session={session} />
+      <main style={{ minHeight: "100vh", background: "var(--black)" }}>
+        <div style={{
+          background: "var(--charcoal)",
+          borderBottom: "1px solid var(--border)",
+        }}>
+          <div className="container-ops" style={{ padding: "40px 24px" }}>
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              marginBottom: "16px",
               fontFamily: "Barlow Condensed, sans-serif",
-              fontWeight: 900,
-              fontSize: "clamp(28px, 5vw, 48px)",
+              fontSize: "0.72rem",
+              letterSpacing: "0.1em",
               textTransform: "uppercase",
-              letterSpacing: "0.02em",
-              color: "var(--white)",
-              marginBottom: "8px",
             }}>
-              {(player as any).name}
-            </h1>
-            {(player as any).team && (
-              <p style={{ color: "var(--muted-light)", fontSize: "14px" }}>
-                Team:{" "}
-                <span style={{ color: "var(--accent)", fontWeight: 600 }}>
-                  {(player as any).team.name}
-                </span>
-                {(player as any).team.tournament && (
-                  <>
-                    {" "}&middot;{" "}
-                    <Link
-                      href={`/tournaments/${(player as any).team.tournament.slug}`}
-                      style={{ color: "var(--muted-light)", textDecoration: "underline" }}
-                    >
-                      {(player as any).team.tournament.name}
-                    </Link>
-                  </>
+              <Link href="/tournaments" style={{ color: "var(--white-40)", textDecoration: "none" }}>Tournaments</Link>
+              <span style={{ color: "var(--white-20)" }}>→</span>
+              {player.team?.tournament && (
+                <>
+                  <Link href={`/tournaments/${player.team.tournament.slug || player.team.tournament.id}`} style={{ color: "var(--white-40)", textDecoration: "none" }}>
+                    {player.team.tournament.name}
+                  </Link>
+                  <span style={{ color: "var(--white-20)" }}>→</span>
+                </>
+              )}
+              <span style={{ color: "var(--gold)" }}>Player</span>
+            </div>
+
+            <div style={{ display: "flex", gap: "24px", alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{
+                width: "96px",
+                height: "96px",
+                background: "var(--surface-2)",
+                border: "1px solid var(--border)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                overflow: "hidden",
+              }}>
+                {player.photo ? (
+                  <img src={player.photo} alt={player.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <span style={{
+                    fontFamily: "Barlow Condensed, sans-serif",
+                    fontWeight: 900,
+                    fontSize: "2.4rem",
+                    color: "var(--gold)",
+                  }}>{player.name[0].toUpperCase()}</span>
                 )}
-              </p>
-            )}
+              </div>
+
+              <div>
+                <div className="section-label">Player Profile</div>
+                <h1 style={{
+                  fontFamily: "Barlow Condensed, sans-serif",
+                  fontWeight: 900,
+                  fontSize: "2.4rem",
+                  color: "var(--white)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.02em",
+                  lineHeight: 1,
+                  marginBottom: "8px",
+                }}>{player.name}</h1>
+                <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                  {player.ign && (
+                    <span style={{
+                      fontFamily: "JetBrains Mono, monospace",
+                      fontSize: "0.82rem",
+                      color: "var(--gold)",
+                    }}>@{player.ign}</span>
+                  )}
+                  {player.role && (
+                    <span style={{
+                      fontFamily: "Barlow Condensed, sans-serif",
+                      fontWeight: 700,
+                      fontSize: "0.72rem",
+                      letterSpacing: "0.12em",
+                      color: "var(--white-40)",
+                      textTransform: "uppercase",
+                      padding: "3px 10px",
+                      border: "1px solid var(--border)",
+                    }}>{player.role}</span>
+                  )}
+                  {player.isCaptain && <span className="badge-warning">Captain</span>}
+                  {player.isSubstitute && <span className="badge-upcoming">Sub</span>}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="section" style={{ paddingTop: "40px" }}>
-          <div className="container">
-
-            {/* Stat Cards */}
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-              gap: "16px",
-              marginBottom: "40px",
-            }}>
-              {[
-                { label: "Total Kills",    value: totalKills    },
-                { label: "Matches Played", value: totalMatches  },
-                { label: "Avg Kills/Match", value: avgKills     },
-              ].map((stat) => (
-                <div key={stat.label} style={{
-                  background: "var(--charcoal)",
-                  border: "1px solid var(--border)",
-                  padding: "24px",
-                  textAlign: "center",
-                }}>
-                  <p style={{
-                    fontFamily: "JetBrains Mono, monospace",
-                    fontSize: "32px",
-                    fontWeight: 700,
-                    color: "var(--white)",
-                    marginBottom: "6px",
+        <div className="container-ops" style={{ padding: "32px 24px" }}>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 320px",
+            gap: "32px",
+            alignItems: "start",
+          }}>
+            <div>
+              <div className="section-label">Player Info</div>
+              <div style={{
+                border: "1px solid var(--border)",
+                background: "var(--surface)",
+              }}>
+                {[
+                  { label: "Name", value: player.name },
+                  { label: "IGN", value: player.ign || "—" },
+                  { label: "PUBG ID", value: player.pubgId || "—" },
+                  { label: "Role", value: player.role || "—" },
+                  { label: "Country", value: player.country || "—" },
+                  { label: "Team", value: player.team?.name || "—" },
+                ].map((row, i, arr) => (
+                  <div key={row.label} style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "12px 16px",
+                    borderBottom: i < arr.length - 1 ? "1px solid var(--border)" : "none",
                   }}>
-                    {stat.value}
-                  </p>
-                  <p style={{
-                    fontSize: "11px",
-                    color: "var(--muted-light)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                  }}>
-                    {stat.label}
-                  </p>
-                </div>
-              ))}
+                    <span style={{
+                      fontFamily: "Barlow Condensed, sans-serif",
+                      fontWeight: 600,
+                      fontSize: "0.72rem",
+                      letterSpacing: "0.1em",
+                      color: "var(--white-40)",
+                      textTransform: "uppercase",
+                    }}>{row.label}</span>
+                    <span style={{
+                      fontFamily: "Barlow Condensed, sans-serif",
+                      fontWeight: 700,
+                      fontSize: "0.85rem",
+                      color: "var(--white)",
+                      textTransform: "uppercase",
+                    }}>{row.value}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Match History */}
-            <h2 style={{
-              fontFamily: "Barlow Condensed, sans-serif",
-              fontWeight: 800,
-              fontSize: "20px",
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-              color: "var(--white)",
-              marginBottom: "16px",
-            }}>
-              Match History
-            </h2>
-
-            {stats.length === 0 ? (
-              <div style={{
-                padding: "60px",
-                textAlign: "center",
-                background: "var(--charcoal)",
-                border: "1px solid var(--border)",
-              }}>
-                <p style={{ color: "var(--muted-light)", fontSize: "14px" }}>
-                  No match stats recorded yet.
-                </p>
-              </div>
-            ) : (
-              <div style={{ border: "1px solid var(--border)", overflow: "hidden" }} className="scroll-x">
-                <table className="standings-table" style={{ background: "var(--charcoal)" }}>
-                  <thead>
-                    <tr>
-                      <th>Tournament</th>
-                      <th style={{ textAlign: "right" }}>Match</th>
-                      <th style={{ textAlign: "right" }}>Kills</th>
-                      <th style={{ textAlign: "right" }}>Damage</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stats.map((s: any) => (
-                      <tr key={s.id}>
-                        <td style={{ color: "var(--text-secondary)", fontSize: "13px" }}>
-                          {s.match?.round?.tournament?.name ?? "—"}
-                        </td>
-                        <td style={{ textAlign: "right", fontFamily: "JetBrains Mono, monospace", fontSize: "12px", color: "var(--text-secondary)" }}>
-                          {s.match?.matchNumber ?? "—"}
-                        </td>
-                        <td style={{ textAlign: "right", fontFamily: "JetBrains Mono, monospace", fontSize: "12px", color: "var(--white)" }}>
-                          {s.kills ?? 0}
-                        </td>
-                        <td style={{ textAlign: "right", fontFamily: "JetBrains Mono, monospace", fontSize: "12px", color: "var(--text-secondary)" }}>
-                          {s.damage ?? "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {player.team && (
+              <div>
+                <div className="section-label">Team</div>
+                <Link
+                  href={`/tournaments/${player.team.tournament?.slug || player.team.tournament?.id}`}
+                  style={{
+                    display: "block",
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    borderTop: "3px solid var(--gold)",
+                    padding: "20px",
+                    textDecoration: "none",
+                  }}
+                >
+                  <div style={{
+                    fontFamily: "Barlow Condensed, sans-serif",
+                    fontWeight: 800,
+                    fontSize: "1.1rem",
+                    color: "var(--white)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                    marginBottom: "8px",
+                  }}>{player.team.name}</div>
+                  <div style={{ fontSize: "0.8rem", color: "var(--white-40)" }}>
+                    {player.team.tournament?.name}
+                  </div>
+                </Link>
               </div>
             )}
-
           </div>
         </div>
       </main>
-
-      <PublicFooter />
+      <SiteFooter />
     </>
   );
 }

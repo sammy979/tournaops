@@ -7,6 +7,7 @@ import LiveTournamentsSection from "@/components/marketing/LiveTournamentsSectio
 import WorkflowSection from "@/components/marketing/WorkflowSection";
 import BroadcastSection from "@/components/marketing/BroadcastSection";
 import DiscordSection from "@/components/marketing/DiscordSection";
+import OpsAISection from "@/components/marketing/OpsAISection";
 import OrganizerCTA from "@/components/marketing/OrganizerCTA";
 
 export const dynamic = "force-dynamic";
@@ -14,9 +15,7 @@ export const dynamic = "force-dynamic";
 async function getHomeData() {
   try {
     const tournaments = await prisma.tournament.findMany({
-      where: {
-        isPublic: true,
-      },
+      where: { isPublic: true },
       orderBy: { createdAt: "desc" },
       take: 12,
       select: {
@@ -68,6 +67,7 @@ export default async function HomePage() {
         <LiveTournamentsSection tournaments={tournaments} />
         <WorkflowSection />
         <BroadcastSection />
+        <OpsAISection />
         <DiscordSection />
         <OrganizerCTA />
       </main>
