@@ -1,226 +1,71 @@
-﻿"use client";
-import SponsorTicker from "@/components/tournament/SponsorTicker";
-import { useEffect, useState, use } from "react";
+"use client";
 
-interface Branding {
-  sponsors?: Array<{ id: string; name: string; logo: string; tier: string; website?: string }>;
-  primaryColor?: string;
-  organizerName?: string;
-  logoUrl?: string;
+import { useState, useEffect } from "react";
+import { Clock, Zap } from "lucide-react";
+
+const MOCK = {
+  team1: { name: "Team Void",  tag: "VOD", color: "#7C3AED" },
+  team2: { name: "Team Storm", tag: "STM", color: "#2563EB" },
+  stage: "Quarterfinals", bestOf: 3, map: "TBD",
+  startsIn: 900, // seconds
+};
+
+function fmt(s: number) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
 }
 
-interface Organizer {
-  displayName?: string;
-  username?: string;
-  avatar?: string;
-}
-
-interface Standing {
-  teamId: string;
-  teamName: string;
-  teamTag: string | null;
-  teamLogo: string | null;
-  totalPoints: number;
-  totalKills: number;
-  rank: number;
-}
-
-interface OverlayData {
-  tournament: { id: string; name: string; status: string } | null;
-  standings: Standing[];
-  organizer: Organizer | null;
-  branding: Branding | null;
-}
-
-export default function NextMatchOverlay({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
-  const { token } = use(params);
-  const [data, setData] = useState<OverlayData | null>(null);
-  const [now, setNow] = useState(new Date());
+export default function NextMatchOverlay() {
+  const [secs, setSecs] = useState(MOCK.startsIn);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-    async function load() {
-      try {
-        const res = await fetch(`/api/overlay/${token}`);
-        if (!res.ok) return;
-        const json = await res.json();
-        if (mounted) setData(json);
-      } catch {}
-    }
-    load();
-    const dataInterval = setInterval(load, 5000);
-    const clockInterval = setInterval(() => setNow(new Date()), 1000);
-    return () => {
-      mounted = false;
-      clearInterval(dataInterval);
-      clearInterval(clockInterval);
-    };
-  }, [token]);
-
-  const primaryColor = data?.branding?.primaryColor || "#f59e0b";
-  const accentColor = "#3b82f6";
-  const organizerName =
-    data?.branding?.organizerName ||
-    data?.organizer?.displayName ||
-    data?.organizer?.username ||
-    "TournaOps";
-  const organizerLogo = data?.branding?.logoUrl || data?.organizer?.avatar || null;
-  const tournamentName = data?.tournament?.name || "";
-  const standings = data?.standings || [];
-
-  const timeStr = now.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
+    setTimeout(() => setVisible(true), 100);
+    const i = setInterval(() => setSecs(s => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(i);
+  }, []);
 
   return (
-    <>
-      <link
-        href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700;900&display=swap"
-        rel="stylesheet"
-      />
-      <style>{`
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: transparent !important; overflow: hidden; }
-        @keyframes fadeUp {
-          0% { transform: translateY(30px); opacity: 0; }
-          100% { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes clockPulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.6; }
-        }
-        @keyframes shimmer {
-          0% { background-position: -200% center; }
-          100% { background-position: 200% center; }
-        }
-        @keyframes borderGlow {
-          0%, 100% { box-shadow: 0 0 30px ${accentColor}30, 0 20px 60px rgba(0,0,0,0.5); }
-          50% { box-shadow: 0 0 50px ${accentColor}50, 0 20px 60px rgba(0,0,0,0.5); }
-        }
-      `}</style>
-
-      <div
-        style={{
-          width: "1920px",
-          height: "1080px",
-          position: "relative",
-          overflow: "hidden",
-          background: "transparent",
-          fontFamily: "Rajdhani, sans-serif",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {/* Background glow */}
-        <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse 900px 600px at 50% 50%, ${accentColor}10 0%, transparent 70%)`, pointerEvents: "none" }} />
-
-        {/* Organizer badge */}
-        {(organizerLogo || organizerName) && (
-          <div style={{ position: "absolute", top: "48px", right: "60px", display: "flex", alignItems: "center", gap: "10px", background: "rgba(0,0,0,0.65)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: "999px", padding: "8px 20px" }}>
-            {organizerLogo && <img src={organizerLogo} alt="" style={{ width: "28px", height: "28px", borderRadius: "50%", objectFit: "cover" }} />}
-            <span style={{ color: "rgba(255,255,255,0.8)", fontSize: "16px", fontWeight: 700, letterSpacing: "0.08em" }}>{organizerName}</span>
+    <div className="w-full h-screen bg-transparent flex items-end justify-center pb-8">
+      <div className={`transition-all duration-700 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+        {/* 800×200 OBS source */}
+        <div className="w-[800px] bg-gradient-to-r from-black/95 via-[#0a0814]/95 to-black/95 border border-white/[0.12] rounded-2xl overflow-hidden backdrop-blur-sm shadow-2xl">
+          <div className="flex items-center gap-2 px-5 py-2 border-b border-white/[0.06] bg-white/[0.02]">
+            <Clock className="w-3.5 h-3.5 text-blue-400" />
+            <span className="text-blue-400 text-xs font-black uppercase tracking-widest">Next Match</span>
+            <span className="ml-auto text-white font-black text-sm font-mono tabular-nums">{fmt(secs)}</span>
           </div>
-        )}
-
-        {/* Watermark */}
-        <div style={{ position: "absolute", bottom: "40px", right: "60px", color: "rgba(255,255,255,0.18)", fontSize: "13px", fontWeight: 700, letterSpacing: "0.15em" }}>TOURNAOPS.COM</div>
-
-        {/* Main card */}
-        <div
-          style={{
-            width: "840px",
-            background: "linear-gradient(135deg, rgba(0,0,0,0.95), rgba(10,15,30,0.92))",
-            borderRadius: "24px",
-            border: `2px solid ${accentColor}60`,
-            overflow: "hidden",
-            animation: "borderGlow 3s ease-in-out infinite",
-          }}
-        >
-          {/* Header bar */}
-          <div style={{ background: `linear-gradient(90deg, ${accentColor}, ${accentColor}cc)`, padding: "14px 28px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <span style={{ fontSize: "22px" }}>&#x1F3AE;</span>
-              <span style={{ color: "#fff", fontSize: "16px", fontWeight: 900, letterSpacing: "0.25em", textTransform: "uppercase" }}>NEXT MATCH</span>
-            </div>
-            <div style={{ color: "rgba(255,255,255,0.9)", fontSize: "13px", fontWeight: 700, letterSpacing: "0.08em" }}>
-              STARTING SOON
-            </div>
-          </div>
-
-          {/* Content */}
-          <div style={{ padding: "40px 36px", textAlign: "center" }}>
-            {/* Tournament name */}
-            <div style={{ fontSize: "36px", fontWeight: 900, color: "#ffffff", letterSpacing: "-0.02em", lineHeight: 1, marginBottom: "8px", textTransform: "uppercase" }}>
-              {tournamentName || "TOURNAMENT"}
-            </div>
-            <div style={{ fontSize: "13px", fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.3em", marginBottom: "36px" }}>
-              GET READY FOR THE NEXT MATCH
-            </div>
-
-            {/* Clock */}
-            <div style={{ background: `${accentColor}12`, border: `2px solid ${accentColor}35`, borderRadius: "16px", padding: "28px", marginBottom: "36px" }}>
-              <div style={{ fontSize: "11px", fontWeight: 700, color: `${accentColor}bb`, letterSpacing: "0.3em", marginBottom: "8px" }}>CURRENT TIME</div>
-              <div style={{ fontSize: "72px", fontWeight: 900, color: accentColor, fontFamily: "Rajdhani, monospace", lineHeight: 1, letterSpacing: "0.05em", animation: "clockPulse 2s ease-in-out infinite" }}>
-                {timeStr}
+          <div className="flex items-center gap-6 px-6 py-5">
+            {/* Team 1 */}
+            <div className="flex-1 flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg flex-shrink-0"
+                style={{ background: MOCK.team1.color }}>{MOCK.team1.tag[0]}</div>
+              <div>
+                <p className="text-white font-black text-xl">{MOCK.team1.name}</p>
+                <p className="text-white/30 text-xs font-mono">[{MOCK.team1.tag}]</p>
               </div>
             </div>
-
-            {/* Participating teams preview */}
-            {standings.length > 0 && (
-              <div style={{ animation: "fadeUp 0.6s ease 0.3s forwards", opacity: 0 }}>
-                <div style={{ fontSize: "11px", fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.25em", marginBottom: "16px" }}>
-                  {standings.length} TEAMS COMPETING
-                </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", justifyContent: "center" }}>
-                  {standings.slice(0, 16).map((team) => (
-                    <div
-                      key={team.teamId}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        background: "rgba(255,255,255,0.04)",
-                        border: "1px solid rgba(255,255,255,0.08)",
-                        borderRadius: "8px",
-                        padding: "6px 12px",
-                      }}
-                    >
-                      {team.teamLogo && (
-                        <img src={team.teamLogo} alt="" style={{ width: "18px", height: "18px", borderRadius: "3px", objectFit: "cover" }} />
-                      )}
-                      <span style={{ fontSize: "12px", fontWeight: 700, color: "rgba(255,255,255,0.75)" }}>
-                        {team.teamTag ? `[${team.teamTag}]` : team.teamName}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+            {/* VS */}
+            <div className="text-center flex-shrink-0">
+              <p className="text-white/20 font-black text-2xl">VS</p>
+              <p className="text-white/40 text-xs mt-1">Bo{MOCK.bestOf} · {MOCK.stage}</p>
+            </div>
+            {/* Team 2 */}
+            <div className="flex-1 flex items-center justify-end gap-3">
+              <div className="text-right">
+                <p className="text-white font-black text-xl">{MOCK.team2.name}</p>
+                <p className="text-white/30 text-xs font-mono">[{MOCK.team2.tag}]</p>
               </div>
-            )}
-
-            {!data && (
-              <div style={{ color: "rgba(255,255,255,0.25)", fontSize: "16px", fontWeight: 700, letterSpacing: "0.15em" }}>LOADING...</div>
-            )}
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg flex-shrink-0"
+                style={{ background: MOCK.team2.color }}>{MOCK.team2.tag[0]}</div>
+            </div>
           </div>
-
-          {/* Footer */}
-          <div style={{ padding: "8px 28px", background: "rgba(0,0,0,0.4)", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ color: "rgba(255,255,255,0.25)", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em" }}>MATCH WILL BEGIN SHORTLY</div>
-            <div style={{ color: primaryColor, fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em" }}>TOURNAOPS.COM</div>
+          <div className="flex items-center justify-center pb-2">
+            <span className="text-white/10 text-xs font-bold tracking-widest">TOURNAOPS</span>
           </div>
         </div>
-      
-        {data?.branding?.sponsors && data?.branding?.sponsors.length > 0 && (
-          <SponsorTicker sponsors={(data?.branding?.sponsors ?? []) as any} primaryColor={primaryColor} variant="rotate" position="bottom" />
-        )}
       </div>
-    </>
+    </div>
   );
 }
