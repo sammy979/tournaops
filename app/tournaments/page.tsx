@@ -14,27 +14,16 @@ export const metadata = {
 async function getTournaments(params: {
   status?: string;
   format?: string;
-  region?: string;
   search?: string;
 }) {
-  const where: any = {
-    isPublic: true,
-  };
+  const where: any = { isPublic: true };
 
   if (params.status && params.status !== "ALL") {
-    if (params.status === "REGISTRATION") {
-      where.status = { in: ["REGISTRATION", "UPCOMING"] };
-    } else {
-      where.status = params.status;
-    }
+    where.status = params.status.toLowerCase();
   }
 
   if (params.format && params.format !== "ALL") {
     where.format = params.format;
-  }
-
-  if (params.region && params.region !== "ALL") {
-    where.region = params.region;
   }
 
   if (params.search) {
@@ -43,27 +32,21 @@ async function getTournaments(params: {
 
   const tournaments = await prisma.tournament.findMany({
     where,
-    orderBy: [
-      { status: "asc" },
-      { startDate: "desc" },
-      { createdAt: "desc" },
-    ],
+    orderBy: [{ createdAt: "desc" }],
     take: 50,
     select: {
       id: true,
+      slug: true,
       name: true,
       status: true,
-      startDate: true,
-      endDate: true,
       maxTeams: true,
       game: true,
       format: true,
-      region: true,
       prizePool: true,
-      entryFee: true,
       coverImage: true,
-      organizer: {
-        select: { name: true, username: true },
+      createdAt: true,
+      createdBy: {
+        select: { displayName: true, username: true },
       },
       _count: { select: { teams: true } },
     },
@@ -71,19 +54,22 @@ async function getTournaments(params: {
 
   return tournaments.map((t: any) => ({
     id: t.id,
+    slug: t.slug,
     name: t.name,
-    status: t.status,
-    startDate: t.startDate?.toISOString() ?? null,
-    endDate: t.endDate?.toISOString() ?? null,
+    status: (t.status || "").toUpperCase(),
+    startDate: null as string | null,
+    endDate: null as string | null,
     maxTeams: t.maxTeams,
     teamCount: t._count.teams,
-    game: t.game ?? "PUBG MOBILE",
-    format: t.format ?? null,
-    region: t.region ?? null,
-    prizePool: t.prizePool ?? null,
-    entryFee: t.entryFee ?? null,
-    coverImage: t.coverImage ?? null,
-    organizer: t.organizer ?? null,
+    game: t.game || "PUBG MOBILE",
+    format: t.format || null,
+    region: null as string | null,
+    prizePool: t.prizePool || null,
+    entryFee: null as string | null,
+    coverImage: t.coverImage || null,
+    organizer: t.createdBy
+      ? { name: t.createdBy.displayName, username: t.createdBy.username }
+      : null,
   }));
 }
 
@@ -96,7 +82,6 @@ export default async function TournamentsPage({
   const tournaments = await getTournaments({
     status: searchParams.status,
     format: searchParams.format,
-    region: searchParams.region,
     search: searchParams.search,
   });
 
@@ -104,7 +89,7 @@ export default async function TournamentsPage({
     all: tournaments.length,
     live: tournaments.filter((t) => t.status === "LIVE").length,
     upcoming: tournaments.filter((t) =>
-      t.status === "UPCOMING" || t.status === "REGISTRATION"
+      t.status === "UPCOMING" || t.status === "REGISTRATION" || t.status === "DRAFT"
     ).length,
     completed: tournaments.filter((t) => t.status === "COMPLETED").length,
   };

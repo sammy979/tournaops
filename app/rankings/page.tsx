@@ -13,43 +13,44 @@ export const metadata = {
 
 async function getRankingsData() {
   try {
-    const teams = await prisma.team.findMany({
+    const progressions = await prisma.teamProgression.findMany({
       where: {
-        tournament: {
-          isPublic: true,
-          status: { in: ["COMPLETED", "LIVE"] },
-        },
+        tournament: { isPublic: true },
       },
+      orderBy: { points: "desc" },
+      take: 100,
       select: {
         id: true,
-        name: true,
+        teamId: true,
+        teamName: true,
         points: true,
         kills: true,
-        placement: true,
+        wwcds: true,
+        matchesPlayed: true,
+        finalPosition: true,
         tournament: {
           select: {
             id: true,
+            slug: true,
             name: true,
             status: true,
             format: true,
           },
         },
       },
-      orderBy: { points: "desc" },
-      take: 100,
     });
 
-    return teams.map((t: any, i: number) => ({
+    return progressions.map((p: any, i: number) => ({
       rank: i + 1,
-      id: t.id,
-      name: t.name,
-      points: t.points ?? 0,
-      kills: t.kills ?? 0,
-      placement: t.placement ?? null,
-      tournamentName: t.tournament?.name ?? null,
-      tournamentId: t.tournament?.id ?? null,
-      tournamentStatus: t.tournament?.status ?? null,
-      format: t.tournament?.format ?? null,
+      id: p.id,
+      name: p.teamName,
+      points: p.points ?? 0,
+      kills: p.kills ?? 0,
+      placement: p.finalPosition ?? null,
+      tournamentName: p.tournament?.name ?? null,
+      tournamentId: p.tournament?.id ?? null,
+      tournamentStatus: (p.tournament?.status || "").toUpperCase(),
+      format: p.tournament?.format ?? null,
     }));
   } catch {
     return [];

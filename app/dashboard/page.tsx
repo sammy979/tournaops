@@ -10,15 +10,16 @@ export default async function DashboardPage() {
   if (!session) redirect("/auth/signin");
 
   const tournaments = await prisma.tournament.findMany({
-    where: { organizerId: session.userId },
+    where: { userId: session.userId },
     orderBy: { createdAt: "desc" },
     take: 20,
     select: {
       id: true,
+      slug: true,
       name: true,
       status: true,
-      startDate: true,
       maxTeams: true,
+      createdAt: true,
       _count: { select: { teams: true, matches: true } },
     },
   });
@@ -47,11 +48,7 @@ export default async function DashboardPage() {
               textDecoration: "none",
               textTransform: "uppercase",
             }}>TournaOps</Link>
-            <div style={{
-              width: "1px",
-              height: "20px",
-              background: "var(--border)",
-            }} />
+            <div style={{ width: "1px", height: "20px", background: "var(--border)" }} />
             <span style={{
               fontFamily: "Barlow Condensed, sans-serif",
               fontWeight: 600,
@@ -62,22 +59,19 @@ export default async function DashboardPage() {
             }}>Dashboard</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <Link href="/dashboard/tournaments/new" className="btn-primary" style={{ padding: "7px 16px" }}>
+            <Link href="/dashboard/tournaments/create" className="btn-primary" style={{ padding: "7px 16px" }}>
               + New Tournament
             </Link>
           </div>
         </div>
 
         {/* SUB NAV */}
-        <div style={{
-          borderTop: "1px solid var(--border)",
-          overflowX: "auto",
-        }}>
+        <div style={{ borderTop: "1px solid var(--border)", overflowX: "auto" }}>
           <div className="container-ops" style={{ display: "flex", gap: "0", height: "40px" }}>
             {[
               { label: "Tournaments", href: "/dashboard" },
-              { label: "Teams", href: "/dashboard/teams" },
-              { label: "Broadcast", href: "/dashboard/broadcast" },
+              { label: "Discord", href: "/dashboard/discord" },
+              { label: "Overlays", href: "/dashboard/overlay" },
               { label: "Settings", href: "/dashboard/settings" },
             ].map((item) => (
               <Link key={item.href} href={item.href} style={{
@@ -92,7 +86,6 @@ export default async function DashboardPage() {
                 display: "flex",
                 alignItems: "center",
                 borderRight: "1px solid var(--border)",
-                transition: "color 0.15s ease, background 0.15s ease",
               }}>
                 {item.label}
               </Link>
@@ -103,7 +96,6 @@ export default async function DashboardPage() {
 
       {/* CONTENT */}
       <div className="container-ops" style={{ padding: "32px 24px" }}>
-        {/* SECTION HEADER */}
         <div style={{
           display: "flex",
           alignItems: "center",
@@ -120,7 +112,7 @@ export default async function DashboardPage() {
               textTransform: "uppercase",
               color: "var(--white)",
             }}>
-              {session.username || session.email}&apos;s Operations
+              {(session.username || session.email)}&apos;s Operations
             </h1>
           </div>
         </div>
@@ -144,7 +136,7 @@ export default async function DashboardPage() {
             <p style={{ color: "var(--white-40)", fontSize: "0.85rem", marginBottom: "20px" }}>
               Create your first tournament to get started.
             </p>
-            <Link href="/dashboard/tournaments/new" className="btn-gold">
+            <Link href="/dashboard/tournaments/create" className="btn-gold">
               Create Tournament
             </Link>
           </div>
@@ -155,14 +147,13 @@ export default async function DashboardPage() {
             background: "var(--border)",
             border: "1px solid var(--border)",
           }}>
-            {/* TABLE HEADER */}
             <div style={{
               display: "grid",
               gridTemplateColumns: "1fr 120px 80px 80px 120px 100px",
               padding: "10px 20px",
               background: "var(--surface-2)",
             }}>
-              {["Tournament", "Status", "Teams", "Matches", "Date", "Actions"].map((col, i) => (
+              {["Tournament", "Status", "Teams", "Matches", "Created", "Actions"].map((col, i) => (
                 <div key={col} style={{
                   fontFamily: "Barlow Condensed, sans-serif",
                   fontWeight: 600,
@@ -175,56 +166,56 @@ export default async function DashboardPage() {
               ))}
             </div>
 
-            {/* ROWS */}
-            {tournaments.map((t: any) => (
-              <div key={t.id} style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 120px 80px 80px 120px 100px",
-                padding: "14px 20px",
-                background: "var(--surface)",
-                borderTop: "1px solid var(--border)",
-                alignItems: "center",
-                transition: "background 0.1s ease",
-              }}>
-                <div>
-                  <div style={{
-                    fontFamily: "Barlow Condensed, sans-serif",
-                    fontWeight: 700,
-                    fontSize: "0.95rem",
-                    letterSpacing: "0.04em",
-                    color: "var(--white)",
-                    textTransform: "uppercase",
-                  }}>{t.name}</div>
+            {tournaments.map((t: any) => {
+              const status = (t.status || "").toUpperCase();
+              return (
+                <div key={t.id} style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 120px 80px 80px 120px 100px",
+                  padding: "14px 20px",
+                  background: "var(--surface)",
+                  borderTop: "1px solid var(--border)",
+                  alignItems: "center",
+                }}>
+                  <div>
+                    <div style={{
+                      fontFamily: "Barlow Condensed, sans-serif",
+                      fontWeight: 700,
+                      fontSize: "0.95rem",
+                      letterSpacing: "0.04em",
+                      color: "var(--white)",
+                      textTransform: "uppercase",
+                    }}>{t.name}</div>
+                  </div>
+                  <div>
+                    {status === "LIVE" && <span className="badge-live">Live</span>}
+                    {(status === "UPCOMING" || status === "REGISTRATION") && <span className="badge-upcoming">{status}</span>}
+                    {status === "COMPLETED" && <span className="badge-completed">Completed</span>}
+                    {status === "DRAFT" && <span className="badge-warning">Draft</span>}
+                  </div>
+                  <div style={{ textAlign: "center", fontFamily: "JetBrains Mono, monospace", fontSize: "0.85rem", color: "var(--white-70)" }}>
+                    {t._count.teams}/{t.maxTeams || "∞"}
+                  </div>
+                  <div style={{ textAlign: "center", fontFamily: "JetBrains Mono, monospace", fontSize: "0.85rem", color: "var(--white-70)" }}>
+                    {t._count.matches}
+                  </div>
+                  <div style={{ textAlign: "center", fontFamily: "JetBrains Mono, monospace", fontSize: "0.75rem", color: "var(--white-40)" }}>
+                    {new Date(t.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "center" }}>
+                    <Link href={`/dashboard/tournaments/${t.id}`} style={{
+                      fontFamily: "Barlow Condensed, sans-serif",
+                      fontWeight: 700,
+                      fontSize: "0.75rem",
+                      letterSpacing: "0.1em",
+                      color: "var(--gold)",
+                      textDecoration: "none",
+                      textTransform: "uppercase",
+                    }}>Manage →</Link>
+                  </div>
                 </div>
-                <div>
-                  {t.status === "LIVE" && <span className="badge-live">Live</span>}
-                  {(t.status === "UPCOMING" || t.status === "REGISTRATION") && <span className="badge-upcoming">{t.status}</span>}
-                  {t.status === "COMPLETED" && <span className="badge-completed">Completed</span>}
-                  {t.status === "DRAFT" && <span className="badge-warning">Draft</span>}
-                </div>
-                <div style={{ textAlign: "center", fontFamily: "JetBrains Mono, monospace", fontSize: "0.85rem", color: "var(--white-70)" }}>
-                  {t._count.teams}/{t.maxTeams || "∞"}
-                </div>
-                <div style={{ textAlign: "center", fontFamily: "JetBrains Mono, monospace", fontSize: "0.85rem", color: "var(--white-70)" }}>
-                  {t._count.matches}
-                </div>
-                <div style={{ textAlign: "center", fontFamily: "JetBrains Mono, monospace", fontSize: "0.75rem", color: "var(--white-40)" }}>
-                  {t.startDate ? new Date(t.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
-                </div>
-                <div style={{ display: "flex", justifyContent: "center" }}>
-                  <Link href={`/dashboard/tournaments/${t.id}`} style={{
-                    fontFamily: "Barlow Condensed, sans-serif",
-                    fontWeight: 700,
-                    fontSize: "0.75rem",
-                    letterSpacing: "0.1em",
-                    color: "var(--gold)",
-                    textDecoration: "none",
-                    textTransform: "uppercase",
-                    transition: "color 0.15s ease",
-                  }}>Manage →</Link>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -8,7 +8,6 @@ import WorkflowSection from "@/components/marketing/WorkflowSection";
 import BroadcastSection from "@/components/marketing/BroadcastSection";
 import DiscordSection from "@/components/marketing/DiscordSection";
 import OrganizerCTA from "@/components/marketing/OrganizerCTA";
-import StandingsPreview from "@/components/marketing/StandingsPreview";
 
 export const dynamic = "force-dynamic";
 
@@ -22,14 +21,15 @@ async function getHomeData() {
       take: 12,
       select: {
         id: true,
+        slug: true,
         name: true,
         status: true,
-        startDate: true,
         maxTeams: true,
         game: true,
         format: true,
-        organizer: {
-          select: { name: true, username: true },
+        createdAt: true,
+        createdBy: {
+          select: { displayName: true, username: true },
         },
         _count: { select: { teams: true } },
       },
@@ -37,14 +37,17 @@ async function getHomeData() {
 
     const mapped = tournaments.map((t: any) => ({
       id: t.id,
+      slug: t.slug,
       name: t.name,
-      status: t.status,
-      startDate: t.startDate?.toISOString() ?? null,
+      status: (t.status || "").toUpperCase(),
+      startDate: null as string | null,
       maxTeams: t.maxTeams,
       teamCount: t._count.teams,
-      game: t.game ?? "PUBG MOBILE",
-      format: t.format ?? null,
-      organizer: t.organizer ?? null,
+      game: t.game || "PUBG MOBILE",
+      format: t.format || null,
+      organizer: t.createdBy
+        ? { name: t.createdBy.displayName, username: t.createdBy.username }
+        : null,
     }));
 
     return { tournaments: mapped };
