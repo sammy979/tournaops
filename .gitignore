@@ -50,3 +50,5 @@ check-db.js
 # Backup files
 *.bak
 *.backup
+
+build.log
