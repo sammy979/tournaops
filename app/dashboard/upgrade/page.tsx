@@ -1,177 +1,426 @@
-// app/dashboard/upgrade/page.tsx
-"use client"
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import PaymentForm from "@/components/payment/PaymentForm"
-import PaymentHistory from "@/components/payment/PaymentHistory"
-import { Crown, Check, Loader2, Zap } from "lucide-react"
-import { PRO_PRICE, PRO_FEATURES } from "@/lib/pricing"
+import { getSession } from "@/lib/auth/session";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import Link from "next/link";
+import UpgradeClient from "@/components/payment/UpgradeClient";
 
-export default function UpgradePage() {
-  const router = useRouter()
-  const [checking, setChecking] = useState(true)
-  const [user, setUser] = useState<any>(null)
+export const dynamic = "force-dynamic";
 
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d?.user?.id) setUser(d.user)
-        else router.push("/login")
-      })
-      .catch(() => router.push("/login"))
-      .finally(() => setChecking(false))
-  }, [router])
+export const metadata = {
+  title: "Upgrade to Pro — TournaOps",
+  description: "Unlock professional tournament operations features.",
+};
 
-  if (checking) {
-    return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
-        <Loader2 style={{ width: "2rem", height: "2rem", color: "#f59e0b", animation: "spin 1s linear infinite" }} />
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      </div>
-    )
-  }
+async function getUserAndPayments(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      username: true,
+      isPro: true,
+      proExpiresAt: true,
+      proGrantedAt: true,
+    },
+  });
 
-  if (!user) return null
+  const payments = await prisma.payment.findMany({
+    where: { userId },
+    orderBy: { submittedAt: "desc" },
+    take: 10,
+    select: {
+      id: true,
+      amount: true,
+      currency: true,
+      method: true,
+      status: true,
+      submittedAt: true,
+      reviewedAt: true,
+      rejectionReason: true,
+    },
+  });
 
-  // Already Pro
-  if (user.isPro) {
-    return (
-      <div style={{ maxWidth: "600px", margin: "0 auto", padding: "3rem 1.5rem", textAlign: "center" }}>
-        <div style={{
-          background: "linear-gradient(135deg, rgba(245,158,11,0.1), rgba(251,146,60,0.05))",
-          border: "1px solid rgba(245,158,11,0.3)",
-          borderRadius: "1.5rem",
-          padding: "3rem 2rem",
-        }}>
-          <Crown style={{ width: "4rem", height: "4rem", color: "#f59e0b", margin: "0 auto 1rem" }} />
-          <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "#fff", marginBottom: "0.5rem" }}>
-            You're a Pro Member! 🎉
-          </h1>
-          <p style={{ color: "#9ca3af", marginBottom: "1.5rem" }}>
-            You have full access to all TournaOps Pro features.
-          </p>
-          <button onClick={() => router.push("/dashboard")}
-            style={{ background: "#f59e0b", color: "#000", fontWeight: 700, padding: "0.75rem 1.5rem",
-              borderRadius: "0.625rem", border: "none", cursor: "pointer", fontSize: "0.9375rem" }}>
-            Go to Dashboard
-          </button>
-        </div>
-      </div>
-    )
-  }
+  const paymentSettings = await prisma.paymentSettings.findFirst();
+
+  return { user, payments, paymentSettings };
+}
+
+export default async function UpgradePage() {
+  const session = await getSession();
+  if (!session) redirect("/auth/signin");
+
+  const { user, payments, paymentSettings } = await getUserAndPayments(session.userId);
+  if (!user) redirect("/auth/signin");
+
+  const isPro = user.isPro;
+  const proExpires = user.proExpiresAt;
 
   return (
-    <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "2rem 1.5rem" }}>
-      {/* Hero Header */}
-      <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: "0.5rem",
-          background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)",
-          borderRadius: "9999px", padding: "0.375rem 1rem", marginBottom: "1.25rem",
-        }}>
-          <Crown style={{ width: "1rem", height: "1rem", color: "#f59e0b" }} />
-          <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#f59e0b" }}>TournaOps Pro</span>
-        </div>
-
-        <h1 style={{ fontSize: "2.5rem", fontWeight: 800, color: "#fff", margin: 0, lineHeight: 1.1 }}>
-          Upgrade to Pro
-        </h1>
-
-        {/* HUGE PRICE DISPLAY */}
-        <div style={{ marginTop: "1.5rem", marginBottom: "0.5rem" }}>
-          <div style={{ display: "inline-flex", alignItems: "baseline", gap: "0.375rem" }}>
-            <span style={{ fontSize: "1.125rem", color: "#9ca3af", fontWeight: 600 }}>{PRO_PRICE.currencySymbol}</span>
-            <span style={{
-              fontSize: "3.5rem", fontWeight: 800,
-              background: "linear-gradient(135deg, #f59e0b, #fb923c)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-              lineHeight: 1,
-            }}>
-              {PRO_PRICE.amount}
-            </span>
-            <span style={{ fontSize: "1rem", color: "#9ca3af" }}>/ {PRO_PRICE.duration}</span>
+    <div style={{ minHeight: "100vh", background: "var(--black)" }}>
+      {/* HEADER */}
+      <div style={{
+        background: "var(--charcoal)",
+        borderBottom: "1px solid var(--border)",
+      }}>
+        <div className="container-ops" style={{ padding: "32px 24px" }}>
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            marginBottom: "12px",
+            fontFamily: "Barlow Condensed, sans-serif",
+            fontSize: "0.72rem",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+          }}>
+            <Link href="/dashboard" style={{ color: "var(--white-40)", textDecoration: "none" }}>Dashboard</Link>
+            <span style={{ color: "var(--white-20)" }}>→</span>
+            <span style={{ color: "var(--gold)" }}>Upgrade</span>
           </div>
-        </div>
 
-        <p style={{ color: "#9ca3af", marginTop: "0.5rem", maxWidth: "32rem", margin: "0.5rem auto 0", fontSize: "0.9375rem" }}>
-          One-time payment. No auto-renewal. Full access for {PRO_PRICE.duration}.
-        </p>
+          <div className="section-label">TournaOps Pro</div>
+          <h1 style={{
+            fontFamily: "Barlow Condensed, sans-serif",
+            fontWeight: 900,
+            fontSize: "clamp(1.8rem, 4vw, 2.8rem)",
+            letterSpacing: "-0.01em",
+            textTransform: "uppercase",
+            color: "var(--white)",
+            lineHeight: 1,
+            marginBottom: "12px",
+          }}>
+            Run Tournaments at a Professional Level
+          </h1>
+          <p style={{
+            fontSize: "0.95rem",
+            color: "var(--white-70)",
+            maxWidth: "580px",
+            lineHeight: 1.6,
+          }}>
+            Everything you need to organize competitive PUBG Mobile tournaments —
+            AI screenshot import, Discord sync, OBS broadcast overlays, and more.
+          </p>
+        </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "2rem" }}>
-        {/* Features Card */}
+      {/* PRO STATUS BANNER */}
+      {isPro && (
         <div style={{
-          background: "linear-gradient(135deg, #1a1a24, #252533)",
-          borderRadius: "1rem", padding: "1.75rem",
-          border: "1px solid rgba(245,158,11,0.15)",
+          background: "var(--gold-dim)",
+          borderBottom: "1px solid var(--gold)",
+          borderTop: "1px solid var(--gold)",
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.25rem" }}>
-            <Zap style={{ width: "1.25rem", height: "1.25rem", color: "#f59e0b" }} />
-            <h2 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#fff", margin: 0 }}>
-              Everything included
-            </h2>
-          </div>
-
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: "0.375rem",
-            background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)",
-            borderRadius: "9999px", padding: "0.25rem 0.75rem", marginBottom: "1rem",
+          <div className="container-ops" style={{
+            padding: "14px 24px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "16px",
+            flexWrap: "wrap",
           }}>
-            <div style={{ width: "0.5rem", height: "0.5rem", borderRadius: "50%", background: "#10b981" }} />
-            <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#10b981" }}>All features unlocked</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <span style={{
+                fontFamily: "Barlow Condensed, sans-serif",
+                fontWeight: 800,
+                fontSize: "0.9rem",
+                color: "var(--gold)",
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+              }}>✓ You are on TournaOps Pro</span>
+            </div>
+            {proExpires && (
+              <div style={{
+                fontFamily: "JetBrains Mono, monospace",
+                fontSize: "0.78rem",
+                color: "var(--white-70)",
+              }}>
+                Expires: {new Date(proExpires).toLocaleDateString("en-US", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </div>
+            )}
           </div>
+        </div>
+      )}
 
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.625rem" }}>
-            {PRO_FEATURES.map((f) => (
-              <li key={f} style={{ display: "flex", alignItems: "center", gap: "0.625rem", fontSize: "0.875rem", color: "#e5e7eb" }}>
-                <div style={{
-                  width: "1.25rem", height: "1.25rem", borderRadius: "50%",
-                  background: "rgba(16,185,129,0.15)",
-                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+      {/* PRICING + FEATURES */}
+      <div className="container-ops" style={{ padding: "40px 24px" }}>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 380px",
+          gap: "32px",
+          alignItems: "start",
+        }}>
+          {/* LEFT — FEATURES */}
+          <div>
+            <div className="section-label">What You Get</div>
+            <h2 style={{
+              fontFamily: "Barlow Condensed, sans-serif",
+              fontWeight: 800,
+              fontSize: "1.4rem",
+              textTransform: "uppercase",
+              color: "var(--white)",
+              letterSpacing: "0.02em",
+              marginBottom: "20px",
+            }}>Pro Features</h2>
+
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "1px",
+              background: "var(--border)",
+              border: "1px solid var(--border)",
+            }}>
+              {[
+                { title: "AI Screenshot Import", desc: "Extract kills and placements from PUBG screenshots with Ops AI." },
+                { title: "Discord Sync", desc: "Auto-publish match results and standings to your Discord server." },
+                { title: "OBS Broadcast Overlays", desc: "Six production-ready overlays for live streaming." },
+                { title: "Unlimited Tournaments", desc: "Run as many tournaments as you need — no hidden limits." },
+                { title: "Stages & Groups", desc: "Advanced multi-stage tournament formats with team progression." },
+                { title: "Custom Scoring Presets", desc: "PMGC, PMPL, or your own scoring rules." },
+                { title: "Bulk Team Import", desc: "Onboard hundreds of teams in seconds." },
+                { title: "Public Tournament Pages", desc: "Every tournament gets its own esports event page." },
+                { title: "Tournament Reports", desc: "Auto-generated summaries and final results." },
+                { title: "Priority Support", desc: "Get help fast when it matters most." },
+              ].map((f, i) => (
+                <div key={i} style={{
+                  background: "var(--surface)",
+                  padding: "18px 20px",
                 }}>
-                  <Check style={{ width: "0.75rem", height: "0.75rem", color: "#10b981" }} />
+                  <div style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "10px",
+                  }}>
+                    <span style={{
+                      color: "var(--green)",
+                      fontFamily: "JetBrains Mono, monospace",
+                      fontSize: "0.85rem",
+                      marginTop: "2px",
+                      flexShrink: 0,
+                    }}>✓</span>
+                    <div>
+                      <div style={{
+                        fontFamily: "Barlow Condensed, sans-serif",
+                        fontWeight: 800,
+                        fontSize: "0.9rem",
+                        color: "var(--white)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.04em",
+                        marginBottom: "4px",
+                      }}>{f.title}</div>
+                      <div style={{
+                        fontSize: "0.8rem",
+                        color: "var(--white-40)",
+                        lineHeight: 1.6,
+                      }}>{f.desc}</div>
+                    </div>
+                  </div>
                 </div>
-                {f}
-              </li>
-            ))}
-          </ul>
+              ))}
+            </div>
 
-          <div style={{
-            marginTop: "1.5rem", padding: "0.875rem", borderRadius: "0.625rem",
-            background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)",
-          }}>
-            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "0.8125rem", color: "#9ca3af" }}>Total to pay</span>
-              <span style={{ fontSize: "1.5rem", fontWeight: 800, color: "#f59e0b" }}>
-                {PRO_PRICE.currencySymbol} {PRO_PRICE.amount}
-              </span>
+            {/* PAYMENT HISTORY */}
+            {payments.length > 0 && (
+              <div style={{ marginTop: "40px" }}>
+                <div className="section-label">Payment History</div>
+                <h3 style={{
+                  fontFamily: "Barlow Condensed, sans-serif",
+                  fontWeight: 700,
+                  fontSize: "1rem",
+                  color: "var(--white)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                  marginBottom: "16px",
+                }}>Your Payments</h3>
+
+                <div style={{
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
+                  overflow: "hidden",
+                }}>
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 100px 100px 140px 120px",
+                    padding: "10px 16px",
+                    background: "var(--surface-2)",
+                    borderBottom: "1px solid var(--border)",
+                  }}>
+                    {["Date", "Method", "Amount", "Status", "Reviewed"].map((col) => (
+                      <div key={col} style={{
+                        fontFamily: "Barlow Condensed, sans-serif",
+                        fontWeight: 600,
+                        fontSize: "0.68rem",
+                        letterSpacing: "0.15em",
+                        color: "var(--white-40)",
+                        textTransform: "uppercase",
+                      }}>{col}</div>
+                    ))}
+                  </div>
+
+                  {payments.map((p: any, i: number) => (
+                    <div key={p.id} style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 100px 100px 140px 120px",
+                      padding: "12px 16px",
+                      borderBottom: i < payments.length - 1 ? "1px solid var(--border)" : "none",
+                      alignItems: "center",
+                    }}>
+                      <div style={{
+                        fontFamily: "JetBrains Mono, monospace",
+                        fontSize: "0.78rem",
+                        color: "var(--white-70)",
+                      }}>
+                        {new Date(p.submittedAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </div>
+                      <div style={{
+                        fontFamily: "Barlow Condensed, sans-serif",
+                        fontWeight: 600,
+                        fontSize: "0.75rem",
+                        color: "var(--white-70)",
+                        textTransform: "uppercase",
+                      }}>{p.method}</div>
+                      <div style={{
+                        fontFamily: "JetBrains Mono, monospace",
+                        fontWeight: 600,
+                        fontSize: "0.82rem",
+                        color: "var(--gold)",
+                      }}>Rs {p.amount}</div>
+                      <div>
+                        {p.status === "APPROVED" && <span className="badge-completed">Approved</span>}
+                        {p.status === "PENDING" && <span className="badge-warning">Pending</span>}
+                        {p.status === "REJECTED" && <span className="badge-live" style={{background: "var(--red-dim)"}}>Rejected</span>}
+                      </div>
+                      <div style={{
+                        fontFamily: "JetBrains Mono, monospace",
+                        fontSize: "0.72rem",
+                        color: "var(--white-40)",
+                      }}>
+                        {p.reviewedAt
+                          ? new Date(p.reviewedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                          : "—"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT — PRICING CARD */}
+          <div>
+            <div style={{ position: "sticky", top: "80px" }}>
+              <div style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                borderTop: "3px solid var(--gold)",
+                padding: "28px 24px",
+                marginBottom: "16px",
+              }}>
+                <div style={{
+                  fontFamily: "Barlow Condensed, sans-serif",
+                  fontWeight: 700,
+                  fontSize: "0.7rem",
+                  letterSpacing: "0.15em",
+                  color: "var(--gold)",
+                  textTransform: "uppercase",
+                  marginBottom: "8px",
+                }}>TournaOps Pro</div>
+
+                <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginBottom: "6px" }}>
+                  <span style={{
+                    fontFamily: "Barlow Condensed, sans-serif",
+                    fontWeight: 900,
+                    fontSize: "3rem",
+                    color: "var(--white)",
+                    lineHeight: 1,
+                    letterSpacing: "-0.02em",
+                  }}>Rs 299</span>
+                </div>
+                <div style={{
+                  fontFamily: "Barlow Condensed, sans-serif",
+                  fontSize: "0.8rem",
+                  color: "var(--white-40)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  marginBottom: "24px",
+                }}>Per Month · Nepal / Local Payment</div>
+
+                <div style={{
+                  padding: "14px 16px",
+                  background: "var(--surface-2)",
+                  border: "1px solid var(--border)",
+                  marginBottom: "20px",
+                }}>
+                  <div style={{
+                    fontFamily: "Barlow Condensed, sans-serif",
+                    fontWeight: 700,
+                    fontSize: "0.72rem",
+                    color: "var(--white-40)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.12em",
+                    marginBottom: "8px",
+                  }}>Included</div>
+                  {[
+                    "AI Screenshot Import",
+                    "OBS Broadcast Overlays",
+                    "Discord Integration",
+                    "Unlimited Tournaments",
+                    "Priority Support",
+                  ].map((item) => (
+                    <div key={item} style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      fontSize: "0.82rem",
+                      color: "var(--white-70)",
+                      padding: "4px 0",
+                    }}>
+                      <span style={{ color: "var(--gold)" }}>✓</span> {item}
+                    </div>
+                  ))}
+                </div>
+
+                {isPro ? (
+                  <div style={{
+                    background: "var(--green-dim)",
+                    border: "1px solid var(--green)",
+                    padding: "12px 16px",
+                    textAlign: "center",
+                    fontFamily: "Barlow Condensed, sans-serif",
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                    color: "var(--green)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em",
+                  }}>✓ Active Subscription</div>
+                ) : (
+                  <UpgradeClient
+                    userId={user.id}
+                    userEmail={user.email}
+                    paymentSettings={paymentSettings as any}
+                  />
+                )}
+              </div>
+
+              <div style={{
+                fontSize: "0.75rem",
+                color: "var(--white-40)",
+                lineHeight: 1.6,
+                padding: "0 4px",
+              }}>
+                Payments are manually reviewed by our team. Pro access is granted within 24 hours of payment verification.
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Payment Form */}
-        <div style={{
-          background: "rgba(30,30,40,0.6)", borderRadius: "1rem",
-          padding: "1.75rem", border: "1px solid rgba(255,255,255,0.06)",
-        }}>
-          <h2 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#fff", marginBottom: "0.25rem" }}>
-            Submit Payment
-          </h2>
-          <p style={{ fontSize: "0.8125rem", color: "#9ca3af", marginTop: 0, marginBottom: "1.25rem" }}>
-            Pay {PRO_PRICE.display} via Khalti or Bank Transfer, then submit your details below.
-          </p>
-          <PaymentForm />
-        </div>
-      </div>
-
-      {/* Payment History */}
-      <div style={{ background: "rgba(30,30,40,0.6)", borderRadius: "1rem", padding: "1.5rem", border: "1px solid rgba(255,255,255,0.06)" }}>
-        <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", marginBottom: "1rem" }}>Payment History</h2>
-        <PaymentHistory />
       </div>
     </div>
-  )
+  );
 }
