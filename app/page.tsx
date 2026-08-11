@@ -11,6 +11,7 @@ import BroadcastSection from "@/components/marketing/BroadcastSection";
 import DiscordSection from "@/components/marketing/DiscordSection";
 import OpsAISection from "@/components/marketing/OpsAISection";
 import OrganizerCTA from "@/components/marketing/OrganizerCTA";
+import NepalPaymentSection from "@/components/marketing/NepalPaymentSection";
 
 export const dynamic = "force-dynamic";
 
@@ -47,9 +48,7 @@ async function getLiveMatch() {
         totalPoints: r.totalPoints ?? 0,
       })),
     };
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 async function getLiveTournaments() {
@@ -66,17 +65,14 @@ async function getLiveTournaments() {
       },
     });
     return rows.map((t: any) => ({
-      id:        t.id,
-      name:      t.name,
-      status:    (t.status as string).toUpperCase(),
+      id: t.id, name: t.name,
+      status: (t.status as string).toUpperCase(),
       teamCount: t._count?.teams ?? 0,
-      maxTeams:  t.maxTeams,
+      maxTeams: t.maxTeams,
       startDate: t.startDate?.toISOString?.() ?? null,
-      format:    t.format ?? "",
+      format: t.format ?? "",
     }));
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
 async function getTopStandings() {
@@ -89,30 +85,28 @@ async function getTopStandings() {
     if (!tournament) return { tournamentName: undefined, tournamentId: undefined, standings: undefined };
 
     const grouped = await prisma.matchResult.groupBy({
-      by:      ["teamId"],
-      where:   { match: { tournamentId: tournament.id } },
-      _sum:    { totalPoints: true, kills: true },
-      _count:  { matchId: true },
+      by: ["teamId"],
+      where: { match: { tournamentId: tournament.id } },
+      _sum: { totalPoints: true, kills: true },
+      _count: { matchId: true },
       orderBy: { _sum: { totalPoints: "desc" } },
       take: 8,
     });
-
-    const teamIds = grouped.map((s: any) => s.teamId);
-    const teams   = await prisma.team.findMany({
-      where:  { id: { in: teamIds } },
+    const teams = await prisma.team.findMany({
+      where: { id: { in: grouped.map((s: any) => s.teamId) } },
       select: { id: true, name: true },
     });
     const teamMap = Object.fromEntries(teams.map((t: any) => [t.id, t.name]));
 
     return {
       tournamentName: tournament.name,
-      tournamentId:   tournament.id,
+      tournamentId: tournament.id,
       standings: grouped.map((s: any, i: number) => ({
-        pos:     i + 1,
-        team:    teamMap[s.teamId] ?? "—",
+        pos: i + 1,
+        team: teamMap[s.teamId] ?? "—",
         matches: s._count?.matchId ?? 0,
-        kills:   s._sum?.kills ?? 0,
-        points:  s._sum?.totalPoints ?? 0,
+        kills: s._sum?.kills ?? 0,
+        points: s._sum?.totalPoints ?? 0,
       })),
     };
   } catch {
@@ -120,13 +114,19 @@ async function getTopStandings() {
   }
 }
 
+async function getPaymentSettings() {
+  try { return await prisma.paymentSettings.findFirst(); }
+  catch { return null; }
+}
+
 export default async function HomePage() {
   const session = await getSession();
 
-  const [liveMatchData, liveTournaments, standingsData] = await Promise.all([
+  const [liveMatchData, liveTournaments, standingsData, paymentSettings] = await Promise.all([
     getLiveMatch(),
     getLiveTournaments(),
     getTopStandings(),
+    getPaymentSettings(),
   ]);
 
   return (
@@ -145,6 +145,7 @@ export default async function HomePage() {
         <BroadcastSection />
         <DiscordSection />
         <OpsAISection />
+        <NepalPaymentSection settings={paymentSettings} variant="landing" />
         <OrganizerCTA />
       </main>
       <SiteFooter />

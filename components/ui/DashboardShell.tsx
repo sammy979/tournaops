@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 interface Props {
   title: string;
@@ -17,13 +18,63 @@ export default function DashboardShell({
 }: Props) {
   return (
     <div style={{ minHeight: "100vh", background: "var(--black)" }}>
-      {/* HEADER */}
+      {/* TOP LOGO BAR */}
+      <div style={{ background: "var(--black)", borderBottom: "1px solid var(--border)" }}>
+        <div className="container-ops" style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "12px 24px",
+        }}>
+          <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none" }}>
+            <Image src="/logo.png" alt="TournaOps" width={28} height={28} priority style={{ objectFit: "contain" }} />
+            <span style={{
+              fontFamily: "Barlow Condensed, sans-serif",
+              fontWeight: 900,
+              fontSize: "1rem",
+              letterSpacing: "0.08em",
+              color: "var(--white)",
+              textTransform: "uppercase",
+            }}>TournaOps</span>
+            <span style={{
+              padding: "2px 8px",
+              background: "var(--gold-dim)",
+              color: "var(--gold)",
+              fontFamily: "Barlow Condensed, sans-serif",
+              fontWeight: 700,
+              fontSize: "0.65rem",
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              marginLeft: "6px",
+            }}>Dashboard</span>
+          </Link>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            {[
+              { href: "/dashboard", label: "Home" },
+              { href: "/dashboard/upgrade", label: "Upgrade" },
+              { href: "/", label: "Site" },
+            ].map(l => (
+              <Link key={l.href} href={l.href} style={{
+                padding: "6px 12px",
+                fontFamily: "Barlow Condensed, sans-serif",
+                fontWeight: 700,
+                fontSize: "0.75rem",
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "var(--white-70)",
+                textDecoration: "none",
+              }}>{l.label}</Link>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* TITLE HEADER */}
       <div style={{
         background: "var(--charcoal)",
         borderBottom: "1px solid var(--border)",
       }}>
         <div className="container-ops" style={{ padding: "24px 24px" }}>
-          {/* BREADCRUMB */}
           {breadcrumbs && breadcrumbs.length > 0 && (
             <div style={{
               display: "flex",
@@ -58,7 +109,17 @@ export default function DashboardShell({
             flexWrap: "wrap",
           }}>
             <div>
-              {subtitle && <div className="section-label">{subtitle}</div>}
+              {subtitle && (
+                <div style={{
+                  fontFamily: "Barlow Condensed, sans-serif",
+                  fontWeight: 700,
+                  fontSize: "0.75rem",
+                  letterSpacing: "0.14em",
+                  color: "var(--gold)",
+                  textTransform: "uppercase",
+                  marginBottom: "6px",
+                }}>{subtitle}</div>
+              )}
               <h1 style={{
                 fontFamily: "Barlow Condensed, sans-serif",
                 fontWeight: 900,
@@ -74,7 +135,6 @@ export default function DashboardShell({
         </div>
       </div>
 
-      {/* CONTENT */}
       <div className="container-ops" style={{ padding: "32px 24px" }}>
         {children}
       </div>

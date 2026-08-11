@@ -2,223 +2,281 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import Image from "next/image";
+import NepalPaymentSection from "@/components/marketing/NepalPaymentSection";
 
 export const dynamic = "force-dynamic";
 
+async function getPaymentSettings() {
+  try { return await prisma.paymentSettings.findFirst(); }
+  catch { return null; }
+}
+
 export default async function DashboardPage() {
   const session = await getSession();
-  if (!session) redirect("/auth/signin");
+  if (!session) redirect("/login?from=/dashboard");
 
-  const tournaments = await prisma.tournament.findMany({
-    where: { userId: session.userId },
-    orderBy: { createdAt: "desc" },
-    take: 20,
-    select: {
-      id: true,
-      slug: true,
-      name: true,
-      status: true,
-      maxTeams: true,
-      createdAt: true,
-      _count: { select: { teams: true, matches: true } },
-    },
-  });
+  const [tournaments, paymentSettings, userInfo] = await Promise.all([
+    prisma.tournament.findMany({
+      where: { userId: session.userId },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: {
+        id: true, slug: true, name: true, status: true,
+        maxTeams: true, createdAt: true,
+        _count: { select: { teams: true, matches: true } },
+      },
+    }),
+    getPaymentSettings(),
+    prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { isPro: true, username: true, email: true },
+    }),
+  ]);
+
+  const liveCount     = tournaments.filter((t: any) => t.status === "live").length;
+  const upcomingCount = tournaments.filter((t: any) => t.status === "upcoming").length;
+  const totalTeams    = tournaments.reduce((s: number, t: any) => s + (t._count?.teams ?? 0), 0);
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--black)" }}>
-      {/* DASHBOARD HEADER */}
-      <div style={{
-        background: "var(--charcoal)",
-        borderBottom: "1px solid var(--border)",
-        padding: "0",
-      }}>
+      {/* HEADER */}
+      <div style={{ background: "var(--black)", borderBottom: "1px solid var(--border)" }}>
         <div className="container-ops" style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          height: "56px",
+          padding: "14px 24px",
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
-            <Link href="/" style={{
-              fontFamily: "Barlow Condensed, sans-serif",
-              fontWeight: 800,
-              fontSize: "1rem",
-              letterSpacing: "0.08em",
-              color: "var(--gold)",
-              textDecoration: "none",
-              textTransform: "uppercase",
-            }}>TournaOps</Link>
-            <div style={{ width: "1px", height: "20px", background: "var(--border)" }} />
+          <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none" }}>
+            <Image src="/logo.png" alt="TournaOps" width={30} height={30} priority style={{ objectFit: "contain" }} />
             <span style={{
               fontFamily: "Barlow Condensed, sans-serif",
-              fontWeight: 600,
-              fontSize: "0.75rem",
-              letterSpacing: "0.12em",
-              color: "var(--white-40)",
+              fontWeight: 900,
+              fontSize: "1.05rem",
+              letterSpacing: "0.08em",
+              color: "var(--white)",
               textTransform: "uppercase",
+            }}>TournaOps</span>
+            <span style={{
+              padding: "2px 8px",
+              background: "var(--gold-dim)",
+              color: "var(--gold)",
+              fontFamily: "Barlow Condensed, sans-serif",
+              fontWeight: 700,
+              fontSize: "0.65rem",
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              marginLeft: "6px",
             }}>Dashboard</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <Link href="/dashboard/tournaments/create" className="btn-primary" style={{ padding: "7px 16px" }}>
-              + New Tournament
-            </Link>
-          </div>
-        </div>
-
-        {/* SUB NAV */}
-        <div style={{ borderTop: "1px solid var(--border)", overflowX: "auto" }}>
-          <div className="container-ops" style={{ display: "flex", gap: "0", height: "40px" }}>
-            {[
-              { label: "Tournaments", href: "/dashboard" },
-              { label: "Discord", href: "/dashboard/discord" },
-              { label: "Overlays", href: "/dashboard/overlay" },
-              { label: "Settings", href: "/dashboard/settings" },
-            ].map((item) => (
-              <Link key={item.href} href={item.href} style={{
-                fontFamily: "Barlow Condensed, sans-serif",
-                fontWeight: 600,
-                fontSize: "0.75rem",
-                letterSpacing: "0.1em",
-                color: "var(--white-70)",
-                textDecoration: "none",
-                textTransform: "uppercase",
-                padding: "0 16px",
-                display: "flex",
-                alignItems: "center",
-                borderRight: "1px solid var(--border)",
-              }}>
-                {item.label}
-              </Link>
-            ))}
+          </Link>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Link href="/dashboard/upgrade" style={{
+              padding: "8px 14px",
+              fontFamily: "Barlow Condensed, sans-serif",
+              fontWeight: 700,
+              fontSize: "0.8rem",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: userInfo?.isPro ? "var(--white-40)" : "var(--gold)",
+              background: userInfo?.isPro ? "transparent" : "var(--gold-dim)",
+              textDecoration: "none",
+            }}>{userInfo?.isPro ? "Pro Active" : "Upgrade"}</Link>
+            <Link href="/dashboard/tournaments/create" style={{
+              padding: "8px 18px",
+              background: "var(--gold)",
+              color: "var(--black)",
+              fontFamily: "Barlow Condensed, sans-serif",
+              fontWeight: 800,
+              fontSize: "0.8rem",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              textDecoration: "none",
+            }}>+ New Tournament</Link>
           </div>
         </div>
       </div>
 
-      {/* CONTENT */}
+      {/* TITLE */}
+      <div style={{ background: "var(--charcoal)", borderBottom: "1px solid var(--border)", padding: "28px 0" }}>
+        <div className="container-ops">
+          <div style={{
+            fontFamily: "Barlow Condensed, sans-serif",
+            fontWeight: 700,
+            fontSize: "0.72rem",
+            letterSpacing: "0.14em",
+            color: "var(--gold)",
+            textTransform: "uppercase",
+            marginBottom: "6px",
+          }}>Your Operations</div>
+          <h1 style={{
+            fontFamily: "Barlow Condensed, sans-serif",
+            fontWeight: 900,
+            fontSize: "2rem",
+            color: "var(--white)",
+            textTransform: "uppercase",
+            lineHeight: 1,
+          }}>{userInfo?.username ?? "Organizer"} Command Center</h1>
+        </div>
+      </div>
+
+      {/* STATS ROW */}
+      <div style={{ background: "var(--black)", padding: "24px 0", borderBottom: "1px solid var(--border)" }}>
+        <div className="container-ops" style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+          gap: "16px",
+        }}>
+          {[
+            { label: "Tournaments", value: tournaments.length, accent: "var(--white)" },
+            { label: "Live Now",    value: liveCount,           accent: "var(--red)"   },
+            { label: "Upcoming",    value: upcomingCount,       accent: "var(--gold)"  },
+            { label: "Total Teams", value: totalTeams,          accent: "var(--green)" },
+          ].map(s => (
+            <div key={s.label} style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderLeft: `3px solid ${s.accent}`,
+              padding: "18px 20px",
+            }}>
+              <div style={{
+                fontFamily: "Barlow Condensed, sans-serif",
+                fontWeight: 700,
+                fontSize: "0.7rem",
+                letterSpacing: "0.14em",
+                color: "var(--white-40)",
+                textTransform: "uppercase",
+                marginBottom: "6px",
+              }}>{s.label}</div>
+              <div style={{
+                fontFamily: "Barlow Condensed, sans-serif",
+                fontWeight: 900,
+                fontSize: "2rem",
+                color: s.accent,
+                lineHeight: 1,
+              }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* TOURNAMENT LIST */}
       <div className="container-ops" style={{ padding: "32px 24px" }}>
         <div style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: "24px",
-        }}>
-          <div>
-            <div className="section-label">Your Tournaments</div>
-            <h1 style={{
-              fontFamily: "Barlow Condensed, sans-serif",
-              fontWeight: 800,
-              fontSize: "1.6rem",
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
-              color: "var(--white)",
-            }}>
-              {(session.username || session.email)}&apos;s Operations
-            </h1>
-          </div>
-        </div>
+          fontFamily: "Barlow Condensed, sans-serif",
+          fontWeight: 800,
+          fontSize: "0.9rem",
+          letterSpacing: "0.12em",
+          color: "var(--white)",
+          textTransform: "uppercase",
+          marginBottom: "16px",
+        }}>Your Tournaments</div>
 
         {tournaments.length === 0 ? (
           <div style={{
-            border: "1px solid var(--border)",
             background: "var(--surface)",
+            border: "1px solid var(--border)",
             padding: "48px",
             textAlign: "center",
           }}>
-            <div style={{
+            <div style={{ color: "var(--white-40)", fontSize: "0.9rem", marginBottom: "16px" }}>
+              You haven't created any tournaments yet.
+            </div>
+            <Link href="/dashboard/tournaments/create" style={{
+              display: "inline-block",
+              padding: "10px 24px",
+              background: "var(--gold)",
+              color: "var(--black)",
               fontFamily: "Barlow Condensed, sans-serif",
-              fontWeight: 700,
-              fontSize: "1rem",
+              fontWeight: 800,
+              fontSize: "0.85rem",
               letterSpacing: "0.1em",
-              color: "var(--white-40)",
               textTransform: "uppercase",
-              marginBottom: "8px",
-            }}>No Tournaments Yet</div>
-            <p style={{ color: "var(--white-40)", fontSize: "0.85rem", marginBottom: "20px" }}>
-              Create your first tournament to get started.
-            </p>
-            <Link href="/dashboard/tournaments/create" className="btn-gold">
-              Create Tournament
-            </Link>
+              textDecoration: "none",
+            }}>Create Your First Tournament</Link>
           </div>
         ) : (
-          <div style={{
-            display: "grid",
-            gap: "1px",
-            background: "var(--border)",
-            border: "1px solid var(--border)",
-          }}>
+          <div style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
             <div style={{
               display: "grid",
-              gridTemplateColumns: "1fr 120px 80px 80px 120px 100px",
-              padding: "10px 20px",
-              background: "var(--surface-2)",
+              gridTemplateColumns: "1fr auto auto auto auto",
+              gap: "16px",
+              padding: "14px 20px",
+              background: "var(--charcoal)",
+              borderBottom: "1px solid var(--border)",
+              fontFamily: "Barlow Condensed, sans-serif",
+              fontWeight: 700,
+              fontSize: "0.7rem",
+              letterSpacing: "0.12em",
+              color: "var(--white-40)",
+              textTransform: "uppercase",
             }}>
-              {["Tournament", "Status", "Teams", "Matches", "Created", "Actions"].map((col, i) => (
-                <div key={col} style={{
-                  fontFamily: "Barlow Condensed, sans-serif",
-                  fontWeight: 600,
-                  fontSize: "0.7rem",
-                  letterSpacing: "0.15em",
-                  color: "var(--white-40)",
-                  textTransform: "uppercase",
-                  textAlign: i > 1 ? "center" : "left",
-                }}>{col}</div>
-              ))}
+              <span>Tournament</span>
+              <span style={{ textAlign: "center" }}>Status</span>
+              <span style={{ textAlign: "center" }}>Teams</span>
+              <span style={{ textAlign: "center" }}>Matches</span>
+              <span style={{ textAlign: "right" }}>Actions</span>
             </div>
-
-            {tournaments.map((t: any) => {
-              const status = (t.status || "").toUpperCase();
+            {tournaments.map((t: any, i: number) => {
+              const statusColor = t.status === "live" ? "var(--red)"
+                : t.status === "upcoming" ? "var(--gold)"
+                : t.status === "completed" ? "var(--green)" : "var(--white-40)";
               return (
                 <div key={t.id} style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 120px 80px 80px 120px 100px",
-                  padding: "14px 20px",
-                  background: "var(--surface)",
-                  borderTop: "1px solid var(--border)",
+                  gridTemplateColumns: "1fr auto auto auto auto",
+                  gap: "16px",
+                  padding: "16px 20px",
+                  borderBottom: i < tournaments.length - 1 ? "1px solid var(--border)" : "none",
                   alignItems: "center",
                 }}>
                   <div>
-                    <div style={{
-                      fontFamily: "Barlow Condensed, sans-serif",
-                      fontWeight: 700,
-                      fontSize: "0.95rem",
-                      letterSpacing: "0.04em",
-                      color: "var(--white)",
-                      textTransform: "uppercase",
-                    }}>{t.name}</div>
+                    <div style={{ color: "var(--white)", fontSize: "0.95rem", fontWeight: 600 }}>{t.name}</div>
+                    <div style={{ color: "var(--white-40)", fontSize: "0.75rem" }}>
+                      Created {new Date(t.createdAt).toLocaleDateString()}
+                    </div>
                   </div>
-                  <div>
-                    {status === "LIVE" && <span className="badge-live">Live</span>}
-                    {(status === "UPCOMING" || status === "REGISTRATION") && <span className="badge-upcoming">{status}</span>}
-                    {status === "COMPLETED" && <span className="badge-completed">Completed</span>}
-                    {status === "DRAFT" && <span className="badge-warning">Draft</span>}
-                  </div>
-                  <div style={{ textAlign: "center", fontFamily: "JetBrains Mono, monospace", fontSize: "0.85rem", color: "var(--white-70)" }}>
-                    {t._count.teams}/{t.maxTeams || "∞"}
-                  </div>
-                  <div style={{ textAlign: "center", fontFamily: "JetBrains Mono, monospace", fontSize: "0.85rem", color: "var(--white-70)" }}>
-                    {t._count.matches}
-                  </div>
-                  <div style={{ textAlign: "center", fontFamily: "JetBrains Mono, monospace", fontSize: "0.75rem", color: "var(--white-40)" }}>
-                    {new Date(t.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "center" }}>
-                    <Link href={`/dashboard/tournaments/${t.id}`} style={{
-                      fontFamily: "Barlow Condensed, sans-serif",
-                      fontWeight: 700,
-                      fontSize: "0.75rem",
-                      letterSpacing: "0.1em",
-                      color: "var(--gold)",
-                      textDecoration: "none",
-                      textTransform: "uppercase",
-                    }}>Manage →</Link>
-                  </div>
+                  <span style={{
+                    padding: "3px 10px",
+                    background: `${statusColor}22`,
+                    color: statusColor,
+                    fontFamily: "Barlow Condensed, sans-serif",
+                    fontWeight: 700,
+                    fontSize: "0.7rem",
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    textAlign: "center",
+                  }}>
+                    {t.status === "live" && "● "}{t.status}
+                  </span>
+                  <span style={{ textAlign: "center", color: "var(--white)", fontFamily: "JetBrains Mono, monospace", fontSize: "0.85rem" }}>
+                    {t._count?.teams ?? 0}/{t.maxTeams}
+                  </span>
+                  <span style={{ textAlign: "center", color: "var(--white)", fontFamily: "JetBrains Mono, monospace", fontSize: "0.85rem" }}>
+                    {t._count?.matches ?? 0}
+                  </span>
+                  <Link href={`/dashboard/tournaments/${t.id}`} style={{
+                    padding: "6px 12px",
+                    color: "var(--gold)",
+                    fontFamily: "Barlow Condensed, sans-serif",
+                    fontWeight: 700,
+                    fontSize: "0.75rem",
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    textDecoration: "none",
+                    textAlign: "right",
+                  }}>Manage →</Link>
                 </div>
               );
             })}
           </div>
         )}
       </div>
+
+      {/* NEPAL PAYMENT — only show if user is not Pro */}
+      {!userInfo?.isPro && paymentSettings && (
+        <NepalPaymentSection settings={paymentSettings} variant="dashboard" />
+      )}
     </div>
   );
 }
