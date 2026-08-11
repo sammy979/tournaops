@@ -39,7 +39,6 @@ export default function OrganizerProfileForm({ initial }: Props) {
     try {
       let logoUrl = organizerLogo;
 
-      // Upload logo first if new file
       if (logoFile) {
         const formData = new FormData();
         formData.append("file", logoFile);
@@ -50,24 +49,21 @@ export default function OrganizerProfileForm({ initial }: Props) {
         if (uploadRes.ok) {
           const data = await uploadRes.json();
           logoUrl = data.url || data.imageUrl || logoUrl;
-        } else {
-          throw new Error("Logo upload failed");
         }
       }
 
-      // Save profile
       const res = await fetch("/api/organizer/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          organizerName: organizerName.trim() || null,
+          organizerName: organizerName.trim(),
           organizerLogo: logoUrl || null,
           organizerBio: organizerBio.trim() || null,
         }),
       });
 
       if (res.ok) {
-        setMessage({ type: "success", text: "Profile saved successfully" });
+        setMessage({ type: "success", text: "Profile saved" });
         setLogoFile(null);
         setLogoPreview(null);
         router.refresh();
@@ -88,7 +84,6 @@ export default function OrganizerProfileForm({ initial }: Props) {
       border: "1px solid var(--border)",
       padding: "28px 24px",
     }}>
-      {/* ORGANIZER NAME */}
       <div style={{ marginBottom: "20px" }}>
         <label style={{
           display: "block",
@@ -99,13 +94,14 @@ export default function OrganizerProfileForm({ initial }: Props) {
           color: "var(--white-70)",
           textTransform: "uppercase",
           marginBottom: "6px",
-        }}>Organizer Name</label>
+        }}>Organizer Name *</label>
         <input
           type="text"
           value={organizerName}
           onChange={(e) => setOrganizerName(e.target.value)}
           placeholder="e.g. Nepal Esports Cup Organizer"
-          maxLength={80}
+          maxLength={60}
+          minLength={2}
           style={{
             width: "100%",
             fontFamily: "Barlow, sans-serif",
@@ -117,16 +113,11 @@ export default function OrganizerProfileForm({ initial }: Props) {
             outline: "none",
           }}
         />
-        <div style={{
-          fontSize: "0.72rem",
-          color: "var(--white-40)",
-          marginTop: "4px",
-        }}>
-          Displayed on all your tournaments' public pages.
+        <div style={{ fontSize: "0.72rem", color: "var(--white-40)", marginTop: "4px" }}>
+          2-60 characters. Displayed on all public tournament pages.
         </div>
       </div>
 
-      {/* ORGANIZER LOGO */}
       <div style={{ marginBottom: "20px" }}>
         <label style={{
           display: "block",
@@ -139,11 +130,7 @@ export default function OrganizerProfileForm({ initial }: Props) {
           marginBottom: "6px",
         }}>Logo</label>
 
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "16px",
-        }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{
             width: "60px",
             height: "60px",
@@ -187,18 +174,13 @@ export default function OrganizerProfileForm({ initial }: Props) {
                 border: "1px solid var(--border)",
               }}
             />
-            <div style={{
-              fontSize: "0.72rem",
-              color: "var(--white-40)",
-              marginTop: "4px",
-            }}>
+            <div style={{ fontSize: "0.72rem", color: "var(--white-40)", marginTop: "4px" }}>
               Square logo recommended. PNG, JPG, or WEBP.
             </div>
           </div>
         </div>
       </div>
 
-      {/* ORGANIZER BIO */}
       <div style={{ marginBottom: "24px" }}>
         <div style={{
           display: "flex",
@@ -224,7 +206,7 @@ export default function OrganizerProfileForm({ initial }: Props) {
           value={organizerBio}
           onChange={(e) => setOrganizerBio(e.target.value)}
           rows={5}
-          placeholder="Tell teams about your organization, the tournaments you run, your competitive scene..."
+          placeholder="Tell teams about your organization..."
           maxLength={bioMax}
           style={{
             width: "100%",
@@ -241,7 +223,6 @@ export default function OrganizerProfileForm({ initial }: Props) {
         />
       </div>
 
-      {/* MESSAGE */}
       {message && (
         <div style={{
           padding: "10px 14px",
@@ -258,13 +239,15 @@ export default function OrganizerProfileForm({ initial }: Props) {
         }}>{message.text}</div>
       )}
 
-      {/* ACTIONS */}
       <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
         <button
           onClick={save}
-          disabled={saving}
+          disabled={saving || organizerName.trim().length < 2}
           className="btn-gold"
-          style={{ opacity: saving ? 0.5 : 1 }}
+          style={{
+            opacity: (saving || organizerName.trim().length < 2) ? 0.5 : 1,
+            cursor: (saving || organizerName.trim().length < 2) ? "not-allowed" : "pointer",
+          }}
         >
           {saving ? "Saving..." : "Save Profile"}
         </button>

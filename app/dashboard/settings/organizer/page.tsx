@@ -29,20 +29,17 @@ async function getUserAndStats(userId: string) {
 
   const tournaments = await prisma.tournament.findMany({
     where: { userId },
-    select: {
-      id: true,
-      status: true,
-    },
+    select: { id: true, status: true },
   });
 
   const stats = {
     total: tournaments.length,
-    live: tournaments.filter((t) => (t.status || "").toLowerCase() === "live").length,
-    upcoming: tournaments.filter((t) => {
+    live: tournaments.filter((t: any) => (t.status || "").toLowerCase() === "live").length,
+    upcoming: tournaments.filter((t: any) => {
       const s = (t.status || "").toLowerCase();
       return s === "upcoming" || s === "registration" || s === "draft";
     }).length,
-    completed: tournaments.filter((t) => (t.status || "").toLowerCase() === "completed").length,
+    completed: tournaments.filter((t: any) => (t.status || "").toLowerCase() === "completed").length,
   };
 
   return { user, stats };
@@ -62,8 +59,7 @@ export default async function OrganizerProfilePage() {
         background: "var(--charcoal)",
         borderBottom: "1px solid var(--border)",
       }}>
-        <div className="container-ops" style={{ padding: "24px 24px 0" }}>
-          {/* BREADCRUMB */}
+        <div className="container-ops" style={{ padding: "24px 24px 24px" }}>
           <div style={{
             display: "flex",
             alignItems: "center",
@@ -90,12 +86,10 @@ export default async function OrganizerProfilePage() {
             textTransform: "uppercase",
             color: "var(--white)",
             lineHeight: 1,
-            paddingBottom: "24px",
           }}>Organizer Profile</h1>
         </div>
       </div>
 
-      {/* PROFILE CARD PREVIEW + FORM */}
       <div className="container-ops" style={{ padding: "32px 24px" }}>
         <div style={{
           display: "grid",
@@ -112,15 +106,13 @@ export default async function OrganizerProfilePage() {
               borderTop: "3px solid var(--gold)",
               overflow: "hidden",
             }}>
-              {/* Cover strip */}
               <div style={{
                 height: "60px",
                 background: "linear-gradient(135deg, rgba(201,168,76,0.1) 0%, rgba(230,57,70,0.05) 100%)",
                 borderBottom: "1px solid var(--border)",
               }} />
 
-              <div style={{ padding: "0 20px 20px", position: "relative" }}>
-                {/* Logo/Avatar */}
+              <div style={{ padding: "0 20px 20px" }}>
                 <div style={{
                   width: "72px",
                   height: "72px",
@@ -188,7 +180,6 @@ export default async function OrganizerProfilePage() {
                   }}>{user.organizerBio}</p>
                 )}
 
-                {/* Stats */}
                 <div style={{
                   marginTop: "20px",
                   paddingTop: "16px",
@@ -198,7 +189,7 @@ export default async function OrganizerProfilePage() {
                   gap: "12px",
                 }}>
                   {[
-                    { label: "Total", value: stats.total },
+                    { label: "Total", value: stats.total, color: "var(--white)" },
                     { label: "Live", value: stats.live, color: "var(--red)" },
                     { label: "Upcoming", value: stats.upcoming, color: "var(--blue)" },
                     { label: "Done", value: stats.completed, color: "var(--green)" },
@@ -208,7 +199,7 @@ export default async function OrganizerProfilePage() {
                         fontFamily: "JetBrains Mono, monospace",
                         fontWeight: 700,
                         fontSize: "1.1rem",
-                        color: stat.color || "var(--white)",
+                        color: stat.color,
                       }}>{stat.value}</div>
                       <div style={{
                         fontFamily: "Barlow Condensed, sans-serif",
@@ -243,7 +234,7 @@ export default async function OrganizerProfilePage() {
             <div className="section-label">Edit Profile</div>
             <OrganizerProfileForm
               initial={{
-                organizerName: user.organizerName || "",
+                organizerName: user.organizerName || user.displayName || "",
                 organizerLogo: user.organizerLogo || "",
                 organizerBio: user.organizerBio || "",
               }}
