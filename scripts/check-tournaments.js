@@ -4,15 +4,13 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('\n=== ALL TOURNAMENTS ===\n')
 
+  // Simpler query - avoids stage.matches count issue
   const tournaments = await prisma.tournament.findMany({
     orderBy: { createdAt: 'desc' },
     include: {
       _count: { select: { teams: true } },
-      stages: {
-        include: {
-          _count: { select: { matches: true } },
-        },
-      },
+      stages: { select: { id: true, name: true, order: true } },
+      matches: { select: { id: true, status: true } },
     },
   })
 
@@ -29,14 +27,14 @@ async function main() {
     console.log(`  Owner:   ${t.userId}`)
     console.log(`  Teams:   ${t._count.teams}`)
     console.log(`  Stages:  ${t.stages.length}`)
+    console.log(`  Matches: ${t.matches.length} (${t.matches.filter(m => m.status === 'completed').length} completed)`)
     t.stages.forEach(s => {
-      console.log(`    - ${s.name} (${s.status || 'no status'}) - ${s._count.matches} matches`)
+      console.log(`    - ${s.name}`)
     })
     console.log(`  Created: ${t.createdAt}`)
     console.log()
   })
 
-  // Status summary
   console.log('=== STATUS SUMMARY ===')
   const statuses = {}
   tournaments.forEach(t => {
