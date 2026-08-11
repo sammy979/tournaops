@@ -1,5 +1,8 @@
 "use client";
 
+import PublicNav    from "@/components/ui/PublicNav";
+import PublicFooter from "@/components/ui/PublicFooter";
+
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -19,7 +22,7 @@ import {
   Medal,
 } from "lucide-react";
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Mock Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const MOCK_PLAYER = {
   id:          "p1",
   name:        "ShadowX",
@@ -68,7 +71,7 @@ const MOCK_PLAYER = {
   ],
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function PlacementBadge({ place }: { place: number }) {
   if (place === 1) return <span className="text-amber-400 font-black text-sm flex items-center gap-1"><Trophy className="w-3.5 h-3.5" /> 1st</span>;
   if (place === 2) return <span className="text-slate-300 font-black text-sm flex items-center gap-1"><Medal className="w-3.5 h-3.5" /> 2nd</span>;
@@ -76,7 +79,7 @@ function PlacementBadge({ place }: { place: number }) {
   return <span className="text-white/40 font-bold text-sm">{place}th</span>;
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function PlayerProfilePage() {
   const params = useParams();
   const router = useRouter();
@@ -111,7 +114,7 @@ export default function PlayerProfilePage() {
                 {p.avatar}
               </div>
               <div className="absolute -bottom-2 -right-2 bg-emerald-500 rounded-full w-6 h-6 flex items-center justify-center border-2 border-[#060810]">
-                <span className="text-white text-xs font-black">✓</span>
+                <span className="text-white text-xs font-black">âœ“</span>
               </div>
             </div>
 
@@ -124,9 +127,9 @@ export default function PlayerProfilePage() {
               <p className="text-white/50 text-sm mb-1">{p.ign}</p>
               <div className="flex items-center gap-3 text-sm text-white/40 flex-wrap mb-4">
                 <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" />{p.role}</span>
-                <span>·</span>
+                <span>Â·</span>
                 <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" />{p.team} [{p.teamTag}]</span>
-                <span>·</span>
+                <span>Â·</span>
                 <span className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" />{p.region}</span>
               </div>
               <p className="text-white/50 text-sm max-w-xl leading-relaxed">{p.bio}</p>
@@ -239,7 +242,7 @@ export default function PlayerProfilePage() {
                 <div className="w-10 h-10 rounded-lg bg-violet-600/30 flex items-center justify-center text-violet-300 font-black text-sm">{p.teamTag}</div>
                 <div>
                   <p className="text-white font-bold text-sm">{p.team}</p>
-                  <p className="text-violet-300/60 text-xs">[{p.teamTag}] · {p.region}</p>
+                  <p className="text-violet-300/60 text-xs">[{p.teamTag}] Â· {p.region}</p>
                 </div>
               </div>
               <div className="space-y-2">
@@ -263,10 +266,10 @@ export default function PlayerProfilePage() {
               </h2>
               <div className="space-y-2">
                 {[
-                  { label: "Tournament Champion ×3",    icon: "🏆" },
-                  { label: "100% Check-In Rate",         icon: "✅" },
-                  { label: "Top Fragger (5 events)",     icon: "⚡" },
-                  { label: "Veteran (1+ year active)",   icon: "🎖️" },
+                  { label: "Tournament Champion Ã—3",    icon: "ðŸ†" },
+                  { label: "100% Check-In Rate",         icon: "âœ…" },
+                  { label: "Top Fragger (5 events)",     icon: "âš¡" },
+                  { label: "Veteran (1+ year active)",   icon: "ðŸŽ–ï¸" },
                 ].map(a => (
                   <div key={a.label} className="flex items-center gap-2.5 py-1.5 border-b border-white/[0.04] last:border-0">
                     <span className="text-lg">{a.icon}</span>
@@ -282,7 +285,7 @@ export default function PlayerProfilePage() {
       <footer className="border-t border-white/[0.06] py-6 mt-8">
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
           <span className="text-white font-black">Tourna<span className="text-violet-400">Ops</span></span>
-          <p className="text-white/20 text-sm">© 2025 TournaOps</p>
+          <p className="text-white/20 text-sm">Â© 2025 TournaOps</p>
         </div>
       </footer>
     </div>

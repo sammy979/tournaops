@@ -1,5 +1,8 @@
 "use client";
 
+import PublicNav    from "@/components/ui/PublicNav";
+import PublicFooter from "@/components/ui/PublicFooter";
+
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
@@ -94,12 +97,12 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <label className="text-white/40 text-xs font-medium block mb-1.5">Message</label>
-                    <textarea value={form.message} onChange={e => upd("message",e.target.value)} rows={5} placeholder="Describe your question or issue in detail…"
+                    <textarea value={form.message} onChange={e => upd("message",e.target.value)} rows={5} placeholder="Describe your question or issue in detailâ€¦"
                       className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-500/50 resize-none" />
                   </div>
                   <button type="submit" disabled={loading || !form.name || !form.email || !form.message}
                     className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white py-3 rounded-xl font-semibold transition-colors">
-                    {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</> : <><Send className="w-4 h-4" /> Send Message</>}
+                    {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Sendingâ€¦</> : <><Send className="w-4 h-4" /> Send Message</>}
                   </button>
                 </form>
               </div>
@@ -111,7 +114,7 @@ export default function ContactPage() {
       <footer className="border-t border-white/[0.06] py-6 mt-8">
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
           <span className="text-white font-black">Tourna<span className="text-violet-400">Ops</span></span>
-          <p className="text-white/20 text-sm">© 2025 TournaOps. All rights reserved.</p>
+          <p className="text-white/20 text-sm">Â© 2025 TournaOps. All rights reserved.</p>
         </div>
       </footer>
     </div>

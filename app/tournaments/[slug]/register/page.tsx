@@ -1,5 +1,8 @@
 "use client";
 
+import PublicNav    from "@/components/ui/PublicNav";
+import PublicFooter from "@/components/ui/PublicFooter";
+
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
@@ -17,7 +20,7 @@ import {
   Info,
 } from "lucide-react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface TeamMember {
   id:   string;
   name: string;
@@ -27,7 +30,7 @@ interface TeamMember {
 
 type Step = 1 | 2 | 3;
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function TournamentRegisterPage() {
   const params = useParams();
   const router = useRouter();
@@ -142,7 +145,7 @@ export default function TournamentRegisterPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-black text-white mb-1">Team Registration</h1>
-          <p className="text-white/40">Champions Circuit Season 4 · Valorant · NA</p>
+          <p className="text-white/40">Champions Circuit Season 4 Â· Valorant Â· NA</p>
         </div>
 
         {/* Step indicator */}
@@ -168,7 +171,7 @@ export default function TournamentRegisterPage() {
           ))}
         </div>
 
-        {/* ── Step 1: Team Info ─────────────────────────────── */}
+        {/* â”€â”€ Step 1: Team Info â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {step === 1 && (
           <div className="bg-[#0f1117] border border-white/[0.06] rounded-2xl p-6">
             <h2 className="text-white font-bold text-lg mb-5">Team Information</h2>
@@ -216,7 +219,7 @@ export default function TournamentRegisterPage() {
           </div>
         )}
 
-        {/* ── Step 2: Roster ────────────────────────────────── */}
+        {/* â”€â”€ Step 2: Roster â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {step === 2 && (
           <div className="bg-[#0f1117] border border-white/[0.06] rounded-2xl p-6">
             <div className="flex items-center justify-between mb-5">
@@ -253,7 +256,7 @@ export default function TournamentRegisterPage() {
             </div>
 
             <div className="mt-6 flex justify-between">
-              <button onClick={() => setStep(1)} className="text-white/40 hover:text-white/70 text-sm transition-colors">← Back</button>
+              <button onClick={() => setStep(1)} className="text-white/40 hover:text-white/70 text-sm transition-colors">â† Back</button>
               <button onClick={() => setStep(3)}
                 className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-6 py-2.5 rounded-xl font-semibold transition-colors">
                 Next: Confirm <ArrowRight className="w-4 h-4" />
@@ -262,7 +265,7 @@ export default function TournamentRegisterPage() {
           </div>
         )}
 
-        {/* ── Step 3: Confirm ───────────────────────────────── */}
+        {/* â”€â”€ Step 3: Confirm â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {step === 3 && (
           <div className="space-y-4">
             <div className="bg-[#0f1117] border border-white/[0.06] rounded-2xl p-6">
@@ -273,7 +276,7 @@ export default function TournamentRegisterPage() {
                 <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
                   <p className="text-white/40 text-xs font-medium mb-2 uppercase tracking-wide">Team</p>
                   <p className="text-white font-bold text-lg">{teamName} <span className="text-white/30 font-mono text-sm">[{teamTag}]</span></p>
-                  <p className="text-white/50 text-sm mt-1">{captainName} · {email}</p>
+                  <p className="text-white/50 text-sm mt-1">{captainName} Â· {email}</p>
                   <p className="text-white/30 text-xs mt-1">{region} Region</p>
                 </div>
                 <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
@@ -281,7 +284,7 @@ export default function TournamentRegisterPage() {
                   <div className="space-y-1">
                     {members.slice(0, 4).map(m => (
                       <div key={m.id} className="flex justify-between text-sm">
-                        <span className="text-white/60 truncate">{m.name || "—"}</span>
+                        <span className="text-white/60 truncate">{m.name || "â€”"}</span>
                         <span className="text-white/30 text-xs">{m.role}</span>
                       </div>
                     ))}
@@ -313,7 +316,7 @@ export default function TournamentRegisterPage() {
             </div>
 
             <div className="flex justify-between items-center">
-              <button onClick={() => setStep(2)} className="text-white/40 hover:text-white/70 text-sm transition-colors">← Back</button>
+              <button onClick={() => setStep(2)} className="text-white/40 hover:text-white/70 text-sm transition-colors">â† Back</button>
               <button onClick={handleSubmit} disabled={!agreed}
                 className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white px-8 py-3 rounded-xl font-bold text-base transition-colors">
                 <Shield className="w-4 h-4" /> Submit Registration

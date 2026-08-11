@@ -1,5 +1,8 @@
 "use client";
 
+import PublicNav    from "@/components/ui/PublicNav";
+import PublicFooter from "@/components/ui/PublicFooter";
+
 import { useParams, useRouter } from "next/navigation";
 import { useState, useRef } from "react";
 import {
@@ -16,7 +19,7 @@ import {
   Download,
 } from "lucide-react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 type MatchStatus = "completed" | "live" | "upcoming" | "bye";
 
 interface BracketTeam {
@@ -42,7 +45,7 @@ interface BracketRound {
   matches: BracketMatch[];
 }
 
-// ─── Mock Bracket Data ────────────────────────────────────────────────────────
+// â”€â”€â”€ Mock Bracket Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const BRACKET: BracketRound[] = [
   {
     name: "Quarterfinals",
@@ -68,7 +71,7 @@ const BRACKET: BracketRound[] = [
   },
 ];
 
-// ─── Match Card ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Match Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function BracketMatchCard({ match }: { match: BracketMatch }) {
   const isLive  = match.status === "live";
   const isDone  = match.status === "completed";
@@ -139,7 +142,7 @@ function BracketMatchCard({ match }: { match: BracketMatch }) {
   );
 }
 
-// ─── Connector Lines (CSS-based) ──────────────────────────────────────────────
+// â”€â”€â”€ Connector Lines (CSS-based) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ConnectorLine({ fromTop, toTop, x }: { fromTop: number; toTop: number; x: number }) {
   const midY = (fromTop + toTop) / 2;
   return (
@@ -152,7 +155,7 @@ function ConnectorLine({ fromTop, toTop, x }: { fromTop: number; toTop: number; 
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function BracketPage() {
   const params = useParams();
   const router = useRouter();
@@ -196,7 +199,7 @@ export default function BracketPage() {
             <div className="h-5 w-px bg-white/[0.08]" />
             <div>
               <span className="text-white font-bold text-sm">Champions Circuit Season 4</span>
-              <span className="text-white/30 text-xs ml-2">· Bracket View</span>
+              <span className="text-white/30 text-xs ml-2">Â· Bracket View</span>
             </div>
           </div>
 
@@ -305,7 +308,7 @@ export default function BracketPage() {
 
         {/* Zoom hint */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/20 text-xs font-medium bg-white/[0.04] border border-white/[0.06] px-3 py-1.5 rounded-full pointer-events-none">
-          Drag to pan · Scroll to zoom · Use buttons to reset
+          Drag to pan Â· Scroll to zoom Â· Use buttons to reset
         </div>
       </div>
 
@@ -323,7 +326,7 @@ export default function BracketPage() {
               <span className="text-white/25 text-xs">{stat.label}</span>
             </div>
           ))}
-          <div className="ml-auto text-white/20 text-xs">Valorant · Double Elimination · NA</div>
+          <div className="ml-auto text-white/20 text-xs">Valorant Â· Double Elimination Â· NA</div>
         </div>
       </div>
     </div>

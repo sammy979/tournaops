@@ -1,4 +1,7 @@
 "use client";
+
+import PublicNav    from "@/components/ui/PublicNav";
+import PublicFooter from "@/components/ui/PublicFooter";
 import { useParams, useRouter } from "next/navigation";
 import { ChevronRight, ArrowLeft, CheckCircle2, Clock, Users, Trophy } from "lucide-react";
 
@@ -58,7 +61,7 @@ export default function QualifiersPage() {
       <footer className="border-t border-white/[0.06] py-6 mt-8">
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
           <span className="text-white font-black">Tourna<span className="text-violet-400">Ops</span></span>
-          <p className="text-white/20 text-sm">© 2025 TournaOps</p>
+          <p className="text-white/20 text-sm">Â© 2025 TournaOps</p>
         </div>
       </footer>
     </div>

@@ -1,4 +1,7 @@
 "use client";
+
+import PublicNav    from "@/components/ui/PublicNav";
+import PublicFooter from "@/components/ui/PublicFooter";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { ChevronRight, AlertTriangle, ArrowLeft, Send, CheckCircle2, Loader2 } from "lucide-react";
@@ -72,7 +75,7 @@ export default function ReportPage() {
                     className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-500/50"/>
                 </div>
                 <button type="submit" disabled={loading||!desc.trim()} className="w-full flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-500 disabled:opacity-40 text-white py-3 rounded-xl font-semibold transition-colors">
-                  {loading?<><Loader2 className="w-4 h-4 animate-spin"/>Submitting…</>:<><Send className="w-4 h-4"/>Submit Report</>}
+                  {loading?<><Loader2 className="w-4 h-4 animate-spin"/>Submittingâ€¦</>:<><Send className="w-4 h-4"/>Submit Report</>}
                 </button>
               </form>
             </div>

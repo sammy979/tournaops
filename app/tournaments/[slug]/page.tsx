@@ -1,5 +1,8 @@
 "use client";
 
+import PublicNav    from "@/components/ui/PublicNav";
+import PublicFooter from "@/components/ui/PublicFooter";
+
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
@@ -22,7 +25,7 @@ import {
   Lock,
 } from "lucide-react";
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Mock Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const MOCK_TOURNAMENT = {
   slug:         "champions-circuit-s4",
   name:         "Champions Circuit Season 4",
@@ -38,17 +41,17 @@ const MOCK_TOURNAMENT = {
   organizer:    "TournaOps Official",
   description:  "The premier seasonal championship circuit for top-tier Valorant teams across North America. Featuring a full double-elimination bracket with live broadcast support, professional casters, and a $10,000 prize pool.",
   bannerGradient: "from-violet-900 via-indigo-900 to-slate-900",
-  game_icon:    "🎮",
+  game_icon:    "ðŸŽ®",
   prizes: [
-    { place: "1st", amount: "$5,000", icon: "🥇" },
-    { place: "2nd", amount: "$2,500", icon: "🥈" },
-    { place: "3rd", amount: "$1,500", icon: "🥉" },
+    { place: "1st", amount: "$5,000", icon: "ðŸ¥‡" },
+    { place: "2nd", amount: "$2,500", icon: "ðŸ¥ˆ" },
+    { place: "3rd", amount: "$1,500", icon: "ðŸ¥‰" },
     { place: "4th", amount: "$1,000", icon: "4th" },
   ],
   schedule: [
-    { stage: "Group Stage",   date: "July 1–10",   status: "completed" },
-    { stage: "Quarterfinals", date: "July 14–17",  status: "live"      },
-    { stage: "Semifinals",    date: "July 21–23",  status: "upcoming"  },
+    { stage: "Group Stage",   date: "July 1â€“10",   status: "completed" },
+    { stage: "Quarterfinals", date: "July 14â€“17",  status: "live"      },
+    { stage: "Semifinals",    date: "July 21â€“23",  status: "upcoming"  },
     { stage: "Grand Finals",  date: "July 28",     status: "upcoming"  },
   ],
   topTeams: [
@@ -72,7 +75,7 @@ const MOCK_TOURNAMENT = {
   registrationOpen: false,
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; classes: string; dot: string }> = {
     live:      { label: "Live Now",  classes: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40", dot: "bg-emerald-400 animate-pulse" },
@@ -89,7 +92,7 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function PublicTournamentPage() {
   const params = useParams();
   const router = useRouter();
@@ -101,7 +104,7 @@ export default function PublicTournamentPage() {
   return (
     <div className="min-h-screen bg-[#060810] text-white">
 
-      {/* ── Top Nav ─────────────────────────────────────────── */}
+      {/* â”€â”€ Top Nav â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <nav className="sticky top-0 z-50 bg-[#060810]/90 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <button onClick={() => router.push("/")} className="text-white font-black text-lg tracking-tight">
@@ -118,7 +121,7 @@ export default function PublicTournamentPage() {
         </div>
       </nav>
 
-      {/* ── Hero ────────────────────────────────────────────── */}
+      {/* â”€â”€ Hero â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className={`relative bg-gradient-to-br ${t.bannerGradient} overflow-hidden`}>
         {/* Grid pattern */}
         <div className="absolute inset-0 opacity-10"
@@ -138,14 +141,14 @@ export default function PublicTournamentPage() {
               <div className="flex items-center gap-3 mb-3 flex-wrap">
                 <StatusBadge status={t.status} />
                 <span className="text-white/50 text-sm">{t.game}</span>
-                <span className="text-white/30">·</span>
+                <span className="text-white/30">Â·</span>
                 <span className="text-white/50 text-sm">{t.region}</span>
               </div>
               <h1 className="text-4xl md:text-5xl font-black text-white mb-4 leading-tight">{t.name}</h1>
               <p className="text-white/60 text-base max-w-xl leading-relaxed mb-6">{t.description}</p>
 
               <div className="flex flex-wrap gap-4 text-sm text-white/60">
-                <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4 text-white/30" />{t.startDate} — {t.endDate}</span>
+                <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4 text-white/30" />{t.startDate} â€” {t.endDate}</span>
                 <span className="flex items-center gap-1.5"><Globe    className="w-4 h-4 text-white/30" />{t.region}</span>
                 <span className="flex items-center gap-1.5"><MapPin   className="w-4 h-4 text-white/30" />{t.format}</span>
                 <span className="flex items-center gap-1.5"><Users    className="w-4 h-4 text-white/30" />{t.registeredTeams}/{t.maxTeams} Teams</span>
@@ -195,7 +198,7 @@ export default function PublicTournamentPage() {
         </div>
       </div>
 
-      {/* ── Tabs ────────────────────────────────────────────── */}
+      {/* â”€â”€ Tabs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="sticky top-14 z-40 bg-[#060810]/95 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex gap-0">
@@ -213,7 +216,7 @@ export default function PublicTournamentPage() {
         </div>
       </div>
 
-      {/* ── Content ─────────────────────────────────────────── */}
+      {/* â”€â”€ Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="max-w-6xl mx-auto px-6 py-8">
 
         {/* Overview Tab */}
@@ -307,7 +310,7 @@ export default function PublicTournamentPage() {
                       </div>
                       <div className="text-right">
                         <span className="text-emerald-400 text-sm font-bold">{team.wins}W</span>
-                        <span className="text-white/20 mx-1">·</span>
+                        <span className="text-white/20 mx-1">Â·</span>
                         <span className="text-rose-400 text-sm font-bold">{team.losses}L</span>
                       </div>
                     </div>
@@ -411,7 +414,7 @@ export default function PublicTournamentPage() {
       <footer className="border-t border-white/[0.06] mt-16 py-8">
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <span className="text-white font-black">Tourna<span className="text-violet-400">Ops</span></span>
-          <p className="text-white/30 text-sm">© 2025 TournaOps. All rights reserved.</p>
+          <p className="text-white/30 text-sm">Â© 2025 TournaOps. All rights reserved.</p>
           <div className="flex gap-4 text-white/30 text-sm">
             <Link href="/privacy" className="hover:text-white/60 transition-colors">Privacy</Link>
             <Link href="/terms"   className="hover:text-white/60 transition-colors">Terms</Link>

@@ -1,5 +1,8 @@
 "use client";
 
+import PublicNav    from "@/components/ui/PublicNav";
+import PublicFooter from "@/components/ui/PublicFooter";
+
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -38,7 +41,7 @@ export default function TournamentPreviewPage() {
         <div className="flex items-center gap-2 text-amber-300 text-sm">
           <Eye className="w-4 h-4" />
           <span className="font-semibold">Preview Mode</span>
-          <span className="text-amber-300/60">— This is how your tournament appears to the public</span>
+          <span className="text-amber-300/60">â€” This is how your tournament appears to the public</span>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={copyUrl}
@@ -71,12 +74,12 @@ export default function TournamentPreviewPage() {
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold border bg-emerald-500/20 text-emerald-300 border-emerald-500/40">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live Now
                 </span>
-                <span className="text-white/40 text-sm">{MOCK.game} · {MOCK.region}</span>
+                <span className="text-white/40 text-sm">{MOCK.game} Â· {MOCK.region}</span>
               </div>
               <h1 className="text-4xl font-black text-white mb-4">{MOCK.name}</h1>
               <p className="text-white/50 mb-6 max-w-lg">{MOCK.description}</p>
               <div className="flex flex-wrap gap-4 text-sm text-white/50 mb-6">
-                <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4 text-white/25" />{MOCK.startDate} — {MOCK.endDate}</span>
+                <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4 text-white/25" />{MOCK.startDate} â€” {MOCK.endDate}</span>
                 <span className="flex items-center gap-1.5"><Globe    className="w-4 h-4 text-white/25" />{MOCK.region}</span>
                 <span className="flex items-center gap-1.5"><Users    className="w-4 h-4 text-white/25" />{MOCK.registeredTeams}/{MOCK.maxTeams} Teams</span>
               </div>

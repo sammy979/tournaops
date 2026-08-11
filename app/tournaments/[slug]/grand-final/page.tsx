@@ -1,4 +1,7 @@
 "use client";
+
+import PublicNav    from "@/components/ui/PublicNav";
+import PublicFooter from "@/components/ui/PublicFooter";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Trophy, Zap, ChevronRight, Clock, ArrowLeft, Star } from "lucide-react";
@@ -60,7 +63,7 @@ export default function GrandFinalPage() {
             <Trophy className="w-4 h-4" /> Grand Finals
           </div>
           <h1 className="text-5xl font-black text-white mb-2">{MOCK.tournament}</h1>
-          <p className="text-white/40 mb-10">{MOCK.date} · {MOCK.time} · Bo{MOCK.bestOf}</p>
+          <p className="text-white/40 mb-10">{MOCK.date} Â· {MOCK.time} Â· Bo{MOCK.bestOf}</p>
 
           {/* Teams */}
           <div className="flex items-center gap-8 justify-center mb-10">
@@ -70,8 +73,8 @@ export default function GrandFinalPage() {
                 {MOCK.team1.tag[0]}
               </div>
               <p className="text-white font-black text-2xl">{MOCK.team1.name}</p>
-              <p className="text-white/30 text-sm">[{MOCK.team1.tag}] · #{MOCK.team1.seed} Seed</p>
-              <p className="text-emerald-400 text-sm font-bold mt-1">{MOCK.team1.wins}W — {MOCK.team1.losses}L</p>
+              <p className="text-white/30 text-sm">[{MOCK.team1.tag}] Â· #{MOCK.team1.seed} Seed</p>
+              <p className="text-emerald-400 text-sm font-bold mt-1">{MOCK.team1.wins}W â€” {MOCK.team1.losses}L</p>
             </div>
             <div className="text-center flex-shrink-0">
               <p className="text-white/20 font-black text-4xl">VS</p>
@@ -83,8 +86,8 @@ export default function GrandFinalPage() {
                 {MOCK.team2.tag[0]}
               </div>
               <p className="text-white font-black text-2xl">{MOCK.team2.name}</p>
-              <p className="text-white/30 text-sm">[{MOCK.team2.tag}] · #{MOCK.team2.seed} Seed</p>
-              <p className="text-emerald-400 text-sm font-bold mt-1">{MOCK.team2.wins}W — {MOCK.team2.losses}L</p>
+              <p className="text-white/30 text-sm">[{MOCK.team2.tag}] Â· #{MOCK.team2.seed} Seed</p>
+              <p className="text-emerald-400 text-sm font-bold mt-1">{MOCK.team2.wins}W â€” {MOCK.team2.losses}L</p>
             </div>
           </div>
 
@@ -107,7 +110,7 @@ export default function GrandFinalPage() {
       <footer className="border-t border-white/[0.06] py-6 mt-8">
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
           <span className="text-white font-black">Tourna<span className="text-violet-400">Ops</span></span>
-          <p className="text-white/20 text-sm">© 2025 TournaOps</p>
+          <p className="text-white/20 text-sm">Â© 2025 TournaOps</p>
         </div>
       </footer>
     </div>

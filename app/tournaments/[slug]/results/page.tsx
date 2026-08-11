@@ -1,5 +1,8 @@
 "use client";
 
+import PublicNav    from "@/components/ui/PublicNav";
+import PublicFooter from "@/components/ui/PublicFooter";
+
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
@@ -15,7 +18,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Mock Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const MOCK_RESULTS = [
   { id: "r1",  match: 1,  stage: "Group Stage",   round: "R1", team1: "Team Alpha",   score1: 2, team2: "Team Titan",   score2: 0, winner: "Team Alpha",   duration: "42m", maps: ["Ascent 13-5", "Bind 13-9"],                           date: "Jul 1" },
   { id: "r2",  match: 2,  stage: "Group Stage",   round: "R1", team1: "Team Nexus",   score1: 2, team2: "Team Blaze",   score2: 1, winner: "Team Nexus",   duration: "58m", maps: ["Haven 13-8", "Split 9-13", "Icebox 13-11"],           date: "Jul 1" },
@@ -29,7 +32,7 @@ const MOCK_RESULTS = [
 
 const STAGES = ["All Stages", "Group Stage", "Quarterfinals", "Semifinals", "Grand Finals"];
 
-// ─── Result Row ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Result Row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ResultRow({ result, expanded, onToggle }: {
   result: typeof MOCK_RESULTS[0]; expanded: boolean; onToggle: () => void;
 }) {
@@ -42,7 +45,7 @@ function ResultRow({ result, expanded, onToggle }: {
         <td className="py-3 px-5">
           <div>
             <p className="text-white/40 text-xs">{result.stage}</p>
-            <p className="text-white/30 text-xs">{result.round} · #{result.match}</p>
+            <p className="text-white/30 text-xs">{result.round} Â· #{result.match}</p>
           </div>
         </td>
         <td className="py-3 px-5">
@@ -89,7 +92,7 @@ function ResultRow({ result, expanded, onToggle }: {
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function TournamentResultsPage() {
   const params = useParams();
   const router = useRouter();
@@ -131,7 +134,7 @@ export default function TournamentResultsPage() {
             className="flex items-center gap-1.5 text-white/40 hover:text-white/70 text-sm transition-colors">
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
-          <span className="text-white/20">·</span>
+          <span className="text-white/20">Â·</span>
           <h1 className="text-2xl font-black text-white">Match Results</h1>
           <span className="ml-auto text-white/30 text-sm">{MOCK_RESULTS.length} completed matches</span>
         </div>
@@ -155,7 +158,7 @@ export default function TournamentResultsPage() {
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search teams or winners…"
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search teams or winnersâ€¦"
               className="w-full bg-[#0f1117] border border-white/[0.08] rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-violet-500/40" />
           </div>
           <div className="flex gap-2 flex-wrap">

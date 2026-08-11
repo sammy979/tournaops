@@ -1,4 +1,7 @@
 "use client";
+
+import PublicNav    from "@/components/ui/PublicNav";
+import PublicFooter from "@/components/ui/PublicFooter";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { Play, Square, RefreshCw, Bell, Volume2, VolumeX } from "lucide-react";

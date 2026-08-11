@@ -1,4 +1,7 @@
 "use client";
+
+import PublicNav    from "@/components/ui/PublicNav";
+import PublicFooter from "@/components/ui/PublicFooter";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -27,7 +30,7 @@ export default function PrivacyPage() {
       </nav>
       <div className="max-w-3xl mx-auto px-6 py-16">
         <h1 className="text-4xl font-black text-white mb-2">Privacy Policy</h1>
-        <p className="text-white/40 text-sm mb-10">Effective date: January 1, 2025 · Last updated: July 1, 2025</p>
+        <p className="text-white/40 text-sm mb-10">Effective date: January 1, 2025 Â· Last updated: July 1, 2025</p>
         <div className="space-y-8">
           {SECTIONS.map((s, i) => (
             <div key={s.title} className="border-l-2 border-violet-500/30 pl-6">
