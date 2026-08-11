@@ -1,50 +1,99 @@
-// components/organizer/QuickActions.tsx
-"use client"
-import { useRouter } from "next/navigation"
-import { UserPlus, Upload, ClipboardList, BarChart2, ArrowUpCircle, MessageSquare, Radio, Sparkles, FileText } from "lucide-react"
+"use client";
+import Link from "next/link";
 
 interface QuickActionsProps {
-  tournamentId: string
-  onAddTeam?: () => void
-  onImportTeams?: () => void
-  onEnterResult?: () => void
-  onAnnounce?: () => void
+  tournamentId?: string;
 }
 
-export default function QuickActions({ tournamentId, onAddTeam, onImportTeams, onEnterResult }: QuickActionsProps) {
-  const router = useRouter()
+export function QuickActions({ tournamentId }: QuickActionsProps) {
+  const base = tournamentId ? `/dashboard/tournaments/${tournamentId}` : "/dashboard";
 
-  const actions = [
-    { label: "Add Team", icon: UserPlus, color: "#3b82f6", onClick: onAddTeam || (() => router.push(`/dashboard/tournaments/${tournamentId}/teams`)) },
-    { label: "Import Teams", icon: Upload, color: "#6366f1", onClick: onImportTeams || (() => router.push(`/dashboard/tournaments/${tournamentId}/bulk-import`)) },
-    { label: "Enter Result", icon: ClipboardList, color: "#10b981", onClick: onEnterResult || (() => router.push(`/dashboard/tournaments/${tournamentId}/match-results`)) },
-    { label: "AI Screenshot", icon: Sparkles, color: "#a855f7", onClick: () => router.push(`/dashboard/tournaments/${tournamentId}/ai-import`) },
-    { label: "Standings", icon: BarChart2, color: "#f59e0b", onClick: () => router.push(`/dashboard/tournaments/${tournamentId}/standings`) },
-    { label: "Advance Stage", icon: ArrowUpCircle, color: "#ec4899", onClick: () => router.push(`/dashboard/tournaments/${tournamentId}/stages`) },
-    { label: "Discord", icon: MessageSquare, color: "#5865F2", onClick: () => router.push(`/dashboard/tournaments/${tournamentId}/discord`) },
-    { label: "Broadcast", icon: Radio, color: "#ef4444", onClick: () => router.push(`/dashboard/tournaments/${tournamentId}/broadcast`) },
-    { label: "Export", icon: FileText, color: "#6b7280", onClick: () => router.push(`/dashboard/tournaments/${tournamentId}/export`) },
-  ]
+  const groups = [
+    {
+      label: "Results",
+      actions: [
+        { label: "Add Match Result",  href: `${base}/match-results` },
+        { label: "AI Screenshot",     href: `${base}/ai-import`     },
+        { label: "Review Results",    href: `${base}/matches`        },
+      ],
+    },
+    {
+      label: "Tournament",
+      actions: [
+        { label: "Manage Teams",      href: `${base}/teams`          },
+        { label: "Group Seeding",     href: `${base}/stages`         },
+        { label: "Edit Schedule",     href: `${base}/schedule`       },
+        { label: "Standings",         href: `${base}/standings`      },
+      ],
+    },
+    {
+      label: "Broadcast",
+      actions: [
+        { label: "OBS Overlays",      href: `${base}/overlays`       },
+        { label: "Discord",           href: `${base}/discord`        },
+        { label: "Broadcast Studio",  href: `${base}/broadcast`      },
+        { label: "Export",            href: `${base}/export`         },
+      ],
+    },
+  ];
 
   return (
-    <div style={{ background: "rgba(30,30,40,0.6)", borderRadius: "0.875rem", padding: "1rem", border: "1px solid rgba(255,255,255,0.06)" }}>
-      <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.75rem" }}>
-        Quick Actions
+    <div style={{ background: "var(--charcoal)", border: "1px solid var(--border)" }}>
+      <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
+        <p style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "10px",
+          fontWeight: 700,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "var(--muted-light)",
+        }}>
+          Quick Actions
+        </p>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))", gap: "0.5rem" }}>
-        {actions.map((action) => {
-          const Icon = action.icon
-          return (
-            <button key={action.label} onClick={action.onClick}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.375rem",
-                background: `${action.color}22`, border: `1px solid ${action.color}44`, borderRadius: "0.625rem",
-                padding: "0.625rem 0.5rem", cursor: "pointer", color: "#fff", transition: "all 0.15s" }}>
-              <Icon style={{ width: "1rem", height: "1rem", color: action.color }} />
-              <span style={{ fontSize: "0.7rem", fontWeight: 600, color: "#e5e7eb" }}>{action.label}</span>
-            </button>
-          )
-        })}
-      </div>
+
+      {groups.map((group, gi) => (
+        <div key={group.label}>
+          <div style={{
+            padding: "8px 16px 4px",
+            fontFamily: "var(--font-mono)",
+            fontSize: "9px",
+            fontWeight: 700,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            color: "var(--muted)",
+          }}>
+            {group.label}
+          </div>
+          {group.actions.map((a, ai) => (
+            <Link
+              key={a.href}
+              href={a.href}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "10px 16px",
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "var(--text-secondary)",
+                textDecoration: "none",
+                borderBottom: "1px solid var(--border-subtle)",
+                transition: "color 0.15s, background 0.15s",
+                letterSpacing: "0.01em",
+              }}
+            >
+              <span>{a.label}</span>
+              <span style={{ color: "var(--muted)", fontSize: "11px" }}>→</span>
+            </Link>
+          ))}
+          {gi < groups.length - 1 && (
+            <div style={{ height: "1px", background: "var(--border)", margin: "4px 0" }} />
+          )}
+        </div>
+      ))}
     </div>
-  )
+  );
 }
+
+export default QuickActions;

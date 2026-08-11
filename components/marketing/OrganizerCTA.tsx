@@ -2,72 +2,41 @@ import Link from "next/link";
 
 export default function OrganizerCTA() {
   return (
-    <section
-      style={{
-        borderTop: "1px solid var(--border)",
-        padding: "96px 0",
-        background: "var(--black-rich)",
-      }}
-    >
-      <div className="container">
-        <div style={{ maxWidth: "640px", margin: "0 auto", textAlign: "center" }}>
-          <p className="label-section" style={{ marginBottom: "16px" }}>
-            Start Organizing
-          </p>
-
-          <h2
-            style={{
-              fontFamily: "Barlow Condensed, sans-serif",
-              fontWeight: 900,
-              fontSize: "clamp(36px, 6vw, 64px)",
-              lineHeight: 0.95,
-              textTransform: "uppercase",
-              color: "var(--white)",
-              marginBottom: "20px",
-            }}
-          >
-            Ready To Run A Professional Tournament?
-          </h2>
-
-          <p
-            style={{
-              color: "var(--muted-light)",
-              fontSize: "15px",
+    <section style={{ padding: "80px 0", borderBottom: "1px solid var(--border)" }}>
+      <div className="container-ops">
+        <div style={{
+          background: "var(--surface)",
+          border: "1px solid var(--border)",
+          borderTop: "3px solid var(--gold)",
+          padding: "60px 48px",
+          display: "grid",
+          gridTemplateColumns: "1fr auto",
+          gap: "40px",
+          alignItems: "center",
+        }}>
+          <div>
+            <div className="section-label" style={{ marginBottom: "16px" }}>For Organizers</div>
+            <h2 className="text-display" style={{ marginBottom: "12px" }}>
+              Start Running<br />Professional Tournaments
+            </h2>
+            <p style={{
+              color: "var(--white-70)",
+              fontSize: "0.9rem",
               lineHeight: 1.7,
-              marginBottom: "36px",
-            }}
-          >
-            Join organizers running competitive PUBG Mobile tournaments on TournaOps.
-            Registration to champion — completely handled.
-          </p>
-
-          <div
-            style={{
-              display: "flex",
-              gap: "12px",
-              justifyContent: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <Link href="/auth/register" className="btn-primary" style={{ fontSize: "15px", padding: "14px 36px" }}>
-              Create Tournament
+              maxWidth: "480px",
+            }}>
+              TournaOps gives you everything you need to run competitive PUBG Mobile tournaments
+              at a professional level. Registration to champion — fully managed.
+            </p>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", flexShrink: 0 }}>
+            <Link href="/auth/signup" className="btn-gold" style={{ whiteSpace: "nowrap" }}>
+              Create Free Account
             </Link>
-            <Link href="/tournaments" className="btn-secondary" style={{ fontSize: "15px", padding: "14px 36px" }}>
-              Explore Tournaments
+            <Link href="#pricing" className="btn-secondary" style={{ textAlign: "center" }}>
+              View Pricing
             </Link>
           </div>
-
-          <p
-            style={{
-              marginTop: "24px",
-              fontFamily: "JetBrains Mono, monospace",
-              fontSize: "10px",
-              color: "var(--muted)",
-              letterSpacing: "0.12em",
-            }}
-          >
-            NO SETUP FEE · FIRST TOURNAMENT FREE
-          </p>
         </div>
       </div>
     </section>

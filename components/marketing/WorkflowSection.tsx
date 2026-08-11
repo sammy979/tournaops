@@ -2,90 +2,106 @@ export default function WorkflowSection() {
   const steps = [
     {
       number: "01",
-      title: "Create Tournament",
-      description: "Set up your tournament in minutes. Choose format, scoring, maps, and invite teams.",
+      title: "REGISTRATION",
+      desc: "Teams register through one link. Set slots, entry requirements, and auto-close when full.",
     },
     {
       number: "02",
-      title: "Import Teams",
-      description: "Bulk import via CSV, Discord slots, or AI screenshot parsing. No manual entry needed.",
+      title: "GROUPS",
+      desc: "Organize and seed teams into groups automatically or manually.",
     },
     {
       number: "03",
-      title: "Run Matches",
-      description: "Enter results match by match. Auto-scoring calculates placement + kill points instantly.",
+      title: "MATCHES",
+      desc: "Schedule and run matches. Track submission status in real time.",
     },
     {
       number: "04",
-      title: "Broadcast Live",
-      description: "OBS overlays update in real time. Push standings to Discord with one click.",
+      title: "RESULTS",
+      desc: "Import results via screenshot. AI extracts kills and placements instantly.",
+    },
+    {
+      number: "05",
+      title: "SCORING",
+      desc: "Points are calculated automatically using PMGC or custom scoring presets.",
+    },
+    {
+      number: "06",
+      title: "BROADCAST",
+      desc: "Publish standings to OBS overlays and Discord simultaneously.",
+    },
+    {
+      number: "07",
+      title: "CHAMPION",
+      desc: "Crown the winner with a verified final result and trophy announcement.",
     },
   ];
 
   return (
-    <section style={{ padding: "80px 0", background: "var(--black-rich)" }}>
-      <div className="container">
-
-        <div style={{ marginBottom: "48px" }}>
-          <p className="label-section" style={{ marginBottom: "10px" }}>
-            How It Works
-          </p>
-          <h2 style={{
-            fontFamily: "Barlow Condensed, sans-serif",
-            fontWeight: 900,
-            fontSize: "clamp(28px, 4vw, 44px)",
-            textTransform: "uppercase",
-            letterSpacing: "0.02em",
-            color: "var(--white)",
-          }}>
-            Tournament Workflow
-          </h2>
-        </div>
+    <section style={{ padding: "80px 0", borderBottom: "1px solid var(--border)" }}>
+      <div className="container-ops">
+        <div className="section-label">Tournament Lifecycle</div>
+        <h2 className="text-display" style={{ marginBottom: "8px" }}>
+          How TournaOps Works
+        </h2>
+        <p style={{ color: "var(--white-40)", fontSize: "0.9rem", marginBottom: "48px", maxWidth: "480px" }}>
+          Every tournament follows the same operational path. TournaOps handles each step.
+        </p>
 
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "2px",
-          background: "var(--border)",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "0",
+          border: "1px solid var(--border)",
         }}>
-          {steps.map((step) => (
-            <div key={step.number} style={{
-              background: "var(--charcoal)",
-              padding: "32px 28px",
+          {steps.map((step, i) => (
+            <div key={i} style={{
+              padding: "28px 32px",
+              borderRight: i % 2 === 0 ? "1px solid var(--border)" : "none",
+              borderBottom: i < steps.length - 1 ? "1px solid var(--border)" : "none",
+              display: "flex",
+              gap: "20px",
+              alignItems: "flex-start",
+              background: "var(--surface)",
+              gridColumn: i === 6 ? "1 / -1" : "auto",
             }}>
-              <p style={{
-                fontFamily: "JetBrains Mono, monospace",
-                fontSize: "11px",
-                fontWeight: 700,
-                letterSpacing: "0.1em",
-                color: "var(--accent)",
-                marginBottom: "16px",
-              }}>
-                {step.number}
-              </p>
-              <h3 style={{
+              <span style={{
                 fontFamily: "Barlow Condensed, sans-serif",
-                fontWeight: 800,
-                fontSize: "20px",
-                textTransform: "uppercase",
-                letterSpacing: "0.04em",
-                color: "var(--white)",
-                marginBottom: "12px",
-              }}>
-                {step.title}
-              </h3>
-              <p style={{
-                fontSize: "13px",
-                color: "var(--muted-light)",
-                lineHeight: 1.6,
-              }}>
-                {step.description}
-              </p>
+                fontWeight: 900,
+                fontSize: "3rem",
+                color: "var(--border-2)",
+                lineHeight: 1,
+                flexShrink: 0,
+              }}>{step.number}</span>
+              <div>
+                <div style={{
+                  fontFamily: "Barlow Condensed, sans-serif",
+                  fontWeight: 800,
+                  fontSize: "1rem",
+                  letterSpacing: "0.1em",
+                  color: "var(--gold)",
+                  textTransform: "uppercase",
+                  marginBottom: "6px",
+                }}>{step.title}</div>
+                <p style={{
+                  fontSize: "0.85rem",
+                  color: "var(--white-70)",
+                  lineHeight: 1.6,
+                  maxWidth: "320px",
+                }}>{step.desc}</p>
+              </div>
             </div>
           ))}
         </div>
-
       </div>
+
+      <style>{`
+        @media (max-width: 640px) {
+          .workflow-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </section>
   );
 }

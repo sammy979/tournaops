@@ -1,50 +1,22 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: {
-    default: "TournaOps — Tournament Operations for Competitive PUBG Mobile",
-    template: "%s | TournaOps",
-  },
-  description:
-    "The complete tournament operations system for competitive PUBG Mobile. Registration, groups, matches, results, scoring, broadcast, and champion — all in one platform.",
-  keywords: [
-    "PUBG Mobile tournament",
-    "esports tournament organizer",
-    "tournament management",
-    "PUBG Mobile organizer",
-    "tournament operations",
-    "esports platform",
-    "tournament bracket",
-    "PUBG Mobile competition",
-  ],
-  authors: [{ name: "TournaOps" }],
-  creator: "TournaOps",
+  title: "TournaOps — Professional PUBG Mobile Tournament Operations",
+  description: "The complete tournament operations system for competitive PUBG Mobile. Registration, groups, matches, results, scoring, broadcast, and champion.",
+  keywords: "PUBG Mobile tournament, esports tournament platform, tournament management, PUBG tournament organizer",
   openGraph: {
-    type: "website",
-    locale: "en_US",
+    title: "TournaOps — Run Tournaments. Not Chaos.",
+    description: "The operating system for PUBG Mobile competition.",
     url: "https://www.tournaops.com",
     siteName: "TournaOps",
-    title: "TournaOps — Run Tournaments. Not Chaos.",
-    description:
-      "The complete tournament operations system for competitive PUBG Mobile.",
+    type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "TournaOps — Run Tournaments. Not Chaos.",
-    description:
-      "The complete tournament operations system for competitive PUBG Mobile.",
+    description: "The operating system for PUBG Mobile competition.",
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
-};
-
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 5,
 };
 
 export default function RootLayout({
@@ -53,20 +25,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap"
-          rel="stylesheet"
-        />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body suppressHydrationWarning>{children}</body>
+      <body>{children}</body>
     </html>
   );
 }
