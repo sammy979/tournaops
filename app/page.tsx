@@ -1,79 +1,42 @@
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import PublicNav from "@/components/marketing/PublicNav";
 import PublicFooter from "@/components/marketing/PublicFooter";
-import TournamentTile from "@/components/marketing/TournamentTile";
-import WorkflowSection from "@/components/marketing/WorkflowSection";
-import BroadcastSection from "@/components/marketing/BroadcastSection";
-import DiscordSection from "@/components/marketing/DiscordSection";
-import OrganizerCTA from "@/components/marketing/OrganizerCTA";
-import LiveMatchModule from "@/components/marketing/LiveMatchModule";
-import { prisma } from "@/lib/prisma";
 
-async function getPublicTournaments() {
+/* ── Data fetching ─────────────────────────────────────── */
+async function getLiveTournaments() {
   try {
-    const tournaments = await prisma.tournament.findMany({
-      where: {
-        status: { in: ["LIVE", "UPCOMING", "REGISTRATION", "COMPLETED"] },
+    return await prisma.tournament.findMany({
+      where: { status: { in: ["LIVE", "PUBLISHED", "COMPLETED"] } },
+      select: {
+        id: true, name: true, slug: true, status: true,
+        game: true, startDate: true,
+        _count: { select: { teams: true } },
       },
-      include: {
-        user: { select: { username: true } },
-        teams: { select: { id: true } },
-        rounds: { include: { matches: { select: { id: true, status: true } } } },
-      },
-      orderBy: [
-        { status: "asc" },
-        { createdAt: "desc" },
-      ],
-      take: 12,
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+      take: 6,
     });
-
-    return tournaments.map((t) => {
-      const allMatches = t.rounds.flatMap((r) => r.matches);
-      const completedMatches = allMatches.filter((m) => m.status === "COMPLETED");
-
-      return {
-        id: t.id,
-        name: t.name,
-        status: t.status,
-        teamCount: t.teams.length,
-        maxTeams: t.maxTeams || 64,
-        matchCount: allMatches.length,
-        currentMatch: completedMatches.length || null,
-        format: (t as any).format || "SQUAD",
-        map: (t as any).defaultMap || "ERANGEL",
-        startDate: t.startDate ? t.startDate.toISOString() : null,
-        organizer: t.user?.username || "TournaOps",
-        slug: (t as any).slug || null,
-      };
-    });
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
 async function getLiveMatchData() {
   try {
-    const liveTournament = await prisma.tournament.findFirst({
+    const t = await prisma.tournament.findFirst({
       where: { status: "LIVE" },
       include: {
-        user: { select: { username: true } },
-        teams: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
         rounds: {
-          orderBy: { order: "asc" },
+          orderBy: { order: "desc" },
+          take: 1,
           include: {
             matches: {
-              orderBy: { matchNumber: "asc" },
-              where: { status: "LIVE" },
+              where: { status: { in: ["LIVE", "COMPLETED"] } },
+              orderBy: { matchNumber: "desc" },
+              take: 1,
               include: {
                 results: {
-                  include: {
-                    team: { select: { id: true, name: true } },
-                  },
+                  orderBy: { totalPoints: "desc" },
+                  take: 6,
+                  include: { team: { select: { id: true, name: true } } },
                 },
               },
             },
@@ -81,757 +44,496 @@ async function getLiveMatchData() {
         },
       },
     });
-
-    if (!liveTournament) return null;
-
-    const allMatches = liveTournament.rounds.flatMap((r) => r.matches);
-    const liveMatch = allMatches[0];
-
-    if (!liveMatch) return null;
-
-    const totalMatches = liveTournament.rounds.reduce(
-      (acc, r) => acc + r.matches.length,
-      0
-    );
-
-    // Build top teams from results
-    const teamPoints: Record<string, { name: string; points: number }> = {};
-    liveTournament.rounds.flatMap((r) =>
-      r.matches.flatMap((m) =>
-        m.results?.forEach((res: any) => {
-          const tid = res.team?.id;
-          if (!tid) return;
-          if (!teamPoints[tid]) {
-            teamPoints[tid] = { name: res.team.name, points: 0 };
-          }
-          teamPoints[tid].points += (res.totalPoints || 0);
-        })
-      )
-    );
-
-    const topTeams = Object.values(teamPoints)
-      .sort((a, b) => b.points - a.points)
-      .slice(0, 4)
-      .map((t, i) => ({ rank: i + 1, name: t.name, points: t.points }));
-
-    const submissions = liveMatch.results?.length || 0;
-
+    if (!t) return null;
+    const match = t.rounds[0]?.matches[0];
+    if (!match) return null;
     return {
-      tournamentName: liveTournament.name,
-      tournamentId: liveTournament.id,
-      matchNumber: liveMatch.matchNumber || 1,
-      totalMatches,
-      map: (liveMatch as any).map || "ERANGEL",
-      status: "LIVE",
-      submissionsReceived: submissions,
-      totalTeams: liveTournament.teams.length,
-      topTeams,
+      tournamentName: t.name,
+      matchNumber: match.matchNumber,
+      status: match.status,
+      results: match.results.map((r: any) => ({
+        team: r.team,
+        placement: r.placement,
+        kills: r.kills ?? 0,
+        totalPoints: r.totalPoints ?? 0,
+      })),
     };
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
+const STATUS_CFG: Record<string, { label: string; color: string }> = {
+  LIVE:      { label: "Live",      color: "var(--live)"    },
+  PUBLISHED: { label: "Open",      color: "var(--accent)"  },
+  COMPLETED: { label: "Completed", color: "var(--success)" },
+};
+
+const WORKFLOW = [
+  { n: "01", title: "Registration", desc: "Teams register through one shareable link." },
+  { n: "02", title: "Groups",       desc: "Organize and seed teams into groups." },
+  { n: "03", title: "Matches",      desc: "Run matches and collect results." },
+  { n: "04", title: "Results",      desc: "Import, review and verify each result." },
+  { n: "05", title: "Scoring",      desc: "Points calculated automatically." },
+  { n: "06", title: "Broadcast",    desc: "Push standings to OBS and Discord." },
+  { n: "07", title: "Champion",     desc: "Crown the winner." },
+];
+
+const OVERLAYS = [
+  "Live Standings", "Chicken Dinner", "Top Fragger",
+  "Final Results", "Next Match", "Current Match",
+];
+
+/* ── Page ──────────────────────────────────────────────── */
 export default async function HomePage() {
-  const [tournaments, liveData] = await Promise.all([
-    getPublicTournaments(),
+  const [tournaments, liveMatch] = await Promise.all([
+    getLiveTournaments(),
     getLiveMatchData(),
   ]);
 
-  const liveTournaments = tournaments.filter((t) => t.status === "LIVE");
-  const upcomingTournaments = tournaments.filter(
-    (t) => t.status === "UPCOMING" || t.status === "REGISTRATION"
-  );
-  const recentTournaments = tournaments.filter((t) => t.status === "COMPLETED");
-  const featuredTournaments = [
-    ...liveTournaments,
-    ...upcomingTournaments,
-    ...recentTournaments,
-  ].slice(0, 6);
+  const live      = tournaments.filter(t => t.status === "LIVE");
+  const open      = tournaments.filter(t => t.status === "PUBLISHED");
+  const completed = tournaments.filter(t => t.status === "COMPLETED");
 
   return (
     <>
       <PublicNav />
 
-      {/* ============================================
-          HERO
-          ============================================ */}
-      <main>
-        <section
-          style={{
-            paddingTop: "56px",
-            background: "var(--black-rich)",
-            minHeight: "100vh",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            borderBottom: "1px solid var(--border)",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          {/* Background grid */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              backgroundImage:
-                "linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)",
-              backgroundSize: "80px 80px",
-              opacity: 0.25,
-              pointerEvents: "none",
-            }}
-          />
+      <main style={{ paddingTop: "var(--nav-height)" }}>
 
-          <div className="container-wide" style={{ position: "relative", zIndex: 1 }}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 420px",
-                gap: "64px",
-                alignItems: "center",
-                padding: "80px 0",
-              }}
-              className="hero-grid"
-            >
-              {/* Left — Headline */}
+        {/* ══ HERO ══════════════════════════════════════ */}
+        <section style={{
+          background: "var(--black-rich)",
+          borderBottom: "1px solid var(--border)",
+          padding: "80px 0 0",
+          position: "relative",
+          overflow: "hidden",
+        }}>
+          {/* Grid bg */}
+          <div style={{
+            position: "absolute", inset: 0, pointerEvents: "none",
+            backgroundImage: "linear-gradient(var(--border-subtle) 1px, transparent 1px), linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+            opacity: 0.4,
+          }} />
+
+          <div className="container" style={{ position: "relative" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 420px", gap: "64px", alignItems: "flex-start" }}>
+
+              {/* Left */}
               <div>
-                <div style={{ marginBottom: "20px" }}>
-                  <span
-                    style={{
-                      fontFamily: "JetBrains Mono, monospace",
-                      fontSize: "10px",
-                      fontWeight: 600,
-                      letterSpacing: "0.22em",
-                      textTransform: "uppercase",
-                      color: "var(--gold)",
-                      borderLeft: "2px solid var(--gold)",
-                      paddingLeft: "10px",
-                    }}
-                  >
-                    The Operating System For PUBG Mobile Competition
-                  </span>
-                </div>
-
-                <h1 className="text-hero">
-                  Run
-                  <br />
-                  Tournaments.
-                  <br />
-                  <span style={{ color: "var(--gold)" }}>Not Chaos.</span>
-                </h1>
-
-                <p
-                  style={{
-                    marginTop: "24px",
-                    color: "var(--text-secondary)",
-                    fontSize: "16px",
-                    lineHeight: 1.7,
-                    maxWidth: "480px",
-                  }}
-                >
-                  The complete tournament operations system for competitive PUBG Mobile.
-                  Registration, groups, matches, scoring, standings, OBS overlays and Discord sync.
+                <p className="label-section" style={{ marginBottom: "20px" }}>
+                  The Operating System for PUBG Mobile Competition
                 </p>
-
-                {/* Journey line */}
-                <div
-                  style={{
-                    marginTop: "28px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  {["Register", "Group", "Match", "Score", "Broadcast", "Champion"].map((step, i, arr) => (
-                    <span key={step} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <span
-                        style={{
-                          fontFamily: "JetBrains Mono, monospace",
-                          fontSize: "9px",
-                          fontWeight: 600,
-                          letterSpacing: "0.12em",
-                          textTransform: "uppercase",
-                          color: i === arr.length - 1 ? "var(--gold)" : "var(--muted-light)",
-                        }}
-                      >
-                        {step}
-                      </span>
-                      {i < arr.length - 1 && (
-                        <span style={{ color: "var(--border-light)", fontSize: "10px" }}>→</span>
-                      )}
-                    </span>
-                  ))}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: "36px",
-                    display: "flex",
-                    gap: "12px",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <Link href="/auth/register" className="btn-primary">
+                <h1 className="display-hero" style={{ marginBottom: "24px" }}>
+                  Run Tournaments.<br />
+                  <span style={{ color: "var(--accent)" }}>Not Chaos.</span>
+                </h1>
+                <p style={{ fontSize: "16px", color: "var(--text-secondary)", maxWidth: "480px", lineHeight: 1.7, marginBottom: "36px" }}>
+                  Professional tournament operations from registration to trophy.
+                  Groups, matches, scoring, broadcast and Discord — all in one platform.
+                </p>
+                <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                  <Link href="/auth/register" className="btn btn-primary btn-lg">
                     Create Tournament
                   </Link>
-                  <Link href="/tournaments" className="btn-secondary">
+                  <Link href="/tournaments" className="btn btn-secondary btn-lg">
                     Explore Tournaments
                   </Link>
                 </div>
 
                 {/* Stats row */}
-                <div
-                  style={{
-                    marginTop: "48px",
-                    display: "flex",
-                    gap: "32px",
-                    flexWrap: "wrap",
-                  }}
-                >
+                <div style={{ display: "flex", gap: "40px", marginTop: "48px", paddingTop: "32px", borderTop: "1px solid var(--border)" }}>
                   {[
-                    { value: tournaments.length.toString(), label: "Active Tournaments" },
-                    { value: liveTournaments.length.toString(), label: "Live Now" },
-                  ].map((s) => (
-                    <div key={s.label}>
-                      <p
-                        style={{
-                          fontFamily: "Barlow Condensed, sans-serif",
-                          fontWeight: 800,
-                          fontSize: "36px",
-                          color: "var(--white)",
-                          lineHeight: 1,
-                        }}
-                      >
-                        {s.value}
-                      </p>
-                      <p
-                        style={{
-                          fontFamily: "JetBrains Mono, monospace",
-                          fontSize: "10px",
-                          color: "var(--muted)",
-                          letterSpacing: "0.1em",
-                          textTransform: "uppercase",
-                          marginTop: "4px",
-                        }}
-                      >
-                        {s.label}
-                      </p>
+                    { v: tournaments.length.toString(), l: "Tournaments" },
+                    { v: live.length.toString(), l: "Live Now" },
+                    { v: "PUBG Mobile", l: "Primary Game" },
+                  ].map(s => (
+                    <div key={s.l}>
+                      <p style={{ fontFamily: "var(--font-mono)", fontSize: "24px", fontWeight: 700, color: "var(--white)", marginBottom: "4px" }}>{s.v}</p>
+                      <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--muted-light)" }}>{s.l}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Right — Live match module */}
-              <div>
-                <div style={{ marginBottom: "10px", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span className="label-section-muted">Live Control</span>
+              {/* Right — Live Match Module */}
+              <div style={{ paddingBottom: "0" }}>
+                <div style={{ background: "var(--charcoal)", border: "1px solid var(--border)", overflow: "hidden" }}>
+                  {/* Module header */}
+                  <div style={{ background: "var(--charcoal-mid)", padding: "10px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      {liveMatch ? (
+                        <>
+                          <span className="live-dot" />
+                          <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--live)" }}>Live</span>
+                        </>
+                      ) : (
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--muted-light)" }}>Tournament Feed</span>
+                      )}
+                    </div>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--muted-light)" }}>TournaOps</span>
+                  </div>
+
+                  {liveMatch ? (
+                    <>
+                      <div style={{ padding: "16px", borderBottom: "1px solid var(--border)" }}>
+                        <p style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "18px", textTransform: "uppercase", color: "var(--white)", marginBottom: "4px" }}>
+                          {liveMatch.tournamentName}
+                        </p>
+                        <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--muted-light)" }}>
+                          Match {liveMatch.matchNumber}
+                        </p>
+                      </div>
+                      {liveMatch.results.slice(0, 6).map((r: any, i: number) => (
+                        <div key={r.team.id} style={{
+                          display: "flex", alignItems: "center", gap: "12px",
+                          padding: "10px 16px",
+                          borderBottom: "1px solid var(--border-subtle)",
+                          background: i === 0 ? "rgba(255,215,0,0.04)" : "transparent",
+                        }}>
+                          <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: i === 0 ? "var(--gold-bright)" : "var(--muted-light)", minWidth: "20px", fontWeight: 700 }}>
+                            {String(i + 1).padStart(2, "0")}
+                          </span>
+                          <span style={{ flex: 1, fontSize: "13px", fontWeight: 600, color: "var(--white)" }}>{r.team.name}</span>
+                          <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--muted-light)" }}>{r.kills}K</span>
+                          <span style={{ fontFamily: "var(--font-mono)", fontSize: "13px", fontWeight: 700, color: "var(--white)", minWidth: "32px", textAlign: "right" }}>{r.totalPoints}</span>
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ padding: "16px", borderBottom: "1px solid var(--border)" }}>
+                        <p style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "16px", textTransform: "uppercase", color: "var(--white)" }}>
+                          {open.length > 0 ? open[0].name : "No Live Match"}
+                        </p>
+                        <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--muted-light)", marginTop: "4px" }}>
+                          {open.length > 0 ? "Registration Open" : "Check back soon"}
+                        </p>
+                      </div>
+                      {tournaments.slice(0, 5).map((t, i) => {
+                        const cfg = STATUS_CFG[t.status] ?? STATUS_CFG.PUBLISHED;
+                        return (
+                          <div key={t.id} style={{
+                            display: "flex", alignItems: "center", gap: "12px",
+                            padding: "10px 16px",
+                            borderBottom: "1px solid var(--border-subtle)",
+                          }}>
+                            <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--muted-light)", minWidth: "20px" }}>
+                              {String(i + 1).padStart(2, "0")}
+                            </span>
+                            <span style={{ flex: 1, fontSize: "13px", fontWeight: 600, color: "var(--white)" }}>{t.name}</span>
+                            <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", fontWeight: 700, color: cfg.color }}>{cfg.label}</span>
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
+
+                  <div style={{ padding: "12px 16px" }}>
+                    <Link href="/tournaments" style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--accent)", textDecoration: "none" }}>
+                      View All Tournaments →
+                    </Link>
+                  </div>
                 </div>
-                <LiveMatchModule data={liveData} />
               </div>
+
             </div>
           </div>
         </section>
 
-        {/* ============================================
-            LIVE TOURNAMENTS
-            ============================================ */}
-        {liveTournaments.length > 0 && (
-          <section
-            className="section-tight"
-            style={{ background: "var(--charcoal-deep)", borderBottom: "1px solid var(--border)" }}
-          >
+        {/* ══ LIVE TOURNAMENTS ═══════════════════════════ */}
+        {live.length > 0 && (
+          <section style={{ background: "var(--charcoal-deep)", borderBottom: "1px solid var(--border)", padding: "48px 0" }}>
             <div className="container">
-              <div className="section-title-row" style={{ marginBottom: "24px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div className="section-header">
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <span className="live-dot" />
-                  <p className="label-section" style={{ color: "var(--red-live)" }}>
-                    Live Now
-                  </p>
+                  <h2 className="section-title">Live Now</h2>
                 </div>
-                <Link href="/tournaments?status=LIVE" className="btn-ghost">
-                  View All →
-                </Link>
+                <Link href="/tournaments" className="btn btn-ghost btn-sm">View All</Link>
               </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                  gap: "1px",
-                  background: "var(--border)",
-                  border: "1px solid var(--border)",
-                }}
-                className="tournament-grid-live"
-              >
-                {liveTournaments.map((t) => (
-                  <TournamentTile key={t.id} tournament={t} />
+              <div className="grid-auto">
+                {live.map(t => (
+                  <Link key={t.id} href={`/tournaments/${t.slug || t.id}`} style={{ textDecoration: "none" }}>
+                    <div className="tournament-tile">
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <span className="live-dot" />
+                          <span className="label-live">Live</span>
+                        </div>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--muted-light)" }}>{t.game ?? "PUBG Mobile"}</span>
+                      </div>
+                      <h3 className="display-card">{t.name}</h3>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--muted-light)" }}>{t._count.teams} teams</span>
+                      </div>
+                    </div>
+                  </Link>
                 ))}
               </div>
             </div>
           </section>
         )}
 
-        {/* ============================================
-            TOURNAMENT DISCOVERY
-            ============================================ */}
-        <section className="section" style={{ borderBottom: "1px solid var(--border)" }}>
-          <div className="container">
-            <div className="section-title-row">
-              <div>
-                <p className="label-section" style={{ marginBottom: "10px" }}>Tournaments</p>
-                <h2 className="section-title">Discover Tournaments</h2>
+        {/* ══ OPEN TOURNAMENTS ═══════════════════════════ */}
+        {open.length > 0 && (
+          <section style={{ background: "var(--black-rich)", borderBottom: "1px solid var(--border)", padding: "48px 0" }}>
+            <div className="container">
+              <div className="section-header">
+                <h2 className="section-title">Open Registration</h2>
+                <Link href="/tournaments" className="btn btn-ghost btn-sm">View All</Link>
               </div>
-              <Link href="/tournaments" className="btn-secondary">
-                View All →
-              </Link>
-            </div>
-
-            {featuredTournaments.length === 0 ? (
-              <div
-                style={{
-                  padding: "64px",
-                  textAlign: "center",
-                  background: "var(--charcoal)",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                <p className="label-section-muted" style={{ marginBottom: "8px" }}>No Tournaments</p>
-                <p style={{ color: "var(--muted-light)", fontSize: "13px" }}>
-                  No tournaments available right now.
-                </p>
-                <Link href="/auth/register" className="btn-primary" style={{ marginTop: "20px", display: "inline-flex" }}>
-                  Create First Tournament
-                </Link>
-              </div>
-            ) : (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                  gap: "1px",
-                  background: "var(--border)",
-                  border: "1px solid var(--border)",
-                }}
-                className="tournament-grid"
-              >
-                {featuredTournaments.map((t) => (
-                  <TournamentTile key={t.id} tournament={t} />
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* ============================================
-            WORKFLOW
-            ============================================ */}
-        <WorkflowSection />
-
-        {/* ============================================
-            CONTROL ROOM PREVIEW
-            ============================================ */}
-        <section className="section" style={{ borderBottom: "1px solid var(--border)" }}>
-          <div className="container">
-            <div style={{ marginBottom: "48px" }}>
-              <p className="label-section" style={{ marginBottom: "12px" }}>Organizer Tools</p>
-              <h2 className="section-title">Tournament Control Room</h2>
-              <p style={{ color: "var(--muted-light)", fontSize: "15px", marginTop: "12px", maxWidth: "500px" }}>
-                Every tournament you run is managed from a dedicated command center.
-                Real-time match status, results queue and live standings in one view.
-              </p>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr 1fr",
-                gap: "1px",
-                background: "var(--border)",
-                border: "1px solid var(--border)",
-                marginBottom: "24px",
-              }}
-              className="control-grid"
-            >
-              {/* Current Match */}
-              <div style={{ background: "var(--charcoal)", padding: "20px" }}>
-                <p className="label-section-muted" style={{ marginBottom: "14px" }}>Current Match</p>
-                <div style={{ borderLeft: "3px solid var(--red-live)", paddingLeft: "14px" }}>
-                  <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "10px", color: "var(--red-live)", letterSpacing: "0.12em", marginBottom: "6px" }}>
-                    LIVE
-                  </p>
-                  <p style={{ fontFamily: "Barlow Condensed, sans-serif", fontWeight: 800, fontSize: "20px", textTransform: "uppercase", color: "var(--white)", marginBottom: "4px" }}>
-                    Match 18
-                  </p>
-                  <p style={{ fontFamily: "Barlow Condensed, sans-serif", fontWeight: 700, fontSize: "14px", color: "var(--text-secondary)", textTransform: "uppercase" }}>
-                    Erangel
-                  </p>
-                  <div style={{ marginTop: "14px", display: "flex", gap: "8px" }}>
-                    <span className="btn-action" style={{ cursor: "default" }}>Import Results</span>
-                    <span className="btn-action" style={{ cursor: "default" }}>Review</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Results Queue */}
-              <div style={{ background: "var(--charcoal)", padding: "20px" }}>
-                <p className="label-section-muted" style={{ marginBottom: "14px" }}>Results Queue</p>
-                {[
-                  { match: "Match 18", map: "Erangel", time: "2 min ago", status: "pending" },
-                  { match: "Match 17", map: "Miramar", time: "14 min ago", status: "verified" },
-                  { match: "Match 16", map: "Sanhok", time: "28 min ago", status: "verified" },
-                ].map((r) => (
-                  <div
-                    key={r.match}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "8px 0",
-                      borderBottom: "1px solid var(--border)",
-                    }}
-                  >
-                    <div>
-                      <p style={{ fontFamily: "Barlow Condensed, sans-serif", fontWeight: 700, fontSize: "13px", textTransform: "uppercase", color: "var(--text-primary)" }}>
-                        {r.match} — {r.map}
-                      </p>
-                      <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", color: "var(--muted)", letterSpacing: "0.08em", marginTop: "2px" }}>
-                        {r.time}
-                      </p>
+              <div className="grid-auto">
+                {open.map(t => (
+                  <Link key={t.id} href={`/tournaments/${t.slug || t.id}`} style={{ textDecoration: "none" }}>
+                    <div className="tournament-tile">
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span className="status-badge status-open">Open</span>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--muted-light)" }}>{t.game ?? "PUBG Mobile"}</span>
+                      </div>
+                      <h3 className="display-card">{t.name}</h3>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--muted-light)" }}>{t._count.teams} teams</span>
+                        <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--accent)", letterSpacing: "0.06em", textTransform: "uppercase" }}>Register →</span>
+                      </div>
                     </div>
-                    <span
-                      style={{
-                        fontFamily: "JetBrains Mono, monospace",
-                        fontSize: "9px",
-                        fontWeight: 700,
-                        letterSpacing: "0.12em",
-                        textTransform: "uppercase",
-                        color: r.status === "pending" ? "var(--amber)" : "var(--green-bright)",
-                      }}
-                    >
-                      {r.status === "pending" ? "Review" : "✓"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Tournament Health */}
-              <div style={{ background: "var(--charcoal)", padding: "20px" }}>
-                <p className="label-section-muted" style={{ marginBottom: "14px" }}>Tournament Health</p>
-                {[
-                  { label: "Teams", status: "good" },
-                  { label: "Groups", status: "good" },
-                  { label: "Schedule", status: "good" },
-                  { label: "Results", status: "warning" },
-                  { label: "Discord", status: "good" },
-                ].map((h) => (
-                  <div key={h.label} className="health-row">
-                    <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{h.label}</span>
-                    <span
-                      style={{
-                        fontFamily: "JetBrains Mono, monospace",
-                        fontSize: "9px",
-                        fontWeight: 700,
-                        letterSpacing: "0.1em",
-                        textTransform: "uppercase",
-                        color:
-                          h.status === "good"
-                            ? "var(--green-bright)"
-                            : h.status === "warning"
-                            ? "var(--amber)"
-                            : "var(--red-live)",
-                      }}
-                    >
-                      {h.status}
-                    </span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>
+          </section>
+        )}
 
-            <div style={{ textAlign: "center" }}>
-              <Link href="/auth/register" className="btn-primary">
-                Access Your Command Center
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* ============================================
-            LIVE STANDINGS PREVIEW
-            ============================================ */}
-        <section
-          className="section-tight"
-          style={{ background: "var(--charcoal-deep)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}
-        >
+        {/* ══ WORKFLOW ════════════════════════════════════ */}
+        <section style={{ background: "var(--charcoal-deep)", borderBottom: "1px solid var(--border)", padding: "64px 0" }}>
           <div className="container">
-            <div className="section-title-row" style={{ marginBottom: "20px" }}>
-              <div>
-                <p className="label-section" style={{ marginBottom: "8px" }}>Standings</p>
-                <h2 className="section-title">Live Standings</h2>
-              </div>
-              <Link href="/tournaments" className="btn-ghost">
-                View Tournaments →
-              </Link>
+            <div style={{ marginBottom: "40px" }}>
+              <p className="label-section" style={{ marginBottom: "10px" }}>How It Works</p>
+              <h2 className="display-title">Tournament Workflow</h2>
             </div>
-
-            {recentTournaments.length > 0 || liveTournaments.length > 0 ? (
-              <div style={{ overflow: "hidden", border: "1px solid var(--border)" }}>
-                <div
-                  style={{
-                    padding: "12px 20px",
-                    background: "var(--charcoal)",
-                    borderBottom: "1px solid var(--border)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <p
-                    style={{
-                      fontFamily: "Barlow Condensed, sans-serif",
-                      fontWeight: 700,
-                      fontSize: "13px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.06em",
-                      color: "var(--text-primary)",
-                    }}
-                  >
-                    {liveTournaments[0]?.name || recentTournaments[0]?.name || "Tournament Standings"}
-                  </p>
-                  {liveTournaments.length > 0 && (
-                    <span className="status-live">Live</span>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "2px", background: "var(--border)" }}>
+              {WORKFLOW.map((s, i) => (
+                <div key={s.n} style={{ background: "var(--charcoal)", padding: "24px 16px", position: "relative" }}>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "var(--accent)", marginBottom: "12px" }}>{s.n}</p>
+                  <h3 style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "15px", textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--white)", marginBottom: "8px" }}>{s.title}</h3>
+                  <p style={{ fontSize: "12px", color: "var(--muted-light)", lineHeight: 1.5 }}>{s.desc}</p>
+                  {i < WORKFLOW.length - 1 && (
+                    <div style={{ position: "absolute", right: "-8px", top: "50%", transform: "translateY(-50%)", zIndex: 1, fontFamily: "var(--font-mono)", fontSize: "14px", color: "var(--border-light)", pointerEvents: "none" }}>→</div>
                   )}
                 </div>
-
-                <div className="scroll-x">
-                  <table className="standings-table" style={{ background: "var(--charcoal)" }}>
-                    <thead>
-                      <tr>
-                        <th style={{ width: "44px" }}>Pos</th>
-                        <th>Team</th>
-                        <th style={{ textAlign: "right" }}>Matches</th>
-                        <th style={{ textAlign: "right" }}>Kills</th>
-                        <th style={{ textAlign: "right" }}>Points</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {liveData?.topTeams && liveData.topTeams.length > 0 ? (
-                        liveData.topTeams.map((team, i) => (
-                          <tr key={team.name}>
-                            <td>
-                              <span className={`rank-cell rank-${i + 1}`}>
-                                {String(i + 1).padStart(2, "0")}
-                              </span>
-                            </td>
-                            <td className="team-name-cell">{team.name}</td>
-                            <td style={{ textAlign: "right", color: "var(--text-secondary)", fontFamily: "JetBrains Mono, monospace", fontSize: "12px" }}>—</td>
-                            <td style={{ textAlign: "right", color: "var(--text-secondary)", fontFamily: "JetBrains Mono, monospace", fontSize: "12px" }}>—</td>
-                            <td style={{ textAlign: "right" }}>
-                              <span className="points-cell">{team.points}</span>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={5} style={{ textAlign: "center", padding: "32px", color: "var(--muted-light)", fontFamily: "JetBrains Mono, monospace", fontSize: "11px" }}>
-                            NO STANDINGS DATA — MATCHES IN PROGRESS
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ) : (
-              <div
-                style={{
-                  padding: "48px",
-                  textAlign: "center",
-                  background: "var(--charcoal)",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                <p className="label-section-muted">No standings yet</p>
-                <p style={{ color: "var(--muted-light)", fontSize: "13px", marginTop: "8px" }}>
-                  Standings will appear here when tournaments are running.
-                </p>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
         </section>
 
-        {/* ============================================
-            AI RESULT IMPORT
-            ============================================ */}
-        <section className="section" style={{ borderBottom: "1px solid var(--border)" }}>
+        {/* ══ CONTROL ROOM PREVIEW ════════════════════════ */}
+        <section style={{ background: "var(--black-rich)", borderBottom: "1px solid var(--border)", padding: "64px 0" }}>
           <div className="container">
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "64px",
-                alignItems: "center",
-              }}
-              className="ai-grid"
-            >
-              {/* Left */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 520px", gap: "64px", alignItems: "center" }}>
               <div>
-                <p className="label-section" style={{ marginBottom: "12px" }}>Ops AI</p>
-                <h2 className="section-title" style={{ marginBottom: "16px" }}>
-                  AI Result Import
-                </h2>
-                <p style={{ color: "var(--muted-light)", fontSize: "15px", lineHeight: 1.7, marginBottom: "28px" }}>
-                  Screenshot your PUBG Mobile results screen. OpsAI extracts team names,
-                  kills and placements automatically. Review and save in seconds.
+                <p className="label-section" style={{ marginBottom: "10px" }}>Organizer</p>
+                <h2 className="display-title" style={{ marginBottom: "20px" }}>Tournament Control Room</h2>
+                <p style={{ fontSize: "15px", color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: "32px", maxWidth: "400px" }}>
+                  Everything a tournament director needs in one operational view.
+                  Current match, results queue, standings, health status — all live.
                 </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "36px" }}>
+                  {["Current & next match status","Results queue with review actions","Live standings update","Tournament health diagnostic","Discord + OBS one-click publish"].map(f => (
+                    <div key={f} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span style={{ color: "var(--success)", fontSize: "12px", flexShrink: 0 }}>✓</span>
+                      <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+                <Link href="/auth/register" className="btn btn-primary">
+                  Start For Free
+                </Link>
+              </div>
 
-                {/* Workflow */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
-                  {[
-                    { step: "01", label: "Upload Screenshot", desc: "Drag your result screenshot" },
-                    { step: "02", label: "AI Extraction", desc: "Teams, kills and placements detected" },
-                    { step: "03", label: "Review", desc: "Verify before saving" },
-                    { step: "04", label: "Save & Update", desc: "Standings update instantly" },
-                  ].map((s, i) => (
-                    <div
-                      key={s.step}
-                      style={{
-                        display: "flex",
-                        gap: "14px",
-                        paddingBottom: i < 3 ? "16px" : "0",
-                        paddingTop: i > 0 ? "0" : "0",
-                        position: "relative",
-                      }}
-                    >
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                        <div
-                          style={{
-                            width: "32px",
-                            height: "32px",
-                            background: "var(--charcoal-mid)",
-                            border: "1px solid var(--border)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0,
-                          }}
-                        >
-                          <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "10px", fontWeight: 700, color: "var(--gold)" }}>
-                            {s.step}
-                          </span>
-                        </div>
-                        {i < 3 && (
-                          <div style={{ width: "1px", flex: 1, background: "var(--border)", minHeight: "20px" }} />
-                        )}
-                      </div>
-                      <div style={{ paddingTop: "6px" }}>
-                        <p style={{ fontFamily: "Barlow Condensed, sans-serif", fontWeight: 700, fontSize: "15px", textTransform: "uppercase", color: "var(--white)", marginBottom: "2px" }}>
-                          {s.label}
-                        </p>
-                        <p style={{ fontSize: "12px", color: "var(--muted-light)" }}>{s.desc}</p>
-                      </div>
+              {/* Control room mock */}
+              <div style={{ background: "var(--charcoal)", border: "1px solid var(--border)" }}>
+                <div style={{ background: "var(--charcoal-mid)", padding: "10px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--muted-light)" }}>Command Center</span>
+                  <div style={{ display: "flex", gap: "6px" }}>
+                    {["#333","#333","#333"].map((c,i) => <div key={i} style={{ width: "8px", height: "8px", borderRadius: "50%", background: c }} />)}
+                  </div>
+                </div>
+                {[
+                  { label: "Current Match", value: "Match 18 — Erangel", status: "LIVE", color: "var(--live)" },
+                  { label: "Results Queue", value: "3 Pending Review", status: "ACTION", color: "var(--warning)" },
+                  { label: "Standings", value: "Updated 2 min ago", status: "GOOD", color: "var(--success)" },
+                  { label: "Discord", value: "Connected", status: "GOOD", color: "var(--success)" },
+                  { label: "OBS Overlay", value: "Streaming", status: "LIVE", color: "var(--live)" },
+                  { label: "Teams", value: "64 / 64 Registered", status: "GOOD", color: "var(--success)" },
+                ].map(row => (
+                  <div key={row.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid var(--border-subtle)" }}>
+                    <div>
+                      <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--muted-light)", marginBottom: "2px" }}>{row.label}</p>
+                      <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--white)" }}>{row.value}</p>
+                    </div>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em", color: row.color, border: `1px solid ${row.color}`, padding: "2px 8px" }}>{row.status}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ══ BROADCAST ═══════════════════════════════════ */}
+        <section style={{ background: "var(--charcoal-deep)", borderBottom: "1px solid var(--border)", padding: "64px 0" }}>
+          <div className="container">
+            <div style={{ display: "grid", gridTemplateColumns: "520px 1fr", gap: "64px", alignItems: "center" }}>
+              {/* Overlay grid */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+                {OVERLAYS.map(ov => (
+                  <div key={ov} style={{ background: "var(--black-rich)", border: "1px solid var(--border)", aspectRatio: "16/9", display: "flex", alignItems: "center", justifyContent: "center", padding: "8px" }}>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted-light)", textAlign: "center" }}>{ov}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <p className="label-section" style={{ marginBottom: "10px" }}>OBS Integration</p>
+                <h2 className="display-title" style={{ marginBottom: "20px" }}>Built for Broadcast</h2>
+                <p style={{ fontSize: "15px", color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: "32px", maxWidth: "380px" }}>
+                  Make your tournament look professional on stream.
+                  Browser-source overlays that update live as results come in.
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "32px" }}>
+                  {OVERLAYS.map(ov => (
+                    <div key={ov} style={{ padding: "10px 14px", background: "var(--charcoal)", border: "1px solid var(--border)", fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)" }}>
+                      {ov}
+                    </div>
+                  ))}
+                </div>
+                <Link href="/dashboard/overlay" className="btn btn-secondary">
+                  View Broadcast Overlays
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ══ DISCORD ═════════════════════════════════════ */}
+        <section style={{ background: "var(--black-rich)", borderBottom: "1px solid var(--border)", padding: "64px 0" }}>
+          <div className="container">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 440px", gap: "64px", alignItems: "center" }}>
+              <div>
+                <p className="label-section" style={{ marginBottom: "10px" }}>Discord Integration</p>
+                <h2 className="display-title" style={{ marginBottom: "20px" }}>Discord Sync</h2>
+                <p style={{ fontSize: "15px", color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: "32px", maxWidth: "400px" }}>
+                  Post match announcements, results and standings directly to your Discord server.
+                  One click from the control room.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {["Match announcements","Result summaries","Live standings updates","Tournament reminders"].map(f => (
+                    <div key={f} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span style={{ color: "var(--success)", fontSize: "12px" }}>✓</span>
+                      <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{f}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Right — Preview panel */}
-              <div>
-                <div style={{ background: "var(--charcoal)", border: "1px solid var(--border)" }}>
-                  <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", background: "var(--charcoal-deep)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span className="label-section-muted">Ops AI Extraction</span>
-                    <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", color: "var(--green-bright)", letterSpacing: "0.1em" }}>
-                      CONFIDENCE: HIGH
-                    </span>
-                  </div>
-                  <div style={{ padding: "16px" }}>
-                    <div style={{ background: "var(--charcoal-deep)", border: "1px dashed var(--border-light)", padding: "24px", textAlign: "center", marginBottom: "14px" }}>
-                      <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "10px", color: "var(--muted)", letterSpacing: "0.1em" }}>
-                        MATCH RESULTS SCREENSHOT
-                      </p>
-                      <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", color: "var(--muted)", marginTop: "4px" }}>
-                        ERANGEL · MATCH 18
-                      </p>
-                    </div>
-
-                    <p className="label-section-muted" style={{ marginBottom: "10px" }}>Detected Results</p>
-                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                      <thead>
-                        <tr>
-                          <th style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.1em", textAlign: "left", padding: "4px 6px", borderBottom: "1px solid var(--border)" }}>Pos</th>
-                          <th style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.1em", textAlign: "left", padding: "4px 6px", borderBottom: "1px solid var(--border)" }}>Team</th>
-                          <th style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.1em", textAlign: "right", padding: "4px 6px", borderBottom: "1px solid var(--border)" }}>Kills</th>
-                          <th style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.1em", textAlign: "right", padding: "4px 6px", borderBottom: "1px solid var(--border)" }}>Pts</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[
-                          { pos: "01", team: "DRS GAMING", kills: "8", pts: "22" },
-                          { pos: "02", team: "T2K ESPORTS", kills: "5", pts: "14" },
-                          { pos: "03", team: "VENOM", kills: "4", pts: "12" },
-                        ].map((r) => (
-                          <tr key={r.pos}>
-                            <td style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "10px", color: "var(--muted)", padding: "6px" }}>{r.pos}</td>
-                            <td style={{ fontFamily: "Barlow Condensed, sans-serif", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", color: "var(--text-primary)", padding: "6px" }}>{r.team}</td>
-                            <td style={{ textAlign: "right", fontFamily: "JetBrains Mono, monospace", fontSize: "11px", color: "var(--text-secondary)", padding: "6px" }}>{r.kills}</td>
-                            <td style={{ textAlign: "right", fontFamily: "Barlow Condensed, sans-serif", fontWeight: 700, fontSize: "13px", color: "var(--gold-bright)", padding: "6px" }}>{r.pts}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-
-                    <div style={{ marginTop: "14px", display: "flex", gap: "8px" }}>
-                      <span className="btn-success" style={{ flex: 1, justifyContent: "center", cursor: "default" }}>✓ Save Results</span>
-                      <span className="btn-ghost" style={{ cursor: "default" }}>Edit</span>
-                    </div>
-                  </div>
+              {/* Discord mock */}
+              <div style={{ background: "#1e1f22", border: "1px solid #2e2f33", overflow: "hidden" }}>
+                <div style={{ background: "#2b2d31", padding: "10px 16px", borderBottom: "1px solid #1e1f22", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "12px", color: "#80848e" }}>#</span>
+                  <span style={{ fontSize: "12px", fontWeight: 600, color: "#dbdee1" }}>results</span>
                 </div>
+                {[
+                  { icon: "🏆", title: "Match 18 Results Published", lines: ["✅ Results imported","✅ Scores calculated","✅ Standings updated","✅ Posted to #results"] },
+                ].map(msg => (
+                  <div key={msg.title} style={{ padding: "16px" }}>
+                    <div style={{ display: "flex", gap: "12px" }}>
+                      <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", flexShrink: 0 }}>
+                        {msg.icon}
+                      </div>
+                      <div>
+                        <p style={{ fontSize: "13px", fontWeight: 700, color: "#dbdee1", marginBottom: "6px" }}>TournaOps {msg.title}</p>
+                        {msg.lines.map(l => (
+                          <p key={l} style={{ fontSize: "12px", color: "#80848e", marginBottom: "3px" }}>{l}</p>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </section>
 
-        {/* ============================================
-            BROADCAST
-            ============================================ */}
-        <BroadcastSection />
+        {/* ══ AI ══════════════════════════════════════════ */}
+        <section style={{ background: "var(--charcoal-deep)", borderBottom: "1px solid var(--border)", padding: "64px 0" }}>
+          <div className="container">
+            <div style={{ display: "grid", gridTemplateColumns: "440px 1fr", gap: "64px", alignItems: "center" }}>
+              {/* AI flow */}
+              <div style={{ background: "var(--charcoal)", border: "1px solid var(--border)" }}>
+                <div style={{ background: "var(--charcoal-mid)", padding: "10px 16px", borderBottom: "1px solid var(--border)" }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--muted-light)" }}>Ops AI — Screenshot Import</span>
+                </div>
+                {[
+                  { step: "01", label: "Upload Screenshot",  status: "Done",        color: "var(--success)" },
+                  { step: "02", label: "AI Extraction",       status: "Processing",  color: "var(--warning)" },
+                  { step: "03", label: "Review Results",      status: "Pending",     color: "var(--muted-light)" },
+                  { step: "04", label: "Save & Update",       status: "Pending",     color: "var(--muted-light)" },
+                ].map(s => (
+                  <div key={s.step} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid var(--border-subtle)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--muted-light)" }}>{s.step}</span>
+                      <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--white)" }}>{s.label}</span>
+                    </div>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", fontWeight: 700, color: s.color }}>{s.status}</span>
+                  </div>
+                ))}
+              </div>
 
-        {/* ============================================
-            DISCORD SYNC
-            ============================================ */}
-        <DiscordSection />
+              <div>
+                <p className="label-section" style={{ marginBottom: "10px" }}>AI Infrastructure</p>
+                <h2 className="display-title" style={{ marginBottom: "20px" }}>Ops AI</h2>
+                <p style={{ fontSize: "15px", color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: "32px", maxWidth: "400px" }}>
+                  AI that works behind the scenes to make tournament operations faster.
+                  Screenshot result extraction, analysis, and operational assistance.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "32px" }}>
+                  {["Screenshot result extraction","Match analysis and reports","Operational assistance","Error detection"].map(f => (
+                    <div key={f} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span style={{ color: "var(--accent)", fontSize: "12px" }}>✓</span>
+                      <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+                <Link href="/auth/register" className="btn btn-ghost">
+                  Try Ops AI →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
 
-        {/* ============================================
-            ORGANIZER CTA
-            ============================================ */}
-        <OrganizerCTA />
+        {/* ══ CTA ═════════════════════════════════════════ */}
+        <section style={{ background: "var(--black-rich)", padding: "80px 0" }}>
+          <div className="container" style={{ textAlign: "center" }}>
+            <p className="label-section" style={{ marginBottom: "16px", justifyContent: "center", display: "flex" }}>Get Started</p>
+            <h2 className="display-title" style={{ marginBottom: "20px" }}>
+              Ready to Run Your Tournament?
+            </h2>
+            <p style={{ fontSize: "15px", color: "var(--text-secondary)", maxWidth: "440px", margin: "0 auto 36px", lineHeight: 1.7 }}>
+              Join tournament organizers already using TournaOps for professional PUBG Mobile competition.
+            </p>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
+              <Link href="/auth/register" className="btn btn-primary btn-xl">
+                Create Tournament — Free
+              </Link>
+              <Link href="/tournaments" className="btn btn-secondary btn-xl">
+                Browse Tournaments
+              </Link>
+            </div>
+          </div>
+        </section>
+
       </main>
 
       <PublicFooter />
-
-      <style>{`
-        @media (max-width: 1024px) {
-          .hero-grid {
-            grid-template-columns: 1fr !important;
-            padding: 60px 0 !important;
-          }
-          .control-grid {
-            grid-template-columns: 1fr !important;
-          }
-          .ai-grid {
-            grid-template-columns: 1fr !important;
-            gap: 40px !important;
-          }
-        }
-        @media (max-width: 768px) {
-          .tournament-grid,
-          .tournament-grid-live {
-            grid-template-columns: 1fr !important;
-          }
-        }
-      `}</style>
     </>
   );
 }
