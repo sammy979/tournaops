@@ -1,6 +1,5 @@
-"use client";
-import { OrganizerCommandCenter } from "@/components/organizer/OrganizerCommandCenter";
+import { redirect } from "next/navigation";
 
 export default function CommandCenterPage() {
-  return <OrganizerCommandCenter />;
+  redirect("/dashboard");
 }
