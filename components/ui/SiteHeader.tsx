@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 
 export default function SiteHeader({ session }: { session?: any }) {
@@ -18,128 +19,94 @@ export default function SiteHeader({ session }: { session?: any }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        height: "56px",
+        padding: "14px 24px",
       }}>
         {/* LOGO */}
-        <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{
-            background: "var(--gold)",
-            width: "28px",
-            height: "28px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}>
-            <span style={{
-              fontFamily: "Barlow Condensed, sans-serif",
-              fontWeight: 900,
-              fontSize: "0.9rem",
-              color: "var(--black)",
-              letterSpacing: "-0.02em",
-            }}>TO</span>
-          </div>
+        <Link href="/" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none" }}>
+          <Image src="/logo.png" alt="TournaOps" width={32} height={32} priority style={{ objectFit: "contain" }} />
           <span style={{
             fontFamily: "Barlow Condensed, sans-serif",
-            fontWeight: 800,
-            fontSize: "1.1rem",
-            letterSpacing: "0.08em",
+            fontWeight: 900,
+            fontSize: "1.15rem",
+            letterSpacing: "0.06em",
             color: "var(--white)",
             textTransform: "uppercase",
           }}>TournaOps</span>
         </Link>
 
         {/* DESKTOP NAV */}
-        <nav className="hide-mobile" style={{ display: "flex", alignItems: "center", gap: "28px" }}>
-          <Link href="/tournaments" className="nav-link">Tournaments</Link>
-          <Link href="/tournaments?status=LIVE" className="nav-link" style={{ color: "var(--red)" }}>
-            <span className="live-dot" style={{ marginRight: "6px" }}></span>Live
-          </Link>
-          <Link href="/tournaments?status=COMPLETED" className="nav-link">Results</Link>
-          <Link href="/rankings" className="nav-link">Rankings</Link>
-          <Link href="#organizers" className="nav-link">Organizers</Link>
-          <Link href="#pricing" className="nav-link">Pricing</Link>
+        <nav style={{ display: "flex", alignItems: "center", gap: "4px" }} className="hidden-mobile">
+          {[
+            { href: "/tournaments", label: "Tournaments" },
+            { href: "/tournaments?status=LIVE", label: "Live" },
+            { href: "/tournaments?status=COMPLETED", label: "Results" },
+            { href: "/rankings", label: "Rankings" },
+            { href: "/#discord", label: "Discord" },
+            { href: "/pricing", label: "Pricing" },
+          ].map(link => (
+            <Link key={link.href} href={link.href}
+              style={{
+                padding: "8px 14px",
+                fontFamily: "Barlow Condensed, sans-serif",
+                fontWeight: 700,
+                fontSize: "0.85rem",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "var(--white-70)",
+                textDecoration: "none",
+              }}>
+              {link.label}
+            </Link>
+          ))}
         </nav>
 
         {/* RIGHT ACTIONS */}
-          <div className="hide-mobile" style={{
-            fontFamily: "JetBrains Mono, monospace",
-            fontSize: "0.68rem",
-            color: "var(--white-40)",
-            border: "1px solid var(--border)",
-            padding: "3px 8px",
-            marginRight: "4px",
-          }}>Ctrl+K</div>
-
-        <div className="hide-mobile" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           {session ? (
-            <>
-              <Link href="/dashboard" className="nav-link">Dashboard</Link>
-              <Link href="/dashboard" className="btn-primary" style={{ padding: "8px 18px" }}>
-                Command Center
-              </Link>
-            </>
+            <Link href="/dashboard" style={{
+              padding: "8px 18px",
+              background: "var(--gold)",
+              color: "var(--black)",
+              fontFamily: "Barlow Condensed, sans-serif",
+              fontWeight: 800,
+              fontSize: "0.85rem",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              textDecoration: "none",
+            }}>
+              Dashboard
+            </Link>
           ) : (
             <>
-              <Link href="/auth/signin" className="btn-secondary" style={{ padding: "8px 18px" }}>
+              <Link href="/login" style={{
+                padding: "8px 14px",
+                color: "var(--white-70)",
+                fontFamily: "Barlow Condensed, sans-serif",
+                fontWeight: 700,
+                fontSize: "0.85rem",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                textDecoration: "none",
+              }}>
                 Log In
               </Link>
-              <Link href="/auth/signup" className="btn-primary" style={{ padding: "8px 18px" }}>
+              <Link href="/register" style={{
+                padding: "8px 18px",
+                background: "var(--gold)",
+                color: "var(--black)",
+                fontFamily: "Barlow Condensed, sans-serif",
+                fontWeight: 800,
+                fontSize: "0.85rem",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                textDecoration: "none",
+              }}>
                 Create Tournament
               </Link>
             </>
           )}
         </div>
-
-        {/* MOBILE MENU BUTTON */}
-        <button
-          className="show-mobile-only"
-          onClick={() => setMenuOpen(!menuOpen)}
-          style={{
-            background: "none",
-            border: "1px solid var(--border)",
-            color: "var(--white)",
-            padding: "8px 12px",
-            cursor: "pointer",
-            fontFamily: "Barlow Condensed, sans-serif",
-            fontSize: "0.75rem",
-            letterSpacing: "0.1em",
-          }}
-        >
-          {menuOpen ? "CLOSE" : "MENU"}
-        </button>
       </div>
-
-      {/* MOBILE MENU */}
-      {menuOpen && (
-        <div style={{
-          background: "var(--charcoal)",
-          borderTop: "1px solid var(--border)",
-          padding: "20px 24px",
-        }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <Link href="/tournaments" className="nav-link" onClick={() => setMenuOpen(false)}>Tournaments</Link>
-            <Link href="/tournaments?status=LIVE" className="nav-link" style={{ color: "var(--red)" }} onClick={() => setMenuOpen(false)}>Live</Link>
-            <Link href="/tournaments?status=COMPLETED" className="nav-link" onClick={() => setMenuOpen(false)}>Results</Link>
-            <Link href="/rankings" className="nav-link" onClick={() => setMenuOpen(false)}>Rankings</Link>
-            <Link href="#pricing" className="nav-link" onClick={() => setMenuOpen(false)}>Pricing</Link>
-            <hr className="divider" />
-            {session ? (
-              <Link href="/dashboard" className="btn-primary" style={{ textAlign: "center" }} onClick={() => setMenuOpen(false)}>
-                Dashboard
-              </Link>
-            ) : (
-              <>
-                <Link href="/auth/signin" className="btn-secondary" style={{ textAlign: "center" }} onClick={() => setMenuOpen(false)}>
-                  Log In
-                </Link>
-                <Link href="/auth/signup" className="btn-primary" style={{ textAlign: "center" }} onClick={() => setMenuOpen(false)}>
-                  Create Tournament
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </header>
   );
 }

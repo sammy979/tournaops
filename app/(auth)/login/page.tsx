@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import SiteHeader from "@/components/ui/SiteHeader";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,22 +13,20 @@ export default function LoginPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError("");
-
+    setLoading(true);
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-
       if (res.ok) {
         router.push("/dashboard");
         router.refresh();
       } else {
-        const data = await res.json();
-        setError(data.error || "Login failed");
+        const d = await res.json();
+        setError(d.error || "Login failed");
       }
     } catch (err: any) {
       setError(err.message || "Network error");
@@ -37,210 +36,143 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "var(--black)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "24px",
-    }}>
-      {/* BG ACCENT */}
-      <div style={{
-        position: "absolute",
-        inset: 0,
-        background: "radial-gradient(ellipse at top, rgba(201,168,76,0.06) 0%, transparent 60%)",
-        pointerEvents: "none",
-      }} />
-
-      <div style={{ width: "100%", maxWidth: "420px", position: "relative" }}>
-        {/* LOGO */}
-        <Link href="/" style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          justifyContent: "center",
-          marginBottom: "32px",
-          textDecoration: "none",
-        }}>
+    <>
+      <SiteHeader />
+      <main style={{ minHeight: "calc(100vh - 68px)", background: "var(--black)", display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 24px" }}>
+        <div style={{ width: "100%", maxWidth: "440px" }}>
           <div style={{
-            background: "var(--gold)",
-            width: "32px",
-            height: "32px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderTop: "3px solid var(--gold)",
+            padding: "40px 32px",
           }}>
-            <span style={{
+            <div style={{
+              fontFamily: "Barlow Condensed, sans-serif",
+              fontWeight: 700,
+              fontSize: "0.75rem",
+              letterSpacing: "0.14em",
+              color: "var(--gold)",
+              textTransform: "uppercase",
+              marginBottom: "12px",
+            }}>Sign In</div>
+
+            <h1 style={{
               fontFamily: "Barlow Condensed, sans-serif",
               fontWeight: 900,
-              fontSize: "1rem",
-              color: "var(--black)",
-            }}>TO</span>
-          </div>
-          <span style={{
-            fontFamily: "Barlow Condensed, sans-serif",
-            fontWeight: 800,
-            fontSize: "1.3rem",
-            letterSpacing: "0.08em",
-            color: "var(--white)",
-            textTransform: "uppercase",
-          }}>TournaOps</span>
-        </Link>
+              fontSize: "2rem",
+              lineHeight: 1,
+              color: "var(--white)",
+              textTransform: "uppercase",
+              marginBottom: "8px",
+            }}>Welcome Back</h1>
 
-        {/* CARD */}
-        <div style={{
-          background: "var(--surface)",
-          border: "1px solid var(--border)",
-          borderTop: "3px solid var(--gold)",
-          padding: "32px",
-        }}>
-          <div className="section-label" style={{ marginBottom: "8px" }}>Sign In</div>
-          <h1 style={{
-            fontFamily: "Barlow Condensed, sans-serif",
-            fontWeight: 900,
-            fontSize: "1.6rem",
-            color: "var(--white)",
-            textTransform: "uppercase",
-            letterSpacing: "0.02em",
-            marginBottom: "24px",
-          }}>Welcome Back</h1>
-
-          <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <div>
-              <label style={{
-                display: "block",
-                fontFamily: "Barlow Condensed, sans-serif",
-                fontWeight: 600,
-                fontSize: "0.7rem",
-                letterSpacing: "0.12em",
-                color: "var(--white-40)",
-                textTransform: "uppercase",
-                marginBottom: "6px",
-              }}>Email or Username</label>
-              <input
-                type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoFocus
-                style={{
-                  width: "100%",
-                  fontFamily: "Barlow, sans-serif",
-                  fontSize: "0.92rem",
-                  padding: "11px 14px",
-                  background: "var(--surface-2)",
-                  color: "var(--white)",
-                  border: "1px solid var(--border)",
-                  outline: "none",
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{
-                display: "block",
-                fontFamily: "Barlow Condensed, sans-serif",
-                fontWeight: 600,
-                fontSize: "0.7rem",
-                letterSpacing: "0.12em",
-                color: "var(--white-40)",
-                textTransform: "uppercase",
-                marginBottom: "6px",
-              }}>Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                style={{
-                  width: "100%",
-                  fontFamily: "Barlow, sans-serif",
-                  fontSize: "0.92rem",
-                  padding: "11px 14px",
-                  background: "var(--surface-2)",
-                  color: "var(--white)",
-                  border: "1px solid var(--border)",
-                  outline: "none",
-                }}
-              />
-            </div>
+            <p style={{ color: "var(--white-40)", fontSize: "0.9rem", marginBottom: "28px" }}>
+              Continue to your organizer dashboard.
+            </p>
 
             {error && (
               <div style={{
                 background: "var(--red-dim)",
                 border: "1px solid var(--red)",
-                borderLeft: "3px solid var(--red)",
                 padding: "10px 14px",
-                fontSize: "0.82rem",
+                marginBottom: "16px",
                 color: "var(--red)",
-                fontFamily: "Barlow Condensed, sans-serif",
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                fontWeight: 600,
+                fontSize: "0.85rem",
               }}>{error}</div>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-gold"
-              style={{ width: "100%", opacity: loading ? 0.5 : 1, marginTop: "8px" }}
-            >
-              {loading ? "Signing In..." : "Sign In"}
-            </button>
-          </form>
+            <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              {[
+                { label: "Email",    value: email,    setter: setEmail,    type: "email",    placeholder: "you@email.com" },
+                { label: "Password", value: password, setter: setPassword, type: "password", placeholder: "••••••••" },
+              ].map(f => (
+                <div key={f.label}>
+                  <label style={{
+                    display: "block",
+                    fontFamily: "Barlow Condensed, sans-serif",
+                    fontWeight: 700,
+                    fontSize: "0.7rem",
+                    letterSpacing: "0.12em",
+                    color: "var(--white-40)",
+                    textTransform: "uppercase",
+                    marginBottom: "6px",
+                  }}>{f.label}</label>
+                  <input
+                    type={f.type}
+                    value={f.value}
+                    onChange={e => f.setter(e.target.value)}
+                    placeholder={f.placeholder}
+                    style={{
+                      width: "100%",
+                      background: "var(--black)",
+                      border: "1px solid var(--border)",
+                      color: "var(--white)",
+                      padding: "12px 14px",
+                      fontSize: "0.95rem",
+                      outline: "none",
+                    }}
+                    onFocus={e => (e.currentTarget.style.borderColor = "var(--gold)")}
+                    onBlur={e =>  (e.currentTarget.style.borderColor = "var(--border)")}
+                  />
+                </div>
+              ))}
 
-          <div style={{
-            marginTop: "20px",
-            paddingTop: "20px",
-            borderTop: "1px solid var(--border)",
-            textAlign: "center",
-          }}>
+              <button type="submit" disabled={loading} style={{
+                background: "var(--gold)",
+                color: "var(--black)",
+                padding: "13px",
+                border: "none",
+                fontFamily: "Barlow Condensed, sans-serif",
+                fontWeight: 800,
+                fontSize: "0.95rem",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                cursor: loading ? "not-allowed" : "pointer",
+                opacity: loading ? 0.6 : 1,
+                marginTop: "8px",
+              }}>
+                {loading ? "Signing in..." : "Sign In →"}
+              </button>
+            </form>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", margin: "24px 0" }}>
+              <div style={{ flex: 1, height: "1px", background: "var(--border)" }} />
+              <span style={{ color: "var(--white-40)", fontSize: "0.75rem" }}>OR</span>
+              <div style={{ flex: 1, height: "1px", background: "var(--border)" }} />
+            </div>
+
             <a href="/api/auth/google" style={{
-              display: "block",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "10px",
               width: "100%",
-              padding: "10px 14px",
-              background: "var(--surface-2)",
+              background: "var(--black)",
               border: "1px solid var(--border)",
-              color: "var(--white-70)",
-              fontFamily: "Barlow Condensed, sans-serif",
-              fontWeight: 700,
-              fontSize: "0.8rem",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
+              padding: "12px",
+              color: "var(--white)",
+              fontSize: "0.9rem",
+              fontWeight: 600,
               textDecoration: "none",
-              textAlign: "center",
-            }}>Continue with Google</a>
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+              Continue with Google
+            </a>
+
+            <p style={{ textAlign: "center", color: "var(--white-40)", fontSize: "0.85rem", marginTop: "20px" }}>
+              New here?{" "}
+              <Link href="/register" style={{ color: "var(--gold)", fontWeight: 600, textDecoration: "none" }}>
+                Create Account
+              </Link>
+            </p>
           </div>
         </div>
-
-        {/* SIGNUP LINK */}
-        <div style={{
-          textAlign: "center",
-          marginTop: "20px",
-          fontSize: "0.85rem",
-          color: "var(--white-40)",
-        }}>
-          Don&apos;t have an account?{" "}
-          <Link href="/register" style={{
-            color: "var(--gold)",
-            textDecoration: "none",
-            fontWeight: 600,
-          }}>Create one</Link>
-        </div>
-
-        <div style={{ textAlign: "center", marginTop: "12px" }}>
-          <Link href="/" style={{
-            fontFamily: "Barlow Condensed, sans-serif",
-            fontSize: "0.72rem",
-            letterSpacing: "0.12em",
-            color: "var(--white-40)",
-            textDecoration: "none",
-            textTransform: "uppercase",
-          }}>← Back to TournaOps</Link>
-        </div>
-      </div>
-    </div>
+      </main>
+    </>
   );
 }
