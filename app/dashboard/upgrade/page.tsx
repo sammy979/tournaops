@@ -1,426 +1,260 @@
-import { getSession } from "@/lib/auth/session";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import Link from "next/link";
-import UpgradeClient from "@/components/payment/UpgradeClient";
+"use client";
 
-export const dynamic = "force-dynamic";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import DashboardShell from "@/components/ui/DashboardShell";
+import {
+  Trophy,
+  Zap,
+  CheckCircle2,
+  ArrowRight,
+  Star,
+  Shield,
+  Crown,
+  Sparkles,
+  Users,
+  Globe,
+  BarChart2,
+  Radio,
+  Bot,
+  Layers,
+  CreditCard,
+  Lock,
+} from "lucide-react";
 
-export const metadata = {
-  title: "Upgrade to Pro — TournaOps",
-  description: "Unlock professional tournament operations features.",
-};
+const PLANS = [
+  {
+    name: "Free",
+    price: { monthly: 0, annual: 0 },
+    color: "border-white/[0.08]",
+    header: "bg-white/[0.02]",
+    icon: Shield,
+    iconColor: "text-slate-400",
+    current: true,
+    features: [
+      { text: "Up to 3 tournaments",          ok: true  },
+      { text: "8 teams per tournament",        ok: true  },
+      { text: "Basic brackets",                ok: true  },
+      { text: "Public tournament page",        ok: true  },
+      { text: "Discord notifications",         ok: true  },
+      { text: "AI bracket generation",         ok: false },
+      { text: "Broadcast control",             ok: false },
+      { text: "Advanced analytics",            ok: false },
+      { text: "Custom branding",               ok: false },
+      { text: "Unlimited tournaments",         ok: false },
+      { text: "Priority support",              ok: false },
+    ],
+  },
+  {
+    name: "Pro",
+    price: { monthly: 19.99, annual: 14.99 },
+    color: "border-violet-500/50",
+    header: "bg-gradient-to-br from-violet-600/20 to-indigo-600/20",
+    icon: Star,
+    iconColor: "text-violet-400",
+    badge: "Most Popular",
+    badgeColor: "bg-violet-600",
+    current: false,
+    features: [
+      { text: "Unlimited tournaments",         ok: true  },
+      { text: "Up to 64 teams",                ok: true  },
+      { text: "All bracket formats",           ok: true  },
+      { text: "Public tournament page",        ok: true  },
+      { text: "Discord bot integration",       ok: true  },
+      { text: "AI bracket generation",         ok: true  },
+      { text: "Broadcast + OBS control",       ok: true  },
+      { text: "Advanced analytics",            ok: true  },
+      { text: "Custom branding & overlays",    ok: true  },
+      { text: "Bulk team import",              ok: true  },
+      { text: "Priority support",              ok: true  },
+    ],
+  },
+  {
+    name: "Pro+",
+    price: { monthly: 49.99, annual: 37.99 },
+    color: "border-amber-500/50",
+    header: "bg-gradient-to-br from-amber-600/20 to-orange-600/20",
+    icon: Crown,
+    iconColor: "text-amber-400",
+    badge: "Enterprise",
+    badgeColor: "bg-amber-600",
+    current: false,
+    features: [
+      { text: "Everything in Pro",             ok: true  },
+      { text: "Unlimited team size",           ok: true  },
+      { text: "White-label solution",          ok: true  },
+      { text: "Custom domain support",         ok: true  },
+      { text: "Full API access",               ok: true  },
+      { text: "Admin panel access",            ok: true  },
+      { text: "SLA 99.9% uptime guarantee",    ok: true  },
+      { text: "Dedicated account manager",     ok: true  },
+      { text: "Custom integrations",           ok: true  },
+      { text: "Invoice billing",               ok: true  },
+      { text: "24/7 priority support",         ok: true  },
+    ],
+  },
+];
 
-async function getUserAndPayments(userId: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      email: true,
-      username: true,
-      isPro: true,
-      proExpiresAt: true,
-      proGrantedAt: true,
-    },
-  });
+const PRO_FEATURES = [
+  { icon: Bot,      title: "AI Tools",           desc: "AI bracket generation, schedule optimization, and result prediction" },
+  { icon: Radio,    title: "Broadcast Control",  desc: "OBS scene switcher, overlay management, stream monitoring"          },
+  { icon: BarChart2,title: "Deep Analytics",     desc: "Win rates, map stats, team trends, and tournament insights"         },
+  { icon: Globe,    title: "Custom Branding",    desc: "Custom colors, logos, fonts, and overlay themes"                    },
+  { icon: Users,    title: "Bulk Operations",    desc: "Import teams from CSV, bulk messaging, and roster management"       },
+  { icon: Layers,   title: "Multi-Stage Events", desc: "Group stages, playoffs, and grand finals in one tournament"         },
+];
 
-  const payments = await prisma.payment.findMany({
-    where: { userId },
-    orderBy: { submittedAt: "desc" },
-    take: 10,
-    select: {
-      id: true,
-      amount: true,
-      currency: true,
-      method: true,
-      status: true,
-      submittedAt: true,
-      reviewedAt: true,
-      rejectionReason: true,
-    },
-  });
+export default function UpgradePage() {
+  const router  = useRouter();
+  const [annual, setAnnual]   = useState(false);
+  const [loading,setLoading]  = useState<string | null>(null);
 
-  const paymentSettings = await prisma.paymentSettings.findFirst();
-
-  return { user, payments, paymentSettings };
-}
-
-export default async function UpgradePage() {
-  const session = await getSession();
-  if (!session) redirect("/auth/signin");
-
-  const { user, payments, paymentSettings } = await getUserAndPayments(session.userId);
-  if (!user) redirect("/auth/signin");
-
-  const isPro = user.isPro;
-  const proExpires = user.proExpiresAt;
+  const handleUpgrade = (plan: string) => {
+    setLoading(plan);
+    setTimeout(() => {
+      setLoading(null);
+      router.push("/api/payments/checkout");
+    }, 1500);
+  };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--black)" }}>
-      {/* HEADER */}
-      <div style={{
-        background: "var(--charcoal)",
-        borderBottom: "1px solid var(--border)",
-      }}>
-        <div className="container-ops" style={{ padding: "32px 24px" }}>
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            marginBottom: "12px",
-            fontFamily: "Barlow Condensed, sans-serif",
-            fontSize: "0.72rem",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-          }}>
-            <Link href="/dashboard" style={{ color: "var(--white-40)", textDecoration: "none" }}>Dashboard</Link>
-            <span style={{ color: "var(--white-20)" }}>→</span>
-            <span style={{ color: "var(--gold)" }}>Upgrade</span>
-          </div>
-
-          <div className="section-label">TournaOps Pro</div>
-          <h1 style={{
-            fontFamily: "Barlow Condensed, sans-serif",
-            fontWeight: 900,
-            fontSize: "clamp(1.8rem, 4vw, 2.8rem)",
-            letterSpacing: "-0.01em",
-            textTransform: "uppercase",
-            color: "var(--white)",
-            lineHeight: 1,
-            marginBottom: "12px",
-          }}>
-            Run Tournaments at a Professional Level
-          </h1>
-          <p style={{
-            fontSize: "0.95rem",
-            color: "var(--white-70)",
-            maxWidth: "580px",
-            lineHeight: 1.6,
-          }}>
-            Everything you need to organize competitive PUBG Mobile tournaments —
-            AI screenshot import, Discord sync, OBS broadcast overlays, and more.
-          </p>
-        </div>
-      </div>
-
-      {/* PRO STATUS BANNER */}
-      {isPro && (
-        <div style={{
-          background: "var(--gold-dim)",
-          borderBottom: "1px solid var(--gold)",
-          borderTop: "1px solid var(--gold)",
-        }}>
-          <div className="container-ops" style={{
-            padding: "14px 24px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "16px",
-            flexWrap: "wrap",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <span style={{
-                fontFamily: "Barlow Condensed, sans-serif",
-                fontWeight: 800,
-                fontSize: "0.9rem",
-                color: "var(--gold)",
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-              }}>✓ You are on TournaOps Pro</span>
+    <DashboardShell>
+      <div className="min-h-screen bg-[#080a0e] text-white">
+        <div className="border-b border-white/[0.06] bg-[#0a0c10]">
+          <div className="max-w-6xl mx-auto px-6 py-8 text-center">
+            <div className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 text-violet-300 px-3 py-1 rounded-full text-xs font-semibold mb-4">
+              <Sparkles className="w-3.5 h-3.5" /> Upgrade Your Plan
             </div>
-            {proExpires && (
-              <div style={{
-                fontFamily: "JetBrains Mono, monospace",
-                fontSize: "0.78rem",
-                color: "var(--white-70)",
-              }}>
-                Expires: {new Date(proExpires).toLocaleDateString("en-US", {
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </div>
-            )}
+            <h1 className="text-4xl font-black text-white mb-3">
+              Take Your Tournaments{" "}
+              <span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
+                Pro
+              </span>
+            </h1>
+            <p className="text-slate-400 text-lg max-w-xl mx-auto mb-6">
+              Unlock AI tools, broadcast control, advanced analytics, and unlimited tournaments.
+            </p>
+
+            {/* Toggle */}
+            <div className="inline-flex items-center gap-3 bg-white/[0.04] border border-white/[0.08] rounded-2xl p-1">
+              <button onClick={() => setAnnual(false)}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${!annual ? "bg-white/[0.08] text-white" : "text-slate-500"}`}>
+                Monthly
+              </button>
+              <button onClick={() => setAnnual(true)}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 ${annual ? "bg-violet-600 text-white" : "text-slate-500"}`}>
+                Annual
+                <span className="bg-emerald-500/20 text-emerald-400 text-xs px-1.5 py-0.5 rounded-full font-bold">Save 25%</span>
+              </button>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* PRICING + FEATURES */}
-      <div className="container-ops" style={{ padding: "40px 24px" }}>
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 380px",
-          gap: "32px",
-          alignItems: "start",
-        }}>
-          {/* LEFT — FEATURES */}
-          <div>
-            <div className="section-label">What You Get</div>
-            <h2 style={{
-              fontFamily: "Barlow Condensed, sans-serif",
-              fontWeight: 800,
-              fontSize: "1.4rem",
-              textTransform: "uppercase",
-              color: "var(--white)",
-              letterSpacing: "0.02em",
-              marginBottom: "20px",
-            }}>Pro Features</h2>
+        <div className="max-w-6xl mx-auto px-6 py-8">
 
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "1px",
-              background: "var(--border)",
-              border: "1px solid var(--border)",
-            }}>
-              {[
-                { title: "AI Screenshot Import", desc: "Extract kills and placements from PUBG screenshots with Ops AI." },
-                { title: "Discord Sync", desc: "Auto-publish match results and standings to your Discord server." },
-                { title: "OBS Broadcast Overlays", desc: "Six production-ready overlays for live streaming." },
-                { title: "Unlimited Tournaments", desc: "Run as many tournaments as you need — no hidden limits." },
-                { title: "Stages & Groups", desc: "Advanced multi-stage tournament formats with team progression." },
-                { title: "Custom Scoring Presets", desc: "PMGC, PMPL, or your own scoring rules." },
-                { title: "Bulk Team Import", desc: "Onboard hundreds of teams in seconds." },
-                { title: "Public Tournament Pages", desc: "Every tournament gets its own esports event page." },
-                { title: "Tournament Reports", desc: "Auto-generated summaries and final results." },
-                { title: "Priority Support", desc: "Get help fast when it matters most." },
-              ].map((f, i) => (
-                <div key={i} style={{
-                  background: "var(--surface)",
-                  padding: "18px 20px",
-                }}>
-                  <div style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "10px",
-                  }}>
-                    <span style={{
-                      color: "var(--green)",
-                      fontFamily: "JetBrains Mono, monospace",
-                      fontSize: "0.85rem",
-                      marginTop: "2px",
-                      flexShrink: 0,
-                    }}>✓</span>
-                    <div>
-                      <div style={{
-                        fontFamily: "Barlow Condensed, sans-serif",
-                        fontWeight: 800,
-                        fontSize: "0.9rem",
-                        color: "var(--white)",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.04em",
-                        marginBottom: "4px",
-                      }}>{f.title}</div>
-                      <div style={{
-                        fontSize: "0.8rem",
-                        color: "var(--white-40)",
-                        lineHeight: 1.6,
-                      }}>{f.desc}</div>
-                    </div>
+          {/* Plan cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
+            {PLANS.map(plan => (
+              <div key={plan.name} className={`border-2 rounded-2xl overflow-hidden relative transition-all hover:scale-[1.02] ${plan.color}`}>
+                {plan.badge && (
+                  <div className={`absolute top-4 right-4 text-white text-xs font-bold px-3 py-1 rounded-full ${plan.badgeColor}`}>
+                    {plan.badge}
                   </div>
+                )}
+                <div className={`p-6 ${plan.header}`}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-9 h-9 rounded-xl bg-white/[0.08] flex items-center justify-center">
+                      <plan.icon className={`w-5 h-5 ${plan.iconColor}`} />
+                    </div>
+                    <h3 className="text-white font-black text-xl">{plan.name}</h3>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-black text-white">
+                      {plan.price.monthly === 0 ? "Free" : `$${(annual ? plan.price.annual : plan.price.monthly).toFixed(2)}`}
+                    </span>
+                    {plan.price.monthly > 0 && (
+                      <span className="text-slate-500 text-sm">/ month</span>
+                    )}
+                  </div>
+                  {annual && plan.price.monthly > 0 && (
+                    <p className="text-emerald-400 text-xs mt-1">
+                      Save ${((plan.price.monthly - plan.price.annual) * 12).toFixed(0)}/year
+                    </p>
+                  )}
+                </div>
+
+                <div className="p-5 bg-[#0a0c12]">
+                  {plan.current ? (
+                    <div className="w-full py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-slate-500 text-sm font-semibold text-center mb-5">
+                      Current Plan
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleUpgrade(plan.name)}
+                      disabled={loading === plan.name}
+                      className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all mb-5 flex items-center justify-center gap-2 disabled:opacity-60 ${
+                        plan.name === "Pro"  ? "bg-violet-600 hover:bg-violet-500 text-white hover:shadow-lg hover:shadow-violet-500/30" :
+                        plan.name === "Pro+" ? "bg-amber-500 hover:bg-amber-400 text-black" :
+                        "bg-white/[0.06] hover:bg-white/[0.10] text-white border border-white/[0.12]"
+                      }`}
+                    >
+                      {loading === plan.name ? (
+                        <><CreditCard className="w-4 h-4 animate-pulse" /> Processing…</>
+                      ) : plan.name === "Pro+" ? (
+                        <>Contact Sales <ArrowRight className="w-4 h-4" /></>
+                      ) : (
+                        <>Upgrade to {plan.name} <ArrowRight className="w-4 h-4" /></>
+                      )}
+                    </button>
+                  )}
+                  <div className="space-y-2">
+                    {plan.features.map(f => (
+                      <div key={f.text} className={`flex items-center gap-2.5 ${!f.ok ? "opacity-30" : ""}`}>
+                        <CheckCircle2 className={`w-3.5 h-3.5 flex-shrink-0 ${f.ok ? "text-emerald-400" : "text-slate-700"}`} />
+                        <span className={`text-sm ${f.ok ? "text-slate-300" : "text-slate-600 line-through"}`}>{f.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Pro feature highlights */}
+          <div className="border-t border-white/[0.06] pt-10">
+            <h2 className="text-white font-bold text-2xl text-center mb-2">What You Unlock with Pro</h2>
+            <p className="text-slate-500 text-center mb-8">Professional tools used by top esports organizers worldwide</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {PRO_FEATURES.map(f => (
+                <div key={f.title} className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-5 hover:border-violet-500/20 transition-all">
+                  <div className="w-9 h-9 rounded-lg bg-violet-500/15 border border-violet-500/20 flex items-center justify-center mb-3">
+                    <f.icon className="w-4.5 h-4.5 text-violet-400" />
+                  </div>
+                  <p className="text-white font-semibold text-sm mb-1">{f.title}</p>
+                  <p className="text-slate-500 text-xs leading-relaxed">{f.desc}</p>
                 </div>
               ))}
             </div>
-
-            {/* PAYMENT HISTORY */}
-            {payments.length > 0 && (
-              <div style={{ marginTop: "40px" }}>
-                <div className="section-label">Payment History</div>
-                <h3 style={{
-                  fontFamily: "Barlow Condensed, sans-serif",
-                  fontWeight: 700,
-                  fontSize: "1rem",
-                  color: "var(--white)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.04em",
-                  marginBottom: "16px",
-                }}>Your Payments</h3>
-
-                <div style={{
-                  border: "1px solid var(--border)",
-                  background: "var(--surface)",
-                  overflow: "hidden",
-                }}>
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 100px 100px 140px 120px",
-                    padding: "10px 16px",
-                    background: "var(--surface-2)",
-                    borderBottom: "1px solid var(--border)",
-                  }}>
-                    {["Date", "Method", "Amount", "Status", "Reviewed"].map((col) => (
-                      <div key={col} style={{
-                        fontFamily: "Barlow Condensed, sans-serif",
-                        fontWeight: 600,
-                        fontSize: "0.68rem",
-                        letterSpacing: "0.15em",
-                        color: "var(--white-40)",
-                        textTransform: "uppercase",
-                      }}>{col}</div>
-                    ))}
-                  </div>
-
-                  {payments.map((p: any, i: number) => (
-                    <div key={p.id} style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 100px 100px 140px 120px",
-                      padding: "12px 16px",
-                      borderBottom: i < payments.length - 1 ? "1px solid var(--border)" : "none",
-                      alignItems: "center",
-                    }}>
-                      <div style={{
-                        fontFamily: "JetBrains Mono, monospace",
-                        fontSize: "0.78rem",
-                        color: "var(--white-70)",
-                      }}>
-                        {new Date(p.submittedAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </div>
-                      <div style={{
-                        fontFamily: "Barlow Condensed, sans-serif",
-                        fontWeight: 600,
-                        fontSize: "0.75rem",
-                        color: "var(--white-70)",
-                        textTransform: "uppercase",
-                      }}>{p.method}</div>
-                      <div style={{
-                        fontFamily: "JetBrains Mono, monospace",
-                        fontWeight: 600,
-                        fontSize: "0.82rem",
-                        color: "var(--gold)",
-                      }}>Rs {p.amount}</div>
-                      <div>
-                        {p.status === "APPROVED" && <span className="badge-completed">Approved</span>}
-                        {p.status === "PENDING" && <span className="badge-warning">Pending</span>}
-                        {p.status === "REJECTED" && <span className="badge-live" style={{background: "var(--red-dim)"}}>Rejected</span>}
-                      </div>
-                      <div style={{
-                        fontFamily: "JetBrains Mono, monospace",
-                        fontSize: "0.72rem",
-                        color: "var(--white-40)",
-                      }}>
-                        {p.reviewedAt
-                          ? new Date(p.reviewedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                          : "—"}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* RIGHT — PRICING CARD */}
-          <div>
-            <div style={{ position: "sticky", top: "80px" }}>
-              <div style={{
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-                borderTop: "3px solid var(--gold)",
-                padding: "28px 24px",
-                marginBottom: "16px",
-              }}>
-                <div style={{
-                  fontFamily: "Barlow Condensed, sans-serif",
-                  fontWeight: 700,
-                  fontSize: "0.7rem",
-                  letterSpacing: "0.15em",
-                  color: "var(--gold)",
-                  textTransform: "uppercase",
-                  marginBottom: "8px",
-                }}>TournaOps Pro</div>
-
-                <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginBottom: "6px" }}>
-                  <span style={{
-                    fontFamily: "Barlow Condensed, sans-serif",
-                    fontWeight: 900,
-                    fontSize: "3rem",
-                    color: "var(--white)",
-                    lineHeight: 1,
-                    letterSpacing: "-0.02em",
-                  }}>Rs 299</span>
+          {/* Trust signals */}
+          <div className="mt-10 bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
+              {[
+                { icon: Lock,    title: "Secure Payments",   desc: "Powered by Stripe. PCI-DSS compliant. Bank-level encryption."            },
+                { icon: Trophy,  title: "14-Day Free Trial", desc: "Try Pro free for 14 days. Cancel anytime, no questions asked."           },
+                { icon: Shield,  title: "Instant Access",    desc: "Upgrade activates immediately. All features unlocked right away."        },
+              ].map(t => (
+                <div key={t.title}>
+                  <t.icon className="w-6 h-6 text-violet-400 mx-auto mb-2" />
+                  <p className="text-white font-semibold text-sm mb-1">{t.title}</p>
+                  <p className="text-slate-500 text-xs leading-relaxed">{t.desc}</p>
                 </div>
-                <div style={{
-                  fontFamily: "Barlow Condensed, sans-serif",
-                  fontSize: "0.8rem",
-                  color: "var(--white-40)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  marginBottom: "24px",
-                }}>Per Month · Nepal / Local Payment</div>
-
-                <div style={{
-                  padding: "14px 16px",
-                  background: "var(--surface-2)",
-                  border: "1px solid var(--border)",
-                  marginBottom: "20px",
-                }}>
-                  <div style={{
-                    fontFamily: "Barlow Condensed, sans-serif",
-                    fontWeight: 700,
-                    fontSize: "0.72rem",
-                    color: "var(--white-40)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.12em",
-                    marginBottom: "8px",
-                  }}>Included</div>
-                  {[
-                    "AI Screenshot Import",
-                    "OBS Broadcast Overlays",
-                    "Discord Integration",
-                    "Unlimited Tournaments",
-                    "Priority Support",
-                  ].map((item) => (
-                    <div key={item} style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      fontSize: "0.82rem",
-                      color: "var(--white-70)",
-                      padding: "4px 0",
-                    }}>
-                      <span style={{ color: "var(--gold)" }}>✓</span> {item}
-                    </div>
-                  ))}
-                </div>
-
-                {isPro ? (
-                  <div style={{
-                    background: "var(--green-dim)",
-                    border: "1px solid var(--green)",
-                    padding: "12px 16px",
-                    textAlign: "center",
-                    fontFamily: "Barlow Condensed, sans-serif",
-                    fontWeight: 700,
-                    fontSize: "0.85rem",
-                    color: "var(--green)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.1em",
-                  }}>✓ Active Subscription</div>
-                ) : (
-                  <UpgradeClient
-                    userId={user.id}
-                    userEmail={user.email}
-                    paymentSettings={paymentSettings as any}
-                  />
-                )}
-              </div>
-
-              <div style={{
-                fontSize: "0.75rem",
-                color: "var(--white-40)",
-                lineHeight: 1.6,
-                padding: "0 4px",
-              }}>
-                Payments are manually reviewed by our team. Pro access is granted within 24 hours of payment verification.
-              </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </DashboardShell>
   );
 }
