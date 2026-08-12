@@ -1,178 +1,408 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import AdminShell from "@/components/ui/AdminShell";
 import {
-  Activity,
   CheckCircle2,
   AlertTriangle,
   XCircle,
   RefreshCw,
   Clock,
-  Zap,
-  Server,
-  Database,
-  Globe,
-  Cpu,
-  HardDrive,
-  ArrowUpRight,
+  HelpCircle,
 } from "lucide-react";
 
-type ServiceStatus = "healthy" | "degraded" | "down";
+type ServiceStatus = "healthy" | "degraded" | "down" | "unknown" | "partial";
 
-interface ServiceMetric {
-  service:  string;
-  status:   ServiceStatus;
-  latency:  string;
-  uptime:   string;
-  requests: string;
-  errors:   string;
-  lastCheck:string;
-  icon:     React.ElementType;
+interface Service {
+  service: string;
+  status: ServiceStatus;
+  latency?: number;
+  message?: string;
 }
 
-const SERVICES: ServiceMetric[] = [
-  { service: "API Gateway",      status: "healthy",  latency: "12ms",  uptime: "99.98%", requests: "48.2k/min", errors: "0.02%", lastCheck: "30s ago", icon: Globe    },
-  { service: "PostgreSQL DB",    status: "healthy",  latency: "3ms",   uptime: "99.99%", requests: "12.1k/min", errors: "0.00%", lastCheck: "30s ago", icon: Database },
-  { service: "Redis Cache",      status: "healthy",  latency: "1ms",   uptime: "100%",   requests: "89.4k/min", errors: "0.00%", lastCheck: "30s ago", icon: Zap      },
-  { service: "AI Service",       status: "degraded", latency: "890ms", uptime: "98.12%", requests: "342/min",   errors: "2.4%",  lastCheck: "30s ago", icon: Cpu      },
-  { service: "Discord Bot",      status: "healthy",  latency: "45ms",  uptime: "99.95%", requests: "1.2k/min",  errors: "0.05%", lastCheck: "30s ago", icon: Activity },
-  { service: "Payment Gateway",  status: "healthy",  latency: "220ms", uptime: "99.97%", requests: "89/min",    errors: "0.11%", lastCheck: "30s ago", icon: Server   },
-  { service: "Media CDN",        status: "healthy",  latency: "28ms",  uptime: "100%",   requests: "5.6k/min",  errors: "0.00%", lastCheck: "30s ago", icon: HardDrive},
-  { service: "Email Service",    status: "healthy",  latency: "340ms", uptime: "99.90%", requests: "45/min",    errors: "0.10%", lastCheck: "30s ago", icon: Globe    },
-];
+interface SystemStatusResponse {
+  status: string;
+  timestamp: string;
+  responseTime: number;
+  services: Service[];
+}
 
-const SYSTEM_METRICS = [
-  { label: "CPU Usage",    value: 34,  unit: "%",   color: "bg-violet-500" },
-  { label: "Memory",       value: 61,  unit: "%",   color: "bg-blue-500"   },
-  { label: "Disk I/O",     value: 18,  unit: "%",   color: "bg-emerald-500"},
-  { label: "Network",      value: 42,  unit: "%",   color: "bg-amber-500"  },
-];
-
-const STATUS_CFG: Record<ServiceStatus, { icon: React.ElementType; badge: string; dot: string }> = {
-  healthy:  { icon: CheckCircle2,  badge: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20", dot: "bg-emerald-400"           },
-  degraded: { icon: AlertTriangle, badge: "bg-amber-500/15 text-amber-400 border-amber-500/20",       dot: "bg-amber-400 animate-pulse"},
-  down:     { icon: XCircle,       badge: "bg-rose-500/15 text-rose-400 border-rose-500/20",          dot: "bg-rose-400 animate-pulse" },
+const SERVICE_LABELS: Record<string, string> = {
+  database:       "PostgreSQL Database",
+  groq:           "Groq AI",
+  gemini:         "Gemini AI",
+  dodoPayments:   "Dodo Payments",
+  blobStorage:    "Vercel Blob Storage",
+  jwt:            "JWT Configuration",
+  nepalPayments:  "Nepal Payments (eSewa/Khalti)",
 };
 
+function statusColor(status: ServiceStatus): {
+  dot: string;
+  text: string;
+  bg: string;
+  border: string;
+} {
+  switch (status) {
+    case "healthy":
+      return {
+        dot: "var(--green)",
+        text: "var(--green)",
+        bg: "var(--green-dim)",
+        border: "var(--green)",
+      };
+    case "degraded":
+    case "partial":
+      return {
+        dot: "var(--amber)",
+        text: "var(--amber)",
+        bg: "var(--amber-dim)",
+        border: "var(--amber)",
+      };
+    case "down":
+      return {
+        dot: "var(--red)",
+        text: "var(--red)",
+        bg: "var(--red-dim)",
+        border: "var(--red)",
+      };
+    default:
+      return {
+        dot: "var(--white-40)",
+        text: "var(--white-40)",
+        bg: "var(--surface-2)",
+        border: "var(--border)",
+      };
+  }
+}
+
+function StatusIcon({ status }: { status: ServiceStatus }) {
+  const size = { width: "28px", height: "28px", flexShrink: 0 };
+  switch (status) {
+    case "healthy":
+      return <CheckCircle2 style={{ ...size, color: "var(--green)" }} />;
+    case "degraded":
+    case "partial":
+      return <AlertTriangle style={{ ...size, color: "var(--amber)" }} />;
+    case "down":
+      return <XCircle style={{ ...size, color: "var(--red)" }} />;
+    default:
+      return <HelpCircle style={{ ...size, color: "var(--white-40)" }} />;
+  }
+}
+
 export default function AdminSystemHealthPage() {
-  const [lastRefresh, setLastRefresh] = useState("Just now");
-  const healthy  = SERVICES.filter(s => s.status === "healthy").length;
-  const degraded = SERVICES.filter(s => s.status === "degraded").length;
-  const down     = SERVICES.filter(s => s.status === "down").length;
+  const [data, setData]           = useState<SystemStatusResponse | null>(null);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState<string | null>(null);
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/system-status", { cache: "no-store" });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const json = (await res.json()) as SystemStatusResponse;
+      setData(json);
+      setLastRefresh(new Date());
+    } catch (e: any) {
+      setError(e?.message || "Failed to load system status");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+    // Auto refresh every 30 seconds
+    const t = setInterval(load, 30_000);
+    return () => clearInterval(t);
+  }, [load]);
+
+  const services = data?.services || [];
+  const healthy  = services.filter((s) => s.status === "healthy").length;
+  const degraded = services.filter((s) => s.status === "degraded" || s.status === "partial").length;
+  const down     = services.filter((s) => s.status === "down").length;
+  const unknown  = services.filter((s) => s.status === "unknown").length;
+
+  const overall = data?.status || "unknown";
+  const overallColor = statusColor(overall as ServiceStatus);
 
   return (
     <AdminShell>
-      <div className="p-6 max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+      <div style={{ padding: "24px", maxWidth: "1280px", margin: "0 auto" }}>
+
+        {/* HEADER */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
           <div>
-            <h1 className="text-2xl font-bold text-white">System Health</h1>
-            <p className="text-white/40 text-sm mt-0.5">Real-time service monitoring and metrics</p>
+            <div className="section-label">System Health</div>
+            <h1 className="text-display" style={{ marginBottom: "6px" }}>
+              Live Service Status
+            </h1>
+            <p style={{ color: "var(--white-40)", fontSize: "0.85rem" }}>
+              Real health checks against configured services. No cached data.
+            </p>
           </div>
-          <button onClick={() => setLastRefresh("Just now")} className="flex items-center gap-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-white/60 px-3 py-2 rounded-lg text-sm transition-colors">
-            <RefreshCw className="w-4 h-4" /> Refresh
+
+          <button
+            onClick={load}
+            disabled={loading}
+            className="btn-secondary"
+            style={{ opacity: loading ? 0.6 : 1 }}
+          >
+            <RefreshCw style={{ width: "14px", height: "14px", animation: loading ? "spin 0.8s linear infinite" : "none" }} />
+            {loading ? "Checking" : "Refresh"}
           </button>
         </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
-        {/* Overall status */}
-        <div className={`flex items-center gap-4 p-5 rounded-2xl border mb-6 ${
-          down > 0     ? "bg-rose-500/[0.08] border-rose-500/20"    :
-          degraded > 0 ? "bg-amber-500/[0.08] border-amber-500/20"  :
-          "bg-emerald-500/[0.06] border-emerald-500/20"
-        }`}>
-          {down > 0     ? <XCircle       className="w-8 h-8 text-rose-400 flex-shrink-0"    /> :
-           degraded > 0 ? <AlertTriangle className="w-8 h-8 text-amber-400 flex-shrink-0"   /> :
-           <CheckCircle2 className="w-8 h-8 text-emerald-400 flex-shrink-0" />}
-          <div className="flex-1">
-            <p className={`text-lg font-bold ${down > 0 ? "text-rose-300" : degraded > 0 ? "text-amber-300" : "text-emerald-300"}`}>
-              {down > 0 ? `${down} Service${down > 1 ? "s" : ""} Down` : degraded > 0 ? `${degraded} Service${degraded > 1 ? "s" : ""} Degraded` : "All Systems Operational"}
+        {/* OVERALL BANNER */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "16px",
+          padding: "20px 24px",
+          background: overallColor.bg,
+          border: `1px solid ${overallColor.border}`,
+          borderLeft: `4px solid ${overallColor.border}`,
+          marginBottom: "24px",
+        }}>
+          <StatusIcon status={overall as ServiceStatus} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{
+              fontFamily: "Barlow Condensed, sans-serif",
+              fontWeight: 800,
+              fontSize: "1.1rem",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: overallColor.text,
+              marginBottom: "2px",
+            }}>
+              {loading && !data ? "Checking Services..." :
+               error ? "Status Check Failed" :
+               down > 0 ? `${down} Service${down > 1 ? "s" : ""} Down` :
+               degraded > 0 ? `${degraded} Service${degraded > 1 ? "s" : ""} Degraded` :
+               unknown === services.length ? "No Services Configured" :
+               "All Systems Operational"}
             </p>
-            <p className="text-white/40 text-sm">{healthy}/{SERVICES.length} services healthy · Last updated {lastRefresh}</p>
+            <p style={{
+              fontSize: "0.78rem",
+              color: "var(--white-40)",
+              fontFamily: "Barlow, sans-serif",
+            }}>
+              {error ? error :
+               data ? `${healthy}/${services.length} healthy - Response ${data.responseTime}ms - Last checked ${lastRefresh ? lastRefresh.toLocaleTimeString() : "just now"}`
+                    : "Awaiting first check"}
+            </p>
           </div>
-          <div className="flex gap-4 text-center flex-shrink-0">
-            <div><p className="text-2xl font-black text-emerald-400">{healthy}</p><p className="text-white/30 text-xs">Healthy</p></div>
-            {degraded > 0 && <div><p className="text-2xl font-black text-amber-400">{degraded}</p><p className="text-white/30 text-xs">Degraded</p></div>}
-            {down > 0     && <div><p className="text-2xl font-black text-rose-400">{down}</p><p className="text-white/30 text-xs">Down</p></div>}
+
+          <div style={{ display: "flex", gap: "20px", flexShrink: 0 }}>
+            <StatCounter label="Healthy"   value={healthy}  color="var(--green)"    />
+            {degraded > 0 && <StatCounter label="Degraded"  value={degraded} color="var(--amber)" />}
+            {down     > 0 && <StatCounter label="Down"      value={down}     color="var(--red)"   />}
+            {unknown  > 0 && <StatCounter label="Unknown"   value={unknown}  color="var(--white-40)" />}
           </div>
         </div>
 
-        {/* System resource meters */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          {SYSTEM_METRICS.map(m => (
-            <div key={m.label} className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-4">
-              <div className="flex justify-between items-center mb-2">
-                <p className="text-white/40 text-xs font-medium">{m.label}</p>
-                <p className="text-white font-bold text-sm">{m.value}{m.unit}</p>
-              </div>
-              <div className="w-full bg-white/[0.06] rounded-full h-1.5">
-                <div className={`h-1.5 rounded-full ${m.color} ${m.value > 80 ? "animate-pulse" : ""}`} style={{ width: `${m.value}%` }} />
-              </div>
+        {/* SERVICES TABLE */}
+        <div style={{
+          background: "var(--surface)",
+          border: "1px solid var(--border)",
+          overflow: "hidden",
+        }}>
+          <div style={{
+            padding: "14px 20px",
+            borderBottom: "1px solid var(--border)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "var(--surface-2)",
+          }}>
+            <h2 style={{
+              fontFamily: "Barlow Condensed, sans-serif",
+              fontWeight: 700,
+              fontSize: "0.85rem",
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+              color: "var(--white)",
+              margin: 0,
+            }}>Services</h2>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--white-40)", fontSize: "0.72rem", fontFamily: "JetBrains Mono, monospace" }}>
+              <Clock style={{ width: "12px", height: "12px" }} />
+              Auto-refresh 30s
             </div>
-          ))}
+          </div>
+
+          {loading && !data && (
+            <div style={{
+              padding: "48px 24px",
+              textAlign: "center",
+              color: "var(--white-40)",
+              fontSize: "0.85rem",
+            }}>Loading service status...</div>
+          )}
+
+          {!loading && services.length === 0 && (
+            <div style={{
+              padding: "48px 24px",
+              textAlign: "center",
+              color: "var(--white-40)",
+              fontSize: "0.85rem",
+            }}>No services returned by API.</div>
+          )}
+
+          {services.length > 0 && (
+            <div className="scroll-x">
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 140px 100px 1fr",
+                padding: "10px 20px",
+                background: "var(--surface-2)",
+                borderBottom: "1px solid var(--border)",
+                minWidth: "600px",
+              }}>
+                {["Service", "Status", "Latency", "Message"].map((h) => (
+                  <div key={h} style={{
+                    fontFamily: "Barlow Condensed, sans-serif",
+                    fontWeight: 600,
+                    fontSize: "0.7rem",
+                    letterSpacing: "0.15em",
+                    color: "var(--white-40)",
+                    textTransform: "uppercase",
+                  }}>{h}</div>
+                ))}
+              </div>
+
+              {services.map((svc, i) => {
+                const c = statusColor(svc.status);
+                return (
+                  <div key={svc.service + i} style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 140px 100px 1fr",
+                    padding: "14px 20px",
+                    borderBottom: i < services.length - 1 ? "1px solid var(--border)" : "none",
+                    alignItems: "center",
+                    minWidth: "600px",
+                  }}>
+                    {/* SERVICE NAME */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        background: c.dot,
+                        flexShrink: 0,
+                      }} />
+                      <span style={{
+                        fontFamily: "Barlow Condensed, sans-serif",
+                        fontWeight: 700,
+                        fontSize: "0.9rem",
+                        color: "var(--white)",
+                        letterSpacing: "0.04em",
+                        textTransform: "uppercase",
+                      }}>
+                        {SERVICE_LABELS[svc.service] || svc.service}
+                      </span>
+                    </div>
+
+                    {/* STATUS */}
+                    <div>
+                      <span style={{
+                        display: "inline-block",
+                        padding: "3px 10px",
+                        border: `1px solid ${c.border}`,
+                        background: c.bg,
+                        color: c.text,
+                        fontFamily: "Barlow Condensed, sans-serif",
+                        fontWeight: 700,
+                        fontSize: "0.7rem",
+                        letterSpacing: "0.12em",
+                        textTransform: "uppercase",
+                      }}>
+                        {svc.status}
+                      </span>
+                    </div>
+
+                    {/* LATENCY */}
+                    <div style={{
+                      fontFamily: "JetBrains Mono, monospace",
+                      fontSize: "0.82rem",
+                      color: svc.latency !== undefined
+                        ? svc.latency > 800 ? "var(--amber)" : "var(--white-70)"
+                        : "var(--white-20)",
+                    }}>
+                      {svc.latency !== undefined ? `${svc.latency}ms` : "-"}
+                    </div>
+
+                    {/* MESSAGE */}
+                    <div style={{
+                      fontSize: "0.78rem",
+                      color: "var(--white-40)",
+                      fontFamily: "Barlow, sans-serif",
+                    }}>
+                      {svc.message || "-"}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Service table */}
-        <div className="bg-[#0f1117] border border-white/[0.06] rounded-2xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
-            <h2 className="text-white font-semibold">Services</h2>
-            <div className="flex items-center gap-1.5 text-white/30 text-xs">
-              <Clock className="w-3.5 h-3.5" />
-              Auto-refreshing every 30s
-            </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-white/[0.04]">
-                  {["Service", "Status", "Latency", "Uptime", "Req/min", "Error Rate", "Last Check", ""].map(h => (
-                    <th key={h} className="text-left py-3 px-4 text-white/25 text-xs font-medium uppercase tracking-wide">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {SERVICES.map((svc, i) => {
-                  const cfg = STATUS_CFG[svc.status];
-                  const StatusIcon = cfg.icon;
-                  return (
-                    <tr key={svc.service} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors">
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center flex-shrink-0">
-                            <svc.icon className="w-3.5 h-3.5 text-white/40" />
-                          </div>
-                          <span className="text-white text-sm font-medium">{svc.service}</span>
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${cfg.badge} capitalize`}>{svc.status}</span>
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className={`text-sm font-mono ${Number(svc.latency.replace("ms","")) > 500 ? "text-amber-400" : "text-white/60"}`}>{svc.latency}</span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className={`text-sm font-mono ${svc.uptime === "100%" ? "text-emerald-400" : "text-white/60"}`}>{svc.uptime}</span>
-                      </td>
-                      <td className="py-3.5 px-4 text-white/50 text-sm font-mono">{svc.requests}</td>
-                      <td className="py-3.5 px-4">
-                        <span className={`text-sm font-mono ${parseFloat(svc.errors) > 1 ? "text-rose-400" : parseFloat(svc.errors) > 0 ? "text-amber-400" : "text-white/50"}`}>{svc.errors}</span>
-                      </td>
-                      <td className="py-3.5 px-4 text-white/30 text-sm">{svc.lastCheck}</td>
-                      <td className="py-3.5 px-4">
-                        <button className="p-1.5 hover:bg-white/[0.06] rounded-lg text-white/25 hover:text-white/60 transition-colors">
-                          <ArrowUpRight className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+        {/* HONESTY DISCLAIMER */}
+        <div style={{
+          marginTop: "24px",
+          padding: "14px 20px",
+          background: "var(--surface)",
+          border: "1px solid var(--border)",
+          borderLeft: "3px solid var(--gold)",
+        }}>
+          <div style={{
+            fontFamily: "Barlow Condensed, sans-serif",
+            fontWeight: 700,
+            fontSize: "0.7rem",
+            letterSpacing: "0.15em",
+            color: "var(--gold)",
+            textTransform: "uppercase",
+            marginBottom: "4px",
+          }}>What This Shows</div>
+          <p style={{
+            fontSize: "0.78rem",
+            color: "var(--white-40)",
+            lineHeight: 1.6,
+          }}>
+            Live service status returned by <code style={{ color: "var(--white-70)", fontFamily: "JetBrains Mono, monospace" }}>/api/system-status</code>.
+            No fake metrics. Services marked <em>unknown</em> are not configured in environment variables.
+          </p>
         </div>
       </div>
     </AdminShell>
+  );
+}
+
+function StatCounter({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div style={{ textAlign: "center" }}>
+      <p style={{
+        fontFamily: "Barlow Condensed, sans-serif",
+        fontWeight: 900,
+        fontSize: "1.6rem",
+        color,
+        lineHeight: 1,
+        margin: 0,
+      }}>{value}</p>
+      <p style={{
+        fontFamily: "Barlow Condensed, sans-serif",
+        fontWeight: 600,
+        fontSize: "0.65rem",
+        letterSpacing: "0.15em",
+        color: "var(--white-40)",
+        textTransform: "uppercase",
+        marginTop: "4px",
+      }}>{label}</p>
+    </div>
   );
 }
