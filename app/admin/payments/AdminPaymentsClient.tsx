@@ -4,64 +4,73 @@ import { useState, useEffect, useCallback } from "react";
 
 interface Payment {
   id: string;
-  method: string;
+  method: string;              // ESEWA | KHALTI | BANK
   amount: number;
   currency: string;
-  status: string;
-  planDuration: string;
-  transactionId: string;
+  status: string;              // PENDING | APPROVED | REJECTED
+  transactionReference: string;
   rejectionReason?: string;
-  approvedAt?: string;
+  reviewedAt?: string;
+  submittedAt: string;
   createdAt: string;
-  screenshot?: string;
-  notes?: string;
+  proofUrl?: string;
+  note?: string;
+  adminNote?: string;
   user: {
     id: string;
-    name: string;
     email: string;
-    isPro: boolean;
-    proExpiresAt?: string;
-  };
+    name: string;              // mapped from displayName || username
+    isPro?: boolean;
+  } | null;
+  reviewer?: {
+    id: string;
+    email: string;
+    name: string;
+  } | null;
 }
 
-interface PaginationInfo {
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+interface Summary {
+  status: string;
+  _count: { status: number };
 }
 
 export default function AdminPaymentsClient() {
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [page, setPage] = useState(1);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [rejectModal, setRejectModal] = useState<{ paymentId: string; open: boolean } | null>(null);
-  const [rejectionReason, setRejectionReason] = useState("");
-  const [actionMessage, setActionMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [payments,       setPayments]       = useState<Payment[]>([]);
+  const [total,          setTotal]          = useState(0);
+  const [summary,        setSummary]        = useState<Summary[]>([]);
+  const [loading,        setLoading]        = useState(true);
+  const [error,          setError]          = useState<string | null>(null);
+  const [statusFilter,   setStatusFilter]   = useState<"ALL" | "PENDING" | "APPROVED" | "REJECTED">("ALL");
+  const [page,           setPage]           = useState(1);
+  const [limit]                            = useState(20);
+  const [actionLoading,  setActionLoading]  = useState<string | null>(null);
+  const [rejectModal,    setRejectModal]    = useState<{ paymentId: string } | null>(null);
+  const [rejectionReason,setRejectionReason]= useState("");
+  const [actionMessage,  setActionMessage]  = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const fetchPayments = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/payments?status=${statusFilter}&page=${page}&limit=20`);
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+      });
+      if (statusFilter !== "ALL") params.set("status", statusFilter);
+      const res = await fetch(`/api/admin/payments?${params.toString()}`, { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to fetch payments");
       const data = await res.json();
       setPayments(data.payments || []);
-      setPagination(data.pagination || null);
+      setTotal(data.total || 0);
+      setSummary(data.summary || []);
     } catch (e: any) {
       setError(e.message || "Failed to load payments");
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, page]);
+  }, [statusFilter, page, limit]);
 
-  useEffect(() => {
-    fetchPayments();
-  }, [fetchPayments]);
+  useEffect(() => { fetchPayments(); }, [fetchPayments]);
 
   const handleApprove = async (paymentId: string) => {
     if (!confirm("Approve this payment and upgrade the user to Pro?")) return;
@@ -75,7 +84,7 @@ export default function AdminPaymentsClient() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to approve");
-      setActionMessage({ type: "success", text: `Payment approved. User upgraded to Pro.` });
+      setActionMessage({ type: "success", text: "Payment approved. User upgraded to Pro." });
       await fetchPayments();
     } catch (e: any) {
       setActionMessage({ type: "error", text: e.message });
@@ -86,7 +95,7 @@ export default function AdminPaymentsClient() {
 
   const openRejectModal = (paymentId: string) => {
     setRejectionReason("");
-    setRejectModal({ paymentId, open: true });
+    setRejectModal({ paymentId });
   };
 
   const handleReject = async () => {
@@ -117,300 +126,379 @@ export default function AdminPaymentsClient() {
 
   const statusColor = (status: string) => {
     switch (status) {
-      case "approved": return "var(--green)";
-      case "rejected": return "var(--red)";
-      default: return "var(--amber)";
+      case "APPROVED": return "var(--green)";
+      case "REJECTED": return "var(--red)";
+      default:         return "var(--amber)";
     }
   };
 
   const methodLabel = (method: string) => {
     switch (method) {
-      case "esewa": return "eSewa";
-      case "khalti": return "Khalti";
-      case "bank_transfer": return "Bank Transfer";
-      default: return method;
+      case "ESEWA":  return "eSewa";
+      case "KHALTI": return "Khalti";
+      case "BANK":   return "Bank Transfer";
+      default:       return method;
     }
+  };
+
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+
+  const countFor = (status: string) => {
+    const s = summary.find((x) => x.status === status);
+    return s?._count?.status ?? 0;
   };
 
   return (
     <div style={{ fontFamily: "Barlow, sans-serif" }}>
+      {/* Summary counters */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+        gap: "12px",
+        marginBottom: "20px",
+      }}>
+        <SummaryCard label="Total"    value={total}               color="var(--white)" />
+        <SummaryCard label="Pending"  value={countFor("PENDING")}  color="var(--amber)" />
+        <SummaryCard label="Approved" value={countFor("APPROVED")} color="var(--green)" />
+        <SummaryCard label="Rejected" value={countFor("REJECTED")} color="var(--red)"   />
+      </div>
+
       {/* Filters */}
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap", alignItems: "center" }}>
-        {["all", "pending", "approved", "rejected"].map((s) => (
+      <div style={{ display: "flex", gap: "6px", marginBottom: "16px", flexWrap: "wrap", alignItems: "center" }}>
+        {(["ALL", "PENDING", "APPROVED", "REJECTED"] as const).map((s) => (
           <button
             key={s}
             onClick={() => { setStatusFilter(s); setPage(1); }}
             style={{
-              padding: "0.4rem 1rem",
-              borderRadius: "6px",
-              border: "1px solid var(--border)",
-              background: statusFilter === s ? "var(--gold)" : "var(--surface)",
+              padding: "6px 14px",
+              border: "1px solid " + (statusFilter === s ? "var(--gold)" : "var(--border-2)"),
+              background: statusFilter === s ? "var(--gold)" : "transparent",
               color: statusFilter === s ? "var(--black)" : "var(--white-70)",
               fontFamily: "Barlow Condensed, sans-serif",
-              fontWeight: 600,
+              fontWeight: 700,
+              fontSize: "0.72rem",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
               cursor: "pointer",
-              textTransform: "capitalize",
-              fontSize: "0.85rem",
             }}
-          >
-            {s}
-          </button>
+          >{s === "ALL" ? "All" : s}</button>
         ))}
-        <div style={{ marginLeft: "auto", color: "var(--white-40)", fontSize: "0.8rem" }}>
-          {pagination ? `${pagination.total} total payments` : ""}
-        </div>
       </div>
 
-      {/* Action Message */}
+      {/* Action message */}
       {actionMessage && (
         <div style={{
-          padding: "0.75rem 1rem",
-          borderRadius: "8px",
-          marginBottom: "1rem",
-          background: actionMessage.type === "success" ? "rgba(45,158,95,0.15)" : "rgba(230,57,70,0.15)",
+          padding: "10px 14px",
+          marginBottom: "12px",
+          background: actionMessage.type === "success" ? "var(--green-dim)" : "var(--red-dim)",
           border: `1px solid ${actionMessage.type === "success" ? "var(--green)" : "var(--red)"}`,
           color: actionMessage.type === "success" ? "var(--green)" : "var(--red)",
-          fontSize: "0.9rem",
+          fontFamily: "Barlow, sans-serif",
+          fontSize: "0.85rem",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}>
-          {actionMessage.text}
+          <span>{actionMessage.text}</span>
           <button
             onClick={() => setActionMessage(null)}
-            style={{ float: "right", background: "none", border: "none", color: "inherit", cursor: "pointer" }}
-          >×</button>
+            style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", fontSize: "1rem" }}
+          >X</button>
         </div>
       )}
 
-      {/* Loading */}
+      {/* Loading / Error / Empty */}
       {loading && (
-        <div style={{ textAlign: "center", padding: "3rem", color: "var(--white-40)" }}>
+        <div style={{ textAlign: "center", padding: "48px", color: "var(--white-40)", fontSize: "0.85rem" }}>
           Loading payments...
         </div>
       )}
 
-      {/* Error */}
       {error && (
-        <div style={{ padding: "1rem", background: "rgba(230,57,70,0.1)", border: "1px solid var(--red)", borderRadius: "8px", color: "var(--red)" }}>
-          {error}
+        <div style={{
+          padding: "12px 16px",
+          background: "var(--red-dim)",
+          border: "1px solid var(--red)",
+          color: "var(--red)",
+        }}>{error}</div>
+      )}
+
+      {!loading && !error && payments.length === 0 && (
+        <div style={{
+          padding: "48px",
+          textAlign: "center",
+          color: "var(--white-40)",
+          background: "var(--surface)",
+          border: "1px solid var(--border)",
+          fontSize: "0.85rem",
+        }}>No payments found for the selected filter.</div>
+      )}
+
+      {/* Table */}
+      {!loading && !error && payments.length > 0 && (
+        <div style={{ background: "var(--surface)", border: "1px solid var(--border)", overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem", minWidth: "1100px" }}>
+            <thead>
+              <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--border)" }}>
+                {["User", "Method", "Amount", "Reference", "Status", "Submitted", "Actions"].map((h) => (
+                  <th key={h} style={{
+                    padding: "10px 14px",
+                    textAlign: "left",
+                    color: "var(--white-40)",
+                    fontFamily: "Barlow Condensed, sans-serif",
+                    fontWeight: 600,
+                    fontSize: "0.7rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.12em",
+                    whiteSpace: "nowrap",
+                  }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {payments.map((p) => (
+                <tr key={p.id} style={{ borderBottom: "1px solid var(--border)", verticalAlign: "top" }}>
+                  <td style={{ padding: "12px 14px" }}>
+                    <div style={{ fontWeight: 600, color: "var(--white)", fontSize: "0.9rem" }}>
+                      {p.user?.name || "Unknown"}
+                    </div>
+                    <div style={{ color: "var(--white-40)", fontSize: "0.75rem" }}>
+                      {p.user?.email}
+                    </div>
+                    {p.user?.isPro && (
+                      <span style={{
+                        display: "inline-block",
+                        fontSize: "0.65rem",
+                        background: "var(--gold-dim)",
+                        color: "var(--gold)",
+                        padding: "2px 6px",
+                        marginTop: "4px",
+                        fontFamily: "Barlow Condensed, sans-serif",
+                        fontWeight: 700,
+                        letterSpacing: "0.1em",
+                        textTransform: "uppercase",
+                      }}>Pro</span>
+                    )}
+                  </td>
+                  <td style={{ padding: "12px 14px", color: "var(--white-70)" }}>
+                    {methodLabel(p.method)}
+                  </td>
+                  <td style={{
+                    padding: "12px 14px",
+                    color: "var(--gold)",
+                    fontFamily: "JetBrains Mono, monospace",
+                    fontWeight: 700,
+                  }}>
+                    Rs {p.amount}
+                  </td>
+                  <td style={{
+                    padding: "12px 14px",
+                    fontFamily: "JetBrains Mono, monospace",
+                    fontSize: "0.72rem",
+                    color: "var(--white-70)",
+                    maxWidth: "180px",
+                    wordBreak: "break-all",
+                  }}>
+                    {p.transactionReference}
+                  </td>
+                  <td style={{ padding: "12px 14px" }}>
+                    <span style={{
+                      display: "inline-block",
+                      padding: "3px 10px",
+                      background: p.status === "APPROVED" ? "var(--green-dim)"
+                                : p.status === "REJECTED" ? "var(--red-dim)"
+                                : "var(--amber-dim)",
+                      border: `1px solid ${statusColor(p.status)}`,
+                      color: statusColor(p.status),
+                      fontFamily: "Barlow Condensed, sans-serif",
+                      fontWeight: 700,
+                      fontSize: "0.7rem",
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                    }}>{p.status}</span>
+                    {p.rejectionReason && (
+                      <div style={{
+                        color: "var(--white-40)",
+                        fontSize: "0.7rem",
+                        marginTop: "4px",
+                        maxWidth: "160px",
+                      }}>{p.rejectionReason}</div>
+                    )}
+                    {p.reviewedAt && (
+                      <div style={{
+                        color: "var(--white-40)",
+                        fontSize: "0.7rem",
+                        marginTop: "4px",
+                        fontFamily: "JetBrains Mono, monospace",
+                      }}>{new Date(p.reviewedAt).toLocaleDateString()}</div>
+                    )}
+                  </td>
+                  <td style={{
+                    padding: "12px 14px",
+                    color: "var(--white-40)",
+                    fontSize: "0.75rem",
+                    fontFamily: "JetBrains Mono, monospace",
+                    whiteSpace: "nowrap",
+                  }}>
+                    {new Date(p.submittedAt || p.createdAt).toLocaleString()}
+                  </td>
+                  <td style={{ padding: "12px 14px" }}>
+                    {p.status === "PENDING" && (
+                      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                        <button
+                          onClick={() => handleApprove(p.id)}
+                          disabled={actionLoading === p.id}
+                          style={{
+                            padding: "5px 12px",
+                            background: "var(--green)",
+                            color: "var(--white)",
+                            border: "none",
+                            cursor: "pointer",
+                            fontFamily: "Barlow Condensed, sans-serif",
+                            fontWeight: 700,
+                            fontSize: "0.72rem",
+                            letterSpacing: "0.12em",
+                            textTransform: "uppercase",
+                            opacity: actionLoading === p.id ? 0.5 : 1,
+                          }}
+                        >{actionLoading === p.id ? "..." : "Approve"}</button>
+                        <button
+                          onClick={() => openRejectModal(p.id)}
+                          disabled={actionLoading === p.id}
+                          style={{
+                            padding: "5px 12px",
+                            background: "var(--red-dim)",
+                            color: "var(--red)",
+                            border: "1px solid var(--red)",
+                            cursor: "pointer",
+                            fontFamily: "Barlow Condensed, sans-serif",
+                            fontWeight: 700,
+                            fontSize: "0.72rem",
+                            letterSpacing: "0.12em",
+                            textTransform: "uppercase",
+                          }}
+                        >Reject</button>
+                      </div>
+                    )}
+                    {p.proofUrl && (
+                      <a
+                        href={p.proofUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: "var(--gold)",
+                          fontSize: "0.72rem",
+                          display: "block",
+                          marginTop: p.status === "PENDING" ? "6px" : "0",
+                          fontFamily: "Barlow Condensed, sans-serif",
+                          fontWeight: 700,
+                          letterSpacing: "0.1em",
+                          textTransform: "uppercase",
+                          textDecoration: "none",
+                        }}
+                      >View Proof</a>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
-      {/* Payments Table */}
-      {!loading && !error && (
-        <>
-          {payments.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "3rem", color: "var(--white-40)" }}>
-              No payments found for the selected filter.
-            </div>
-          ) : (
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
-                <thead>
-                  <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                    {["User", "Method", "Amount", "Plan", "Transaction ID", "Status", "Date", "Actions"].map((h) => (
-                      <th key={h} style={{
-                        padding: "0.75rem 1rem",
-                        textAlign: "left",
-                        color: "var(--white-40)",
-                        fontFamily: "Barlow Condensed, sans-serif",
-                        fontWeight: 600,
-                        fontSize: "0.8rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                        whiteSpace: "nowrap",
-                      }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {payments.map((payment) => (
-                    <tr key={payment.id} style={{ borderBottom: "1px solid var(--border)", verticalAlign: "top" }}>
-                      <td style={{ padding: "0.875rem 1rem" }}>
-                        <div style={{ fontWeight: 600, color: "var(--white)" }}>{payment.user?.name || "Unknown"}</div>
-                        <div style={{ color: "var(--white-40)", fontSize: "0.75rem" }}>{payment.user?.email}</div>
-                        {payment.user?.isPro && (
-                          <span style={{
-                            fontSize: "0.7rem",
-                            background: "var(--gold-dim)",
-                            color: "var(--gold)",
-                            padding: "0.1rem 0.4rem",
-                            borderRadius: "4px",
-                            marginTop: "0.2rem",
-                            display: "inline-block",
-                          }}>PRO</span>
-                        )}
-                      </td>
-                      <td style={{ padding: "0.875rem 1rem", color: "var(--white-70)" }}>
-                        {methodLabel(payment.method)}
-                      </td>
-                      <td style={{ padding: "0.875rem 1rem", color: "var(--gold)", fontFamily: "JetBrains Mono, monospace", fontWeight: 600 }}>
-                        Rs {payment.amount}
-                      </td>
-                      <td style={{ padding: "0.875rem 1rem", color: "var(--white-70)", textTransform: "capitalize" }}>
-                        {payment.planDuration}
-                      </td>
-                      <td style={{ padding: "0.875rem 1rem", fontFamily: "JetBrains Mono, monospace", fontSize: "0.75rem", color: "var(--white-70)", maxWidth: "160px", wordBreak: "break-all" }}>
-                        {payment.transactionId}
-                      </td>
-                      <td style={{ padding: "0.875rem 1rem" }}>
-                        <span style={{
-                          color: statusColor(payment.status),
-                          fontWeight: 600,
-                          textTransform: "capitalize",
-                          fontSize: "0.8rem",
-                        }}>
-                          {payment.status}
-                        </span>
-                        {payment.rejectionReason && (
-                          <div style={{ color: "var(--white-40)", fontSize: "0.7rem", marginTop: "0.25rem", maxWidth: "120px" }}>
-                            {payment.rejectionReason}
-                          </div>
-                        )}
-                        {payment.approvedAt && (
-                          <div style={{ color: "var(--white-40)", fontSize: "0.7rem", marginTop: "0.25rem" }}>
-                            {new Date(payment.approvedAt).toLocaleDateString()}
-                          </div>
-                        )}
-                      </td>
-                      <td style={{ padding: "0.875rem 1rem", color: "var(--white-40)", fontSize: "0.75rem", whiteSpace: "nowrap" }}>
-                        {new Date(payment.createdAt).toLocaleString()}
-                      </td>
-                      <td style={{ padding: "0.875rem 1rem" }}>
-                        {payment.status === "pending" && (
-                          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                            <button
-                              onClick={() => handleApprove(payment.id)}
-                              disabled={actionLoading === payment.id}
-                              style={{
-                                padding: "0.35rem 0.75rem",
-                                background: "var(--green)",
-                                color: "var(--white)",
-                                border: "none",
-                                borderRadius: "6px",
-                                cursor: "pointer",
-                                fontFamily: "Barlow Condensed, sans-serif",
-                                fontWeight: 600,
-                                fontSize: "0.8rem",
-                                opacity: actionLoading === payment.id ? 0.6 : 1,
-                              }}
-                            >
-                              {actionLoading === payment.id ? "..." : "Approve"}
-                            </button>
-                            <button
-                              onClick={() => openRejectModal(payment.id)}
-                              disabled={actionLoading === payment.id}
-                              style={{
-                                padding: "0.35rem 0.75rem",
-                                background: "rgba(230,57,70,0.15)",
-                                color: "var(--red)",
-                                border: "1px solid var(--red)",
-                                borderRadius: "6px",
-                                cursor: "pointer",
-                                fontFamily: "Barlow Condensed, sans-serif",
-                                fontWeight: 600,
-                                fontSize: "0.8rem",
-                              }}
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        )}
-                        {payment.screenshot && (
-                          <a
-                            href={payment.screenshot}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ color: "var(--gold)", fontSize: "0.75rem", display: "block", marginTop: "0.25rem" }}
-                          >
-                            View Screenshot
-                          </a>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Pagination */}
-          {pagination && pagination.totalPages > 1 && (
-            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center", marginTop: "1.5rem" }}>
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                style={{
-                  padding: "0.4rem 0.75rem",
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  color: page === 1 ? "var(--white-40)" : "var(--white)",
-                  borderRadius: "6px",
-                  cursor: page === 1 ? "not-allowed" : "pointer",
-                }}
-              >← Prev</button>
-              <span style={{ padding: "0.4rem 0.75rem", color: "var(--white-70)" }}>
-                {page} / {pagination.totalPages}
-              </span>
-              <button
-                onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
-                disabled={page === pagination.totalPages}
-                style={{
-                  padding: "0.4rem 0.75rem",
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  color: page === pagination.totalPages ? "var(--white-40)" : "var(--white)",
-                  borderRadius: "6px",
-                  cursor: page === pagination.totalPages ? "not-allowed" : "pointer",
-                }}
-              >Next →</button>
-            </div>
-          )}
-        </>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div style={{ display: "flex", gap: "6px", justifyContent: "center", marginTop: "20px", alignItems: "center" }}>
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="btn-secondary"
+            style={{ opacity: page === 1 ? 0.4 : 1, fontSize: "0.75rem", padding: "6px 14px" }}
+          >Prev</button>
+          <span style={{
+            padding: "6px 14px",
+            color: "var(--white-70)",
+            fontFamily: "JetBrains Mono, monospace",
+            fontSize: "0.82rem",
+          }}>{page} / {totalPages}</span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="btn-secondary"
+            style={{ opacity: page === totalPages ? 0.4 : 1, fontSize: "0.75rem", padding: "6px 14px" }}
+          >Next</button>
+        </div>
       )}
 
       {/* Reject Modal */}
-      {rejectModal?.open && (
+      {rejectModal && (
         <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 1000,
-          display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem",
-        }}>
-          <div style={{
-            background: "var(--charcoal)", border: "1px solid var(--border)",
-            borderRadius: "12px", padding: "2rem", width: "100%", maxWidth: "480px",
-          }}>
-            <h3 style={{ color: "var(--white)", fontFamily: "Barlow Condensed, sans-serif", fontSize: "1.25rem", marginBottom: "1rem" }}>
-              Reject Payment
-            </h3>
-            <p style={{ color: "var(--white-70)", fontSize: "0.875rem", marginBottom: "1rem" }}>
-              Please provide a reason for rejecting this payment. The user will be notified.
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0,0,0,0.75)",
+          zIndex: 1000,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "16px",
+        }}
+        onClick={() => setRejectModal(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "var(--charcoal)",
+              border: "1px solid var(--border-2)",
+              borderTop: "3px solid var(--red)",
+              padding: "24px",
+              width: "100%",
+              maxWidth: "480px",
+            }}
+          >
+            <div className="section-label" style={{ marginBottom: "6px" }}>Danger</div>
+            <h3 style={{
+              fontFamily: "Barlow Condensed, sans-serif",
+              fontWeight: 800,
+              fontSize: "1.2rem",
+              color: "var(--white)",
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+              marginBottom: "12px",
+            }}>Reject Payment</h3>
+            <p style={{ color: "var(--white-70)", fontSize: "0.85rem", marginBottom: "14px", lineHeight: 1.6 }}>
+              Provide a reason for rejecting this payment. The user will see the reason in their payment history.
             </p>
             <textarea
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
-              placeholder="e.g. Transaction ID not found, incorrect amount..."
+              placeholder="e.g. Transaction reference not found, incorrect amount..."
               rows={4}
               style={{
-                width: "100%", padding: "0.75rem", background: "var(--surface)",
-                border: "1px solid var(--border)", borderRadius: "8px",
-                color: "var(--white)", fontSize: "0.875rem", resize: "vertical",
-                fontFamily: "Barlow, sans-serif", boxSizing: "border-box",
+                width: "100%",
+                padding: "10px 12px",
+                background: "var(--black)",
+                border: "1px solid var(--border)",
+                color: "var(--white)",
+                fontSize: "0.85rem",
+                resize: "vertical",
+                fontFamily: "Barlow, sans-serif",
+                boxSizing: "border-box",
+                outline: "none",
               }}
             />
-            <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.25rem", justifyContent: "flex-end" }}>
+            <div style={{ display: "flex", gap: "8px", marginTop: "16px", justifyContent: "flex-end" }}>
               <button
                 onClick={() => setRejectModal(null)}
-                style={{
-                  padding: "0.5rem 1rem", background: "var(--surface)",
-                  border: "1px solid var(--border)", borderRadius: "8px",
-                  color: "var(--white-70)", cursor: "pointer", fontFamily: "Barlow Condensed, sans-serif",
-                }}
+                className="btn-secondary"
+                style={{ fontSize: "0.75rem", padding: "7px 14px" }}
               >Cancel</button>
               <button
                 onClick={handleReject}
                 disabled={!rejectionReason.trim() || actionLoading === rejectModal.paymentId}
+                className="btn-danger"
                 style={{
-                  padding: "0.5rem 1rem", background: "var(--red)",
-                  border: "none", borderRadius: "8px", color: "var(--white)",
-                  cursor: "pointer", fontFamily: "Barlow Condensed, sans-serif", fontWeight: 600,
+                  fontSize: "0.75rem",
+                  padding: "7px 14px",
                   opacity: !rejectionReason.trim() ? 0.5 : 1,
                 }}
               >
@@ -420,6 +508,34 @@ export default function AdminPaymentsClient() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function SummaryCard({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div style={{
+      background: "var(--surface)",
+      border: "1px solid var(--border)",
+      borderTop: `3px solid ${color}`,
+      padding: "14px 16px",
+    }}>
+      <div style={{
+        fontFamily: "Barlow Condensed, sans-serif",
+        fontWeight: 700,
+        fontSize: "0.65rem",
+        letterSpacing: "0.15em",
+        color: "var(--white-40)",
+        textTransform: "uppercase",
+        marginBottom: "6px",
+      }}>{label}</div>
+      <div style={{
+        fontFamily: "Barlow Condensed, sans-serif",
+        fontWeight: 900,
+        fontSize: "1.8rem",
+        color,
+        lineHeight: 1,
+      }}>{value.toLocaleString()}</div>
     </div>
   );
 }
