@@ -1,7 +1,7 @@
 "use client";
 import { useEffect } from "react";
 
-export default function Error({
+export default function DashboardError({
   error,
   reset,
 }: {
@@ -14,41 +14,29 @@ export default function Error({
 
   return (
     <div style={{
-      minHeight: "100vh",
+      minHeight: "60vh",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      background: "var(--black)",
       padding: "32px",
     }}>
       <div style={{ textAlign: "center", maxWidth: "420px" }}>
         <div style={{
           width: "48px",
-          height: "48px",
-          background: "var(--red-dim)",
-          border: "1px solid var(--red)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          height: "3px",
+          background: "var(--red)",
           margin: "0 auto 24px",
-        }}>
-          <span style={{
-            fontFamily: "Barlow Condensed, sans-serif",
-            fontWeight: 900,
-            fontSize: "1.2rem",
-            color: "var(--red)",
-          }}>!</span>
-        </div>
+        }} />
 
         <h2 style={{
           fontFamily: "Barlow Condensed, sans-serif",
           fontWeight: 800,
-          fontSize: "1.6rem",
+          fontSize: "1.5rem",
           letterSpacing: "0.04em",
           textTransform: "uppercase",
           color: "var(--white)",
           marginBottom: "8px",
-        }}>Something Went Wrong</h2>
+        }}>Dashboard Error</h2>
 
         <p style={{
           color: "var(--white-40)",
@@ -56,7 +44,7 @@ export default function Error({
           marginBottom: "32px",
           lineHeight: 1.6,
         }}>
-          An unexpected error occurred. Try again or return to the dashboard.
+          Something went wrong loading this section. Try again or contact support if the issue persists.
         </p>
 
         {error?.digest && (
@@ -65,18 +53,15 @@ export default function Error({
             fontSize: "0.72rem",
             color: "var(--white-20)",
             marginBottom: "24px",
-          }}>Error: {error.digest}</p>
+          }}>ref: {error.digest}</p>
         )}
 
         <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
-          <button
-            onClick={reset}
-            className="btn-gold"
-          >
+          <button onClick={reset} className="btn-gold">
             Try Again
           </button>
           <a href="/dashboard" className="btn-secondary">
-            Dashboard
+            Dashboard Home
           </a>
         </div>
       </div>

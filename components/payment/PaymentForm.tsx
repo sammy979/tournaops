@@ -1,238 +1,268 @@
-// components/payment/PaymentForm.tsx
-"use client"
-import { useState, useEffect } from "react"
-import { AlertCircle, CheckCircle, Loader2 } from "lucide-react"
-import { PRO_PRICE } from "@/lib/pricing"
+"use client";
 
-interface PaymentSettings {
-  esewaEnabled: boolean
-  esewaAccountName?: string
-  esewaAccountId?: string
-  esewaInstructions?: string
-  esewaQrUrl?: string
-  khaltiEnabled: boolean
-  khaltiAccountName?: string
-  khaltiAccountId?: string
-  khaltiInstructions?: string
-  khaltiQrUrl?: string
-  bankEnabled: boolean
-  bankName?: string
-  bankAccountHolder?: string
-  bankAccountNumber?: string
-  bankBranch?: string
-  bankInstructions?: string
-  bankQrUrl?: string
+import { useState } from "react";
+
+const PLANS = {
+  monthly: { label: "Monthly", amount: 299, duration: "monthly" },
+  yearly: { label: "Yearly", amount: 2999, duration: "yearly" },
+};
+
+const METHODS = [
+  { value: "esewa", label: "eSewa" },
+  { value: "khalti", label: "Khalti" },
+  { value: "bank_transfer", label: "Bank Transfer" },
+];
+
+interface PaymentFormProps {
+  onSuccess?: () => void;
 }
 
-const input = {
-  width: "100%",
-  background: "rgba(255,255,255,0.05)",
-  border: "1px solid rgba(255,255,255,0.1)",
-  borderRadius: "0.5rem",
-  padding: "0.5rem 0.75rem",
-  fontSize: "0.875rem",
-  color: "#fff",
-  outline: "none",
-} as const
+export default function PaymentForm({ onSuccess }: PaymentFormProps) {
+  const [plan, setPlan] = useState<"monthly" | "yearly">("monthly");
+  const [method, setMethod] = useState("esewa");
+  const [transactionId, setTransactionId] = useState("");
+  const [screenshot, setScreenshot] = useState("");
+  const [notes, setNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
-const label = { display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "#e5e7eb", marginBottom: "0.375rem" } as const
+  const selectedPlan = PLANS[plan];
 
-export default function PaymentForm() {
-  const [settings, setSettings] = useState<PaymentSettings | null>(null)
-  const [method, setMethod] = useState<string>("")
-  const [amount, setAmount] = useState<string>(String(PRO_PRICE.amount))
-  const [txRef, setTxRef] = useState<string>("")
-  const [note, setNote] = useState<string>("")
-  const [proofUrl, setProofUrl] = useState<string>("")
-  const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
-  const [error, setError] = useState<string>("")
-
-  useEffect(() => {
-    fetch("/api/payment-settings/public")
-      .then((r) => r.json())
-      .then((d) => setSettings(d?.settings || null))
-      .catch(() => setSettings(null))
-  }, [])
-
-  const enabledMethods = settings
-    ? ([
-        settings.esewaEnabled ? "ESEWA" : null,
-        settings.khaltiEnabled ? "KHALTI" : null,
-        settings.bankEnabled ? "BANK" : null,
-      ].filter(Boolean) as string[])
-    : []
-
-  // Auto-select first available method
-  useEffect(() => {
-    if (!method && enabledMethods.length > 0) {
-      setMethod(enabledMethods[0])
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!transactionId.trim()) {
+      setError("Transaction ID is required");
+      return;
     }
-  }, [enabledMethods.length])
-
-  const getInfo = () => {
-    if (!settings || !method) return null
-    if (method === "ESEWA") return { name: "eSewa", accountName: settings.esewaAccountName, accountId: settings.esewaAccountId, qrUrl: settings.esewaQrUrl, instructions: settings.esewaInstructions }
-    if (method === "KHALTI") return { name: "Khalti", accountName: settings.khaltiAccountName, accountId: settings.khaltiAccountId, qrUrl: settings.khaltiQrUrl, instructions: settings.khaltiInstructions }
-    if (method === "BANK") return { name: settings.bankName || "Bank", accountName: settings.bankAccountHolder, accountId: settings.bankAccountNumber, qrUrl: (settings as any).bankQrUrl, instructions: settings.bankInstructions, branch: settings.bankBranch }
-    return null
-  }
-
-  const info = getInfo()
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    if (!method) return setError("Please select a payment method")
-    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) return setError("Please enter a valid amount")
-    if (!txRef.trim()) return setError("Please enter the transaction reference")
-
-    setLoading(true)
+    setSubmitting(true);
+    setError(null);
     try {
       const res = await fetch("/api/payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          method, amount: Number(amount), transactionReference: txRef.trim(),
-          proofUrl: proofUrl.trim() || undefined, note: note.trim() || undefined,
+          method,
+          amount: selectedPlan.amount,
+          currency: "NPR",
+          transactionId: transactionId.trim(),
+          screenshot: screenshot.trim() || undefined,
+          planDuration: selectedPlan.duration,
+          notes: notes.trim() || undefined,
         }),
-      })
-      const data = await res.json()
-      if (!res.ok) return setError(data.error || "Submission failed")
-      setSuccess(true)
-    } catch {
-      setError("Network error. Try again.")
-    } finally { setLoading(false) }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to submit payment");
+      setSuccess(true);
+      onSuccess?.();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <div style={{
+        padding: "2rem",
+        background: "rgba(45,158,95,0.1)",
+        border: "1px solid var(--green)",
+        borderRadius: "12px",
+        textAlign: "center",
+      }}>
+        <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>✅</div>
+        <h3 style={{ color: "var(--green)", fontFamily: "Barlow Condensed, sans-serif", fontSize: "1.25rem", marginBottom: "0.5rem" }}>
+          Payment Submitted
+        </h3>
+        <p style={{ color: "var(--white-70)", fontSize: "0.875rem" }}>
+          Your payment has been submitted for review. You will receive a notification once approved (usually within 24 hours).
+        </p>
+      </div>
+    );
   }
 
-  if (success) return (
-    <div style={{ padding: "2rem", textAlign: "center", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: "0.75rem" }}>
-      <CheckCircle style={{ width: "3rem", height: "3rem", color: "#10b981", margin: "0 auto 0.75rem" }} />
-      <h3 style={{ color: "#10b981", fontWeight: 700, marginBottom: "0.5rem" }}>Payment Submitted!</h3>
-      <p style={{ color: "#6ee7b7", fontSize: "0.875rem", margin: 0 }}>Your payment is under review. Pro will activate once approved.</p>
-    </div>
-  )
-
-  if (settings && enabledMethods.length === 0) return (
-    <div style={{ padding: "1.5rem", textAlign: "center", background: "rgba(250,204,21,0.08)", border: "1px solid rgba(250,204,21,0.3)", borderRadius: "0.75rem" }}>
-      <p style={{ color: "#facc15", fontSize: "0.875rem", margin: 0 }}>No payment methods currently available. Please contact support.</p>
-    </div>
-  )
-
   return (
-    <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-      {/* Price Banner */}
-      <div style={{
-        background: "linear-gradient(135deg, rgba(245,158,11,0.1), rgba(251,146,60,0.05))",
-        border: "1px solid rgba(245,158,11,0.25)",
-        borderRadius: "0.625rem",
-        padding: "0.75rem",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-      }}>
-        <div>
-          <div style={{ fontSize: "0.7rem", color: "#9ca3af", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            Amount to Pay
-          </div>
-          <div style={{ fontSize: "1.375rem", fontWeight: 800, color: "#f59e0b", lineHeight: 1.2 }}>
-            {PRO_PRICE.display}
-          </div>
-        </div>
-        <div style={{ fontSize: "0.7rem", color: "#9ca3af", textAlign: "right" }}>
-          Pro for {PRO_PRICE.duration}
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+      {/* Plan selection */}
+      <div>
+        <label style={{ color: "var(--white-70)", fontSize: "0.8rem", fontFamily: "Barlow Condensed, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "0.5rem" }}>
+          Plan
+        </label>
+        <div style={{ display: "flex", gap: "0.75rem" }}>
+          {Object.entries(PLANS).map(([key, p]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setPlan(key as "monthly" | "yearly")}
+              style={{
+                flex: 1,
+                padding: "0.875rem",
+                background: plan === key ? "var(--gold-dim)" : "var(--surface)",
+                border: `1px solid ${plan === key ? "var(--gold)" : "var(--border)"}`,
+                borderRadius: "8px",
+                cursor: "pointer",
+                textAlign: "center",
+              }}
+            >
+              <div style={{ color: plan === key ? "var(--gold)" : "var(--white)", fontFamily: "Barlow Condensed, sans-serif", fontWeight: 700, fontSize: "1rem" }}>
+                {p.label}
+              </div>
+              <div style={{ color: plan === key ? "var(--gold)" : "var(--white-70)", fontFamily: "JetBrains Mono, monospace", fontSize: "1.1rem", fontWeight: 700, marginTop: "0.25rem" }}>
+                Rs {p.amount}
+              </div>
+              {key === "yearly" && (
+                <div style={{ color: "var(--green)", fontSize: "0.7rem", marginTop: "0.25rem" }}>Save 16%</div>
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
+      {/* Payment method */}
       <div>
-        <div style={label}>Payment Method</div>
-        {!settings ? (
-          <div style={{ height: "2.5rem", background: "rgba(255,255,255,0.05)", borderRadius: "0.5rem" }} />
-        ) : (
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-            {enabledMethods.includes("ESEWA") && (
-              <button type="button" onClick={() => setMethod("ESEWA")}
-                style={{ padding: "0.5rem 0.875rem", borderRadius: "0.5rem", border: `2px solid ${method === "ESEWA" ? "#10b981" : "rgba(255,255,255,0.1)"}`,
-                  background: method === "ESEWA" ? "rgba(16,185,129,0.1)" : "rgba(255,255,255,0.03)", color: method === "ESEWA" ? "#10b981" : "#e5e7eb",
-                  fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer" }}>eSewa</button>
-            )}
-            {enabledMethods.includes("KHALTI") && (
-              <button type="button" onClick={() => setMethod("KHALTI")}
-                style={{ padding: "0.5rem 0.875rem", borderRadius: "0.5rem", border: `2px solid ${method === "KHALTI" ? "#a855f7" : "rgba(255,255,255,0.1)"}`,
-                  background: method === "KHALTI" ? "rgba(168,85,247,0.1)" : "rgba(255,255,255,0.03)", color: method === "KHALTI" ? "#a855f7" : "#e5e7eb",
-                  fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer" }}>Khalti</button>
-            )}
-            {enabledMethods.includes("BANK") && (
-              <button type="button" onClick={() => setMethod("BANK")}
-                style={{ padding: "0.5rem 0.875rem", borderRadius: "0.5rem", border: `2px solid ${method === "BANK" ? "#3b82f6" : "rgba(255,255,255,0.1)"}`,
-                  background: method === "BANK" ? "rgba(59,130,246,0.1)" : "rgba(255,255,255,0.03)", color: method === "BANK" ? "#3b82f6" : "#e5e7eb",
-                  fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer" }}>Bank</button>
-            )}
-          </div>
-        )}
+        <label style={{ color: "var(--white-70)", fontSize: "0.8rem", fontFamily: "Barlow Condensed, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "0.5rem" }}>
+          Payment Method
+        </label>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          {METHODS.map((m) => (
+            <button
+              key={m.value}
+              type="button"
+              onClick={() => setMethod(m.value)}
+              style={{
+                flex: 1,
+                padding: "0.6rem",
+                background: method === m.value ? "var(--gold-dim)" : "var(--surface)",
+                border: `1px solid ${method === m.value ? "var(--gold)" : "var(--border)"}`,
+                borderRadius: "8px",
+                cursor: "pointer",
+                color: method === m.value ? "var(--gold)" : "var(--white-70)",
+                fontFamily: "Barlow Condensed, sans-serif",
+                fontWeight: 600,
+                fontSize: "0.875rem",
+              }}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {info && (
-        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", padding: "0.875rem", display: "flex", flexDirection: "column", gap: "0.375rem" }}>
-          {info.qrUrl && (
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: "0.5rem" }}>
-              <img src={info.qrUrl} alt="QR" style={{ width: "10rem", height: "10rem", borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.1)" }} />
-            </div>
-          )}
-          {info.accountName && <div style={{ fontSize: "0.8125rem", color: "#9ca3af", display: "flex", justifyContent: "space-between" }}><span>Account</span><span style={{ color: "#fff", fontWeight: 600 }}>{info.accountName}</span></div>}
-          {info.accountId && (
-            <div style={{ fontSize: "0.8125rem", color: "#9ca3af", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span>{method === "KHALTI" ? "Khalti Number" : method === "BANK" ? "Account No." : "ID"}</span>
-              <span style={{ color: "#fff", fontFamily: "monospace", fontWeight: 600, fontSize: "0.9375rem" }}>{info.accountId}</span>
-            </div>
-          )}
-          {"branch" in info && info.branch && info.branch !== "UPDATE_WITH_YOUR_BRANCH" && (
-            <div style={{ fontSize: "0.8125rem", color: "#9ca3af", display: "flex", justifyContent: "space-between" }}><span>Branch</span><span style={{ color: "#fff" }}>{info.branch}</span></div>
-          )}
-          {info.instructions && <p style={{ fontSize: "0.75rem", color: "#9ca3af", margin: "0.375rem 0 0", paddingTop: "0.375rem", borderTop: "1px solid rgba(255,255,255,0.08)", lineHeight: 1.5 }}>{info.instructions}</p>}
-        </div>
-      )}
-
+      {/* Transaction ID */}
       <div>
-        <div style={label}>Amount Paid (NPR)</div>
-        <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} style={input} />
-        <p style={{ fontSize: "0.7rem", color: "#6b7280", marginTop: "0.25rem", margin: "0.25rem 0 0" }}>
-          Expected: <span style={{ color: "#f59e0b", fontWeight: 600 }}>Rs {PRO_PRICE.amount}</span>
+        <label style={{ color: "var(--white-70)", fontSize: "0.8rem", fontFamily: "Barlow Condensed, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "0.5rem" }}>
+          Transaction ID *
+        </label>
+        <input
+          type="text"
+          value={transactionId}
+          onChange={(e) => setTransactionId(e.target.value)}
+          placeholder="Enter your transaction / reference ID"
+          required
+          style={{
+            width: "100%", padding: "0.75rem", background: "var(--surface)",
+            border: "1px solid var(--border)", borderRadius: "8px",
+            color: "var(--white)", fontSize: "0.875rem", fontFamily: "JetBrains Mono, monospace",
+            boxSizing: "border-box",
+          }}
+        />
+      </div>
+
+      {/* Screenshot URL */}
+      <div>
+        <label style={{ color: "var(--white-70)", fontSize: "0.8rem", fontFamily: "Barlow Condensed, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "0.5rem" }}>
+          Screenshot URL (optional)
+        </label>
+        <input
+          type="url"
+          value={screenshot}
+          onChange={(e) => setScreenshot(e.target.value)}
+          placeholder="https://..."
+          style={{
+            width: "100%", padding: "0.75rem", background: "var(--surface)",
+            border: "1px solid var(--border)", borderRadius: "8px",
+            color: "var(--white)", fontSize: "0.875rem",
+            boxSizing: "border-box",
+          }}
+        />
+        <p style={{ color: "var(--white-40)", fontSize: "0.75rem", marginTop: "0.25rem" }}>
+          Upload your payment screenshot to a service like Imgur and paste the link here.
         </p>
       </div>
 
+      {/* Notes */}
       <div>
-        <div style={label}>Transaction Reference / ID</div>
-        <input type="text" value={txRef} onChange={(e) => setTxRef(e.target.value)}
-          placeholder={method === "KHALTI" ? "Khalti transaction ID" : method === "BANK" ? "Bank transaction/slip reference" : "Transaction ID"}
-          style={input} />
-      </div>
-
-      <div>
-        <div style={label}>Payment Screenshot URL (optional)</div>
-        <input type="url" value={proofUrl} onChange={(e) => setProofUrl(e.target.value)} placeholder="https://..." style={input} />
-      </div>
-
-      <div>
-        <div style={label}>Note (optional)</div>
-        <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} style={{ ...input, resize: "none" }} />
+        <label style={{ color: "var(--white-70)", fontSize: "0.8rem", fontFamily: "Barlow Condensed, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "0.5rem" }}>
+          Notes (optional)
+        </label>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Any additional information..."
+          rows={2}
+          style={{
+            width: "100%", padding: "0.75rem", background: "var(--surface)",
+            border: "1px solid var(--border)", borderRadius: "8px",
+            color: "var(--white)", fontSize: "0.875rem", resize: "vertical",
+            fontFamily: "Barlow, sans-serif", boxSizing: "border-box",
+          }}
+        />
       </div>
 
       {error && (
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "0.5rem", padding: "0.625rem", fontSize: "0.8125rem", color: "#f87171" }}>
-          <AlertCircle style={{ width: "1rem", height: "1rem", flexShrink: 0 }} />
+        <div style={{
+          padding: "0.75rem 1rem",
+          background: "rgba(230,57,70,0.1)",
+          border: "1px solid var(--red)",
+          borderRadius: "8px",
+          color: "var(--red)",
+          fontSize: "0.875rem",
+        }}>
           {error}
         </div>
       )}
 
-      <button type="submit" disabled={loading || !method}
-        style={{ width: "100%", background: "linear-gradient(135deg, #f59e0b, #fb923c)", color: "#000",
-          fontWeight: 700, padding: "0.875rem", borderRadius: "0.625rem", border: "none",
-          cursor: loading || !method ? "not-allowed" : "pointer", opacity: loading || !method ? 0.6 : 1,
-          display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", fontSize: "0.9375rem" }}>
-        {loading ? <><Loader2 style={{ width: "1rem", height: "1rem", animation: "spin 1s linear infinite" }} /> Submitting...</> : `Submit Payment (Rs ${PRO_PRICE.amount})`}
+      {/* Summary */}
+      <div style={{
+        padding: "1rem",
+        background: "var(--gold-dim)",
+        border: "1px solid var(--gold)",
+        borderRadius: "8px",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+      }}>
+        <div>
+          <div style={{ color: "var(--white-70)", fontSize: "0.8rem" }}>Total Amount</div>
+          <div style={{ color: "var(--gold)", fontFamily: "JetBrains Mono, monospace", fontSize: "1.5rem", fontWeight: 700 }}>
+            Rs {selectedPlan.amount}
+          </div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ color: "var(--white-70)", fontSize: "0.8rem" }}>Via {METHODS.find(m => m.value === method)?.label}</div>
+          <div style={{ color: "var(--white-70)", fontSize: "0.8rem", textTransform: "capitalize" }}>{selectedPlan.label} Plan</div>
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        disabled={submitting || !transactionId.trim()}
+        style={{
+          padding: "0.875rem",
+          background: submitting || !transactionId.trim() ? "rgba(201,168,76,0.4)" : "var(--gold)",
+          color: "var(--black)",
+          border: "none",
+          borderRadius: "8px",
+          fontFamily: "Barlow Condensed, sans-serif",
+          fontWeight: 700,
+          fontSize: "1rem",
+          cursor: submitting || !transactionId.trim() ? "not-allowed" : "pointer",
+          letterSpacing: "0.05em",
+        }}
+      >
+        {submitting ? "Submitting..." : "Submit Payment for Review"}
       </button>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </form>
-  )
+  );
 }

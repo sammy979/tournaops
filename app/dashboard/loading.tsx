@@ -6,15 +6,23 @@ export default function DashboardLoading() {
       alignItems: "center",
       justifyContent: "center",
     }}>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
         <div style={{
-          width: "2.5rem", height: "2.5rem",
+          width: "36px",
+          height: "36px",
+          border: "2px solid var(--border)",
+          borderTop: "2px solid var(--gold)",
           borderRadius: "50%",
-          border: "3px solid rgba(245,158,11,0.2)",
-          borderTop: "3px solid #f59e0b",
           animation: "spin 0.8s linear infinite",
         }} />
-        <span style={{ color: "#6b7280", fontSize: "0.85rem" }}>Loading dashboard...</span>
+        <span style={{
+          fontFamily: "Barlow Condensed, sans-serif",
+          fontWeight: 600,
+          fontSize: "0.72rem",
+          letterSpacing: "0.15em",
+          textTransform: "uppercase",
+          color: "var(--white-40)",
+        }}>Loading Dashboard</span>
       </div>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>

@@ -1,16 +1,12 @@
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import SiteHeader from "@/components/ui/SiteHeader";
-import SiteFooter from "@/components/ui/SiteFooter";
-import RankingsPage from "@/components/rankings/RankingsPage";
 
 export const dynamic = "force-dynamic";
-export const metadata = {
-  title: "Rankings | TournaOps",
-  description: "Top PUBG Mobile teams ranked by points earned across completed tournaments on TournaOps.",
-};
 
-async function getRankings() {
+export async function GET() {
   try {
+    // Aggregate TeamProgression across all tournaments
+    // Group by teamId, sum points/kills, take best finalPosition
     const progressions = await prisma.teamProgression.findMany({
       where: {
         tournament: {
@@ -29,9 +25,10 @@ async function getRankings() {
           },
         },
       },
+      orderBy: { points: "desc" },
     });
 
-    // Aggregate per team
+    // Aggregate per team across tournaments
     const teamMap = new Map<
       string,
       {
@@ -44,6 +41,7 @@ async function getRankings() {
         wwcds: number;
         tournamentName: string | null;
         tournamentId: string | null;
+        tournamentSlug: string | null;
         tournamentStatus: string | null;
         format: string | null;
       }
@@ -61,7 +59,8 @@ async function getRankings() {
           matchesPlayed: p.matchesPlayed,
           wwcds: p.wwcds,
           tournamentName: p.tournament.name,
-          tournamentId: p.tournament.slug,
+          tournamentId: p.tournament.id,
+          tournamentSlug: p.tournament.slug,
           tournamentStatus: p.tournament.status,
           format: p.tournament.format,
         });
@@ -77,19 +76,21 @@ async function getRankings() {
         ) {
           existing.bestPlacement = p.finalPosition;
           existing.tournamentName = p.tournament.name;
-          existing.tournamentId = p.tournament.slug;
+          existing.tournamentId = p.tournament.id;
+          existing.tournamentSlug = p.tournament.slug;
           existing.tournamentStatus = p.tournament.status;
           existing.format = p.tournament.format;
         }
       }
     }
 
+    // Sort by totalPoints desc, then kills desc
     const sorted = Array.from(teamMap.values()).sort((a, b) => {
       if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
       return b.totalKills - a.totalKills;
     });
 
-    return sorted.map((t, i) => ({
+    const teams = sorted.map((t, i) => ({
       rank: i + 1,
       id: t.id,
       name: t.name,
@@ -99,26 +100,14 @@ async function getRankings() {
       matchesPlayed: t.matchesPlayed,
       wwcds: t.wwcds,
       tournamentName: t.tournamentName,
-      tournamentId: t.tournamentId,
+      tournamentId: t.tournamentSlug, // use slug for public URL
       tournamentStatus: t.tournamentStatus,
       format: t.format,
     }));
+
+    return NextResponse.json({ teams });
   } catch (error) {
-    console.error("[rankings page] data error:", error);
-    return [];
+    console.error("[rankings] GET error:", error);
+    return NextResponse.json({ teams: [] }, { status: 200 });
   }
-}
-
-export default async function Rankings() {
-  const teams = await getRankings();
-
-  return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--black)" }}>
-      <SiteHeader />
-      <main style={{ flex: 1 }}>
-        <RankingsPage teams={teams} />
-      </main>
-      <SiteFooter />
-    </div>
-  );
 }

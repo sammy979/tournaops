@@ -2,13 +2,15 @@
 import { useState } from "react";
 import Link from "next/link";
 
-interface TeamRank {
+export interface TeamRank {
   rank: number;
   id: string;
   name: string;
   points: number;
   kills: number;
   placement: number | null;
+  matchesPlayed: number;
+  wwcds: number;
   tournamentName: string | null;
   tournamentId: string | null;
   tournamentStatus: string | null;
@@ -20,15 +22,15 @@ interface Props {
 }
 
 const FORMATS = [
-  { value: "ALL", label: "All Formats" },
-  { value: "SOLO", label: "Solo" },
-  { value: "DUO", label: "Duo" },
-  { value: "SQUAD", label: "Squad" },
+  { value: "ALL",   label: "All Formats" },
+  { value: "SOLO",  label: "Solo"        },
+  { value: "DUO",   label: "Duo"         },
+  { value: "SQUAD", label: "Squad"       },
 ];
 
 export default function RankingsPage({ teams }: Props) {
   const [activeFormat, setActiveFormat] = useState("ALL");
-  const [search, setSearch] = useState("");
+  const [search,       setSearch]       = useState("");
 
   const filtered = teams.filter((t) => {
     const matchFormat = activeFormat === "ALL" || t.format === activeFormat;
@@ -57,7 +59,7 @@ export default function RankingsPage({ teams }: Props) {
             marginBottom: "32px",
             maxWidth: "480px",
           }}>
-            Team rankings based on points earned across completed tournaments on TournaOps.
+            Team rankings based on points earned across completed PUBG Mobile tournaments on TournaOps.
           </p>
 
           {/* FORMAT TABS */}
@@ -144,42 +146,46 @@ export default function RankingsPage({ teams }: Props) {
             overflow: "hidden",
           }}>
             {/* TABLE HEADER */}
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "60px 1fr 180px 80px 80px 100px",
-              padding: "10px 20px",
-              background: "var(--surface-2)",
-              borderBottom: "1px solid var(--border)",
-            }}>
-              {[
-                { label: "Rank", align: "left" },
-                { label: "Team", align: "left" },
-                { label: "Tournament", align: "left" },
-                { label: "Kills", align: "right" },
-                { label: "Placement", align: "right" },
-                { label: "Points", align: "right" },
-              ].map((col) => (
-                <div key={col.label} style={{
-                  fontFamily: "Barlow Condensed, sans-serif",
-                  fontWeight: 600,
-                  fontSize: "0.7rem",
-                  letterSpacing: "0.15em",
-                  color: "var(--white-40)",
-                  textTransform: "uppercase",
-                  textAlign: col.align as any,
-                }}>{col.label}</div>
+            <div className="scroll-x">
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "56px 1fr 160px 70px 70px 70px 90px",
+                padding: "10px 20px",
+                background: "var(--surface-2)",
+                borderBottom: "1px solid var(--border)",
+                minWidth: "600px",
+              }}>
+                {[
+                  { label: "Rank",       align: "left"  },
+                  { label: "Team",       align: "left"  },
+                  { label: "Tournament", align: "left"  },
+                  { label: "Kills",      align: "right" },
+                  { label: "WWCD",       align: "right" },
+                  { label: "Matches",    align: "right" },
+                  { label: "Points",     align: "right" },
+                ].map((col) => (
+                  <div key={col.label} style={{
+                    fontFamily: "Barlow Condensed, sans-serif",
+                    fontWeight: 600,
+                    fontSize: "0.7rem",
+                    letterSpacing: "0.15em",
+                    color: "var(--white-40)",
+                    textTransform: "uppercase",
+                    textAlign: col.align as "left" | "right",
+                  }}>{col.label}</div>
+                ))}
+              </div>
+
+              {/* ROWS */}
+              {reranked.map((team, i) => (
+                <RankRow
+                  key={team.id}
+                  team={team}
+                  index={i}
+                  total={reranked.length}
+                />
               ))}
             </div>
-
-            {/* ROWS */}
-            {reranked.map((team, i) => (
-              <RankRow
-                key={team.id}
-                team={team}
-                index={i}
-                total={reranked.length}
-              />
-            ))}
           </div>
         )}
 
@@ -206,8 +212,8 @@ export default function RankingsPage({ teams }: Props) {
               color: "var(--white-40)",
               lineHeight: 1.6,
             }}>
-              Rankings are based on points earned in public tournaments on TournaOps.
-              Global cross-tournament rankings are coming soon.
+              Rankings are based on total points earned in public PUBG Mobile tournaments on TournaOps.
+              Tiebreakers: total kills, then WWCD count.
             </p>
           </div>
         )}
@@ -225,10 +231,10 @@ function RankRow({
   index: number;
   total: number;
 }) {
-  const isFirst = team.rank === 1;
+  const isFirst  = team.rank === 1;
   const isSecond = team.rank === 2;
-  const isThird = team.rank === 3;
-  const isTop = isFirst || isSecond || isThird;
+  const isThird  = team.rank === 3;
+  const isTop    = isFirst || isSecond || isThird;
 
   const rankColor = isFirst
     ? "var(--gold)"
@@ -238,10 +244,12 @@ function RankRow({
     ? "#cd7f32"
     : "var(--white-40)";
 
+  const rankLabel = isFirst ? "01" : isSecond ? "02" : isThird ? "03" : String(team.rank).padStart(2, "0");
+
   return (
     <div style={{
       display: "grid",
-      gridTemplateColumns: "60px 1fr 180px 80px 80px 100px",
+      gridTemplateColumns: "56px 1fr 160px 70px 70px 70px 90px",
       padding: "13px 20px",
       borderBottom: index < total - 1 ? "1px solid var(--border)" : "none",
       background: isFirst
@@ -250,11 +258,12 @@ function RankRow({
         ? "rgba(255,255,255,0.02)"
         : "transparent",
       alignItems: "center",
+      minWidth: "600px",
       transition: "background 0.1s ease",
     }}>
       {/* RANK */}
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-        {isFirst && <span style={{ fontSize: "0.9rem" }}>🏆</span>}
+      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+        {isFirst && <span style={{ fontSize: "0.9rem" }}>&#127942;</span>}
         <span style={{
           fontFamily: "Barlow Condensed, sans-serif",
           fontWeight: 800,
@@ -262,7 +271,7 @@ function RankRow({
           color: rankColor,
           letterSpacing: "0.02em",
         }}>
-          {String(team.rank).padStart(2, "0")}
+          {rankLabel}
         </span>
       </div>
 
@@ -316,7 +325,7 @@ function RankRow({
             {team.tournamentName}
           </Link>
         ) : (
-          <span style={{ fontSize: "0.78rem", color: "var(--white-20)" }}>—</span>
+          <span style={{ fontSize: "0.78rem", color: "var(--white-20)" }}>&mdash;</span>
         )}
         {team.tournamentStatus === "LIVE" && (
           <span style={{
@@ -328,7 +337,7 @@ function RankRow({
             textTransform: "uppercase",
             display: "block",
             marginTop: "2px",
-          }}>● LIVE</span>
+          }}>&#9679; LIVE</span>
         )}
       </div>
 
@@ -340,13 +349,22 @@ function RankRow({
         textAlign: "right",
       }}>{team.kills}</div>
 
-      {/* PLACEMENT */}
+      {/* WWCD */}
       <div style={{
         fontFamily: "JetBrains Mono, monospace",
         fontSize: "0.85rem",
-        color: "var(--white-70)",
+        color: team.wwcds > 0 ? "var(--gold)" : "var(--white-40)",
         textAlign: "right",
-      }}>{team.placement ?? "—"}</div>
+        fontWeight: team.wwcds > 0 ? 700 : 400,
+      }}>{team.wwcds}</div>
+
+      {/* MATCHES */}
+      <div style={{
+        fontFamily: "JetBrains Mono, monospace",
+        fontSize: "0.85rem",
+        color: "var(--white-40)",
+        textAlign: "right",
+      }}>{team.matchesPlayed}</div>
 
       {/* POINTS */}
       <div style={{
@@ -384,7 +402,7 @@ function EmptyRankings() {
         maxWidth: "360px",
         lineHeight: 1.6,
       }}>
-        Rankings will appear here after tournaments are completed on TournaOps.
+        Rankings will appear here after PUBG Mobile tournaments are completed on TournaOps.
       </p>
       <Link href="/tournaments" className="btn-secondary">
         Browse Tournaments
