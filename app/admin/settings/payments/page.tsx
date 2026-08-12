@@ -1,191 +1,367 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AdminShell from "@/components/ui/AdminShell";
-import {
-  CreditCard,
-  Save,
-  CheckCircle2,
-  Eye,
-  EyeOff,
-  Copy,
-  RefreshCw,
-  AlertTriangle,
-  DollarSign,
-  Percent,
-  Shield,
-} from "lucide-react";
+
+interface PaymentSettings {
+  esewaEnabled?:         boolean;
+  esewaQrUrl?:           string;
+  esewaAccountName?:     string;
+  esewaAccountId?:       string;
+  esewaInstructions?:    string;
+
+  khaltiEnabled?:        boolean;
+  khaltiQrUrl?:          string;
+  khaltiAccountName?:    string;
+  khaltiAccountId?:      string;
+  khaltiInstructions?:   string;
+
+  bankEnabled?:          boolean;
+  bankName?:             string;
+  bankQrUrl?:            string;
+  bankAccountHolder?:    string;
+  bankAccountNumber?:    string;
+  bankBranch?:           string;
+  bankInstructions?:     string;
+
+  internationalEnabled?: boolean;
+}
+
+const EMPTY_SETTINGS: PaymentSettings = {
+  esewaEnabled: false,       esewaQrUrl: "",       esewaAccountName: "",       esewaAccountId: "",     esewaInstructions: "",
+  khaltiEnabled: false,      khaltiQrUrl: "",      khaltiAccountName: "",      khaltiAccountId: "",    khaltiInstructions: "",
+  bankEnabled: false,        bankName: "",         bankQrUrl: "",              bankAccountHolder: "",  bankAccountNumber: "",  bankBranch: "",  bankInstructions: "",
+  internationalEnabled: false,
+};
 
 export default function AdminPaymentSettingsPage() {
-  const [saved,     setSaved]     = useState(false);
-  const [keyVisible,setKeyVisible]= useState({ secret: false, webhook: false });
+  const [settings, setSettings] = useState<PaymentSettings>(EMPTY_SETTINGS);
+  const [loading, setLoading]   = useState(true);
+  const [saving, setSaving]     = useState(false);
+  const [message, setMessage]   = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const [settings, setSettings] = useState({
-    stripePublishable: "pk_live_51xxx_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    stripeSecret:      "sk_live_51xxx_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    webhookSecret:     "whsec_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    proMonthly:        "19.99",
-    proAnnual:         "179.00",
-    proPlus:           "49.99",
-    proPlusAnnual:     "479.00",
-    currency:          "USD",
-    taxEnabled:        true,
-    taxRate:           "8.5",
-    trialDays:         "14",
-    refundWindow:      "30",
-    liveMode:          true,
-  });
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/payment-settings", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          if (mounted && data?.settings) {
+            setSettings({ ...EMPTY_SETTINGS, ...data.settings });
+          }
+        }
+      } catch {
+        // ignore, keep defaults
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
-  const update = (key: keyof typeof settings, val: unknown) =>
-    setSettings(prev => ({ ...prev, [key]: val }));
+  const update = <K extends keyof PaymentSettings>(key: K, val: PaymentSettings[K]) =>
+    setSettings((prev) => ({ ...prev, [key]: val }));
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  const save = async () => {
+    setSaving(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/admin/payment-settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      });
+      if (res.ok) {
+        setMessage({ type: "success", text: "Payment settings saved." });
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setMessage({ type: "error", text: err?.error || "Failed to save." });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Network error while saving." });
+    } finally {
+      setSaving(false);
+      setTimeout(() => setMessage(null), 4000);
+    }
   };
 
-  const MaskedInput = ({ value, field }: { value: string; field: "secret" | "webhook" }) => (
-    <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5">
-      <code className="flex-1 text-sm text-white/60 font-mono truncate text-xs">
-        {keyVisible[field] ? value : `${value.slice(0, 12)}${"•".repeat(24)}${value.slice(-4)}`}
-      </code>
-      <button onClick={() => setKeyVisible(prev => ({ ...prev, [field]: !prev[field] }))} className="text-white/25 hover:text-white/60 transition-colors">
-        {keyVisible[field] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-      </button>
-      <button onClick={() => navigator.clipboard.writeText(value)} className="text-white/25 hover:text-white/60 transition-colors">
-        <Copy className="w-4 h-4" />
-      </button>
-    </div>
-  );
+  if (loading) {
+    return (
+      <AdminShell>
+        <div style={{ padding: "48px", textAlign: "center", color: "var(--white-40)" }}>
+          Loading payment settings...
+        </div>
+      </AdminShell>
+    );
+  }
 
   return (
     <AdminShell>
-      <div className="p-6 max-w-3xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+      <div style={{ padding: "24px", maxWidth: "960px", margin: "0 auto" }}>
+
+        {/* HEADER */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
           <div>
-            <h1 className="text-2xl font-bold text-white">Payment Settings</h1>
-            <p className="text-white/40 text-sm mt-0.5">Configure Stripe keys, pricing, and billing options</p>
-          </div>
-          <button onClick={handleSave}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${saved ? "bg-emerald-600 text-white" : "bg-rose-600 hover:bg-rose-500 text-white"}`}>
-            {saved ? <><CheckCircle2 className="w-4 h-4" /> Saved!</> : <><Save className="w-4 h-4" /> Save Changes</>}
-          </button>
-        </div>
-
-        {/* Live mode toggle banner */}
-        <div className={`flex items-center gap-3 p-4 rounded-xl border mb-6 ${settings.liveMode ? "bg-emerald-500/[0.06] border-emerald-500/20" : "bg-amber-500/[0.08] border-amber-500/20"}`}>
-          <Shield className={`w-5 h-5 flex-shrink-0 ${settings.liveMode ? "text-emerald-400" : "text-amber-400"}`} />
-          <div className="flex-1">
-            <p className={`text-sm font-semibold ${settings.liveMode ? "text-emerald-300" : "text-amber-300"}`}>
-              {settings.liveMode ? "Live Mode Active" : "Test Mode Active"}
+            <div className="section-label">Admin</div>
+            <h1 className="text-display" style={{ marginBottom: "6px" }}>Payment Settings</h1>
+            <p style={{ color: "var(--white-40)", fontSize: "0.85rem" }}>
+              Manage manual payment methods (eSewa, Khalti, Bank Transfer). Pro plan is Rs 299/month.
             </p>
-            <p className="text-white/40 text-xs">{settings.liveMode ? "Real payments are being processed" : "No real transactions — safe for testing"}</p>
           </div>
-          <button onClick={() => update("liveMode", !settings.liveMode)}
-            className={`relative w-11 h-6 rounded-full transition-colors ${settings.liveMode ? "bg-emerald-600" : "bg-amber-500"}`}>
-            <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${settings.liveMode ? "left-6" : "left-1"}`} />
+
+          <button
+            onClick={save}
+            disabled={saving}
+            className="btn-gold"
+            style={{ opacity: saving ? 0.6 : 1 }}
+          >
+            {saving ? "Saving..." : "Save Changes"}
           </button>
         </div>
 
-        <div className="space-y-5">
-          {/* API Keys */}
-          <div className="bg-[#0f1117] border border-white/[0.06] rounded-2xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <CreditCard className="w-4 h-4 text-violet-400" />
-              <h2 className="text-white font-semibold">Stripe API Keys</h2>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="text-white/40 text-xs font-medium block mb-1.5">Publishable Key</label>
-                <div className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5">
-                  <code className="text-sm text-white/60 font-mono text-xs truncate block">{settings.stripePublishable}</code>
-                </div>
-              </div>
-              <div>
-                <label className="text-white/40 text-xs font-medium block mb-1.5">Secret Key</label>
-                <MaskedInput value={settings.stripeSecret} field="secret" />
-              </div>
-              <div>
-                <label className="text-white/40 text-xs font-medium block mb-1.5">Webhook Secret</label>
-                <MaskedInput value={settings.webhookSecret} field="webhook" />
-              </div>
-              <div className="flex items-start gap-2 p-3 bg-amber-500/[0.06] border border-amber-500/20 rounded-xl">
-                <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                <p className="text-amber-300/70 text-xs">Never share your secret key publicly. Rotate keys immediately if compromised.</p>
-              </div>
-            </div>
-          </div>
+        {message && (
+          <div style={{
+            padding: "12px 16px",
+            marginBottom: "16px",
+            background: message.type === "success" ? "var(--green-dim)" : "var(--red-dim)",
+            border: `1px solid ${message.type === "success" ? "var(--green)" : "var(--red)"}`,
+            color: message.type === "success" ? "var(--green)" : "var(--red)",
+            fontFamily: "Barlow Condensed, sans-serif",
+            fontWeight: 700,
+            fontSize: "0.82rem",
+            letterSpacing: "0.05em",
+          }}>{message.text}</div>
+        )}
 
-          {/* Pricing */}
-          <div className="bg-[#0f1117] border border-white/[0.06] rounded-2xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <DollarSign className="w-4 h-4 text-emerald-400" />
-              <h2 className="text-white font-semibold">Plan Pricing</h2>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { key: "proMonthly",   label: "Pro (Monthly)"  },
-                { key: "proAnnual",    label: "Pro (Annual)"   },
-                { key: "proPlus",      label: "Pro+ (Monthly)" },
-                { key: "proPlusAnnual",label: "Pro+ (Annual)"  },
-              ].map(f => (
-                <div key={f.key}>
-                  <label className="text-white/40 text-xs font-medium block mb-1.5">{f.label}</label>
-                  <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2">
-                    <span className="text-white/30 text-sm">$</span>
-                    <input
-                      type="number"
-                      value={settings[f.key as keyof typeof settings] as string}
-                      onChange={e => update(f.key as keyof typeof settings, e.target.value)}
-                      className="flex-1 bg-transparent text-white text-sm font-mono focus:outline-none min-w-0"
-                    />
-                    <span className="text-white/25 text-xs">USD</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+        {/* PRICING NOTE */}
+        <div style={{
+          background: "var(--surface)",
+          border: "1px solid var(--border)",
+          borderLeft: "3px solid var(--gold)",
+          padding: "16px 20px",
+          marginBottom: "24px",
+        }}>
+          <div className="section-label" style={{ marginBottom: "6px" }}>Pro Plan Pricing</div>
+          <p style={{ color: "var(--white-70)", fontSize: "0.85rem", lineHeight: 1.6 }}>
+            Fixed at <strong style={{ color: "var(--gold)" }}>Rs 299 NPR / month</strong>.
+            To change pricing, update the pricing constants in the codebase.
+          </p>
+        </div>
 
-          {/* Tax & Billing */}
-          <div className="bg-[#0f1117] border border-white/[0.06] rounded-2xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Percent className="w-4 h-4 text-amber-400" />
-              <h2 className="text-white font-semibold">Tax & Billing</h2>
-            </div>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between py-2">
-                <div>
-                  <p className="text-white text-sm font-medium">Collect Sales Tax</p>
-                  <p className="text-white/40 text-xs">Automatically calculate and collect applicable taxes</p>
-                </div>
-                <button onClick={() => update("taxEnabled", !settings.taxEnabled)}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${settings.taxEnabled ? "bg-violet-600" : "bg-white/[0.10]"}`}>
-                  <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${settings.taxEnabled ? "left-6" : "left-1"}`} />
-                </button>
-              </div>
-              {settings.taxEnabled && (
-                <div>
-                  <label className="text-white/40 text-xs font-medium block mb-1.5">Default Tax Rate (%)</label>
-                  <input type="number" value={settings.taxRate} onChange={e => update("taxRate", e.target.value)}
-                    className="w-32 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50" />
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-white/40 text-xs font-medium block mb-1.5">Trial Period (days)</label>
-                  <input type="number" value={settings.trialDays} onChange={e => update("trialDays", e.target.value)}
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50" />
-                </div>
-                <div>
-                  <label className="text-white/40 text-xs font-medium block mb-1.5">Refund Window (days)</label>
-                  <input type="number" value={settings.refundWindow} onChange={e => update("refundWindow", e.target.value)}
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50" />
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* ESEWA */}
+        <SettingsCard
+          title="eSewa"
+          enabled={!!settings.esewaEnabled}
+          onToggle={() => update("esewaEnabled", !settings.esewaEnabled)}
+        >
+          <Field label="Account Name" value={settings.esewaAccountName || ""} onChange={(v) => update("esewaAccountName", v)} placeholder="e.g. Bhupen Pun" />
+          <Field label="Account ID / Number" value={settings.esewaAccountId || ""} onChange={(v) => update("esewaAccountId", v)} placeholder="98XXXXXXXX" />
+          <Field label="QR Code Image URL" value={settings.esewaQrUrl || ""} onChange={(v) => update("esewaQrUrl", v)} placeholder="https://.../qr.png" />
+          <TextArea label="Instructions" value={settings.esewaInstructions || ""} onChange={(v) => update("esewaInstructions", v)} placeholder="Payment instructions for the user" />
+        </SettingsCard>
+
+        {/* KHALTI */}
+        <SettingsCard
+          title="Khalti"
+          enabled={!!settings.khaltiEnabled}
+          onToggle={() => update("khaltiEnabled", !settings.khaltiEnabled)}
+        >
+          <Field label="Account Name" value={settings.khaltiAccountName || ""} onChange={(v) => update("khaltiAccountName", v)} placeholder="e.g. Bhupen Pun" />
+          <Field label="Account ID / Number" value={settings.khaltiAccountId || ""} onChange={(v) => update("khaltiAccountId", v)} placeholder="98XXXXXXXX" />
+          <Field label="QR Code Image URL" value={settings.khaltiQrUrl || ""} onChange={(v) => update("khaltiQrUrl", v)} placeholder="https://.../qr.png" />
+          <TextArea label="Instructions" value={settings.khaltiInstructions || ""} onChange={(v) => update("khaltiInstructions", v)} placeholder="Payment instructions for the user" />
+        </SettingsCard>
+
+        {/* BANK */}
+        <SettingsCard
+          title="Bank Transfer"
+          enabled={!!settings.bankEnabled}
+          onToggle={() => update("bankEnabled", !settings.bankEnabled)}
+        >
+          <Field label="Bank Name" value={settings.bankName || ""} onChange={(v) => update("bankName", v)} placeholder="e.g. Nabil Bank" />
+          <Field label="Account Holder" value={settings.bankAccountHolder || ""} onChange={(v) => update("bankAccountHolder", v)} placeholder="Full name" />
+          <Field label="Account Number" value={settings.bankAccountNumber || ""} onChange={(v) => update("bankAccountNumber", v)} placeholder="XXXXXXXXXX" />
+          <Field label="Branch" value={settings.bankBranch || ""} onChange={(v) => update("bankBranch", v)} placeholder="Kathmandu" />
+          <Field label="QR Code Image URL (optional)" value={settings.bankQrUrl || ""} onChange={(v) => update("bankQrUrl", v)} placeholder="https://.../qr.png" />
+          <TextArea label="Instructions" value={settings.bankInstructions || ""} onChange={(v) => update("bankInstructions", v)} placeholder="Transfer instructions for the user" />
+        </SettingsCard>
+
+        {/* INTERNATIONAL */}
+        <SettingsCard
+          title="International Payments"
+          enabled={!!settings.internationalEnabled}
+          onToggle={() => update("internationalEnabled", !settings.internationalEnabled)}
+          hideBody
+        >
+          <p style={{ color: "var(--white-40)", fontSize: "0.82rem", padding: "12px 0" }}>
+            When enabled, non-Nepal users will see an option to contact support for international payment methods.
+          </p>
+        </SettingsCard>
+
+        <div style={{ marginTop: "24px", display: "flex", justifyContent: "flex-end" }}>
+          <button
+            onClick={save}
+            disabled={saving}
+            className="btn-gold"
+            style={{ opacity: saving ? 0.6 : 1 }}
+          >
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
         </div>
       </div>
     </AdminShell>
+  );
+}
+
+function SettingsCard({
+  title,
+  enabled,
+  onToggle,
+  hideBody,
+  children,
+}: {
+  title:    string;
+  enabled:  boolean;
+  onToggle: () => void;
+  hideBody?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{
+      background: "var(--surface)",
+      border: "1px solid var(--border)",
+      marginBottom: "16px",
+    }}>
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "14px 20px",
+        borderBottom: enabled && !hideBody ? "1px solid var(--border)" : "none",
+        background: "var(--surface-2)",
+      }}>
+        <h2 style={{
+          fontFamily: "Barlow Condensed, sans-serif",
+          fontWeight: 800,
+          fontSize: "1rem",
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: "var(--white)",
+          margin: 0,
+        }}>{title}</h2>
+
+        <button
+          onClick={onToggle}
+          style={{
+            padding: "5px 14px",
+            fontFamily: "Barlow Condensed, sans-serif",
+            fontWeight: 700,
+            fontSize: "0.7rem",
+            letterSpacing: "0.15em",
+            textTransform: "uppercase",
+            background: enabled ? "var(--gold)" : "transparent",
+            color: enabled ? "var(--black)" : "var(--white-40)",
+            border: `1px solid ${enabled ? "var(--gold)" : "var(--border-2)"}`,
+            cursor: "pointer",
+          }}
+        >
+          {enabled ? "Enabled" : "Disabled"}
+        </button>
+      </div>
+
+      {enabled && (
+        <div style={{ padding: "16px 20px", display: "grid", gap: "12px" }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label:       string;
+  value:       string;
+  onChange:    (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div>
+      <label style={{
+        display: "block",
+        fontFamily: "Barlow Condensed, sans-serif",
+        fontWeight: 600,
+        fontSize: "0.7rem",
+        letterSpacing: "0.12em",
+        textTransform: "uppercase",
+        color: "var(--white-40)",
+        marginBottom: "6px",
+      }}>{label}</label>
+      <input
+        type="text"
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        style={{
+          width: "100%",
+          background: "var(--black)",
+          border: "1px solid var(--border)",
+          color: "var(--white)",
+          padding: "9px 12px",
+          fontFamily: "Barlow, sans-serif",
+          fontSize: "0.85rem",
+          outline: "none",
+        }}
+      />
+    </div>
+  );
+}
+
+function TextArea({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label:       string;
+  value:       string;
+  onChange:    (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div>
+      <label style={{
+        display: "block",
+        fontFamily: "Barlow Condensed, sans-serif",
+        fontWeight: 600,
+        fontSize: "0.7rem",
+        letterSpacing: "0.12em",
+        textTransform: "uppercase",
+        color: "var(--white-40)",
+        marginBottom: "6px",
+      }}>{label}</label>
+      <textarea
+        value={value}
+        placeholder={placeholder}
+        rows={3}
+        onChange={(e) => onChange(e.target.value)}
+        style={{
+          width: "100%",
+          background: "var(--black)",
+          border: "1px solid var(--border)",
+          color: "var(--white)",
+          padding: "9px 12px",
+          fontFamily: "Barlow, sans-serif",
+          fontSize: "0.85rem",
+          outline: "none",
+          resize: "vertical",
+        }}
+      />
+    </div>
   );
 }
