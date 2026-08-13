@@ -1,6 +1,7 @@
 import { getServerUser } from "@/lib/server-auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { Logo } from "@/components/brand/Logo";
 
 export default async function HomePage() {
   const user = await getServerUser();
@@ -73,17 +74,7 @@ export default async function HomePage() {
         backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(212,175,55,0.15)",
         padding: "1rem 2rem", display: "flex", justifyContent: "space-between", alignItems: "center",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <div style={{
-            width: "36px", height: "36px", background: "#D4AF37",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontFamily: "'JetBrains Mono', monospace", fontWeight: "900", color: "#0a0a0a",
-            fontSize: "1.1rem",
-          }}>T</div>
-          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "1.5rem", fontWeight: "900", letterSpacing: "0.05em" }}>
-            TOURNA<span style={{ color: "#D4AF37" }}>OPS</span>
-          </div>
-        </div>
+        <Logo size="md" href="/" />
         <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
           {user ? (
             <Link href="/dashboard" style={{
@@ -700,11 +691,8 @@ export default async function HomePage() {
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "2rem", marginBottom: "3rem" }}>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-                <div style={{ width: "28px", height: "28px", background: "#D4AF37", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace", fontWeight: "900", color: "#0a0a0a", fontSize: "0.85rem" }}>T</div>
-                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "1.25rem", fontWeight: "900" }}>
-                  TOURNA<span style={{ color: "#D4AF37" }}>OPS</span>
-                </div>
+              <div style={{ marginBottom: "1rem" }}>
+                <Logo size="sm" href={null} />
               </div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", color: "#666", lineHeight: 1.7 }}>
                 The tournament operating system built for Nepal&apos;s competitive esports scene.
