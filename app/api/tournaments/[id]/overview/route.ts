@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -12,8 +12,15 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
+    if (!id || id.trim() === "") {
+      return NextResponse.json({ error: "Tournament ID required" }, { status: 400 });
+    }
+
+    const tournamentId = id.trim();
+
     const tournament = await prisma.tournament.findUnique({
-      where: { id: params.id },
+      where: { id: tournamentId },
       select: { userId: true },
     });
 
@@ -25,32 +32,22 @@ export async function GET(
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
-    // Fetch comprehensive tournament overview data
-    const [full, matchStats, recentActivity] = await Promise.all([
+    const [full, matchStats, recentMatches] = await Promise.all([
       prisma.tournament.findUnique({
-        where: { id: params.id },
+        where: { id: tournamentId },
         include: {
           stages: {
             orderBy: { order: "asc" },
             include: {
               groups: {
-                include: {
-                  _count: { select: { teamProgressions: true } },
-                },
+                orderBy: { order: "asc" },
               },
-              matches: {
-                include: {
-                  result: true,
-                  _count: { select: { results: true } },
-                },
-              },
-              _count: { select: { matches: true } },
             },
           },
           teams: {
             orderBy: { name: "asc" },
             include: {
-              _count: { select: { players: true } },
+              playersList: { select: { id: true } },
             },
           },
           _count: {
@@ -59,21 +56,23 @@ export async function GET(
         },
       }),
 
-      prisma.match.aggregate({
-        where: { stage: { tournamentId: params.id } },
-        _count: { id: true },
+      prisma.match.count({
+        where: { tournamentId },
       }),
 
       prisma.match.findMany({
-        where: {
-          stage: { tournamentId: params.id },
-          result: { isNot: null },
-        },
+        where: { tournamentId },
         orderBy: { updatedAt: "desc" },
         take: 5,
-        include: {
-          result: true,
-          stage: { select: { name: true } },
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          map: true,
+          matchNumber: true,
+          results: true,
+          updatedAt: true,
+          stageId: true,
         },
       }),
     ]);
@@ -82,30 +81,84 @@ export async function GET(
       return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
 
-    // Calculate stats
-    const totalMatches = matchStats._count.id;
-    const completedMatches = full.stages.reduce((acc, stage) => {
-      return acc + stage.matches.filter((m: any) => m.result).length;
-    }, 0);
+    const completedMatches = await prisma.match.count({
+      where: { tournamentId, status: { in: ["completed", "COMPLETED"] } },
+    });
 
-    const activeStage = full.stages.find((s: any) => s.status === "active") ||
-                        full.stages.find((s: any) => s.status === "pending");
+    const activeStage =
+      full.stages.find((s) => s.status === "ACTIVE") ||
+      full.stages.find((s) => s.status === "active") ||
+      full.stages.find((s) => s.status === "PENDING") ||
+      full.stages.find((s) => s.status === "DRAFT") ||
+      full.stages[0] ||
+      null;
+
+    // Enrich recent matches with stage names
+    const stageMap = new Map(full.stages.map((s) => [s.id, s.name]));
+    const recentActivity = recentMatches.map((m) => ({
+      ...m,
+      updatedAt: m.updatedAt.toISOString(),
+      stageName: m.stageId ? stageMap.get(m.stageId) || null : null,
+    }));
 
     return NextResponse.json({
-      tournament: full,
+      tournament: {
+        ...full,
+        createdAt: full.createdAt.toISOString(),
+        updatedAt: full.updatedAt.toISOString(),
+        startDate: full.startDate ? full.startDate.toISOString() : null,
+        endDate: full.endDate ? full.endDate.toISOString() : null,
+        stages: full.stages.map((s) => ({
+          ...s,
+          startDate: s.startDate ? s.startDate.toISOString() : null,
+          endDate: s.endDate ? s.endDate.toISOString() : null,
+          registrationOpens: s.registrationOpens ? s.registrationOpens.toISOString() : null,
+          registrationCloses: s.registrationCloses ? s.registrationCloses.toISOString() : null,
+          lockedAt: s.lockedAt ? s.lockedAt.toISOString() : null,
+          createdAt: s.createdAt.toISOString(),
+          updatedAt: s.updatedAt.toISOString(),
+          groups: s.groups.map((g) => ({
+            ...g,
+            createdAt: g.createdAt.toISOString(),
+            updatedAt: g.updatedAt.toISOString(),
+          })),
+        })),
+        teams: full.teams.map((t) => ({
+          ...t,
+          createdAt: t.createdAt.toISOString(),
+          updatedAt: t.updatedAt.toISOString(),
+          playerCount: t.playersList.length,
+        })),
+      },
       stats: {
         totalTeams: full._count.teams,
         maxTeams: full.maxTeams,
-        totalMatches,
+        totalMatches: matchStats,
         completedMatches,
-        pendingMatches: totalMatches - completedMatches,
-        registrationPercent: full.maxTeams > 0 ? Math.round((full._count.teams / full.maxTeams) * 100) : 0,
+        pendingMatches: matchStats - completedMatches,
+        registrationPercent: full.maxTeams > 0
+          ? Math.round((full._count.teams / full.maxTeams) * 100)
+          : 0,
       },
-      activeStage,
+      activeStage: activeStage
+        ? {
+            ...activeStage,
+            startDate: activeStage.startDate ? activeStage.startDate.toISOString() : null,
+            endDate: activeStage.endDate ? activeStage.endDate.toISOString() : null,
+            registrationOpens: activeStage.registrationOpens ? activeStage.registrationOpens.toISOString() : null,
+            registrationCloses: activeStage.registrationCloses ? activeStage.registrationCloses.toISOString() : null,
+            lockedAt: activeStage.lockedAt ? activeStage.lockedAt.toISOString() : null,
+            createdAt: activeStage.createdAt.toISOString(),
+            updatedAt: activeStage.updatedAt.toISOString(),
+          }
+        : null,
       recentActivity,
     });
   } catch (error) {
     console.error("Tournament overview error:", error);
-    return NextResponse.json({ error: "Failed to fetch overview" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch overview" },
+      { status: 500 }
+    );
   }
 }
