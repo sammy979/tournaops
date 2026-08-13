@@ -1,26 +1,11 @@
-import { NextRequest } from "next/server";
-import { requireAuth } from "@/lib/auth";
+import { requireServerUser } from "@/lib/server-auth";
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import ScheduleClient from "./ScheduleClient";
 
 export const metadata = { title: "Schedule — TournaOps" };
 
-async function getUser() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("tournaops_session")?.value;
-  if (!token) return null;
-  try {
-    const { validateToken } = await import("@/lib/auth");
-    const { user } = validateToken(token);
-    return user;
-  } catch { return null; }
-}
-
 export default async function SchedulePage() {
-  const user = await getUser();
-  if (!user) redirect("/auth/login");
+  const user = await requireServerUser();
 
   const tournaments = await prisma.tournament.findMany({
     where: { userId: user.id },
@@ -32,16 +17,35 @@ export default async function SchedulePage() {
       status: true,
       startDate: true,
       endDate: true,
-      stages: {
-        orderBy: { order: "asc" },
+      matches: {
+        orderBy: [{ scheduledAt: "asc" }, { createdAt: "asc" }],
         select: {
           id: true,
           name: true,
-          order: true,
+          map: true,
+          status: true,
+          matchNumber: true,
+          scheduledAt: true,
+          startTime: true,
+          endTime: true,
+          stageId: true,
+          groupId: true,
         },
       },
     },
   });
 
-  return <ScheduleClient tournaments={tournaments} userId={user.id} />;
+  const serialized = tournaments.map((t) => ({
+    ...t,
+    startDate: t.startDate ? t.startDate.toISOString() : null,
+    endDate: t.endDate ? t.endDate.toISOString() : null,
+    matches: t.matches.map((m) => ({
+      ...m,
+      scheduledAt: m.scheduledAt ? m.scheduledAt.toISOString() : null,
+      startTime: m.startTime ? m.startTime.toISOString() : null,
+      endTime: m.endTime ? m.endTime.toISOString() : null,
+    })),
+  }));
+
+  return <ScheduleClient tournaments={serialized} />;
 }
