@@ -66,13 +66,33 @@ export default async function HomePage() {
         .sun-glow-el { animation: sun-glow 4s ease-in-out infinite; }
         .flag { animation: flag-wave 3s ease-in-out infinite; transform-origin: left center; }
         .smoke-el { animation: smoke 4s ease-out infinite; }
+
+        /* MOBILE RESPONSIVE */
+        @media (max-width: 768px) {
+          .hide-mobile { display: none !important; }
+          .mobile-full { width: 100% !important; }
+          .mobile-stack { flex-direction: column !important; gap: 0.75rem !important; }
+          .mobile-center { text-align: center !important; }
+          .mobile-sm-padding { padding: 3rem 1rem !important; }
+          .mobile-h1 { font-size: clamp(2rem, 12vw, 3.5rem) !important; line-height: 0.95 !important; }
+          .mobile-h2 { font-size: clamp(1.5rem, 8vw, 2.25rem) !important; }
+          .mobile-hero { padding: 3rem 1rem 6rem !important; min-height: 80vh !important; }
+          .mobile-nav-hide { display: none !important; }
+          .mobile-stat-num { font-size: 2rem !important; }
+          .mobile-2col { grid-template-columns: repeat(2, 1fr) !important; }
+          .mobile-1col { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 480px) {
+          .mobile-tiny-hide { display: none !important; }
+          .mobile-1col-xs { grid-template-columns: 1fr !important; }
+        }
       `}</style>
 
       {/* NAV */}
       <nav style={{
         position: "sticky", top: 0, zIndex: 100, background: "rgba(10,10,10,0.85)",
         backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(212,175,55,0.15)",
-        padding: "1rem 2rem", display: "flex", justifyContent: "space-between", alignItems: "center",
+        padding: "0.85rem 1rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem",
       }}>
         <Logo size="md" href="/" />
         <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
@@ -102,7 +122,7 @@ export default async function HomePage() {
       {/* HERO — NEPAL BATTLEGROUND SCENE */}
       <section style={{
         position: "relative",
-        padding: "6rem 2rem 12rem",
+        padding: "6rem 2rem 12rem", // mobile handled by class
         overflow: "hidden",
         minHeight: "95vh",
         display: "flex",
@@ -119,7 +139,7 @@ export default async function HomePage() {
 
         {/* SUN */}
         <div className="sun-glow-el" style={{
-          position: "absolute", top: "25%", right: "20%",
+          position: "absolute", top: "15%", right: "10%",
           width: "180px", height: "180px", borderRadius: "50%",
           background: "radial-gradient(circle, #ffdd66 0%, #ff9c33 40%, transparent 70%)",
           zIndex: 1,
@@ -439,7 +459,7 @@ export default async function HomePage() {
 
           <h1 className="fade-up fade-up-2" style={{
             fontFamily: "'Barlow Condensed', sans-serif",
-            fontSize: "clamp(3rem, 9vw, 8rem)",
+            fontSize: "clamp(2rem, 9vw, 8rem)",
             fontWeight: "900",
             lineHeight: 0.9,
             letterSpacing: "-0.03em",
@@ -509,7 +529,7 @@ export default async function HomePage() {
 
       {/* LIVE STATS BAR */}
       <section style={{ borderTop: "1px solid #1a1a1a", borderBottom: "1px solid #1a1a1a", background: "#0f0f0f", position: "relative", zIndex: 30 }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "2.5rem 2rem", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "2rem" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "2.5rem 2rem", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "1.5rem" }}>
           {[
             { num: totalTournaments, label: "TOURNAMENTS RUN", icon: "🏆" },
             { num: totalUsers, label: "ACTIVE ORGANIZERS", icon: "👑" },
@@ -580,7 +600,7 @@ export default async function HomePage() {
               }}>DEPLOY NOW →</Link>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "1.5rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "1.5rem" }}>
               {recentTournaments.map((t) => (
                 <Link key={t.id} href={`/tournaments/${t.slug}`} className="tournament-card" style={{
                   background: "linear-gradient(135deg, #141414 0%, #0f0f0f 100%)",
@@ -637,7 +657,7 @@ export default async function HomePage() {
               Everything an <span style={{ color: "#D4AF37" }}>organizer</span> needs
             </h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "1rem" }}>
             {[
               { icon: "⚡", title: "LIVE BRACKETS", desc: "Auto-advancing brackets with real-time score sync from screenshots", tag: "REAL-TIME" },
               { icon: "🎯", title: "SCORING ENGINE", desc: "PMGC, PMPL presets. Or build custom kill + placement point rules", tag: "CUSTOMIZABLE" },
@@ -689,7 +709,7 @@ export default async function HomePage() {
       {/* FOOTER */}
       <footer style={{ borderTop: "1px solid #1a1a1a", padding: "3rem 2rem 2rem", background: "#0a0a0a" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "2rem", marginBottom: "3rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "1.5rem", marginBottom: "3rem" }}>
             <div>
               <div style={{ marginBottom: "1rem" }}>
                 <Logo size="sm" href={null} />
