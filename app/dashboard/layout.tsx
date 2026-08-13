@@ -315,7 +315,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div style={{
               width: "4rem", height: "4rem",
               borderRadius: "50%",
-              background: "linear-gradient(135deg, #3b82f6, #D4AF37)",
+              background: "#D4AF37", color: "#0a0a0a", border: "1px solid #D4AF37",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: "0.75rem", fontWeight: 700, color: "#fff",
               flexShrink: 0,

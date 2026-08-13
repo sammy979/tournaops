@@ -21,7 +21,7 @@ export async function POST(
     const stage = await prisma.stage.findUnique({
       where: { id: params.id },
       include: {
-        tournament: { select: { organizerId: true } },
+        tournament: { select: { userId: true } },
         groups: {
           include: {
             teamProgressions: {
@@ -37,7 +37,7 @@ export async function POST(
       return NextResponse.json({ error: "Stage not found" }, { status: 404 });
     }
 
-    if (stage.tournament.organizerId !== session.userId) {
+    if (stage.tournament.userId !== session.userId) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 

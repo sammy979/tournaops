@@ -101,14 +101,14 @@ export async function GET(
     // Get tournament to verify it exists and check authorization
     const tournament = await prisma.tournament.findUnique({
       where: { id: params.id },
-      select: { organizerId: true, isPublic: true },
+      select: { userId: true, isPublic: true },
     });
 
     if (!tournament) {
       return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
 
-    const isOrganizer = session?.userId === tournament.organizerId;
+    const isOrganizer = session?.userId === tournament.userId;
     if (!tournament.isPublic && !isOrganizer) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }

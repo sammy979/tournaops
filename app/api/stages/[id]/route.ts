@@ -5,10 +5,10 @@ import { prisma } from "@/lib/prisma";
 async function verifyStageOwnership(stageId: string, userId: string) {
   const stage = await prisma.stage.findUnique({
     where: { id: stageId },
-    include: { tournament: { select: { organizerId: true } } },
+    include: { tournament: { select: { userId: true } } },
   });
   if (!stage) return { stage: null, authorized: false };
-  return { stage, authorized: stage.tournament.organizerId === userId };
+  return { stage, authorized: stage.tournament.userId === userId };
 }
 
 export async function GET(

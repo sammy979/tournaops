@@ -54,7 +54,7 @@ export default function StandingsTable({ standings }: StandingsTableProps) {
                   </div>
                 </td>
                 <td className="px-4 py-4 text-center">
-                  <span className={"inline-flex items-center gap-1 font-bold text-lg " + (diff > 0 ? "text-green-400" : diff < 0 ? "text-red-400" : "text-purple-300")}>
+                  <span className={"inline-flex items-center gap-1 font-bold text-lg " + (diff > 0 ? "text-green-400" : diff < 0 ? "text-red-400" : "text-yellow-300")}>
                     {diff > 0 ? <TrendingUp className="w-4 h-4" /> : diff < 0 ? <TrendingDown className="w-4 h-4" /> : null}
                     {diff > 0 ? "+" : ""}{diff}
                   </span>

@@ -76,7 +76,7 @@ export async function PUT(
       discordUrl: String(body.discordUrl || "").substring(0, 200),
       twitterUrl: String(body.twitterUrl || "").substring(0, 200),
       websiteUrl: String(body.websiteUrl || "").substring(0, 200),
-      bannerColor: String(body.bannerColor || "from-blue-900/20 to-purple-900/20").substring(0, 100),
+      bannerColor: String(body.bannerColor || "from-blue-900/20 to-yellow-900/20").substring(0, 100),
       sponsors: sponsors,
     };
 

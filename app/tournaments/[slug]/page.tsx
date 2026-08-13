@@ -40,7 +40,7 @@ const MOCK_TOURNAMENT = {
   registeredTeams: 14,
   organizer:    "TournaOps Official",
   description:  "The premier seasonal championship circuit for top-tier Valorant teams across North America. Featuring a full double-elimination bracket with live broadcast support, professional casters, and a $10,000 prize pool.",
-  bannerGradient: "from-violet-900 via-indigo-900 to-slate-900",
+  bannerGradient: "from-yellow-900 via-indigo-900 to-slate-900",
   game_icon:    "ðŸŽ®",
   prizes: [
     { place: "1st", amount: "$5,000", icon: "ðŸ¥‡" },

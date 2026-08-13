@@ -147,14 +147,14 @@ export default function CalculationDetails({ teamName, matches, grandTotal, onCl
           )}
 
           {/* Grand Total */}
-          <div className="p-5 rounded-2xl bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 border-2 border-blue-500/30">
+          <div className="p-5 rounded-2xl bg-gradient-to-r from-blue-500/10 via-yellow-500/10 to-pink-500/10 border-2 border-blue-500/30">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Grand Total</div>
                 <div className="text-white font-black text-3xl mt-1">{teamName}</div>
               </div>
               <div className="text-right">
-                <div className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
+                <div className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-yellow-400 to-pink-400">
                   {grandTotal}
                 </div>
                 <div className="text-xs text-gray-500 uppercase tracking-widest mt-1">Total Points</div>

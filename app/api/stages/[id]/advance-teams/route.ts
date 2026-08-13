@@ -23,7 +23,7 @@ export async function POST(
       where: { id: params.id },
       include: {
         tournament: {
-          select: { organizerId: true, id: true },
+          select: { userId: true, id: true },
           include: {
             stages: { orderBy: { order: "asc" } },
           },
@@ -42,7 +42,7 @@ export async function POST(
       return NextResponse.json({ error: "Stage not found" }, { status: 404 });
     }
 
-    if (stage.tournament.organizerId !== session.userId) {
+    if (stage.tournament.userId !== session.userId) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 

@@ -10,7 +10,7 @@ interface TeamLogoProps {
 // Consistent color from name hash
 function nameToColors(name: string): [string, string] {
   const colors = [
-    ["#f59e0b", "#f97316"], ["#3b82f6", "#6366f1"],
+    ["#f59e0b", "#f97316"], ["#3b82f6", "#D4AF37"],
     ["#D4AF37", "#D4AF37"], ["#22c55e", "#10b981"],
     ["#ef4444", "#f43f5e"], ["#06b6d4", "#0ea5e9"],
     ["#eab308", "#facc15"], ["#ec4899", "#f472b6"],

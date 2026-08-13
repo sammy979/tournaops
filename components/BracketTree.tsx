@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import type { BracketMatch } from "@/types/tournament";
 
 interface BracketTreeProps {
@@ -19,7 +19,7 @@ export default function BracketTree({ matches }: BracketTreeProps) {
 
         return (
           <div key={round} className="flex flex-col gap-4 min-w-[240px]">
-            <h3 className="text-center text-sm font-bold text-purple-300 uppercase tracking-widest mb-2">
+            <h3 className="text-center text-sm font-bold text-yellow-300 uppercase tracking-widest mb-2">
               Round {round}
             </h3>
             {roundMatches.map(match => (

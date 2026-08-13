@@ -49,7 +49,7 @@ export async function POST(
         stage: {
           include: {
             tournament: {
-              select: { organizerId: true, id: true },
+              select: { userId: true, id: true },
             },
           },
         },
@@ -62,7 +62,7 @@ export async function POST(
       return NextResponse.json({ error: "Match not found" }, { status: 404 });
     }
 
-    if (match.stage.tournament.organizerId !== session.userId) {
+    if (match.stage.tournament.userId !== session.userId) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
@@ -180,13 +180,13 @@ export async function GET(
       include: {
         stage: {
           include: {
-            tournament: { select: { organizerId: true } },
+            tournament: { select: { userId: true } },
           },
         },
       },
     });
 
-    if (!match || match.stage.tournament.organizerId !== session.userId) {
+    if (!match || match.stage.tournament.userId !== session.userId) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 

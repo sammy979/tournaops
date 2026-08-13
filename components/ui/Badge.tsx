@@ -49,7 +49,7 @@ function Badge({ className, variant, size, dot, children, ...props }: BadgeProps
             variant === "live" && "bg-green-400 animate-pulse",
             variant === "registration" && "bg-blue-400",
             variant === "draft" && "bg-gray-400",
-            variant === "completed" && "bg-purple-400",
+            variant === "completed" && "bg-yellow-500",
             variant === "cancelled" && "bg-red-400",
             variant === "pending" && "bg-yellow-400",
           )}

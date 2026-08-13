@@ -74,7 +74,7 @@ export function getStatusColor(status: string) {
     draft: "text-gray-400 bg-gray-400/10 border-gray-400/20",
     registration: "text-blue-400 bg-blue-400/10 border-blue-400/20",
     live: "text-green-400 bg-green-400/10 border-green-400/20",
-    completed: "text-yellow-500 bg-purple-400/10 border-purple-400/20",
+    completed: "text-yellow-500 bg-yellow-500/10 border-yellow-500/20",
     cancelled: "text-red-400 bg-red-400/10 border-red-400/20",
     pending: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
     active: "text-green-400 bg-green-400/10 border-green-400/20",

@@ -32,7 +32,7 @@ async function getTournamentWithAuth(tournamentId: string, userId: string) {
 
   if (!tournament) return { tournament: null, authorized: false };
 
-  const isOrganizer = tournament.organizerId === userId;
+  const isOrganizer = tournament.userId === userId;
 
   // Public tournaments can be read by anyone; private only by organizer
   if (!tournament.isPublic && !isOrganizer) {
@@ -75,14 +75,14 @@ export async function PATCH(
 
     const tournament = await prisma.tournament.findUnique({
       where: { id: params.id },
-      select: { organizerId: true },
+      select: { userId: true },
     });
 
     if (!tournament) {
       return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
 
-    if (tournament.organizerId !== session.userId) {
+    if (tournament.userId !== session.userId) {
       return NextResponse.json({ error: "Not authorized to edit this tournament" }, { status: 403 });
     }
 
@@ -131,14 +131,14 @@ export async function DELETE(
 
     const tournament = await prisma.tournament.findUnique({
       where: { id: params.id },
-      select: { organizerId: true, status: true },
+      select: { userId: true, status: true },
     });
 
     if (!tournament) {
       return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
 
-    if (tournament.organizerId !== session.userId) {
+    if (tournament.userId !== session.userId) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 

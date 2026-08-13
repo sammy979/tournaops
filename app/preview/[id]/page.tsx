@@ -60,7 +60,7 @@ export default function TournamentPreviewPage() {
       </div>
 
       {/* Simulated public page */}
-      <div className="relative bg-gradient-to-br from-violet-950/60 via-[#060810] to-indigo-950/40 border-b border-white/[0.06] overflow-hidden">
+      <div className="relative bg-gradient-to-br from-yellow-950/60 via-[#060810] to-yellow-950/40 border-b border-white/[0.06] overflow-hidden">
         <div className="absolute inset-0 opacity-[0.04]"
           style={{ backgroundImage: "linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px)", backgroundSize: "40px 40px" }} />
         <div className="relative max-w-5xl mx-auto px-6 py-14">

@@ -20,7 +20,7 @@ export default function TeamsTable({ teams, onEditTeams }: Props) {
             </div>
             <div>
               <h3 className="font-display text-2xl font-black gradient-text">ALL TEAMS</h3>
-              <p className="text-xs text-purple-300 uppercase tracking-widest font-semibold mt-1">
+              <p className="text-xs text-yellow-300 uppercase tracking-widest font-semibold mt-1">
                 {teams.length} teams competing
               </p>
             </div>
@@ -50,7 +50,7 @@ export default function TeamsTable({ teams, onEditTeams }: Props) {
             {teams.map((team, idx) => (
               <tr key={team.id}>
                 <td>
-                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl font-display font-black text-lg bg-gradient-to-br from-yellow-500/30 to-yellow-500/30 border border-yellow-500/40 text-purple-200">
+                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl font-display font-black text-lg bg-gradient-to-br from-yellow-500/30 to-yellow-500/30 border border-yellow-500/40 text-yellow-200">
                     {idx + 1}
                   </div>
                 </td>

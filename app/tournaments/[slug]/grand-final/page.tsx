@@ -53,7 +53,7 @@ export default function GrandFinalPage() {
       </nav>
 
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-950/40 via-[#060810] to-violet-950/40" />
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-950/40 via-[#060810] to-yellow-950/40" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl" />
         <div className="relative max-w-5xl mx-auto px-6 py-16 text-center">
           <button onClick={()=>router.push(`/tournaments/${slug}`)} className="flex items-center gap-1.5 text-white/40 hover:text-white/70 text-sm mb-8 transition-colors mx-auto">

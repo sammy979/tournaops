@@ -117,7 +117,7 @@ export default function DayConfigModal({
         {/* Header */}
         <div style={{ padding: "1.5rem", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <div style={{ width: "2.5rem", height: "2.5rem", borderRadius: "0.625rem", background: "linear-gradient(135deg, #D4AF37, #6366f1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: "2.5rem", height: "2.5rem", borderRadius: "0.625rem", background: "linear-gradient(135deg, #D4AF37, #D4AF37)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Calendar style={{ width: "1.25rem", height: "1.25rem", color: "#fff" }} />
             </div>
             <div>

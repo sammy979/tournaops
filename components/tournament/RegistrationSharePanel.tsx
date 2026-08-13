@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
@@ -69,7 +69,7 @@ export default function RegistrationSharePanel({ tournamentId, tournamentSlug, t
           <div style={{
             width: "2.5rem", height: "2.5rem",
             borderRadius: "0.625rem",
-            background: "linear-gradient(135deg, #6366f1, #a78bfa)",
+            background: "linear-gradient(135deg, #D4AF37, #a78bfa)",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
             <Users style={{ width: "1.125rem", height: "1.125rem", color: "#fff" }} />
@@ -138,7 +138,7 @@ export default function RegistrationSharePanel({ tournamentId, tournamentSlug, t
           onClick={copy}
           style={{
             display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.375rem",
-            background: copied ? "#4ade80" : "#6366f1",
+            background: copied ? "#4ade80" : "#D4AF37",
             border: "none",
             color: copied ? "#000" : "#fff",
             padding: "0.625rem",

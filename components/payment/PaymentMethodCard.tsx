@@ -19,7 +19,7 @@ const METHOD_LABELS: Record<string, string> = {
 
 const METHOD_COLORS: Record<string, string> = {
   ESEWA: "border-green-400 bg-green-50",
-  KHALTI: "border-purple-400 bg-purple-50",
+  KHALTI: "border-yellow-500 bg-yellow-500/10",
   BANK: "border-blue-400 bg-blue-50",
 }
 

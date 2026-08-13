@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
           logoUrl: data.logoUrl || null,
           discordServerId: data.discordServerId || null,
           discordChannelId: data.discordChannelId || null,
-          organizerId: session.userId,
+          userId: session.userId,
           status: "draft",
         },
       });
@@ -163,7 +163,7 @@ export async function GET(req: NextRequest) {
 
     const [tournaments, total] = await Promise.all([
       prisma.tournament.findMany({
-        where: { organizerId: session.userId },
+        where: { userId: session.userId },
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,
@@ -183,7 +183,7 @@ export async function GET(req: NextRequest) {
           },
         },
       }),
-      prisma.tournament.count({ where: { organizerId: session.userId } }),
+      prisma.tournament.count({ where: { userId: session.userId } }),
     ]);
 
     return NextResponse.json({

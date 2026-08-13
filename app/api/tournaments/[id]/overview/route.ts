@@ -14,14 +14,14 @@ export async function GET(
 
     const tournament = await prisma.tournament.findUnique({
       where: { id: params.id },
-      select: { organizerId: true },
+      select: { userId: true },
     });
 
     if (!tournament) {
       return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
 
-    if (tournament.organizerId !== session.userId) {
+    if (tournament.userId !== session.userId) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 

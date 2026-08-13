@@ -126,7 +126,7 @@ export default function GrandFinalPreview({ stageId, currentStageName, onClose, 
             </div>
             <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-center">
               <div className="text-3xl font-black text-yellow-500">{config.matchesPerGroup}</div>
-              <div className="text-xs text-purple-300 mt-1 uppercase tracking-widest font-bold">Matches</div>
+              <div className="text-xs text-yellow-300 mt-1 uppercase tracking-widest font-bold">Matches</div>
             </div>
           </div>
 
