@@ -1,17 +1,14 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireServerUser } from "@/lib/server-auth";
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
 import AnalyticsClient from "./AnalyticsClient";
 
 export const metadata = { title: "Analytics — TournaOps" };
 
 export default async function AnalyticsPage() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) redirect("/auth/login");
+  const user = await requireServerUser();
 
   const tournaments = await prisma.tournament.findMany({
-    where: { organizerId: session.user.id },
+    where: { userId: user.id },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -21,31 +18,18 @@ export default async function AnalyticsPage() {
       createdAt: true,
       maxTeams: true,
       prizePool: true,
-      _count: {
-        select: {
-          registrations: true,
-          stages: true,
-        },
-      },
       registrations: {
         select: {
           status: true,
-          team: {
-            select: {
-              name: true,
-              _count: { select: { members: true } },
-            },
-          },
+          team: { select: { name: true, playersList: { select: { id: true } } } },
         },
       },
       stages: {
         select: {
-          matches: {
+          groups: {
             select: {
               status: true,
-              scoreA: true,
-              scoreB: true,
-              scheduledAt: true,
+              matchIds: true,
             },
           },
         },
@@ -53,30 +37,17 @@ export default async function AnalyticsPage() {
     },
   });
 
-  const globalStats = await prisma.$transaction([
-    prisma.tournament.count({ where: { organizerId: session.user.id } }),
-    prisma.registration.count({
-      where: {
-        tournament: { organizerId: session.user.id },
-        status: "APPROVED",
-      },
-    }),
-    prisma.match.count({
-      where: {
-        stage: {
-          tournament: { organizerId: session.user.id },
-        },
-        status: "COMPLETED",
-      },
-    }),
-  ]);
+  const totalTournaments = await prisma.tournament.count({ where: { userId: user.id } });
+  const totalApprovedTeams = await prisma.registration.count({
+    where: { tournament: { userId: user.id }, status: "APPROVED" },
+  });
 
   return (
     <AnalyticsClient
-      tournaments={tournaments}
-      totalTournaments={globalStats[0]}
-      totalApprovedTeams={globalStats[1]}
-      totalMatchesPlayed={globalStats[2]}
+      tournaments={tournaments as never}
+      totalTournaments={totalTournaments}
+      totalApprovedTeams={totalApprovedTeams}
+      totalMatchesPlayed={0}
     />
   );
 }

@@ -1,51 +1,49 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireServerUser } from "@/lib/server-auth";
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
 import ScoringClient from "./ScoringClient";
 
 export const metadata = { title: "Scoring — TournaOps" };
 
 export default async function ScoringPage() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) redirect("/auth/login");
+  const user = await requireServerUser();
 
-  const presets = await prisma.scoringPreset.findMany({
-    where: {
-      OR: [
-        { userId: session.user.id },
-        { isBuiltIn: true },
-      ],
-    },
-    orderBy: [{ isBuiltIn: "desc" }, { createdAt: "desc" }],
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      isBuiltIn: true,
-      userId: true,
-      killPoints: true,
-      placementPoints: true,
-      createdAt: true,
-    },
-  });
-
-  const tournaments = await prisma.tournament.findMany({
-    where: { organizerId: session.user.id },
+  const presets = await prisma.userScoringPreset.findMany({
+    where: { userId: user.id },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
       name: true,
-      game: true,
-      scoringPresetId: true,
+      description: true,
+      scoringRule: true,
+      isDefault: true,
+      createdAt: true,
+      userId: true,
     },
   });
 
+  const tournaments = await prisma.tournament.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, name: true, game: true },
+  });
+
+  const formattedPresets = presets.map((p) => ({
+    ...p,
+    isBuiltIn: false,
+    killPoints: ((p.scoringRule as Record<string, unknown>)?.killPoints as number) || 1,
+    placementPoints: ((p.scoringRule as Record<string, unknown>)?.placementPoints) || [],
+  }));
+
+  const formattedTournaments = tournaments.map((t) => ({
+    ...t,
+    scoringPresetId: null,
+  }));
+
   return (
     <ScoringClient
-      presets={presets}
-      tournaments={tournaments}
-      userId={session.user.id}
+      presets={formattedPresets as never}
+      tournaments={formattedTournaments}
+      userId={user.id}
     />
   );
 }

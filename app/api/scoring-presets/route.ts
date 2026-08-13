@@ -1,33 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { user, errorResponse } = requireAuth(request);
+    if (errorResponse || !user) return errorResponse ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     let body: unknown;
     try {
       const text = await request.text();
       if (!text || text.trim() === "") return NextResponse.json({ error: "Empty body" }, { status: 400 });
       body = JSON.parse(text);
-    } catch {
-      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-    }
+    } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
     const { name, description, killPoints, placementPoints } = body as Record<string, unknown>;
-    if (!name || typeof name !== "string" || name.trim() === "") return NextResponse.json({ error: "name is required" }, { status: 400 });
+    if (!name || typeof name !== "string" || name.trim() === "") return NextResponse.json({ error: "name required" }, { status: 400 });
 
-    const preset = await prisma.scoringPreset.create({
+    const scoringRule = {
+      killPoints: killPoints !== undefined ? Number(killPoints) : 1,
+      placementPoints: placementPoints || [],
+    };
+
+    const preset = await prisma.userScoringPreset.create({
       data: {
-        userId: session.user.id,
+        userId: user.id,
         name: name.trim(),
         description: description ? String(description).trim() : null,
-        killPoints: killPoints !== undefined ? Number(killPoints) : 1,
-        placementPoints: placementPoints || [],
-        isBuiltIn: false,
+        scoringRule,
       },
     });
 

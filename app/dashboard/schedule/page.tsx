@@ -1,17 +1,29 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import ScheduleClient from "./ScheduleClient";
 
 export const metadata = { title: "Schedule — TournaOps" };
 
+async function getUser() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("tournaops_session")?.value;
+  if (!token) return null;
+  try {
+    const { validateToken } = await import("@/lib/auth");
+    const { user } = validateToken(token);
+    return user;
+  } catch { return null; }
+}
+
 export default async function SchedulePage() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) redirect("/auth/login");
+  const user = await getUser();
+  if (!user) redirect("/auth/login");
 
   const tournaments = await prisma.tournament.findMany({
-    where: { organizerId: session.user.id },
+    where: { userId: user.id },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -26,25 +38,10 @@ export default async function SchedulePage() {
           id: true,
           name: true,
           order: true,
-          matches: {
-            orderBy: { scheduledAt: "asc" },
-            select: {
-              id: true,
-              round: true,
-              matchNumber: true,
-              scheduledAt: true,
-              map: true,
-              status: true,
-              teamA: { select: { id: true, name: true } },
-              teamB: { select: { id: true, name: true } },
-              scoreA: true,
-              scoreB: true,
-            },
-          },
         },
       },
     },
   });
 
-  return <ScheduleClient tournaments={tournaments} userId={session.user.id} />;
+  return <ScheduleClient tournaments={tournaments} userId={user.id} />;
 }

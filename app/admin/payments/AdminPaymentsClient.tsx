@@ -1,414 +1,174 @@
-"use client";
+import { getServerUser } from "@/lib/server-auth";
+import { prisma } from "@/lib/prisma";
+import Link from "next/link";
 
-import { useState, useTransition } from "react";
-import { formatDistanceToNow } from "date-fns";
+export default async function HomePage() {
+  const user = await getServerUser();
 
-interface Payment {
-  id: string;
-  amount: number;
-  currency: string;
-  method: string;
-  status: "PENDING" | "APPROVED" | "REJECTED";
-  transactionReference: string;
-  proofUrl: string | null;
-  note: string | null;
-  createdAt: string;
-  reviewedAt: string | null;
-  user: {
-    id: string;
-    name: string | null;
-    email: string;
-    isPro: boolean;
-    proExpiresAt: string | null;
-  };
-}
-
-interface Props {
-  initialPayments: Payment[];
-}
-
-export function AdminPaymentsClient({ initialPayments }: Props) {
-  const [payments, setPayments] = useState<Payment[]>(initialPayments);
-  const [filter, setFilter] = useState<"ALL" | "PENDING" | "APPROVED" | "REJECTED">("PENDING");
-  const [actionNote, setActionNote] = useState<Record<string, string>>({});
-  const [isPending, startTransition] = useTransition();
-  const [feedback, setFeedback] = useState<{ id: string; msg: string; ok: boolean } | null>(null);
-  const [search, setSearch] = useState("");
-
-  const filtered = payments.filter((p) => {
-    const matchesFilter = filter === "ALL" || p.status === filter;
-    const q = search.toLowerCase();
-    const matchesSearch =
-      !q ||
-      p.transactionReference.toLowerCase().includes(q) ||
-      (p.user.name?.toLowerCase().includes(q) ?? false) ||
-      p.user.email.toLowerCase().includes(q);
-    return matchesFilter && matchesSearch;
+  const recentTournaments = await prisma.tournament.findMany({
+    where: { status: "published", isPublic: true },
+    orderBy: { createdAt: "desc" },
+    take: 6,
+    select: {
+      id: true,
+      name: true,
+      game: true,
+      status: true,
+      slug: true,
+      maxTeams: true,
+      createdAt: true,
+      startDate: true,
+      teams: { select: { id: true } },
+    },
   });
 
-  async function handleAction(paymentId: string, action: "APPROVE" | "REJECT") {
-    if (!paymentId || paymentId.trim() === "") {
-      setFeedback({ id: paymentId, msg: "Invalid payment ID", ok: false });
-      return;
-    }
-
-    startTransition(async () => {
-      try {
-        const res = await fetch(`/api/admin/payments/${paymentId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action,
-            note: actionNote[paymentId] || null,
-          }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          setFeedback({ id: paymentId, msg: data.error || "Action failed", ok: false });
-          return;
-        }
-
-        setPayments((prev) =>
-          prev.map((p) =>
-            p.id === paymentId
-              ? { ...p, status: action === "APPROVE" ? "APPROVED" : "REJECTED" }
-              : p
-          )
-        );
-        setFeedback({ id: paymentId, msg: data.message, ok: true });
-        setActionNote((prev) => {
-          const next = { ...prev };
-          delete next[paymentId];
-          return next;
-        });
-      } catch (err) {
-        setFeedback({ id: paymentId, msg: "Network error", ok: false });
-      }
-    });
-  }
-
-  const counts = {
-    ALL: payments.length,
-    PENDING: payments.filter((p) => p.status === "PENDING").length,
-    APPROVED: payments.filter((p) => p.status === "APPROVED").length,
-    REJECTED: payments.filter((p) => p.status === "REJECTED").length,
-  };
+  const totalTournaments = await prisma.tournament.count();
+  const totalUsers = await prisma.user.count();
+  const totalTeams = await prisma.team.count();
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-      {/* Stats row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem" }}>
-        {(["ALL", "PENDING", "APPROVED", "REJECTED"] as const).map((s) => (
-          <button
-            key={s}
-            onClick={() => setFilter(s)}
-            style={{
-              background: filter === s ? "var(--gold)" : "var(--surface)",
-              color: filter === s ? "var(--black)" : "var(--gold)",
-              border: "1px solid var(--border)",
-              padding: "1rem",
-              cursor: "pointer",
-              textAlign: "left",
-              fontFamily: "Barlow Condensed, sans-serif",
-            }}
-          >
-            <div style={{ fontSize: "1.5rem", fontWeight: 700 }}>{counts[s]}</div>
-            <div style={{ fontSize: "0.75rem", opacity: 0.7 }}>{s}</div>
-          </button>
-        ))}
-      </div>
+    <main style={{ minHeight: "100vh", background: "var(--black)", color: "#fff", fontFamily: "Barlow Condensed, sans-serif" }}>
 
-      {/* Search */}
-      <input
-        type="text"
-        placeholder="Search by name, email, or transaction ref..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        style={{
-          background: "var(--surface)",
-          border: "1px solid var(--border)",
-          color: "var(--gold)",
-          padding: "0.75rem 1rem",
-          fontFamily: "JetBrains Mono, monospace",
-          fontSize: "0.875rem",
-          outline: "none",
-          width: "100%",
-        }}
-      />
-
-      {/* Payment list */}
-      {filtered.length === 0 ? (
-        <div
-          style={{
-            background: "var(--surface)",
-            border: "1px solid var(--border)",
-            padding: "3rem",
-            textAlign: "center",
-            color: "var(--charcoal)",
-            fontFamily: "Barlow Condensed, sans-serif",
-          }}
-        >
-          No payments found
+      <section style={{ borderBottom: "1px solid var(--border)", padding: "5rem 2rem 4rem", textAlign: "center" }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.7rem", color: "var(--gold)", letterSpacing: "0.2em", marginBottom: "1rem" }}>
+          ESPORTS TOURNAMENT OPERATIONS
         </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          {filtered.map((payment) => (
-            <div
-              key={payment.id}
-              style={{
-                background: "var(--surface)",
-                border: `1px solid ${
-                  payment.status === "PENDING"
-                    ? "var(--gold)"
-                    : payment.status === "APPROVED"
-                    ? "#22c55e"
-                    : "#ef4444"
-                }`,
-                padding: "1.5rem",
-              }}
-            >
-              {/* Header row */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  marginBottom: "1rem",
-                  flexWrap: "wrap",
-                  gap: "0.5rem",
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      fontFamily: "Barlow Condensed, sans-serif",
-                      fontSize: "1.125rem",
-                      fontWeight: 700,
-                      color: "var(--gold)",
-                    }}
-                  >
-                    {payment.user.name || "Unknown User"}
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: "JetBrains Mono, monospace",
-                      fontSize: "0.75rem",
-                      color: "var(--charcoal)",
-                    }}
-                  >
-                    {payment.user.email}
-                  </div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <span
-                    style={{
-                      padding: "0.25rem 0.75rem",
-                      fontSize: "0.75rem",
-                      fontFamily: "Barlow Condensed, sans-serif",
-                      fontWeight: 700,
-                      letterSpacing: "0.1em",
-                      background:
-                        payment.status === "PENDING"
-                          ? "#f59e0b22"
-                          : payment.status === "APPROVED"
-                          ? "#22c55e22"
-                          : "#ef444422",
-                      color:
-                        payment.status === "PENDING"
-                          ? "#f59e0b"
-                          : payment.status === "APPROVED"
-                          ? "#22c55e"
-                          : "#ef4444",
-                      border: `1px solid ${
-                        payment.status === "PENDING"
-                          ? "#f59e0b"
-                          : payment.status === "APPROVED"
-                          ? "#22c55e"
-                          : "#ef4444"
-                      }`,
-                    }}
-                  >
-                    {payment.status}
-                  </span>
-                </div>
+        <h1 style={{ fontSize: "clamp(2.5rem, 6vw, 5rem)", fontWeight: "900", letterSpacing: "-0.02em", lineHeight: 1, marginBottom: "1.5rem", textTransform: "uppercase" }}>
+          RUN TOURNAMENTS.<br />
+          <span style={{ color: "var(--gold)" }}>NOT SPREADSHEETS.</span>
+        </h1>
+        <p style={{ fontSize: "1.1rem", color: "var(--charcoal)", maxWidth: "520px", margin: "0 auto 2.5rem", lineHeight: 1.6, fontFamily: "var(--font-mono)" }}>
+          Professional esports tournament management built for Nepal.
+          Brackets, scoring, registrations, live overlays — all in one place.
+        </p>
+        <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
+          {user ? (
+            <Link href="/dashboard" style={{ padding: "0.875rem 2.5rem", background: "var(--gold)", color: "var(--black)", fontFamily: "var(--font-mono)", fontSize: "0.85rem", fontWeight: "700", textDecoration: "none", letterSpacing: "0.1em" }}>
+              OPEN DASHBOARD →
+            </Link>
+          ) : (
+            <>
+              <Link href="/auth/register" style={{ padding: "0.875rem 2.5rem", background: "var(--gold)", color: "var(--black)", fontFamily: "var(--font-mono)", fontSize: "0.85rem", fontWeight: "700", textDecoration: "none", letterSpacing: "0.1em" }}>
+                GET STARTED FREE →
+              </Link>
+              <Link href="/auth/login" style={{ padding: "0.875rem 2.5rem", background: "transparent", color: "#fff", border: "1px solid var(--border)", fontFamily: "var(--font-mono)", fontSize: "0.85rem", fontWeight: "700", textDecoration: "none", letterSpacing: "0.1em" }}>
+                SIGN IN
+              </Link>
+            </>
+          )}
+        </div>
+      </section>
+
+      <section style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", borderBottom: "1px solid var(--border)" }}>
+        {[
+          { label: "TOURNAMENTS CREATED", value: totalTournaments },
+          { label: "ORGANIZERS", value: totalUsers },
+          { label: "TEAMS REGISTERED", value: totalTeams },
+        ].map((stat, i) => (
+          <div key={i} style={{ padding: "2.5rem 2rem", textAlign: "center", borderRight: i < 2 ? "1px solid var(--border)" : "none" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: "900", color: "var(--gold)", lineHeight: 1 }}>
+              {stat.value.toLocaleString()}
+            </div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.65rem", color: "var(--charcoal)", letterSpacing: "0.15em", marginTop: "0.5rem" }}>
+              {stat.label}
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <section style={{ padding: "4rem 2rem" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem", flexWrap: "wrap", gap: "1rem" }}>
+            <div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.65rem", color: "var(--gold)", letterSpacing: "0.2em", marginBottom: "0.25rem" }}>LIVE NOW</div>
+              <h2 style={{ fontSize: "1.75rem", fontWeight: "800", textTransform: "uppercase" }}>Active Tournaments</h2>
+            </div>
+            {user && (
+              <Link href="/dashboard/tournaments/new" style={{ padding: "0.625rem 1.5rem", background: "transparent", color: "var(--gold)", border: "1px solid var(--gold)", fontFamily: "var(--font-mono)", fontSize: "0.75rem", fontWeight: "700", textDecoration: "none" }}>
+                + CREATE TOURNAMENT
+              </Link>
+            )}
+          </div>
+
+          {recentTournaments.length === 0 ? (
+            <div style={{ padding: "4rem 2rem", textAlign: "center", border: "1px solid var(--border)", background: "var(--surface)" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--charcoal)", marginBottom: "1rem" }}>NO ACTIVE TOURNAMENTS</div>
+              <div style={{ fontFamily: "Barlow Condensed, sans-serif", fontSize: "1.1rem", color: "var(--charcoal)", marginBottom: "1.5rem" }}>
+                Be the first to create a tournament on TournaOps
               </div>
-
-              {/* Details grid */}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-                  gap: "1rem",
-                  marginBottom: "1rem",
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: "0.625rem", color: "var(--charcoal)", marginBottom: "0.25rem", fontFamily: "Barlow Condensed, sans-serif", letterSpacing: "0.1em" }}>
-                    AMOUNT
-                  </div>
-                  <div style={{ fontFamily: "JetBrains Mono, monospace", color: "var(--gold)", fontWeight: 700 }}>
-                    Rs {payment.amount}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: "0.625rem", color: "var(--charcoal)", marginBottom: "0.25rem", fontFamily: "Barlow Condensed, sans-serif", letterSpacing: "0.1em" }}>
-                    METHOD
-                  </div>
-                  <div style={{ fontFamily: "JetBrains Mono, monospace", color: "#e5e7eb" }}>
-                    {payment.method}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: "0.625rem", color: "var(--charcoal)", marginBottom: "0.25rem", fontFamily: "Barlow Condensed, sans-serif", letterSpacing: "0.1em" }}>
-                    TXN REF
-                  </div>
-                  <div style={{ fontFamily: "JetBrains Mono, monospace", color: "#e5e7eb", fontSize: "0.8rem", wordBreak: "break-all" }}>
-                    {payment.transactionReference}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: "0.625rem", color: "var(--charcoal)", marginBottom: "0.25rem", fontFamily: "Barlow Condensed, sans-serif", letterSpacing: "0.1em" }}>
-                    SUBMITTED
-                  </div>
-                  <div style={{ fontFamily: "JetBrains Mono, monospace", color: "#e5e7eb", fontSize: "0.8rem" }}>
-                    {formatDistanceToNow(new Date(payment.createdAt), { addSuffix: true })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Proof URL */}
-              {payment.proofUrl && (
-                <div style={{ marginBottom: "1rem" }}>
-                  <div style={{ fontSize: "0.625rem", color: "var(--charcoal)", marginBottom: "0.25rem", fontFamily: "Barlow Condensed, sans-serif", letterSpacing: "0.1em" }}>
-                    PROOF
-                  </div>
-                  <a
-                    href={payment.proofUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      fontFamily: "JetBrains Mono, monospace",
-                      fontSize: "0.75rem",
-                      color: "var(--gold)",
-                      textDecoration: "underline",
-                      wordBreak: "break-all",
-                    }}
-                  >
-                    {payment.proofUrl}
-                  </a>
-                </div>
-              )}
-
-              {/* Note */}
-              {payment.note && (
-                <div style={{ marginBottom: "1rem" }}>
-                  <div style={{ fontSize: "0.625rem", color: "var(--charcoal)", marginBottom: "0.25rem", fontFamily: "Barlow Condensed, sans-serif", letterSpacing: "0.1em" }}>
-                    NOTE
-                  </div>
-                  <div style={{ fontFamily: "JetBrains Mono, monospace", color: "#e5e7eb", fontSize: "0.8rem" }}>
-                    {payment.note}
-                  </div>
-                </div>
-              )}
-
-              {/* Feedback */}
-              {feedback?.id === payment.id && (
-                <div
-                  style={{
-                    padding: "0.75rem",
-                    marginBottom: "1rem",
-                    background: feedback.ok ? "#22c55e11" : "#ef444411",
-                    border: `1px solid ${feedback.ok ? "#22c55e" : "#ef4444"}`,
-                    color: feedback.ok ? "#22c55e" : "#ef4444",
-                    fontFamily: "JetBrains Mono, monospace",
-                    fontSize: "0.8rem",
-                  }}
-                >
-                  {feedback.msg}
-                </div>
-              )}
-
-              {/* Actions for PENDING */}
-              {payment.status === "PENDING" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                  <textarea
-                    placeholder="Optional note (required for rejection reason)..."
-                    value={actionNote[payment.id] || ""}
-                    onChange={(e) =>
-                      setActionNote((prev) => ({ ...prev, [payment.id]: e.target.value }))
-                    }
-                    rows={2}
-                    style={{
-                      background: "var(--black)",
-                      border: "1px solid var(--border)",
-                      color: "#e5e7eb",
-                      padding: "0.5rem",
-                      fontFamily: "JetBrains Mono, monospace",
-                      fontSize: "0.8rem",
-                      resize: "vertical",
-                      outline: "none",
-                    }}
-                  />
-                  <div style={{ display: "flex", gap: "0.75rem" }}>
-                    <button
-                      onClick={() => handleAction(payment.id, "APPROVE")}
-                      disabled={isPending}
-                      style={{
-                        background: "#22c55e",
-                        color: "#000",
-                        border: "none",
-                        padding: "0.75rem 1.5rem",
-                        cursor: isPending ? "not-allowed" : "pointer",
-                        fontFamily: "Barlow Condensed, sans-serif",
-                        fontWeight: 700,
-                        fontSize: "0.875rem",
-                        letterSpacing: "0.05em",
-                        opacity: isPending ? 0.6 : 1,
-                      }}
-                    >
-                      ✓ APPROVE & GRANT PRO
-                    </button>
-                    <button
-                      onClick={() => handleAction(payment.id, "REJECT")}
-                      disabled={isPending}
-                      style={{
-                        background: "#ef4444",
-                        color: "#fff",
-                        border: "none",
-                        padding: "0.75rem 1.5rem",
-                        cursor: isPending ? "not-allowed" : "pointer",
-                        fontFamily: "Barlow Condensed, sans-serif",
-                        fontWeight: 700,
-                        fontSize: "0.875rem",
-                        letterSpacing: "0.05em",
-                        opacity: isPending ? 0.6 : 1,
-                      }}
-                    >
-                      ✕ REJECT
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Reviewed info */}
-              {payment.reviewedAt && (
-                <div
-                  style={{
-                    marginTop: "0.75rem",
-                    fontSize: "0.75rem",
-                    color: "var(--charcoal)",
-                    fontFamily: "JetBrains Mono, monospace",
-                  }}
-                >
-                  Reviewed {formatDistanceToNow(new Date(payment.reviewedAt), { addSuffix: true })}
-                </div>
+              {user ? (
+                <Link href="/dashboard/tournaments/new" style={{ padding: "0.75rem 2rem", background: "var(--gold)", color: "var(--black)", fontFamily: "var(--font-mono)", fontSize: "0.8rem", fontWeight: "700", textDecoration: "none" }}>
+                  CREATE YOUR FIRST TOURNAMENT
+                </Link>
+              ) : (
+                <Link href="/auth/register" style={{ padding: "0.75rem 2rem", background: "var(--gold)", color: "var(--black)", fontFamily: "var(--font-mono)", fontSize: "0.8rem", fontWeight: "700", textDecoration: "none" }}>
+                  SIGN UP TO CREATE TOURNAMENTS
+                </Link>
               )}
             </div>
-          ))}
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1px", background: "var(--border)" }}>
+              {recentTournaments.map((t) => (
+                <Link key={t.id} href={`/tournaments/${t.slug}`} style={{ background: "var(--surface)", padding: "1.5rem", textDecoration: "none", color: "inherit", display: "block" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" }}>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.65rem", color: "var(--gold)", letterSpacing: "0.15em" }}>{t.game}</div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem", color: "var(--charcoal)", padding: "0.2rem 0.5rem", border: "1px solid var(--border)" }}>{t.status.toUpperCase()}</div>
+                  </div>
+                  <div style={{ fontFamily: "Barlow Condensed, sans-serif", fontSize: "1.25rem", fontWeight: "700", textTransform: "uppercase", marginBottom: "0.75rem", lineHeight: 1.2 }}>
+                    {t.name}
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: "0.7rem", color: "var(--charcoal)" }}>
+                    <span>{t.teams.length} / {t.maxTeams} TEAMS</span>
+                    {t.startDate && (
+                      <span>{new Date(t.startDate).toLocaleDateString("en-NP", { month: "short", day: "numeric" })}</span>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </section>
+
+      <section style={{ borderTop: "1px solid var(--border)", padding: "4rem 2rem", background: "var(--surface)" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.65rem", color: "var(--gold)", letterSpacing: "0.2em", marginBottom: "0.5rem" }}>EVERYTHING YOU NEED</div>
+          <h2 style={{ fontSize: "1.75rem", fontWeight: "800", textTransform: "uppercase", marginBottom: "2.5rem" }}>Built for Esports Organizers</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "1px", background: "var(--border)" }}>
+            {[
+              { icon: "⚡", title: "LIVE BRACKETS", desc: "Auto-advancing brackets with real-time score updates" },
+              { icon: "📋", title: "REGISTRATION MGMT", desc: "Team sign-ups, approval workflow, waitlist handling" },
+              { icon: "🏆", title: "PRIZE POOLS", desc: "Configure position-based cash and item prize distribution" },
+              { icon: "📊", title: "SCORING ENGINE", desc: "PMGC, PMPL presets or fully custom scoring rules" },
+              { icon: "📡", title: "LIVE OVERLAYS", desc: "OBS-ready scoreboard and standings overlays" },
+              { icon: "🤖", title: "AI TOOLS", desc: "Screenshot result extraction and match summaries" },
+            ].map((feature, i) => (
+              <div key={i} style={{ background: "var(--black)", padding: "2rem 1.5rem" }}>
+                <div style={{ fontSize: "1.5rem", marginBottom: "0.75rem" }}>{feature.icon}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", fontWeight: "700", color: "var(--gold)", letterSpacing: "0.1em", marginBottom: "0.5rem" }}>{feature.title}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--charcoal)", lineHeight: 1.5 }}>{feature.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section style={{ borderTop: "1px solid var(--border)", padding: "4rem 2rem", textAlign: "center" }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.65rem", color: "var(--gold)", letterSpacing: "0.2em", marginBottom: "0.5rem" }}>NEPAL ONLY</div>
+        <h2 style={{ fontSize: "1.5rem", fontWeight: "800", textTransform: "uppercase", marginBottom: "0.75rem" }}>Pro Plan — Rs 299 / Month</h2>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.8rem", color: "var(--charcoal)", maxWidth: "400px", margin: "0 auto 2rem" }}>
+          Pay via Khalti, eSewa, or Bank Transfer. Manual verification within 24 hours.
+        </p>
+        {!user && (
+          <Link href="/auth/register" style={{ padding: "0.875rem 2.5rem", background: "var(--gold)", color: "var(--black)", fontFamily: "var(--font-mono)", fontSize: "0.85rem", fontWeight: "700", textDecoration: "none", letterSpacing: "0.1em" }}>
+            START FREE →
+          </Link>
+        )}
+      </section>
+
+      <footer style={{ borderTop: "1px solid var(--border)", padding: "2rem", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "0.7rem", color: "var(--charcoal)" }}>
+        © {new Date().getFullYear()} TournaOps · Built for Nepal Esports
+      </footer>
+    </main>
   );
 }

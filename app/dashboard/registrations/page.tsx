@@ -1,17 +1,14 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireServerUser } from "@/lib/server-auth";
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
 import RegistrationsClient from "./RegistrationsClient";
 
 export const metadata = { title: "Registrations — TournaOps" };
 
 export default async function RegistrationsPage() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) redirect("/auth/login");
+  const user = await requireServerUser();
 
   const tournaments = await prisma.tournament.findMany({
-    where: { organizerId: session.user.id },
+    where: { userId: user.id },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -30,27 +27,14 @@ export default async function RegistrationsPage() {
               id: true,
               name: true,
               tag: true,
-              captain: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                },
-              },
-              members: {
-                select: { id: true },
-              },
+              playersList: { select: { id: true } },
             },
           },
+          user: { select: { id: true, displayName: true, email: true } },
         },
       },
     },
   });
 
-  return (
-    <RegistrationsClient
-      tournaments={tournaments}
-      userId={session.user.id}
-    />
-  );
+  return <RegistrationsClient tournaments={tournaments} userId={user.id} />;
 }

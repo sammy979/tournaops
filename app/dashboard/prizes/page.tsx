@@ -1,17 +1,14 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireServerUser } from "@/lib/server-auth";
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
 import PrizesClient from "./PrizesClient";
 
 export const metadata = { title: "Prizes — TournaOps" };
 
 export default async function PrizesPage() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) redirect("/auth/login");
+  const user = await requireServerUser();
 
   const tournaments = await prisma.tournament.findMany({
-    where: { organizerId: session.user.id },
+    where: { userId: user.id },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -21,14 +18,7 @@ export default async function PrizesPage() {
       prizePool: true,
       prizes: {
         orderBy: { position: "asc" },
-        select: {
-          id: true,
-          position: true,
-          amount: true,
-          currency: true,
-          description: true,
-          type: true,
-        },
+        select: { id: true, position: true, amount: true, currency: true, description: true, type: true },
       },
     },
   });
