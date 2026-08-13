@@ -1,88 +1,87 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-async function verifyMatchOwnership(matchId: string, userId: string) {
-  const match = await prisma.match.findUnique({
-    where: { id: matchId },
-    include: {
-      stage: {
-        include: {
-          tournament: { select: { organizerId: true } },
-        },
-      },
-    },
-  });
-  if (!match) return { match: null, authorized: false };
-  return { match, authorized: match.stage.tournament.organizerId === userId };
-}
-
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getSession();
-    if (!session?.userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { match, authorized } = await verifyMatchOwnership(params.id, session.userId);
-    if (!match || !authorized) {
-      return NextResponse.json({ error: "Match not found or unauthorized" }, { status: 404 });
-    }
-
-    const fullMatch = await prisma.match.findUnique({
-      where: { id: params.id },
-      include: {
-        result: true,
-        results: {
-          include: { team: true },
-          orderBy: { placement: "asc" },
-        },
-        stage: {
-          select: { id: true, name: true, type: true, tournamentId: true },
-        },
-      },
-    });
-
-    return NextResponse.json({ match: fullMatch });
-  } catch (error) {
-    console.error("Match fetch error:", error);
-    return NextResponse.json({ error: "Failed to fetch match" }, { status: 500 });
-  }
+interface RouteParams {
+  params: { id: string };
 }
 
 export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: RouteParams
 ) {
   try {
-    const session = await getSession();
-    if (!session?.userId) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { match, authorized } = await verifyMatchOwnership(params.id, session.userId);
-    if (!match || !authorized) {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+    const id = params?.id;
+    if (!id || typeof id !== "string" || id.trim() === "") {
+      return NextResponse.json({ error: "Match ID is required" }, { status: 400 });
     }
 
-    const body = await req.json();
-    const allowedFields = ["status", "scheduledAt", "map", "notes"];
-    const updateData: Record<string, any> = {};
-    for (const field of allowedFields) {
-      if (field in body) updateData[field] = body[field];
+    const matchId = id.trim();
+
+    const match = await prisma.match.findUnique({
+      where: { id: matchId },
+      include: {
+        stage: {
+          include: {
+            tournament: { select: { organizerId: true } },
+          },
+        },
+      },
+    });
+
+    if (!match) {
+      return NextResponse.json({ error: "Match not found" }, { status: 404 });
+    }
+
+    if (match.stage.tournament.organizerId !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    let body: unknown;
+    try {
+      const text = await request.text();
+      if (!text || text.trim() === "") {
+        return NextResponse.json({ error: "Request body is empty" }, { status: 400 });
+      }
+      body = JSON.parse(text);
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    }
+
+    const { scheduledAt, map } = body as Record<string, unknown>;
+
+    const updateData: Record<string, unknown> = {};
+
+    if (scheduledAt !== undefined) {
+      if (scheduledAt === null || scheduledAt === "") {
+        updateData.scheduledAt = null;
+      } else {
+        const d = new Date(String(scheduledAt));
+        if (isNaN(d.getTime())) {
+          return NextResponse.json({ error: "Invalid scheduledAt date" }, { status: 400 });
+        }
+        updateData.scheduledAt = d;
+      }
+    }
+
+    if (map !== undefined) {
+      updateData.map = map === null || map === "" ? null : String(map).trim();
     }
 
     const updated = await prisma.match.update({
-      where: { id: params.id },
+      where: { id: matchId },
       data: updateData,
     });
 
-    return NextResponse.json({ match: updated });
+    return NextResponse.json({ success: true, match: updated });
   } catch (error) {
-    console.error("Match update error:", error);
-    return NextResponse.json({ error: "Failed to update match" }, { status: 500 });
+    console.error("[PATCH /api/matches/[id]] Error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

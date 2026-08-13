@@ -1,54 +1,61 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth/session";
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+interface RouteParams { params: { id: string }; }
 
-  const { id } = await params;
-  const data = await req.json();
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const preset = await prisma.userScoringPreset.findUnique({ where: { id } });
-  if (!preset) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (preset.userId !== session.userId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const id = params?.id?.trim();
+    if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
+
+    const preset = await prisma.scoringPreset.findUnique({ where: { id }, select: { userId: true, isBuiltIn: true } });
+    if (!preset) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (preset.isBuiltIn || preset.userId !== session.user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    let body: unknown;
+    try {
+      const text = await request.text();
+      body = JSON.parse(text);
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    }
+
+    const { name, description, killPoints, placementPoints } = body as Record<string, unknown>;
+    const updateData: Record<string, unknown> = {};
+    if (name !== undefined) updateData.name = String(name).trim();
+    if (description !== undefined) updateData.description = description ? String(description).trim() : null;
+    if (killPoints !== undefined) updateData.killPoints = Number(killPoints);
+    if (placementPoints !== undefined) updateData.placementPoints = placementPoints;
+
+    const updated = await prisma.scoringPreset.update({ where: { id }, data: updateData });
+    return NextResponse.json({ success: true, preset: updated });
+  } catch (error) {
+    console.error("[PATCH /api/scoring-presets/[id]]", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  const scoringRule = {
-    placementPoints: data.placementPoints,
-    killPoints: data.killPoints,
-    wwcdBonus: data.wwcdBonus,
-    top3Bonus: data.top3Bonus,
-    perfectMatchBonus: data.perfectMatchBonus,
-    maxKillPoints: data.maxKillPoints,
-    tiebreakerOrder: data.tiebreakerOrder,
-  };
-
-  const updated = await prisma.userScoringPreset.update({
-    where: { id },
-    data: {
-      name: data.name,
-      description: data.description,
-      scoringRule,
-      isDefault: data.isDefault ?? preset.isDefault,
-    },
-  });
-
-  return NextResponse.json({ preset: updated });
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function DELETE(_request: NextRequest, { params }: RouteParams) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = await params;
-  const preset = await prisma.userScoringPreset.findUnique({ where: { id } });
-  if (!preset) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (preset.userId !== session.userId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const id = params?.id?.trim();
+    if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
+
+    const preset = await prisma.scoringPreset.findUnique({ where: { id }, select: { userId: true, isBuiltIn: true } });
+    if (!preset) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (preset.isBuiltIn || preset.userId !== session.user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    await prisma.scoringPreset.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("[DELETE /api/scoring-presets/[id]]", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  await prisma.userScoringPreset.delete({ where: { id } });
-  return NextResponse.json({ success: true });
 }

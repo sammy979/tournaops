@@ -1,46 +1,29 @@
-import { getSession } from "@/lib/auth/session";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import DashboardShell from "@/components/ui/DashboardShell";
-import Link from "next/link";
+import BrandingClient from "./BrandingClient";
 
-export const dynamic = "force-dynamic";
 export const metadata = { title: "Branding — TournaOps" };
 
-export default async function Page() {
-  const session = await getSession();
-  if (!session) redirect("/login");
+export default async function BrandingPage() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) redirect("/auth/login");
 
-  return (
-    <DashboardShell
-      title="Branding"
-      subtitle="Visual Identity"
-      breadcrumbs={[{ label: "Branding" }]}
-    >
-      <div style={{
-        border: "1px solid var(--border)",
-        background: "var(--surface)",
-        padding: "40px 32px",
-      }}>
-        <div className="section-label" style={{ marginBottom: "12px" }}>Coming Soon</div>
-        <h2 style={{
-          fontFamily: "Barlow Condensed, sans-serif",
-          fontWeight: 800,
-          fontSize: "1.4rem",
-          color: "var(--white)",
-          textTransform: "uppercase",
-          letterSpacing: "0.02em",
-          marginBottom: "12px",
-        }}>Branding</h2>
-        <p style={{ color: "var(--white-70)", fontSize: "0.9rem", lineHeight: 1.7, marginBottom: "20px", maxWidth: "560px" }}>
-          Customize your tournament branding.
-        </p>
-        <p style={{ color: "var(--white-40)", fontSize: "0.82rem", marginBottom: "24px", maxWidth: "560px" }}>
-          This section is under active development. In the meantime, access these features directly from your tournament dashboard.
-        </p>
-        <Link href="/dashboard" className="btn-primary">
-          ← Back to Dashboard
-        </Link>
-      </div>
-    </DashboardShell>
-  );
+  const tournaments = await prisma.tournament.findMany({
+    where: { organizerId: session.user.id },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      game: true,
+      status: true,
+      logoUrl: true,
+      bannerUrl: true,
+      primaryColor: true,
+      overlayTheme: true,
+    },
+  });
+
+  return <BrandingClient tournaments={tournaments} />;
 }
