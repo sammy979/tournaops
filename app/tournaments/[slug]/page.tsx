@@ -40,7 +40,7 @@ const MOCK_TOURNAMENT = {
   registeredTeams: 14,
   organizer:    "TournaOps Official",
   description:  "The premier seasonal championship circuit for top-tier Valorant teams across North America. Featuring a full double-elimination bracket with live broadcast support, professional casters, and a $10,000 prize pool.",
-  bannerGradient: "from-yellow-900 via-indigo-900 to-slate-900",
+  bannerGradient: "from-yellow-900 via-yellow-500 to-slate-900",
   game_icon:    "ðŸŽ®",
   prizes: [
     { place: "1st", amount: "$5,000", icon: "ðŸ¥‡" },
@@ -81,7 +81,7 @@ function StatusBadge({ status }: { status: string }) {
     live:      { label: "Live Now",  classes: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40", dot: "bg-emerald-400 animate-pulse" },
     upcoming:  { label: "Upcoming",  classes: "bg-blue-500/20 text-blue-300 border-blue-500/40",         dot: "bg-blue-400" },
     completed: { label: "Completed", classes: "bg-white/10 text-white/60 border-white/20",               dot: "bg-white/40" },
-    open:      { label: "Open",      classes: "bg-yellow-500/20 text-violet-300 border-yellow-500/40",   dot: "bg-violet-400" },
+    open:      { label: "Open",      classes: "bg-yellow-500/20 text-yellow-500 border-yellow-500/40",   dot: "bg-yellow-500" },
   };
   const cfg = map[status] ?? map.upcoming;
   return (
@@ -108,7 +108,7 @@ export default function PublicTournamentPage() {
       <nav className="sticky top-0 z-50 bg-[#060810]/90 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <button onClick={() => router.push("/")} className="text-white font-black text-lg tracking-tight">
-            Tourna<span className="text-violet-400">Ops</span>
+            Tourna<span className="text-yellow-500">Ops</span>
           </button>
           <div className="flex items-center gap-3">
             <button onClick={() => router.push("/tournaments")} className="text-slate-400 hover:text-white text-sm transition-colors">
@@ -206,7 +206,7 @@ export default function PublicTournamentPage() {
               <button key={tab} onClick={() => setActiveTab(tab)}
                 className={`px-5 py-4 text-sm font-medium capitalize border-b-2 transition-colors ${
                   activeTab === tab
-                    ? "border-yellow-500 text-violet-400"
+                    ? "border-yellow-500 text-yellow-500"
                     : "border-transparent text-white/40 hover:text-white/70"
                 }`}>
                 {tab}
@@ -289,7 +289,7 @@ export default function PublicTournamentPage() {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-white font-bold">Top Teams</h2>
-                  <button onClick={() => setActiveTab("standings")} className="text-violet-400 hover:text-violet-300 text-xs flex items-center gap-1 transition-colors">
+                  <button onClick={() => setActiveTab("standings")} className="text-yellow-500 hover:text-yellow-500 text-xs flex items-center gap-1 transition-colors">
                     Full standings <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -343,7 +343,7 @@ export default function PublicTournamentPage() {
         {/* Bracket Tab */}
         {activeTab === "bracket" && (
           <div className="text-center py-16">
-            <BarChart2 className="w-14 h-14 text-violet-400/30 mx-auto mb-4" />
+            <BarChart2 className="w-14 h-14 text-yellow-500 mx-auto mb-4" />
             <h2 className="text-white text-xl font-bold mb-2">Interactive Bracket</h2>
             <p className="text-white/40 mb-6">View the full tournament bracket with live results</p>
             <Link href={`/bracket/${slug}`}
@@ -384,7 +384,7 @@ export default function PublicTournamentPage() {
                 </div>
                 <span className="text-emerald-400 font-bold text-sm">{team.wins}</span>
                 <span className="text-rose-400 font-bold text-sm">{team.losses}</span>
-                <span className="text-violet-400 font-black text-sm">{team.points}</span>
+                <span className="text-yellow-500 font-black text-sm">{team.points}</span>
               </div>
             ))}
           </div>
@@ -398,7 +398,7 @@ export default function PublicTournamentPage() {
               <div className="space-y-3">
                 {t.rules.map((rule, i) => (
                   <div key={i} className="flex items-start gap-3 py-2 border-b border-white/[0.04] last:border-0">
-                    <div className="w-6 h-6 rounded-full bg-yellow-500/15 border border-yellow-500/20 flex items-center justify-center text-violet-400 text-xs font-bold flex-shrink-0 mt-0.5">
+                    <div className="w-6 h-6 rounded-full bg-yellow-500/15 border border-yellow-500/20 flex items-center justify-center text-yellow-500 text-xs font-bold flex-shrink-0 mt-0.5">
                       {i + 1}
                     </div>
                     <p className="text-white/70 text-sm leading-relaxed">{rule}</p>
@@ -413,7 +413,7 @@ export default function PublicTournamentPage() {
       {/* Footer */}
       <footer className="border-t border-white/[0.06] mt-16 py-8">
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="text-white font-black">Tourna<span className="text-violet-400">Ops</span></span>
+          <span className="text-white font-black">Tourna<span className="text-yellow-500">Ops</span></span>
           <p className="text-white/30 text-sm">Â© 2025 TournaOps. All rights reserved.</p>
           <div className="flex gap-4 text-white/30 text-sm">
             <Link href="/privacy" className="hover:text-white/60 transition-colors">Privacy</Link>

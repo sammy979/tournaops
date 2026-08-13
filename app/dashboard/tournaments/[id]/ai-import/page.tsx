@@ -128,7 +128,7 @@ export default function AIImportPage() {
             </div>
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-yellow-500/15 border border-yellow-500/20 flex items-center justify-center">
-                <Bot className="w-5 h-5 text-violet-400" />
+                <Bot className="w-5 h-5 text-yellow-500" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">AI Import</h1>
@@ -186,7 +186,7 @@ export default function AIImportPage() {
                       <span className="text-slate-600 text-xs">Try:</span>
                       {EXAMPLE_PROMPTS.slice(0, 2).map(p => (
                         <button key={p} onClick={() => setText(p)}
-                          className="text-violet-400/70 hover:text-violet-400 text-xs transition-colors underline-offset-2 hover:underline truncate max-w-[180px]">
+                          className="text-yellow-500 hover:text-yellow-500 text-xs transition-colors underline-offset-2 hover:underline truncate max-w-[180px]">
                           "{p.slice(0, 35)}…"
                         </button>
                       ))}
@@ -207,7 +207,7 @@ export default function AIImportPage() {
                     onDrop={e => { e.preventDefault(); setDragOver(false); runAI(); }}
                     className={`border-2 border-dashed rounded-xl p-12 text-center transition-all cursor-pointer ${dragOver ? "border-yellow-500/60 bg-yellow-500/10" : "border-white/[0.08] hover:border-yellow-500/30"}`}
                   >
-                    <Upload className={`w-10 h-10 mx-auto mb-3 transition-colors ${dragOver ? "text-violet-400" : "text-slate-700"}`} />
+                    <Upload className={`w-10 h-10 mx-auto mb-3 transition-colors ${dragOver ? "text-yellow-500" : "text-slate-700"}`} />
                     <p className="text-white/60 font-medium">Drop image here</p>
                     <p className="text-slate-600 text-sm mt-1">or click to browse</p>
                     <p className="text-slate-700 text-xs mt-3">PNG, JPG, WEBP up to 10MB</p>
@@ -267,7 +267,7 @@ export default function AIImportPage() {
               {status === "parsing" && (
                 <div className="bg-[#0f1117] border border-yellow-500/20 rounded-xl p-8 text-center">
                   <div className="w-14 h-14 rounded-full bg-yellow-500/15 border border-yellow-500/20 flex items-center justify-center mx-auto mb-4">
-                    <Bot className="w-7 h-7 text-violet-400 animate-pulse" />
+                    <Bot className="w-7 h-7 text-yellow-500 animate-pulse" />
                   </div>
                   <p className="text-white font-semibold mb-1">AI is analyzing…</p>
                   <p className="text-slate-500 text-sm">Extracting teams, matches, stages, and schedule data</p>
@@ -309,7 +309,7 @@ export default function AIImportPage() {
                     <div className="flex flex-wrap gap-2">
                       {result.stages.map((s, i) => (
                         <div key={s} className="flex items-center gap-2">
-                          <span className="bg-yellow-500/15 border border-yellow-500/20 text-violet-300 text-xs px-2.5 py-1 rounded-full">{s}</span>
+                          <span className="bg-yellow-500/15 border border-yellow-500/20 text-yellow-500 text-xs px-2.5 py-1 rounded-full">{s}</span>
                           {i < result.stages.length - 1 && <ArrowRight className="w-3 h-3 text-slate-700" />}
                         </div>
                       ))}
@@ -325,7 +325,7 @@ export default function AIImportPage() {
                     <div className="grid grid-cols-2 gap-1.5 max-h-40 overflow-y-auto">
                       {result.teams.map(t => (
                         <div key={t.name} className="flex items-center gap-2 bg-white/[0.02] border border-white/[0.04] rounded-lg px-2.5 py-1.5">
-                          <div className="w-5 h-5 rounded bg-yellow-500/20 flex items-center justify-center text-violet-400 text-xs font-bold flex-shrink-0">{t.tag[0]}</div>
+                          <div className="w-5 h-5 rounded bg-yellow-500/20 flex items-center justify-center text-yellow-500 text-xs font-bold flex-shrink-0">{t.tag[0]}</div>
                           <div className="min-w-0">
                             <p className="text-white text-xs font-medium truncate">{t.name}</p>
                             <p className="text-slate-600 text-xs">[{t.tag}]</p>
@@ -394,7 +394,7 @@ export default function AIImportPage() {
               {!result && (
                 <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-5">
                   <p className="text-white font-semibold text-sm mb-3 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-violet-400" /> Tips for best results
+                    <Sparkles className="w-4 h-4 text-yellow-500" /> Tips for best results
                   </p>
                   <div className="space-y-2">
                     {[
@@ -405,7 +405,7 @@ export default function AIImportPage() {
                       "Screenshots of brackets work best at 1080p or higher",
                     ].map(tip => (
                       <p key={tip} className="text-slate-500 text-xs flex items-start gap-2">
-                        <span className="text-violet-400/60 flex-shrink-0">→</span>
+                        <span className="text-yellow-500 flex-shrink-0">→</span>
                         {tip}
                       </p>
                     ))}

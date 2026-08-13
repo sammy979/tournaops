@@ -86,7 +86,7 @@ export default function TournamentRegisterPage() {
           <p className="text-white/50 mb-2">
             <span className="text-white font-semibold">{teamName || "Your team"}</span> has been successfully registered for
           </p>
-          <p className="text-violet-400 font-bold text-lg mb-6">Champions Circuit Season 4</p>
+          <p className="text-yellow-500 font-bold text-lg mb-6">Champions Circuit Season 4</p>
           <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-5 mb-6 text-left space-y-3">
             <div className="flex items-start gap-3">
               <Clock className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
@@ -96,7 +96,7 @@ export default function TournamentRegisterPage() {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Shield className="w-4 h-4 text-violet-400 flex-shrink-0 mt-0.5" />
+              <Shield className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-white text-sm font-semibold">Confirmation Email Sent</p>
                 <p className="text-white/40 text-xs">Registration details sent to <span className="text-white/60">{email || "your email"}</span></p>
@@ -131,7 +131,7 @@ export default function TournamentRegisterPage() {
       <nav className="border-b border-white/[0.06] bg-[#060810]">
         <div className="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between">
           <button onClick={() => router.push("/")} className="text-white font-black text-lg">
-            Tourna<span className="text-violet-400">Ops</span>
+            Tourna<span className="text-yellow-500">Ops</span>
           </button>
           <div className="flex items-center gap-2 text-white/40 text-sm">
             <button onClick={() => router.push(`/tournaments/${slug}`)} className="hover:text-white/70 transition-colors">Champions Circuit S4</button>
@@ -179,7 +179,7 @@ export default function TournamentRegisterPage() {
               <div>
                 <label className="text-white/40 text-xs font-medium block mb-1.5">Team Name *</label>
                 <input value={teamName} onChange={e => setTeamName(e.target.value)} placeholder="e.g. Team Alpha"
-                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-yellow-500/50 focus:ring-1 focus:ring-violet-500/20" />
+                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500" />
               </div>
               <div>
                 <label className="text-white/40 text-xs font-medium block mb-1.5">Team Tag * (3-5 chars)</label>
@@ -310,7 +310,7 @@ export default function TournamentRegisterPage() {
                   {agreed && <CheckCircle2 className="w-3 h-3 text-white" />}
                 </div>
                 <span className="text-white/60 text-sm leading-relaxed">
-                  I have read and agree to the <Link href={`/tournaments/${slug}`} className="text-violet-400 underline">tournament rules</Link> and confirm all submitted information is accurate.
+                  I have read and agree to the <Link href={`/tournaments/${slug}`} className="text-yellow-500 underline">tournament rules</Link> and confirm all submitted information is accurate.
                 </span>
               </label>
             </div>

@@ -13,7 +13,7 @@ const STATUSES = [
   { value: "draft", label: "Draft", color: "#9ca3af", icon: Clock, description: "Not yet public" },
   { value: "registration", label: "Registration Open", color: "#60a5fa", icon: CheckCircle, description: "Teams can register" },
   { value: "live", label: "Live", color: "#4ade80", icon: Play, description: "Tournament in progress" },
-  { value: "completed", label: "Completed", color: "#c084fc", icon: Trophy, description: "Tournament finished" },
+  { value: "completed", label: "Completed", color: "#D4AF37", icon: Trophy, description: "Tournament finished" },
   { value: "cancelled", label: "Cancelled", color: "#f87171", icon: XCircle, description: "Tournament cancelled" },
 ]
 

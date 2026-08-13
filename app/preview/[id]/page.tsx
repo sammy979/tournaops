@@ -112,7 +112,7 @@ export default function TournamentPreviewPage() {
       <div className="max-w-5xl mx-auto px-6 py-8 text-center">
         <p className="text-white/25 text-sm mb-4">Public URL for this tournament:</p>
         <div className="inline-flex items-center gap-3 bg-[#0f1117] border border-white/[0.08] rounded-xl px-4 py-2.5 mb-6">
-          <code className="text-violet-400 text-sm font-mono">{publicUrl}</code>
+          <code className="text-yellow-500 text-sm font-mono">{publicUrl}</code>
           <button onClick={copyUrl} className="text-white/30 hover:text-white/60 transition-colors">
             {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
           </button>

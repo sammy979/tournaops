@@ -43,7 +43,7 @@ export default function GrandFinalPage() {
     <div className="min-h-screen bg-[#060810] text-white">
       <nav className="sticky top-0 z-50 bg-[#060810]/90 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <button onClick={()=>router.push("/")} className="text-white font-black text-lg">Tourna<span className="text-violet-400">Ops</span></button>
+          <button onClick={()=>router.push("/")} className="text-white font-black text-lg">Tourna<span className="text-yellow-500">Ops</span></button>
           <div className="flex items-center gap-2 text-white/40 text-sm">
             <button onClick={()=>router.push(`/tournaments/${slug}`)} className="hover:text-white/70 transition-colors">Champions Circuit S4</button>
             <ChevronRight className="w-3.5 h-3.5" />
@@ -109,7 +109,7 @@ export default function GrandFinalPage() {
 
       <footer className="border-t border-white/[0.06] py-6 mt-8">
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
-          <span className="text-white font-black">Tourna<span className="text-violet-400">Ops</span></span>
+          <span className="text-white font-black">Tourna<span className="text-yellow-500">Ops</span></span>
           <p className="text-white/20 text-sm">Â© 2025 TournaOps</p>
         </div>
       </footer>

@@ -156,7 +156,7 @@ export default function TournamentDiscordPage() {
             <div className="flex gap-0 overflow-x-auto scrollbar-hide">
               {navTabs.map((tab) => (
                 <button key={tab.label} onClick={() => router.push(tab.href)}
-                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Discord" ? "border-yellow-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
+                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Discord" ? "border-yellow-500 text-yellow-500" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
                   {tab.label}
                 </button>
               ))}
@@ -207,7 +207,7 @@ export default function TournamentDiscordPage() {
               <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-white font-semibold">Channels</h2>
-                  <button className="text-violet-400 hover:text-violet-300 text-xs transition-colors flex items-center gap-1">
+                  <button className="text-yellow-500 hover:text-yellow-500 text-xs transition-colors flex items-center gap-1">
                     <Plus className="w-3.5 h-3.5" /> Add
                   </button>
                 </div>
@@ -248,7 +248,7 @@ export default function TournamentDiscordPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className="text-white text-sm font-medium">{auto.trigger}</span>
-                            <span className="text-violet-400 text-xs bg-yellow-500/10 border border-yellow-500/20 px-2 py-0.5 rounded-full">→ {auto.channel}</span>
+                            <span className="text-yellow-500 text-xs bg-yellow-500/10 border border-yellow-500/20 px-2 py-0.5 rounded-full">→ {auto.channel}</span>
                             {auto.lastSent && (
                               <span className="text-slate-600 text-xs">sent {auto.lastSent}</span>
                             )}

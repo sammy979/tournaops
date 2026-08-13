@@ -163,7 +163,7 @@ export default function BulkImportPage() {
                   className="border-2 border-dashed border-white/[0.10] hover:border-yellow-500/40 rounded-2xl p-12 text-center cursor-pointer transition-all group"
                 >
                   <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFileSelect} />
-                  <Upload className="w-12 h-12 text-slate-700 group-hover:text-violet-400 mx-auto mb-4 transition-colors" />
+                  <Upload className="w-12 h-12 text-slate-700 group-hover:text-yellow-500 mx-auto mb-4 transition-colors" />
                   <p className="text-white font-semibold mb-1">Drop your file here</p>
                   <p className="text-slate-500 text-sm mb-4">or click to browse</p>
                   <div className="flex gap-2 justify-center">
@@ -207,7 +207,7 @@ export default function BulkImportPage() {
           {/* Parsing */}
           {status === "parsing" && (
             <div className="bg-[#0f1117] border border-white/[0.06] rounded-2xl p-12 text-center">
-              <RefreshCw className="w-10 h-10 text-violet-400 mx-auto mb-4 animate-spin" />
+              <RefreshCw className="w-10 h-10 text-yellow-500 mx-auto mb-4 animate-spin" />
               <p className="text-white font-semibold">Parsing {fileName}…</p>
               <p className="text-slate-500 text-sm mt-1">Validating team data and checking for errors</p>
             </div>
@@ -282,7 +282,7 @@ export default function BulkImportPage() {
           {/* Importing */}
           {status === "importing" && (
             <div className="bg-[#0f1117] border border-white/[0.06] rounded-2xl p-12 text-center">
-              <Zap className="w-10 h-10 text-violet-400 mx-auto mb-4" />
+              <Zap className="w-10 h-10 text-yellow-500 mx-auto mb-4" />
               <p className="text-white font-semibold mb-4">Importing {validCount} teams…</p>
               <div className="w-full max-w-xs mx-auto bg-white/[0.06] rounded-full h-2 mb-2">
                 <div className="bg-yellow-500 h-2 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />

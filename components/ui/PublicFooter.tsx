@@ -15,7 +15,7 @@ export default function PublicFooter() {
               <div className="w-7 h-7 rounded-lg bg-yellow-500 flex items-center justify-center">
                 <Trophy className="w-3.5 h-3.5 text-white" />
               </div>
-              <span className="text-white font-black text-lg">Tourna<span className="text-violet-400">Ops</span></span>
+              <span className="text-white font-black text-lg">Tourna<span className="text-yellow-500">Ops</span></span>
             </Link>
             <p className="text-white/30 text-sm leading-relaxed max-w-xs">
               The professional tournament management platform for esports organizers worldwide.

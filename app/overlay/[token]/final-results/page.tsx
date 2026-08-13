@@ -16,10 +16,10 @@ export default function FinalResultsOverlay() {
   return (
     <div className="w-full h-screen bg-black/80 backdrop-blur-sm flex items-center justify-center">
       <div className={`transition-all duration-1000 ${visible ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}>
-        <div className="w-[900px] bg-gradient-to-br from-[#0a0814] via-[#0d0f1a] to-[#0a0814] border border-yellow-500/30 rounded-3xl overflow-hidden shadow-2xl shadow-violet-500/20">
+        <div className="w-[900px] bg-gradient-to-br from-[#0a0814] via-[#0d0f1a] to-[#0a0814] border border-yellow-500/30 rounded-3xl overflow-hidden shadow-2xl shadow-yellow-500">
           {/* Header */}
           <div className="text-center py-6 border-b border-white/[0.06] bg-yellow-500/[0.05]">
-            <p className="text-violet-400 text-sm font-black uppercase tracking-widest mb-1">{MOCK.stage}</p>
+            <p className="text-yellow-500 text-sm font-black uppercase tracking-widest mb-1">{MOCK.stage}</p>
             <p className="text-white/40 text-xs">Match Complete</p>
           </div>
           {/* Score */}

@@ -125,7 +125,7 @@ export default function TournamentStandingsPage() {
   const SortBtn = ({ k, label }: { k: SortKey; label: string }) => (
     <button
       onClick={() => handleSort(k)}
-      className={`flex items-center gap-1 text-xs font-medium uppercase tracking-wide transition-colors ${sortKey === k ? "text-violet-400" : "text-slate-500 hover:text-slate-300"}`}
+      className={`flex items-center gap-1 text-xs font-medium uppercase tracking-wide transition-colors ${sortKey === k ? "text-yellow-500" : "text-slate-500 hover:text-slate-300"}`}
     >
       {label}
       <ArrowUpDown className="w-3 h-3" />
@@ -164,7 +164,7 @@ export default function TournamentStandingsPage() {
             <div className="flex gap-0 overflow-x-auto scrollbar-hide">
               {navTabs.map((tab) => (
                 <button key={tab.label} onClick={() => router.push(tab.href)}
-                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Standings" ? "border-yellow-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
+                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Standings" ? "border-yellow-500 text-yellow-500" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
                   {tab.label}
                 </button>
               ))}
@@ -236,7 +236,7 @@ export default function TournamentStandingsPage() {
 
                   {/* Points */}
                   <div className="text-center">
-                    <p className={`text-sm font-black ${sortKey === "points" ? "text-violet-400" : "text-white"}`}>{s.points}</p>
+                    <p className={`text-sm font-black ${sortKey === "points" ? "text-yellow-500" : "text-white"}`}>{s.points}</p>
                   </div>
 
                   {/* Win % */}

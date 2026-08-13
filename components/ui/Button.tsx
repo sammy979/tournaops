@@ -16,7 +16,7 @@ const buttonVariants = cva(
         ghost: "hover:bg-white/8 text-gray-400 hover:text-white",
         outline: "border border-white/15 hover:border-white/30 text-white hover:bg-white/5",
         success: "bg-green-500/15 hover:bg-green-500/25 text-green-400 border border-green-500/20",
-        indigo: "bg-yellow-500 hover:bg-yellow-500 text-white shadow-lg shadow-indigo-500/20",
+        indigo: "bg-yellow-500 hover:bg-yellow-500 text-white shadow-lg shadow-yellow-500",
       },
       size: {
         xs: "px-2.5 py-1 text-xs rounded-lg",

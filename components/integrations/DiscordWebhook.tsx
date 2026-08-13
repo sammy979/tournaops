@@ -202,7 +202,7 @@ export default function DiscordWebhook({
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-indigo-400" />
+              <MessageSquare className="w-5 h-5 text-yellow-500" />
               Discord Integration
             </h2>
             <p className="text-gray-500 text-sm mt-1">
@@ -252,7 +252,7 @@ export default function DiscordWebhook({
                     className={
                       "p-3 rounded-xl border text-center transition-all " +
                       (active
-                        ? "border-yellow-500 bg-yellow-500/15 text-indigo-300"
+                        ? "border-yellow-500 bg-yellow-500/15 text-yellow-500"
                         : "border-white/10 text-gray-500 hover:border-white/20 hover:text-gray-300")
                     }
                   >

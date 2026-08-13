@@ -61,7 +61,7 @@ const CHECKLIST: ChecklistItem[] = [
     label: "Assign Groups",
     desc: "Distribute teams into groups",
     icon: Grid3X3,
-    color: "text-indigo-400",
+    color: "text-yellow-500",
     isComplete: (t) => {
       // Check if any round has lobbies with teamIds
       return (t.rounds || []).some((r: any) => {

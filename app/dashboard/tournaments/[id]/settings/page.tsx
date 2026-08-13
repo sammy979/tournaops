@@ -100,7 +100,7 @@ function SectionHeader({ icon: Icon, title, description }: {
   return (
     <div className="flex items-start gap-3 mb-5">
       <div className="w-8 h-8 rounded-lg bg-yellow-500/15 border border-yellow-500/20 flex items-center justify-center flex-shrink-0">
-        <Icon className="w-4 h-4 text-violet-400" />
+        <Icon className="w-4 h-4 text-yellow-500" />
       </div>
       <div>
         <h2 className="text-white font-semibold">{title}</h2>
@@ -185,7 +185,7 @@ export default function TournamentSettingsPage() {
             <div className="flex gap-0 overflow-x-auto scrollbar-hide">
               {navTabs.map((tab) => (
                 <button key={tab.label} onClick={() => router.push(tab.href)}
-                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Settings" ? "border-yellow-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
+                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Settings" ? "border-yellow-500 text-yellow-500" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
                   {tab.label}
                 </button>
               ))}
@@ -234,7 +234,7 @@ export default function TournamentSettingsPage() {
                         type={field.type}
                         value={settings[field.key as keyof TournamentSettings] as string}
                         onChange={(e) => update(field.key as keyof TournamentSettings, field.type === "number" ? Number(e.target.value) : e.target.value)}
-                        className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-500/50 focus:ring-1 focus:ring-violet-500/20"
+                        className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500"
                       />
                     </div>
                   ))}

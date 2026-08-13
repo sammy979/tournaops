@@ -132,7 +132,7 @@ export default function TournamentInsightsPage() {
             <div className="flex gap-0 overflow-x-auto scrollbar-hide">
               {navTabs.map((tab) => (
                 <button key={tab.label} onClick={() => router.push(tab.href)}
-                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Insights" ? "border-yellow-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
+                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Insights" ? "border-yellow-500 text-yellow-500" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
                   {tab.label}
                 </button>
               ))}
@@ -158,7 +158,7 @@ export default function TournamentInsightsPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <StatCard icon={Zap}   label="Total Matches"      value={ins.summary.totalMatches}     color="bg-amber-500/15 text-amber-400"   trend="up"   />
                 <StatCard icon={Clock} label="Avg Match Duration"  value={ins.summary.avgMatchDuration} color="bg-blue-500/15 text-blue-400"     trend="same" />
-                <StatCard icon={Map}   label="Total Maps Played"   value={ins.summary.totalMapsPlayed}  color="bg-yellow-500/15 text-violet-400" trend="up"   />
+                <StatCard icon={Map}   label="Total Maps Played"   value={ins.summary.totalMapsPlayed}  color="bg-yellow-500/15 text-yellow-500" trend="up"   />
                 <StatCard icon={Target}label="Upsets"              value={ins.summary.upsets}           sub="Underdog victories" color="bg-rose-500/15 text-rose-400" trend="same" />
               </div>
 
@@ -170,7 +170,7 @@ export default function TournamentInsightsPage() {
                     {[
                       { label: "Closest Match",   value: ins.summary.closestMatch,  icon: Zap,     color: "text-amber-400" },
                       { label: "Longest Match",   value: ins.summary.longestMatch,  icon: Clock,   color: "text-blue-400"  },
-                      { label: "Peak Viewership", value: `${ins.summary.peakViewers.toLocaleString()} viewers`, icon: Users, color: "text-violet-400" },
+                      { label: "Peak Viewership", value: `${ins.summary.peakViewers.toLocaleString()} viewers`, icon: Users, color: "text-yellow-500" },
                       { label: "Avg Viewers",     value: `${ins.summary.avgViewers.toLocaleString()} per match`, icon: BarChart2, color: "text-emerald-400" },
                     ].map((item) => (
                       <div key={item.label} className="flex items-start gap-3 py-2 border-b border-white/[0.04] last:border-0">
@@ -248,7 +248,7 @@ export default function TournamentInsightsPage() {
               {ins.mapStats.sort((a, b) => b.played - a.played).map((map) => (
                 <div key={map.map} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-5 py-4 border-b border-white/[0.04] last:border-0 items-center hover:bg-white/[0.02] transition-colors">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-xs font-bold text-violet-400">
+                    <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-xs font-bold text-yellow-500">
                       {map.map[0]}
                     </div>
                     <span className="text-white text-sm font-semibold">{map.map}</span>

@@ -17,7 +17,7 @@ export default function TopFraggerOverlay() {
     <div className="w-full h-screen bg-transparent flex items-end justify-start p-6">
       <div className={`transition-all duration-700 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
         {/* Card — 400×200 OBS source */}
-        <div className="w-[400px] bg-gradient-to-br from-black/95 to-[#0a0814]/95 border border-yellow-500/40 rounded-2xl overflow-hidden backdrop-blur-sm shadow-2xl shadow-violet-500/20">
+        <div className="w-[400px] bg-gradient-to-br from-black/95 to-[#0a0814]/95 border border-yellow-500/40 rounded-2xl overflow-hidden backdrop-blur-sm shadow-2xl shadow-yellow-500">
           {/* Header */}
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/[0.08]" style={{ background: `${MOCK.color}20` }}>
             <Star className="w-3.5 h-3.5 text-amber-400" />
@@ -51,7 +51,7 @@ export default function TopFraggerOverlay() {
                 </div>
                 <div className="w-px h-6 bg-white/[0.10]" />
                 <div className="text-center">
-                  <p className="text-violet-400 font-black text-lg leading-none">{MOCK.acs}</p>
+                  <p className="text-yellow-500 font-black text-lg leading-none">{MOCK.acs}</p>
                   <p className="text-white/30 text-xs">ACS</p>
                 </div>
               </div>

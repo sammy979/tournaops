@@ -46,7 +46,7 @@ export default function TimerPage() {
     <div className="min-h-screen bg-[#060810] text-white flex flex-col">
       <nav className="border-b border-white/[0.06] bg-[#060810]">
         <div className="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between">
-          <button onClick={()=>router.push("/")} className="text-white font-black text-lg">Tourna<span className="text-violet-400">Ops</span></button>
+          <button onClick={()=>router.push("/")} className="text-white font-black text-lg">Tourna<span className="text-yellow-500">Ops</span></button>
           <span className="text-white/30 text-sm">Match Timer</span>
         </div>
       </nav>
@@ -111,7 +111,7 @@ export default function TimerPage() {
           </div>
 
           {mode==="stopwatch" && running && (
-            <button onClick={()=>setLaps(l=>[...l,secs])} className="mt-3 text-violet-400 hover:text-violet-300 text-sm transition-colors">
+            <button onClick={()=>setLaps(l=>[...l,secs])} className="mt-3 text-yellow-500 hover:text-yellow-500 text-sm transition-colors">
               + Lap
             </button>
           )}

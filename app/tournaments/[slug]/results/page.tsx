@@ -77,7 +77,7 @@ function ResultRow({ result, expanded, onToggle }: {
         <tr className="bg-yellow-500/[0.03] border-b border-yellow-500/10">
           <td colSpan={5} className="px-5 py-3">
             <div className="flex items-center gap-2 flex-wrap">
-              <Map className="w-3.5 h-3.5 text-violet-400" />
+              <Map className="w-3.5 h-3.5 text-yellow-500" />
               <span className="text-white/30 text-xs font-medium uppercase tracking-wide">Maps:</span>
               {result.maps.map((map) => (
                 <span key={map} className="bg-white/[0.04] border border-white/[0.06] text-white/60 text-xs px-2.5 py-1 rounded-lg font-mono">
@@ -115,7 +115,7 @@ export default function TournamentResultsPage() {
       <nav className="sticky top-0 z-50 bg-[#060810]/90 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <button onClick={() => router.push("/")} className="text-white font-black text-lg">
-            Tourna<span className="text-violet-400">Ops</span>
+            Tourna<span className="text-yellow-500">Ops</span>
           </button>
           <div className="flex items-center gap-2 text-white/40 text-sm">
             <button onClick={() => router.push("/tournaments")} className="hover:text-white/60 transition-colors">Tournaments</button>
@@ -145,7 +145,7 @@ export default function TournamentResultsPage() {
             { label: "Matches Played", value: MOCK_RESULTS.length,                                        color: "text-white"        },
             { label: "Upsets",         value: 2,                                                           color: "text-amber-400"    },
             { label: "Avg Duration",   value: "52m",                                                       color: "text-blue-400"     },
-            { label: "Maps Played",    value: MOCK_RESULTS.reduce((a, r) => a + r.maps.length, 0),         color: "text-violet-400"   },
+            { label: "Maps Played",    value: MOCK_RESULTS.reduce((a, r) => a + r.maps.length, 0),         color: "text-yellow-500"   },
           ].map(s => (
             <div key={s.label} className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-4">
               <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>

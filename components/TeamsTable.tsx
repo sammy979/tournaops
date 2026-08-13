@@ -15,7 +15,7 @@ export default function TeamsTable({ teams, onEditTeams }: Props) {
       <div className="relative px-6 py-5 border-b border-yellow-500/20 bg-gradient-to-r from-yellow-500/10 to-cyan-500/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-indigo-500/50">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-yellow-500">
               <Users className="w-6 h-6 text-white" strokeWidth={2.5} />
             </div>
             <div>
@@ -61,7 +61,7 @@ export default function TeamsTable({ teams, onEditTeams }: Props) {
                   {team.logo ? (
                     <img src={team.logo} alt="" className="w-12 h-12 rounded-xl object-cover border-2 border-yellow-500/30 inline-block" />
                   ) : (
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 via-indigo-500 to-cyan-500 flex items-center justify-center text-white font-black text-lg inline-block">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 via-yellow-500 to-cyan-500 flex items-center justify-center text-white font-black text-lg inline-block">
                       {team.name.charAt(0)}
                     </div>
                   )}

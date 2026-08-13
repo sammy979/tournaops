@@ -153,7 +153,7 @@ function MatchCard({ match }: { match: Match }) {
             {match.scheduledAt}
           </p>
           {match.caster && (
-            <p className="text-violet-400 text-xs">{match.caster}</p>
+            <p className="text-yellow-500 text-xs">{match.caster}</p>
           )}
           {match.duration && (
             <p className="text-slate-600 text-xs">{match.duration}</p>
@@ -250,7 +250,7 @@ export default function TournamentMatchesPage() {
             <div className="flex gap-0 overflow-x-auto scrollbar-hide">
               {navTabs.map((tab) => (
                 <button key={tab.label} onClick={() => router.push(tab.href)}
-                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Matches" ? "border-yellow-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
+                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Matches" ? "border-yellow-500 text-yellow-500" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
                   {tab.label}
                 </button>
               ))}

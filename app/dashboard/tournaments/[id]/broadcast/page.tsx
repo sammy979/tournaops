@@ -103,12 +103,12 @@ function SceneCard({ scene, onActivate }: { scene: StreamScene; onActivate: (id:
       onClick={() => onActivate(scene.id)}
       className={`relative w-full aspect-video rounded-lg border-2 overflow-hidden transition-all text-left ${
         scene.active
-          ? "border-yellow-500 ring-2 ring-violet-500/30 bg-yellow-500/10"
+          ? "border-yellow-500 ring-2 ring-yellow-500 bg-yellow-500/10"
           : "border-white/[0.08] bg-white/[0.02] hover:border-white/[0.16]"
       }`}
     >
       <div className="absolute inset-0 flex items-center justify-center">
-        <Monitor className={`w-8 h-8 ${scene.active ? "text-violet-400" : "text-slate-700"}`} />
+        <Monitor className={`w-8 h-8 ${scene.active ? "text-yellow-500" : "text-slate-700"}`} />
       </div>
       {scene.active && (
         <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-0.5 rounded">
@@ -223,7 +223,7 @@ export default function BroadcastPage() {
             <div className="flex gap-0 overflow-x-auto scrollbar-hide">
               {navTabs.map((tab) => (
                 <button key={tab.label} onClick={() => router.push(tab.href)}
-                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Broadcast" ? "border-yellow-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
+                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Broadcast" ? "border-yellow-500 text-yellow-500" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
                   {tab.label}
                 </button>
               ))}
@@ -236,7 +236,7 @@ export default function BroadcastPage() {
           {/* Stream Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
             {[
-              { icon: Users,   label: "Viewers",    value: MOCK_STREAM.viewerCount.toLocaleString(), color: "text-violet-400" },
+              { icon: Users,   label: "Viewers",    value: MOCK_STREAM.viewerCount.toLocaleString(), color: "text-yellow-500" },
               { icon: Zap,     label: "Peak",       value: MOCK_STREAM.peakViewers.toLocaleString(), color: "text-amber-400"  },
               { icon: Clock,   label: "Duration",   value: MOCK_STREAM.duration,                     color: "text-blue-400"  },
               { icon: Wifi,    label: "Bitrate",    value: MOCK_STREAM.bitrate,                      color: "text-emerald-400"},
@@ -261,7 +261,7 @@ export default function BroadcastPage() {
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-white font-semibold">Scene Switcher</h2>
                   <span className="text-slate-500 text-xs">
-                    Active: <span className="text-violet-400 font-medium">{scenes.find(s => s.active)?.name}</span>
+                    Active: <span className="text-yellow-500 font-medium">{scenes.find(s => s.active)?.name}</span>
                   </span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

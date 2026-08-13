@@ -260,14 +260,14 @@ export async function sendTournamentCompletedEmail(
   champion?: string
 ): Promise<boolean> {
   const html = emailWrapper(`
-    ${badge("Tournament Complete", "#c084fc")}
+    ${badge("Tournament Complete", "#D4AF37")}
     <div style="margin-top:16px;"></div>
     ${heading("\uD83C\uDFC6 Tournament Complete!")}
     ${para(`<strong style="color:#fff;">${tournamentName}</strong> has concluded.`)}
     ${champion ? infoBox([{ label: "Champion", value: champion }]) : ""}
     ${para("View the final standings and full tournament report.")}
-    ${btn("View Final Results", `${BASE_URL}/tournaments/${tournamentSlug}/report`, "#c084fc")}
-  `, "#c084fc");
+    ${btn("View Final Results", `${BASE_URL}/tournaments/${tournamentSlug}/report`, "#D4AF37")}
+  `, "#D4AF37");
 
   return safeSend({ to, subject: `${tournamentName} - Tournament Complete!`, html });
 }

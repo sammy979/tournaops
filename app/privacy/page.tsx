@@ -24,7 +24,7 @@ export default function PrivacyPage() {
     <div className="min-h-screen bg-[#060810] text-white">
       <nav className="sticky top-0 z-50 bg-[#060810]/90 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <button onClick={() => router.push("/")} className="text-white font-black text-lg">Tourna<span className="text-violet-400">Ops</span></button>
+          <button onClick={() => router.push("/")} className="text-white font-black text-lg">Tourna<span className="text-yellow-500">Ops</span></button>
           <button onClick={() => router.push("/login")} className="bg-yellow-500 hover:bg-yellow-500 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors">Sign In</button>
         </div>
       </nav>
@@ -40,12 +40,12 @@ export default function PrivacyPage() {
           ))}
         </div>
         <div className="mt-12 p-5 bg-[#0f1117] border border-white/[0.06] rounded-2xl">
-          <p className="text-white/40 text-sm">Questions about our privacy practices? <Link href="/contact" className="text-violet-400 hover:text-violet-300 transition-colors">Contact us</Link> or email <span className="text-violet-400">privacy@tournaops.com</span></p>
+          <p className="text-white/40 text-sm">Questions about our privacy practices? <Link href="/contact" className="text-yellow-500 hover:text-yellow-500 transition-colors">Contact us</Link> or email <span className="text-yellow-500">privacy@tournaops.com</span></p>
         </div>
       </div>
       <footer className="border-t border-white/[0.06] py-6 mt-8">
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
-          <span className="text-white font-black">Tourna<span className="text-violet-400">Ops</span></span>
+          <span className="text-white font-black">Tourna<span className="text-yellow-500">Ops</span></span>
           <div className="flex gap-4 text-white/30 text-sm">
             <Link href="/terms" className="hover:text-white/60 transition-colors">Terms</Link>
             <Link href="/contact" className="hover:text-white/60 transition-colors">Contact</Link>

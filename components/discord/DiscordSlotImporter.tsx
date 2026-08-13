@@ -266,9 +266,9 @@ SLOT 3 - Team Nepal"
 
             <div className="p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/15">
               <div className="flex items-start gap-2.5">
-                <Info className="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5" />
+                <Info className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
                 <div className="text-xs text-gray-400">
-                  <p className="font-semibold text-indigo-300 mb-1">Supported formats:</p>
+                  <p className="font-semibold text-yellow-500 mb-1">Supported formats:</p>
                   <div className="font-mono text-gray-500 space-y-0.5">
                     <div>SLOT 1 - Team Name</div>
                     <div>1. Team Name    1 - Team Name    1) Team Name</div>

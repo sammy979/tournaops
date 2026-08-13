@@ -28,7 +28,7 @@ export default function ContactPage() {
     <div className="min-h-screen bg-[#060810] text-white">
       <nav className="sticky top-0 z-50 bg-[#060810]/90 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <button onClick={() => router.push("/")} className="text-white font-black text-lg">Tourna<span className="text-violet-400">Ops</span></button>
+          <button onClick={() => router.push("/")} className="text-white font-black text-lg">Tourna<span className="text-yellow-500">Ops</span></button>
           <button onClick={() => router.push("/login")} className="bg-yellow-500 hover:bg-yellow-500 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors">Sign In</button>
         </div>
       </nav>
@@ -51,12 +51,12 @@ export default function ContactPage() {
               <div key={item.title} className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-4">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-yellow-500/15 border border-yellow-500/20 flex items-center justify-center flex-shrink-0">
-                    <item.icon className="w-4 h-4 text-violet-400" />
+                    <item.icon className="w-4 h-4 text-yellow-500" />
                   </div>
                   <div>
                     <p className="text-white font-semibold text-sm">{item.title}</p>
                     <p className="text-white/40 text-xs mt-0.5 leading-relaxed">{item.desc}</p>
-                    <p className="text-violet-400 text-xs mt-1.5">{item.contact}</p>
+                    <p className="text-yellow-500 text-xs mt-1.5">{item.contact}</p>
                   </div>
                 </div>
               </div>
@@ -113,7 +113,7 @@ export default function ContactPage() {
 
       <footer className="border-t border-white/[0.06] py-6 mt-8">
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
-          <span className="text-white font-black">Tourna<span className="text-violet-400">Ops</span></span>
+          <span className="text-white font-black">Tourna<span className="text-yellow-500">Ops</span></span>
           <p className="text-white/20 text-sm">Â© 2025 TournaOps. All rights reserved.</p>
         </div>
       </footer>

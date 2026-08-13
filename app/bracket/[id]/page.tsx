@@ -88,7 +88,7 @@ function BracketMatchCard({ match }: { match: BracketMatch }) {
         <span className="text-white/20 text-xs w-4 text-center font-bold flex-shrink-0">{team.seed}</span>
       )}
       <span className={`text-xs font-bold flex-1 truncate ${
-        isDone && isWinner  ? "text-violet-300" :
+        isDone && isWinner  ? "text-yellow-500" :
         team.name === "TBD" ? "text-white/20" :
         "text-white"
       }`}>
@@ -100,7 +100,7 @@ function BracketMatchCard({ match }: { match: BracketMatch }) {
         </span>
       )}
       {isDone && isWinner && (
-        <CheckCircle2 className="w-3 h-3 text-violet-400 flex-shrink-0" />
+        <CheckCircle2 className="w-3 h-3 text-yellow-500 flex-shrink-0" />
       )}
     </div>
   );

@@ -203,7 +203,7 @@ function ResultCard({ result }: { result: MatchResult }) {
                   <span className={`text-sm font-bold ${map.winner === result.team2 ? "text-white" : "text-slate-500"}`}>{map.team2Score}</span>
                 </div>
                 <span className="text-slate-600 text-xs w-8 text-right">{map.duration}</span>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-md ${map.winner === result.team1 ? "bg-yellow-500/15 text-violet-400" : "bg-yellow-500/15 text-indigo-400"}`}>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-md ${map.winner === result.team1 ? "bg-yellow-500/15 text-yellow-500" : "bg-yellow-500/15 text-yellow-500"}`}>
                   {map.winner === result.team1 ? result.team1.split(" ")[1] : result.team2.split(" ")[1]}
                 </span>
               </div>
@@ -299,7 +299,7 @@ export default function MatchResultsPage() {
             <div className="flex gap-0 overflow-x-auto scrollbar-hide">
               {navTabs.map((tab) => (
                 <button key={tab.label} onClick={() => router.push(tab.href)}
-                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Match Results" ? "border-yellow-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
+                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Match Results" ? "border-yellow-500 text-yellow-500" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
                   {tab.label}
                 </button>
               ))}

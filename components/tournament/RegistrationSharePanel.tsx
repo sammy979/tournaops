@@ -175,7 +175,7 @@ export default function RegistrationSharePanel({ tournamentId, tournamentSlug, t
             display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.375rem",
             background: showQR ? "rgba(168,85,247,0.2)" : "rgba(255,255,255,0.06)",
             border: `1px solid ${showQR ? "rgba(168,85,247,0.4)" : "rgba(255,255,255,0.1)"}`,
-            color: showQR ? "#c084fc" : "#fff",
+            color: showQR ? "#D4AF37" : "#fff",
             padding: "0.625rem",
             borderRadius: "0.5rem",
             fontSize: "0.75rem", fontWeight: 700,

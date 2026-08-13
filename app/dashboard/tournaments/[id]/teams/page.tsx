@@ -89,7 +89,7 @@ function TeamRow({ team, onExpand, expanded }: { team: Team; onExpand: (id: stri
       >
         <td className="py-3.5 px-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-500/20 to-yellow-500/20 border border-yellow-500/20 flex items-center justify-center text-xs font-bold text-violet-400 flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-500/20 to-yellow-500/20 border border-yellow-500/20 flex items-center justify-center text-xs font-bold text-yellow-500 flex-shrink-0">
               {team.tag.slice(0, 2)}
             </div>
             <div>
@@ -133,7 +133,7 @@ function TeamRow({ team, onExpand, expanded }: { team: Team; onExpand: (id: stri
             <div className="flex flex-wrap gap-2">
               {team.members.map((m) => (
                 <div key={m.ign} className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5">
-                  <div className="w-6 h-6 rounded-full bg-yellow-500/20 flex items-center justify-center text-violet-400 text-xs font-bold">
+                  <div className="w-6 h-6 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-500 text-xs font-bold">
                     {m.name[0]}
                   </div>
                   <div>
@@ -231,7 +231,7 @@ export default function TournamentTeamsPage() {
                   onClick={() => router.push(tab.href)}
                   className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${
                     tab.label === "Teams"
-                      ? "border-yellow-500 text-violet-400"
+                      ? "border-yellow-500 text-yellow-500"
                       : "border-transparent text-slate-500 hover:text-slate-300"
                   }`}
                 >
@@ -269,7 +269,7 @@ export default function TournamentTeamsPage() {
                 placeholder="Search teams, captains, tags…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-[#0f1117] border border-white/[0.08] rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-yellow-500/50 focus:ring-1 focus:ring-violet-500/20"
+                className="w-full bg-[#0f1117] border border-white/[0.08] rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500"
               />
             </div>
             <div className="flex items-center gap-2">
