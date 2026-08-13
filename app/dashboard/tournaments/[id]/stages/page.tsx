@@ -195,7 +195,7 @@ function StageCard({ stage }: { stage: Stage }) {
       <div className="px-5 pb-0">
         <div className="w-full bg-white/[0.04] rounded-full h-1">
           <div
-            className="bg-gradient-to-r from-violet-500 to-indigo-500 h-1 rounded-full transition-all duration-700"
+            className="bg-gradient-to-r from-yellow-500 to-yellow-500 h-1 rounded-full transition-all duration-700"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -248,7 +248,7 @@ function StageCard({ stage }: { stage: Stage }) {
                     </div>
                     <div className="w-full bg-white/[0.06] rounded-full h-2">
                       <div
-                        className="bg-gradient-to-r from-violet-500 to-indigo-500 h-2 rounded-full"
+                        className="bg-gradient-to-r from-yellow-500 to-yellow-500 h-2 rounded-full"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -325,7 +325,7 @@ export default function TournamentStagesPage() {
                 <h1 className="text-2xl font-bold text-white">Stages</h1>
                 <p className="text-slate-500 text-sm mt-0.5">{MOCK_STAGES.length} stages configured</p>
               </div>
-              <button className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+              <button className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                 <Plus className="w-4 h-4" /> Add Stage
               </button>
             </div>
@@ -334,7 +334,7 @@ export default function TournamentStagesPage() {
             <div className="flex gap-0 overflow-x-auto scrollbar-hide">
               {navTabs.map((tab) => (
                 <button key={tab.label} onClick={() => router.push(tab.href)}
-                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Stages" ? "border-violet-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
+                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Stages" ? "border-yellow-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
                   {tab.label}
                 </button>
               ))}

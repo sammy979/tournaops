@@ -1,4 +1,4 @@
-﻿import { Resend } from "resend";
+import { Resend } from "resend";
 
 // ============================================================
 // lib/email.ts
@@ -233,7 +233,7 @@ export async function sendStageAdvancementEmail(
   toStage: string
 ): Promise<boolean> {
   const html = emailWrapper(`
-    ${badge("Stage Advanced", "#a855f7")}
+    ${badge("Stage Advanced", "#D4AF37")}
     <div style="margin-top:16px;"></div>
     ${heading("\uD83C\uDF89 Congratulations! You advanced!")}
     ${para(`<strong style="color:#fff;">${teamName}</strong> has qualified from <strong style="color:#fff;">${fromStage}</strong> to the <strong style="color:#fff;">${toStage}</strong>!`)}
@@ -243,8 +243,8 @@ export async function sendStageAdvancementEmail(
       { label: "Advanced To", value: toStage },
       { label: "Tournament", value: tournamentName },
     ])}
-    ${btn("View Tournament", `${BASE_URL}/tournaments/${tournamentSlug}`, "#a855f7")}
-  `, "#a855f7");
+    ${btn("View Tournament", `${BASE_URL}/tournaments/${tournamentSlug}`, "#D4AF37")}
+  `, "#D4AF37");
 
   return safeSend({ to, subject: `${teamName} advanced to ${toStage}! - ${tournamentName}`, html });
 }

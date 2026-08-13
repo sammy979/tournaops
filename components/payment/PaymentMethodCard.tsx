@@ -34,8 +34,8 @@ export default function PaymentMethodCard({
       className={`w-full rounded-xl border-2 p-4 text-left transition-all ${colorClass} hover:shadow-sm`}>
       <div className="flex items-center justify-between">
         <span className="font-semibold text-sm">{label}</span>
-        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selected ? "border-purple-500" : "border-gray-300"}`}>
-          {selected && <div className="w-2 h-2 rounded-full bg-purple-500" />}
+        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selected ? "border-yellow-500" : "border-gray-300"}`}>
+          {selected && <div className="w-2 h-2 rounded-full bg-yellow-500" />}
         </div>
       </div>
       {selected && accountName && (

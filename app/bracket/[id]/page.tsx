@@ -79,7 +79,7 @@ function BracketMatchCard({ match }: { match: BracketMatch }) {
 
   const Team = ({ team, isWinner }: { team: BracketTeam; isWinner: boolean }) => (
     <div className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
-      isDone && isWinner  ? "bg-violet-500/20 border border-violet-500/30" :
+      isDone && isWinner  ? "bg-yellow-500/20 border border-yellow-500/30" :
       isDone && !isWinner ? "opacity-50" :
       isLive              ? "bg-white/[0.04]" :
       "bg-transparent"
@@ -206,7 +206,7 @@ export default function BracketPage() {
           <div className="flex items-center gap-2">
             {/* Legend */}
             <div className="hidden md:flex items-center gap-4 mr-4 text-xs text-white/30">
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-violet-500/40 border border-violet-500/40" /> Winner</span>
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-yellow-500/40 border border-yellow-500/40" /> Winner</span>
               <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-amber-500/20 border border-amber-500/30" /> Live</span>
               <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-white/[0.05] border border-white/[0.08]" /> Upcoming</span>
             </div>

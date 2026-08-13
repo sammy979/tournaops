@@ -103,7 +103,7 @@ export default function TeamDetailModal({ team, primaryColor = "#FFD700", onClos
               <StatCard label="Total Points" value={team.totalPoints} icon={Trophy} color="#FFD700" primary />
               <StatCard label="WWCD" value={team.wwcdCount} icon={Crown} color="#f59e0b" />
               <StatCard label="Total Kills" value={team.totalKills} icon={Skull} color="#ef4444" />
-              <StatCard label="Matches" value={team.matchesPlayed} icon={Zap} color="#8b5cf6" />
+              <StatCard label="Matches" value={team.matchesPlayed} icon={Zap} color="#D4AF37" />
               <StatCard label="Avg Kills/Match" value={team.avgKills.toFixed(1)} icon={Target} color="#f97316" />
               <StatCard label="Avg Placement" value={"#" + team.avgPlacement.toFixed(1)} icon={TrendingUp} color="#06b6d4" />
               <StatCard label="Best Placement" value={team.bestPlacement === 999 ? "-" : "#" + team.bestPlacement} icon={Award} color="#10b981" />

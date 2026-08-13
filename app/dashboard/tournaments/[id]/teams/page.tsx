@@ -89,7 +89,7 @@ function TeamRow({ team, onExpand, expanded }: { team: Team; onExpand: (id: stri
       >
         <td className="py-3.5 px-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500/20 to-indigo-500/20 border border-violet-500/20 flex items-center justify-center text-xs font-bold text-violet-400 flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-500/20 to-yellow-500/20 border border-yellow-500/20 flex items-center justify-center text-xs font-bold text-violet-400 flex-shrink-0">
               {team.tag.slice(0, 2)}
             </div>
             <div>
@@ -128,12 +128,12 @@ function TeamRow({ team, onExpand, expanded }: { team: Team; onExpand: (id: stri
         </td>
       </tr>
       {expanded && (
-        <tr className="bg-violet-500/[0.03] border-b border-violet-500/10">
+        <tr className="bg-yellow-500/[0.03] border-b border-yellow-500/10">
           <td colSpan={8} className="px-4 py-3">
             <div className="flex flex-wrap gap-2">
               {team.members.map((m) => (
                 <div key={m.ign} className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5">
-                  <div className="w-6 h-6 rounded-full bg-violet-500/20 flex items-center justify-center text-violet-400 text-xs font-bold">
+                  <div className="w-6 h-6 rounded-full bg-yellow-500/20 flex items-center justify-center text-violet-400 text-xs font-bold">
                     {m.name[0]}
                   </div>
                   <div>
@@ -215,7 +215,7 @@ export default function TournamentTeamsPage() {
                 <button className="flex items-center gap-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 px-3 py-2 rounded-lg text-sm transition-colors">
                   <Download className="w-4 h-4" /> Export
                 </button>
-                <button className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                <button className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                   <Plus className="w-4 h-4" /> Add Team
                 </button>
               </div>
@@ -231,7 +231,7 @@ export default function TournamentTeamsPage() {
                   onClick={() => router.push(tab.href)}
                   className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${
                     tab.label === "Teams"
-                      ? "border-violet-500 text-violet-400"
+                      ? "border-yellow-500 text-violet-400"
                       : "border-transparent text-slate-500 hover:text-slate-300"
                   }`}
                 >
@@ -269,7 +269,7 @@ export default function TournamentTeamsPage() {
                 placeholder="Search teams, captains, tags…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-[#0f1117] border border-white/[0.08] rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20"
+                className="w-full bg-[#0f1117] border border-white/[0.08] rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-yellow-500/50 focus:ring-1 focus:ring-violet-500/20"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -280,7 +280,7 @@ export default function TournamentTeamsPage() {
                   onClick={() => setFilterStatus(s)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${
                     filterStatus === s
-                      ? "bg-violet-600 text-white"
+                      ? "bg-yellow-500 text-white"
                       : "bg-white/[0.04] text-slate-400 hover:text-slate-200 border border-white/[0.08]"
                   }`}
                 >

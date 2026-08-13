@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useEffect } from "react";
@@ -153,7 +153,7 @@ export function AuditLog({ stageId, onClose }: { stageId: string; onClose: () =>
     REVERT: { label: "Revert Override", color: "text-blue-400 bg-blue-500/10 border-blue-500/20", icon: "" },
     ADD_COMPENSATION: { label: "Compensation Added", color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20", icon: "" },
     ADD_PENALTY: { label: "Penalty Added", color: "text-orange-400 bg-orange-500/10 border-orange-500/20", icon: "" },
-    GROUP_ASSIGNMENT: { label: "Groups Assigned", color: "text-purple-400 bg-purple-500/10 border-purple-500/20", icon: "" },
+    GROUP_ASSIGNMENT: { label: "Groups Assigned", color: "text-yellow-500 bg-yellow-500/10 border-yellow-500/20", icon: "" },
     LOCK_STAGE: { label: "Stage Locked", color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20", icon: "" },
     UNLOCK_STAGE: { label: "Stage Unlocked", color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20", icon: "" },
     EDIT_RESULT: { label: "Result Edited", color: "text-gray-400 bg-gray-500/10 border-gray-500/20", icon: "" },

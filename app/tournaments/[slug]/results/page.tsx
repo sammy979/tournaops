@@ -74,7 +74,7 @@ function ResultRow({ result, expanded, onToggle }: {
         <td className="py-3 px-5 text-white/30 text-sm">{result.date}</td>
       </tr>
       {expanded && (
-        <tr className="bg-violet-500/[0.03] border-b border-violet-500/10">
+        <tr className="bg-yellow-500/[0.03] border-b border-yellow-500/10">
           <td colSpan={5} className="px-5 py-3">
             <div className="flex items-center gap-2 flex-wrap">
               <Map className="w-3.5 h-3.5 text-violet-400" />
@@ -159,12 +159,12 @@ export default function TournamentResultsPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search teams or winnersâ€¦"
-              className="w-full bg-[#0f1117] border border-white/[0.08] rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-violet-500/40" />
+              className="w-full bg-[#0f1117] border border-white/[0.08] rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-yellow-500/40" />
           </div>
           <div className="flex gap-2 flex-wrap">
             {STAGES.map(s => (
               <button key={s} onClick={() => setStageFilter(s)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${stageFilter === s ? "bg-violet-600 text-white" : "bg-white/[0.04] text-white/40 border border-white/[0.08] hover:text-white/70"}`}>
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${stageFilter === s ? "bg-yellow-500 text-white" : "bg-white/[0.04] text-white/40 border border-white/[0.08] hover:text-white/70"}`}>
                 {s}
               </button>
             ))}

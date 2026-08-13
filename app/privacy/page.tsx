@@ -25,7 +25,7 @@ export default function PrivacyPage() {
       <nav className="sticky top-0 z-50 bg-[#060810]/90 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <button onClick={() => router.push("/")} className="text-white font-black text-lg">Tourna<span className="text-violet-400">Ops</span></button>
-          <button onClick={() => router.push("/login")} className="bg-violet-600 hover:bg-violet-500 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors">Sign In</button>
+          <button onClick={() => router.push("/login")} className="bg-yellow-500 hover:bg-yellow-500 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors">Sign In</button>
         </div>
       </nav>
       <div className="max-w-3xl mx-auto px-6 py-16">
@@ -33,7 +33,7 @@ export default function PrivacyPage() {
         <p className="text-white/40 text-sm mb-10">Effective date: January 1, 2025 Â· Last updated: July 1, 2025</p>
         <div className="space-y-8">
           {SECTIONS.map((s, i) => (
-            <div key={s.title} className="border-l-2 border-violet-500/30 pl-6">
+            <div key={s.title} className="border-l-2 border-yellow-500/30 pl-6">
               <h2 className="text-white font-bold text-lg mb-3">{i + 1}. {s.title}</h2>
               <p className="text-white/50 text-sm leading-relaxed">{s.content}</p>
             </div>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useEffect, useCallback } from "react";
@@ -193,7 +193,7 @@ export default function DiscordSlotImporter({ tournament, onClose, onSave }: Dis
         {/*  Header  */}
         <div className="flex items-center justify-between p-5 sm:p-6 border-b border-white/10 bg-white/3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500 to-yellow-500 flex items-center justify-center flex-shrink-0">
               <MessageSquare className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -264,7 +264,7 @@ SLOT 3 - Team Nepal"
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/15">
+            <div className="p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/15">
               <div className="flex items-start gap-2.5">
                 <Info className="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5" />
                 <div className="text-xs text-gray-400">

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useEffect } from "react";
@@ -124,8 +124,8 @@ export default function GrandFinalPreview({ stageId, currentStageName, onClose, 
               <div className="text-3xl font-black text-blue-400">{config.numGroups}</div>
               <div className="text-xs text-blue-300 mt-1 uppercase tracking-widest font-bold">Lobby</div>
             </div>
-            <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-center">
-              <div className="text-3xl font-black text-purple-400">{config.matchesPerGroup}</div>
+            <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-center">
+              <div className="text-3xl font-black text-yellow-500">{config.matchesPerGroup}</div>
               <div className="text-xs text-purple-300 mt-1 uppercase tracking-widest font-bold">Matches</div>
             </div>
           </div>
@@ -197,7 +197,7 @@ export default function GrandFinalPreview({ stageId, currentStageName, onClose, 
                         <td className="py-2 px-3 text-center text-blue-400 font-mono font-bold">{q.points}</td>
                         <td className="py-2 px-3 text-center">
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                            q.status === "WILDCARD" ? "bg-purple-500/15 text-purple-400" :
+                            q.status === "WILDCARD" ? "bg-yellow-500/15 text-yellow-500" :
                             q.status === "MANUAL_ADVANCE" ? "bg-blue-500/15 text-blue-400" :
                             "bg-green-500/15 text-green-400"
                           }`}>

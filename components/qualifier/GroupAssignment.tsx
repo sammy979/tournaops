@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useEffect } from "react";
@@ -161,7 +161,7 @@ export default function GroupAssignment({ stageId, teams, groups: initialGroups,
             <button onClick={() => autoAssign("random")} disabled={randomizing} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-medium hover:bg-blue-500/20">
               <Shuffle className="w-3 h-3" />Random Draw
             </button>
-            <button onClick={() => autoAssign("seeded")} disabled={randomizing} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-medium hover:bg-purple-500/20">
+            <button onClick={() => autoAssign("seeded")} disabled={randomizing} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs font-medium hover:bg-yellow-500/20">
               <Trophy className="w-3 h-3" />Seeded (Snake Draft)
             </button>
             <button onClick={() => autoAssign("regional")} disabled={randomizing} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-medium hover:bg-green-500/20">
@@ -223,7 +223,7 @@ export default function GroupAssignment({ stageId, teams, groups: initialGroups,
                       {team.logo ? (
                         <img src={team.logo} alt="" className="w-6 h-6 rounded object-cover" />
                       ) : (
-                        <div className="w-6 h-6 rounded bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center text-white font-bold text-xs">
+                        <div className="w-6 h-6 rounded bg-gradient-to-br from-blue-500/30 to-yellow-500/30 flex items-center justify-center text-white font-bold text-xs">
                           {team.name.charAt(0)}
                         </div>
                       )}
@@ -259,7 +259,7 @@ export default function GroupAssignment({ stageId, teams, groups: initialGroups,
                       <span className="flex items-center gap-2">
                         <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black ${
                           gIdx === 0 ? "bg-blue-500/20 text-blue-400" :
-                          gIdx === 1 ? "bg-purple-500/20 text-purple-400" :
+                          gIdx === 1 ? "bg-yellow-500/20 text-yellow-500" :
                           gIdx === 2 ? "bg-green-500/20 text-green-400" :
                           "bg-orange-500/20 text-orange-400"
                         }`}>
@@ -291,7 +291,7 @@ export default function GroupAssignment({ stageId, teams, groups: initialGroups,
                             {team.logo ? (
                               <img src={team.logo} alt="" className="w-5 h-5 rounded object-cover" />
                             ) : (
-                              <div className="w-5 h-5 rounded bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center text-white font-bold text-[10px]">
+                              <div className="w-5 h-5 rounded bg-gradient-to-br from-blue-500/30 to-yellow-500/30 flex items-center justify-center text-white font-bold text-[10px]">
                                 {team.name.charAt(0)}
                               </div>
                             )}

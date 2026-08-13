@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Clock, Zap } from "lucide-react";
 
 const MOCK = {
-  team1: { name: "Team Void",  tag: "VOD", color: "#7C3AED" },
+  team1: { name: "Team Void",  tag: "VOD", color: "#D4AF37" },
   team2: { name: "Team Storm", tag: "STM", color: "#2563EB" },
   stage: "Quarterfinals", bestOf: 3, map: "TBD",
   startsIn: 900, // seconds

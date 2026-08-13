@@ -9,13 +9,13 @@ interface Props {
 
 export default function TeamsTable({ teams, onEditTeams }: Props) {
   return (
-    <div className="glass-heavy rounded-3xl overflow-hidden border-2 border-purple-500/30 relative">
-      <div className="absolute -top-40 -right-40 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl rotate-slow"></div>
+    <div className="glass-heavy rounded-3xl overflow-hidden border-2 border-yellow-500/30 relative">
+      <div className="absolute -top-40 -right-40 w-80 h-80 bg-yellow-500/20 rounded-full blur-3xl rotate-slow"></div>
       
-      <div className="relative px-6 py-5 border-b border-purple-500/20 bg-gradient-to-r from-indigo-500/10 to-cyan-500/10">
+      <div className="relative px-6 py-5 border-b border-yellow-500/20 bg-gradient-to-r from-yellow-500/10 to-cyan-500/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-indigo-500/50">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-indigo-500/50">
               <Users className="w-6 h-6 text-white" strokeWidth={2.5} />
             </div>
             <div>
@@ -50,7 +50,7 @@ export default function TeamsTable({ teams, onEditTeams }: Props) {
             {teams.map((team, idx) => (
               <tr key={team.id}>
                 <td>
-                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl font-display font-black text-lg bg-gradient-to-br from-purple-500/30 to-indigo-500/30 border border-purple-500/40 text-purple-200">
+                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl font-display font-black text-lg bg-gradient-to-br from-yellow-500/30 to-yellow-500/30 border border-yellow-500/40 text-purple-200">
                     {idx + 1}
                   </div>
                 </td>
@@ -59,9 +59,9 @@ export default function TeamsTable({ teams, onEditTeams }: Props) {
                 </td>
                 <td className="text-center">
                   {team.logo ? (
-                    <img src={team.logo} alt="" className="w-12 h-12 rounded-xl object-cover border-2 border-purple-500/30 inline-block" />
+                    <img src={team.logo} alt="" className="w-12 h-12 rounded-xl object-cover border-2 border-yellow-500/30 inline-block" />
                   ) : (
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 via-indigo-500 to-cyan-500 flex items-center justify-center text-white font-black text-lg inline-block">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 via-indigo-500 to-cyan-500 flex items-center justify-center text-white font-black text-lg inline-block">
                       {team.name.charAt(0)}
                     </div>
                   )}

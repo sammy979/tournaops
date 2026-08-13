@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { useDialog } from "@/lib/use-confirm";
@@ -54,7 +54,7 @@ const STAGE_PRESETS = [
     shortLabel: "Groups",
     icon: Users,
     color: "purple",
-    gradient: "from-purple-500 to-pink-500",
+    gradient: "from-yellow-500 to-pink-500",
     description: "Multiple groups, top teams advance",
     defaults: { numGroups: 4, teamsPerGroup: 16, matchesPerGroup: 4, ruleType: "TOP_N_PER_GROUP", ruleCount: 8 },
   },
@@ -64,7 +64,7 @@ const STAGE_PRESETS = [
     shortLabel: "R16",
     icon: Award,
     color: "indigo",
-    gradient: "from-indigo-500 to-purple-500",
+    gradient: "from-yellow-500 to-yellow-500",
     description: "16 teams, single bracket",
     defaults: { numGroups: 1, teamsPerGroup: 16, matchesPerGroup: 4, ruleType: "TOP_N_OVERALL", ruleCount: 8 },
   },
@@ -202,7 +202,7 @@ export default function VisualStageBuilder({ tournament }: VisualStageBuilderPro
     if (stage.isLocked) return { label: "Locked", color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/30", icon: Lock };
     if (stage.status === "COMPLETED") return { label: "Complete", color: "text-green-400 bg-green-500/10 border-green-500/30", icon: Check };
     if (stage.status === "LIVE") return { label: "Live", color: "text-red-400 bg-red-500/10 border-red-500/30", icon: Radio };
-    if (stage.status === "READY") return { label: "Ready", color: "text-purple-400 bg-purple-500/10 border-purple-500/30", icon: Zap };
+    if (stage.status === "READY") return { label: "Ready", color: "text-yellow-500 bg-yellow-500/10 border-yellow-500/30", icon: Zap };
     if (stage.status === "REGISTRATION_OPEN") return { label: "Reg Open", color: "text-blue-400 bg-blue-500/10 border-blue-500/30", icon: Users };
     return { label: "Draft", color: "text-gray-400 bg-gray-500/10 border-gray-500/20", icon: Clock };
   };
@@ -282,7 +282,7 @@ export default function VisualStageBuilder({ tournament }: VisualStageBuilderPro
                 stage.isLocked ? "border-yellow-500/30 shadow-lg shadow-yellow-500/10" :
                 stage.status === "LIVE" ? "border-red-500/40 shadow-lg shadow-red-500/20 animate-pulse-glow" :
                 stage.status === "COMPLETED" ? "border-green-500/30" :
-                stage.status === "READY" ? "border-purple-500/30" :
+                stage.status === "READY" ? "border-yellow-500/30" :
                 "border-white/10 hover:border-white/25"
               }`}>
 
@@ -395,7 +395,7 @@ export default function VisualStageBuilder({ tournament }: VisualStageBuilderPro
                             });
                             loadStages();
                           }}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 text-xs font-medium"
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 border border-yellow-500/20 text-xs font-medium"
                         >
                           <Check className="w-3 h-3" />Mark Ready
                         </button>
@@ -509,7 +509,7 @@ export default function VisualStageBuilder({ tournament }: VisualStageBuilderPro
           <div className="text-center py-8">
             <button
               onClick={() => setShowAddAt(0)}
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold shadow-2xl shadow-blue-500/40 hover:opacity-90"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-yellow-500 text-white font-bold shadow-2xl shadow-blue-500/40 hover:opacity-90"
             >
               <Plus className="w-5 h-5" />Add Your First Stage
             </button>
@@ -792,8 +792,8 @@ function AdvanceConfirmation({ stage, nextStage, onClose, onAdvanced }: any) {
                   <div className="text-2xl font-black text-red-400">{preview.summary.totalEliminated}</div>
                   <div className="text-xs text-gray-500">Eliminated</div>
                 </div>
-                <div className="text-center p-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
-                  <div className="text-2xl font-black text-purple-400">{preview.summary.totalWildcards}</div>
+                <div className="text-center p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+                  <div className="text-2xl font-black text-yellow-500">{preview.summary.totalWildcards}</div>
                   <div className="text-xs text-gray-500">Wildcards</div>
                 </div>
               </div>

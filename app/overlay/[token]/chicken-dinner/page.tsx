@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Trophy, Star } from "lucide-react";
 
-const MOCK = { team: "Team Alpha", tag: "ALPH", tournament: "Champions Circuit S4", color: "#7C3AED" };
+const MOCK = { team: "Team Alpha", tag: "ALPH", tournament: "Champions Circuit S4", color: "#D4AF37" };
 
 export default function ChickenDinnerOverlay() {
   const [visible, setVisible] = useState(false);

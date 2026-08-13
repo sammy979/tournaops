@@ -41,7 +41,7 @@ export function Particles() {
     const container = document.querySelector(".particles");
     if (!container) return;
 
-    const colors = ["#a855f7", "#3b82f6", "#ec4899", "#06b6d4"];
+    const colors = ["#D4AF37", "#3b82f6", "#ec4899", "#06b6d4"];
     const count = 30;
 
     for (let i = 0; i < count; i++) {

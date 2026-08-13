@@ -212,7 +212,7 @@ export default function PointsTable({ tournament, onClose, embedded = false }: P
                 <th className="text-center py-3 px-3 text-orange-500/70 font-bold text-[10px] uppercase w-14">Kills</th>
               )}
               {showDamage && (
-                <th className="text-center py-3 px-3 text-purple-500/70 font-bold text-[10px] uppercase w-16">DMG</th>
+                <th className="text-center py-3 px-3 text-yellow-500/70 font-bold text-[10px] uppercase w-16">DMG</th>
               )}
               <th className="text-center py-3 px-3 text-blue-400/70 font-bold text-[10px] uppercase w-14">Place</th>
               <th className="text-center py-3 px-3 text-green-400/70 font-bold text-[10px] uppercase w-14">Kill Pts</th>
@@ -273,7 +273,7 @@ export default function PointsTable({ tournament, onClose, embedded = false }: P
                   )}
                   {showDamage && (
                     <td className="py-3 px-3 text-center">
-                      <span className="text-purple-400 font-mono text-xs">{(entry.totalDamage || 0).toLocaleString()}</span>
+                      <span className="text-yellow-500 font-mono text-xs">{(entry.totalDamage || 0).toLocaleString()}</span>
                     </td>
                   )}
                   <td className="py-3 px-3 text-center">
@@ -362,7 +362,7 @@ export default function PointsTable({ tournament, onClose, embedded = false }: P
               <button onClick={() => setShowWWCD(!showWWCD)} className={`p-2 rounded-lg border text-xs ${showWWCD ? "border-yellow-500/30 text-yellow-400 bg-yellow-500/10" : "border-white/10 text-gray-600"}`} title="WWCD column">
                 
               </button>
-              <button onClick={() => setShowDamage(!showDamage)} className={`p-2 rounded-lg border text-xs ${showDamage ? "border-purple-500/30 text-purple-400 bg-purple-500/10" : "border-white/10 text-gray-600"}`} title="Damage column">
+              <button onClick={() => setShowDamage(!showDamage)} className={`p-2 rounded-lg border text-xs ${showDamage ? "border-yellow-500/30 text-yellow-500 bg-yellow-500/10" : "border-white/10 text-gray-600"}`} title="Damage column">
                 
               </button>
 

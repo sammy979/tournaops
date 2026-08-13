@@ -51,7 +51,7 @@ const CHECKLIST: ChecklistItem[] = [
     label: "Set Up Stages",
     desc: "Create qualifier, semi-final, or final stages",
     icon: Award,
-    color: "text-purple-400",
+    color: "text-yellow-500",
     isComplete: (_, stages) => stages > 0,
     action: "add-stage",
     actionLabel: "Add Stage",
@@ -129,10 +129,10 @@ export default function OnboardingChecklist({ tournament, stageCount, onAction }
     <>
       <div className="glass-card rounded-2xl border border-white/10 overflow-hidden">
         {/* Header */}
-        <div className="p-5 border-b border-white/8 bg-gradient-to-r from-blue-500/5 to-purple-500/5">
+        <div className="p-5 border-b border-white/8 bg-gradient-to-r from-blue-500/5 to-yellow-500/5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-yellow-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -156,7 +156,7 @@ export default function OnboardingChecklist({ tournament, stageCount, onAction }
           <div className="mt-3">
             <div className="h-2 bg-white/8 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500"
+                className="h-full bg-gradient-to-r from-blue-500 to-yellow-500 rounded-full transition-all duration-500"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -291,14 +291,14 @@ export default function OnboardingChecklist({ tournament, stageCount, onAction }
                 {
                   step: "3",
                   icon: Award,
-                  color: "from-purple-500 to-pink-500",
+                  color: "from-yellow-500 to-pink-500",
                   title: "Set Up Stages",
                   desc: "Go to the Pipeline tab. Add stages like Qualifier, Semi-Final, Grand Final. Each stage can have multiple groups.",
                 },
                 {
                   step: "4",
                   icon: Grid3X3,
-                  color: "from-indigo-500 to-purple-500",
+                  color: "from-yellow-500 to-yellow-500",
                   title: "Assign Groups",
                   desc: "Click Groups on any stage. Use Random Draw, Snake Seeding, or drag-and-drop to distribute teams.",
                 },

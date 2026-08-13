@@ -38,7 +38,7 @@ export default function PublicNav() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-xl bg-violet-600 flex items-center justify-center shadow-lg shadow-violet-500/30 group-hover:bg-violet-500 transition-colors">
+            <div className="w-8 h-8 rounded-xl bg-yellow-500 flex items-center justify-center shadow-lg shadow-violet-500/30 group-hover:bg-yellow-500 transition-colors">
               <Trophy className="w-4 h-4 text-white" />
             </div>
             <span className="text-white font-black text-xl tracking-tight">
@@ -67,7 +67,7 @@ export default function PublicNav() {
               Sign In
             </Link>
             <Link href="/register"
-              className="px-4 py-2 text-sm font-bold text-white bg-violet-600 hover:bg-violet-500 rounded-xl transition-all shadow-lg shadow-violet-500/20 hover:shadow-violet-500/40 hover:scale-105">
+              className="px-4 py-2 text-sm font-bold text-white bg-yellow-500 hover:bg-yellow-500 rounded-xl transition-all shadow-lg shadow-violet-500/20 hover:shadow-violet-500/40 hover:scale-105">
               Get Started
             </Link>
           </div>
@@ -96,7 +96,7 @@ export default function PublicNav() {
                 Sign In
               </Link>
               <Link href="/register" onClick={() => setMobileOpen(false)}
-                className="block px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-violet-600 hover:bg-violet-500 transition-colors text-center">
+                className="block px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-yellow-500 hover:bg-yellow-500 transition-colors text-center">
                 Get Started Free
               </Link>
             </div>

@@ -146,7 +146,7 @@ export default function TournamentDiscordPage() {
                 <BotStatusBadge status={MOCK_BOT.status} />
               </div>
               {MOCK_BOT.status !== "connected" && (
-                <button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                <button className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                   <Plus className="w-4 h-4" /> Connect Bot
                 </button>
               )}
@@ -156,7 +156,7 @@ export default function TournamentDiscordPage() {
             <div className="flex gap-0 overflow-x-auto scrollbar-hide">
               {navTabs.map((tab) => (
                 <button key={tab.label} onClick={() => router.push(tab.href)}
-                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Discord" ? "border-violet-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
+                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Discord" ? "border-yellow-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
                   {tab.label}
                 </button>
               ))}
@@ -173,7 +173,7 @@ export default function TournamentDiscordPage() {
               <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-5">
                 <h2 className="text-white font-semibold mb-4">Connected Server</h2>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-xl font-black text-white">
+                  <div className="w-12 h-12 rounded-xl bg-yellow-500 flex items-center justify-center text-xl font-black text-white">
                     C
                   </div>
                   <div>
@@ -236,7 +236,7 @@ export default function TournamentDiscordPage() {
               <div className="bg-[#0f1117] border border-white/[0.06] rounded-xl p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-white font-semibold">Auto-Messages</h2>
-                  <button className="flex items-center gap-1.5 bg-violet-600 hover:bg-violet-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
+                  <button className="flex items-center gap-1.5 bg-yellow-500 hover:bg-yellow-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
                     <Plus className="w-3.5 h-3.5" /> New Rule
                   </button>
                 </div>
@@ -248,7 +248,7 @@ export default function TournamentDiscordPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className="text-white text-sm font-medium">{auto.trigger}</span>
-                            <span className="text-violet-400 text-xs bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full">→ {auto.channel}</span>
+                            <span className="text-violet-400 text-xs bg-yellow-500/10 border border-yellow-500/20 px-2 py-0.5 rounded-full">→ {auto.channel}</span>
                             {auto.lastSent && (
                               <span className="text-slate-600 text-xs">sent {auto.lastSent}</span>
                             )}
@@ -262,7 +262,7 @@ export default function TournamentDiscordPage() {
                             <Settings className="w-3.5 h-3.5" />
                           </button>
                           <button onClick={() => toggleAutomation(auto.id)}
-                            className={`relative w-8 h-4 rounded-full transition-colors flex-shrink-0 ${auto.enabled ? "bg-violet-600" : "bg-white/[0.08]"}`}>
+                            className={`relative w-8 h-4 rounded-full transition-colors flex-shrink-0 ${auto.enabled ? "bg-yellow-500" : "bg-white/[0.08]"}`}>
                             <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${auto.enabled ? "left-4" : "left-0.5"}`} />
                           </button>
                         </div>
@@ -281,12 +281,12 @@ export default function TournamentDiscordPage() {
                     placeholder="Type a test message to send to #announcements…"
                     value={testMsg}
                     onChange={(e) => setTestMsg(e.target.value)}
-                    className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500/50"
+                    className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-yellow-500/50"
                   />
                   <button
                     onClick={() => setTestMsg("")}
                     disabled={!testMsg.trim()}
-                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-500 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                   >
                     <Send className="w-4 h-4" /> Send
                   </button>

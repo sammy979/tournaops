@@ -45,11 +45,11 @@ export default function AIPointsTable({ tournamentId, onClose, embedded }: AIPoi
     <div className="space-y-4">
       {/* AI Summary */}
       {aiSummary && (
-        <div className="glass-card rounded-xl p-4 border border-purple-500/20 bg-purple-500/5">
+        <div className="glass-card rounded-xl p-4 border border-yellow-500/20 bg-yellow-500/5">
           <div className="flex items-start gap-2">
-            <Bot className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
+            <Bot className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
             <div>
-              <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">AI Analysis</span>
+              <span className="text-xs font-bold text-yellow-500 uppercase tracking-wider">AI Analysis</span>
               <p className="text-gray-300 text-sm mt-1">{aiSummary}</p>
             </div>
           </div>
@@ -84,7 +84,7 @@ export default function AIPointsTable({ tournamentId, onClose, embedded }: AIPoi
               <tr className="border-b border-white/10 bg-white/5">
                 <th className="text-left py-3 px-3 text-gray-500 text-[10px] uppercase w-12">Rank</th>
                 <th className="text-left py-3 px-3 text-gray-500 text-[10px] uppercase">Squad</th>
-                <th className="text-center py-3 px-2 text-purple-400 text-[10px] uppercase w-10">Trend</th>
+                <th className="text-center py-3 px-2 text-yellow-500 text-[10px] uppercase w-10">Trend</th>
                 <th className="text-center py-3 px-2 text-yellow-500 text-[10px] uppercase w-10">W</th>
                 <th className="text-center py-3 px-2 text-orange-400 text-[10px] uppercase w-12">Kills</th>
                 <th className="text-center py-3 px-3 text-white text-[10px] uppercase font-bold w-14">Total</th>

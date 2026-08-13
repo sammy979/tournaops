@@ -160,7 +160,7 @@ export default function BulkImportPage() {
                   onDragOver={e => e.preventDefault()}
                   onDrop={handleFileDrop}
                   onClick={() => fileRef.current?.click()}
-                  className="border-2 border-dashed border-white/[0.10] hover:border-violet-500/40 rounded-2xl p-12 text-center cursor-pointer transition-all group"
+                  className="border-2 border-dashed border-white/[0.10] hover:border-yellow-500/40 rounded-2xl p-12 text-center cursor-pointer transition-all group"
                 >
                   <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFileSelect} />
                   <Upload className="w-12 h-12 text-slate-700 group-hover:text-violet-400 mx-auto mb-4 transition-colors" />
@@ -184,7 +184,7 @@ export default function BulkImportPage() {
                       const a    = document.createElement("a");
                       a.href = url; a.download = "teams-template.csv"; a.click();
                     }}
-                    className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+                    className="w-full flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-500 text-white py-2 rounded-lg text-sm font-medium transition-colors"
                   >
                     <Download className="w-4 h-4" /> Download CSV Template
                   </button>
@@ -272,7 +272,7 @@ export default function BulkImportPage() {
 
               <div className="flex justify-end">
                 <button onClick={handleImport}
-                  className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-6 py-2.5 rounded-xl font-semibold transition-colors">
+                  className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-500 text-white px-6 py-2.5 rounded-xl font-semibold transition-colors">
                   <Upload className="w-4 h-4" /> Import {validCount} Teams
                 </button>
               </div>
@@ -285,7 +285,7 @@ export default function BulkImportPage() {
               <Zap className="w-10 h-10 text-violet-400 mx-auto mb-4" />
               <p className="text-white font-semibold mb-4">Importing {validCount} teams…</p>
               <div className="w-full max-w-xs mx-auto bg-white/[0.06] rounded-full h-2 mb-2">
-                <div className="bg-violet-500 h-2 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
+                <div className="bg-yellow-500 h-2 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
               </div>
               <p className="text-slate-500 text-sm">{Math.round(progress)}% complete</p>
             </div>
@@ -299,7 +299,7 @@ export default function BulkImportPage() {
               <p className="text-slate-400 mb-6">{validCount} teams successfully added to Champions Circuit S4</p>
               <div className="flex gap-3 justify-center">
                 <button onClick={() => router.push(`/dashboard/tournaments/${id}/teams`)}
-                  className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-5 py-2.5 rounded-xl font-semibold transition-colors">
+                  className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-500 text-white px-5 py-2.5 rounded-xl font-semibold transition-colors">
                   <Users className="w-4 h-4" /> View Teams
                 </button>
                 <button onClick={() => { setStatus("idle"); setTeams([]); setFileName(""); setProgress(0); }}

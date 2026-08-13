@@ -241,7 +241,7 @@ export default function TournamentMatchesPage() {
                   <span className="text-emerald-400 text-sm">{completedCount} Done</span>
                 </div>
               </div>
-              <button className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+              <button className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                 <Calendar className="w-4 h-4" /> Schedule Match
               </button>
             </div>
@@ -250,7 +250,7 @@ export default function TournamentMatchesPage() {
             <div className="flex gap-0 overflow-x-auto scrollbar-hide">
               {navTabs.map((tab) => (
                 <button key={tab.label} onClick={() => router.push(tab.href)}
-                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Matches" ? "border-violet-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
+                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Matches" ? "border-yellow-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
                   {tab.label}
                 </button>
               ))}
@@ -269,14 +269,14 @@ export default function TournamentMatchesPage() {
                 placeholder="Search by team or match number…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-[#0f1117] border border-white/[0.08] rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500/50"
+                className="w-full bg-[#0f1117] border border-white/[0.08] rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-yellow-500/50"
               />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <Filter className="w-4 h-4 text-slate-500 flex-shrink-0" />
               {stages.map((s) => (
                 <button key={s} onClick={() => setStageFilter(s)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${stageFilter === s ? "bg-violet-600 text-white" : "bg-white/[0.04] text-slate-400 hover:text-slate-200 border border-white/[0.08]"}`}>
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${stageFilter === s ? "bg-yellow-500 text-white" : "bg-white/[0.04] text-slate-400 hover:text-slate-200 border border-white/[0.08]"}`}>
                   {s === "all" ? "All Stages" : s}
                 </button>
               ))}
@@ -284,7 +284,7 @@ export default function TournamentMatchesPage() {
             <div className="flex items-center gap-2 flex-wrap">
               {statuses.map((s) => (
                 <button key={s} onClick={() => setStatusFilter(s)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${statusFilter === s ? "bg-indigo-600 text-white" : "bg-white/[0.04] text-slate-400 hover:text-slate-200 border border-white/[0.08]"}`}>
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${statusFilter === s ? "bg-yellow-500 text-white" : "bg-white/[0.04] text-slate-400 hover:text-slate-200 border border-white/[0.08]"}`}>
                   {s === "all" ? "All Status" : s}
                 </button>
               ))}

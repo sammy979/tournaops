@@ -53,7 +53,7 @@ export default function TournamentPreviewPage() {
             <Edit3 className="w-3.5 h-3.5" /> Edit
           </button>
           <a href={publicUrl} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1.5 bg-violet-600 hover:bg-violet-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
+            className="flex items-center gap-1.5 bg-yellow-500 hover:bg-yellow-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
             <ExternalLink className="w-3.5 h-3.5" /> Open Public Page
           </a>
         </div>
@@ -119,7 +119,7 @@ export default function TournamentPreviewPage() {
         </div>
         <div className="flex gap-3 justify-center">
           <button onClick={() => router.push(`/dashboard/tournaments/${id}/overview`)}
-            className="bg-violet-600 hover:bg-violet-500 text-white px-6 py-2.5 rounded-xl font-semibold transition-colors">
+            className="bg-yellow-500 hover:bg-yellow-500 text-white px-6 py-2.5 rounded-xl font-semibold transition-colors">
             Back to Dashboard
           </button>
           <button onClick={() => router.push(`/dashboard/tournaments/${id}/settings`)}

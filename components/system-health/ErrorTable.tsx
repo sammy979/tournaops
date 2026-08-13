@@ -81,7 +81,7 @@ export default function ErrorTable({ errors, onViewDetails }: ErrorTableProps) {
                   <td className="py-2.5 px-3 text-xs text-gray-400">{new Date(error.lastSeenAt).toLocaleDateString()}</td>
                   <td className="py-2.5 px-3">
                     {onViewDetails && (
-                      <button onClick={() => onViewDetails(error)} className="text-purple-600 hover:text-purple-700">
+                      <button onClick={() => onViewDetails(error)} className="text-yellow-500 hover:text-purple-700">
                         <ChevronRight className="w-4 h-4" />
                       </button>
                     )}

@@ -1,4 +1,4 @@
-﻿import { cn, getInitials } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 
 interface AvatarProps {
   name?: string;
@@ -24,35 +24,33 @@ function Avatar({ name, src, size = "md", className }: AvatarProps) {
         src={src}
         alt={name ?? "Avatar"}
         className={cn(
-          "rounded-full object-cover flex-shrink-0",
+          "object-cover flex-shrink-0",
           sizeMap[size],
           className
         )}
+        style={{
+          borderRadius: 0,
+          border: "1px solid #D4AF37",
+        }}
       />
     );
   }
 
-  const colors = [
-    "from-blue-500 to-purple-600",
-    "from-green-500 to-teal-600",
-    "from-yellow-500 to-orange-600",
-    "from-pink-500 to-red-600",
-    "from-indigo-500 to-blue-600",
-    "from-purple-500 to-pink-600",
-  ];
-
-  const colorIndex = name
-    ? name.charCodeAt(0) % colors.length
-    : 0;
-
   return (
     <div
       className={cn(
-        "rounded-full bg-gradient-to-br flex items-center justify-center font-bold text-white flex-shrink-0",
+        "flex items-center justify-center font-bold flex-shrink-0",
         sizeMap[size],
-        `bg-gradient-to-br ${colors[colorIndex]}`,
         className
       )}
+      style={{
+        background: "#141414",
+        color: "#D4AF37",
+        border: "1px solid #D4AF37",
+        borderRadius: 0,
+        letterSpacing: "0.05em",
+        fontFamily: "var(--font-mono, monospace)",
+      }}
     >
       {initials}
     </div>

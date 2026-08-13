@@ -164,7 +164,7 @@ export default function TournamentStandingsPage() {
             <div className="flex gap-0 overflow-x-auto scrollbar-hide">
               {navTabs.map((tab) => (
                 <button key={tab.label} onClick={() => router.push(tab.href)}
-                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Standings" ? "border-violet-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
+                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Standings" ? "border-yellow-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
                   {tab.label}
                 </button>
               ))}
@@ -213,7 +213,7 @@ export default function TournamentStandingsPage() {
                   key={s.team}
                   className={`grid grid-cols-[auto_1fr_auto_auto_auto_auto_auto_auto] gap-4 px-4 py-3.5 border-b border-white/[0.04] last:border-0 items-center transition-colors hover:bg-white/[0.02] ${
                     s.status === "eliminated" ? "opacity-50" : ""
-                  } ${isTop4 ? "bg-violet-500/[0.02]" : ""}`}
+                  } ${isTop4 ? "bg-yellow-500/[0.02]" : ""}`}
                 >
                   {/* Rank */}
                   <div className="flex items-center gap-2">

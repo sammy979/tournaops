@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { CheckCircle2, Circle, Lock, Play, Award } from "lucide-react";
@@ -32,7 +32,7 @@ const STATUS_COLOR: Record<string, string> = {
   DRAFT: "#6b7280",
   REGISTRATION_OPEN: "#3b82f6",
   REGISTRATION_CLOSED: "#06b6d4",
-  READY: "#8b5cf6",
+  READY: "#D4AF37",
   LIVE: "#22c55e",
   RESULTS_PENDING: "#f59e0b",
   COMPLETED: "#10b981",
@@ -62,7 +62,7 @@ export default function StageProgressionTimeline({ tournamentId, compact = false
       padding: compact ? "1rem" : "1.5rem",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-        <Award style={{ width: "1rem", height: "1rem", color: "#a855f7" }} />
+        <Award style={{ width: "1rem", height: "1rem", color: "#D4AF37" }} />
         <h3 style={{ fontSize: "0.875rem", fontWeight: 700, color: "#fff" }}>
           Tournament Progression
         </h3>

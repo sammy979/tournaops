@@ -86,7 +86,7 @@ function Toggle({ value, onChange, label, description }: {
       </div>
       <button
         onClick={() => onChange(!value)}
-        className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${value ? "bg-violet-600" : "bg-white/[0.10]"}`}
+        className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${value ? "bg-yellow-500" : "bg-white/[0.10]"}`}
       >
         <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${value ? "left-6" : "left-1"}`} />
       </button>
@@ -99,7 +99,7 @@ function SectionHeader({ icon: Icon, title, description }: {
 }) {
   return (
     <div className="flex items-start gap-3 mb-5">
-      <div className="w-8 h-8 rounded-lg bg-violet-500/15 border border-violet-500/20 flex items-center justify-center flex-shrink-0">
+      <div className="w-8 h-8 rounded-lg bg-yellow-500/15 border border-yellow-500/20 flex items-center justify-center flex-shrink-0">
         <Icon className="w-4 h-4 text-violet-400" />
       </div>
       <div>
@@ -174,7 +174,7 @@ export default function TournamentSettingsPage() {
               <button
                 onClick={handleSave}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  saved ? "bg-emerald-600 text-white" : "bg-violet-600 hover:bg-violet-500 text-white"
+                  saved ? "bg-emerald-600 text-white" : "bg-yellow-500 hover:bg-yellow-500 text-white"
                 }`}
               >
                 {saved ? <><CheckCircle2 className="w-4 h-4" /> Saved!</> : <><Save className="w-4 h-4" /> Save Changes</>}
@@ -185,7 +185,7 @@ export default function TournamentSettingsPage() {
             <div className="flex gap-0 overflow-x-auto scrollbar-hide">
               {navTabs.map((tab) => (
                 <button key={tab.label} onClick={() => router.push(tab.href)}
-                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Settings" ? "border-violet-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
+                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Settings" ? "border-yellow-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
                   {tab.label}
                 </button>
               ))}
@@ -202,7 +202,7 @@ export default function TournamentSettingsPage() {
                 {sections.map((s) => (
                   <button key={s.id} onClick={() => setActiveSection(s.id)}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors text-left ${
-                      activeSection === s.id ? "bg-violet-600 text-white" : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
+                      activeSection === s.id ? "bg-yellow-500 text-white" : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
                     }`}>
                     <s.icon className="w-3.5 h-3.5 flex-shrink-0" />
                     {s.label}
@@ -234,7 +234,7 @@ export default function TournamentSettingsPage() {
                         type={field.type}
                         value={settings[field.key as keyof TournamentSettings] as string}
                         onChange={(e) => update(field.key as keyof TournamentSettings, field.type === "number" ? Number(e.target.value) : e.target.value)}
-                        className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20"
+                        className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-500/50 focus:ring-1 focus:ring-violet-500/20"
                       />
                     </div>
                   ))}
@@ -244,7 +244,7 @@ export default function TournamentSettingsPage() {
                       value={settings.description}
                       onChange={(e) => update("description", e.target.value)}
                       rows={3}
-                      className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50 resize-none"
+                      className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-500/50 resize-none"
                     />
                   </div>
                 </div>
@@ -280,14 +280,14 @@ export default function TournamentSettingsPage() {
                 <div className="mb-4">
                   <label className="text-slate-400 text-xs font-medium block mb-2">Check-In Window (minutes)</label>
                   <input type="number" value={settings.checkInWindow} onChange={(e) => update("checkInWindow", Number(e.target.value))}
-                    className="w-32 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50" />
+                    className="w-32 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-500/50" />
                 </div>
                 <div className="mb-4">
                   <label className="text-slate-400 text-xs font-medium block mb-2">Check-In Mode</label>
                   <div className="flex gap-2">
                     {(["manual", "auto", "code"] as CheckInMode[]).map((mode) => (
                       <button key={mode} onClick={() => update("checkInMode", mode)}
-                        className={`px-3 py-1.5 rounded-lg text-sm capitalize transition-colors ${settings.checkInMode === mode ? "bg-violet-600 text-white" : "bg-white/[0.04] text-slate-400 border border-white/[0.08] hover:text-slate-200"}`}>
+                        className={`px-3 py-1.5 rounded-lg text-sm capitalize transition-colors ${settings.checkInMode === mode ? "bg-yellow-500 text-white" : "bg-white/[0.04] text-slate-400 border border-white/[0.08] hover:text-slate-200"}`}>
                         {mode}
                       </button>
                     ))}
@@ -304,7 +304,7 @@ export default function TournamentSettingsPage() {
                   <div className="flex gap-2">
                     {(["public", "private", "unlisted"] as TournamentVisibility[]).map((v) => (
                       <button key={v} onClick={() => update("visibility", v)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm capitalize transition-colors ${settings.visibility === v ? "bg-violet-600 text-white" : "bg-white/[0.04] text-slate-400 border border-white/[0.08] hover:text-slate-200"}`}>
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm capitalize transition-colors ${settings.visibility === v ? "bg-yellow-500 text-white" : "bg-white/[0.04] text-slate-400 border border-white/[0.08] hover:text-slate-200"}`}>
                         {v === "public" ? <Globe className="w-3.5 h-3.5" /> : v === "private" ? <Lock className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                         {v}
                       </button>

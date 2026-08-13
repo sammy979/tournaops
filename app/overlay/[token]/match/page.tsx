@@ -15,7 +15,7 @@ interface MatchData {
 }
 
 const MOCK: MatchData = {
-  team1: { name: "Team Alpha", tag: "ALPH", score: 1, color: "#7C3AED" },
+  team1: { name: "Team Alpha", tag: "ALPH", score: 1, color: "#D4AF37" },
   team2: { name: "Team Nexus", tag: "NEX",  score: 0, color: "#2563EB" },
   stage: "Quarterfinals", round: "Round 2", bestOf: 3, map: "Ascent", timer: 0,
 };
@@ -33,7 +33,7 @@ export default function MatchOverlay() {
   return (
     <div className="w-full h-screen bg-transparent flex items-start justify-center pt-0">
       {/* Scoreboard bar — designed for 1920×120 OBS browser source */}
-      <div className="w-full h-[120px] flex items-center bg-gradient-to-r from-black/90 via-[#0a0814]/95 to-black/90 border-b-2 border-violet-500/60 backdrop-blur-sm">
+      <div className="w-full h-[120px] flex items-center bg-gradient-to-r from-black/90 via-[#0a0814]/95 to-black/90 border-b-2 border-yellow-500/60 backdrop-blur-sm">
 
         {/* Team 1 */}
         <div className="flex-1 flex items-center justify-end gap-4 px-8">

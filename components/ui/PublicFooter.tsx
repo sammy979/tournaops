@@ -12,7 +12,7 @@ export default function PublicFooter() {
           {/* Brand */}
           <div className="col-span-2">
             <Link href="/" className="flex items-center gap-2.5 mb-3 group w-fit">
-              <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center">
+              <div className="w-7 h-7 rounded-lg bg-yellow-500 flex items-center justify-center">
                 <Trophy className="w-3.5 h-3.5 text-white" />
               </div>
               <span className="text-white font-black text-lg">Tourna<span className="text-violet-400">Ops</span></span>

@@ -8,7 +8,7 @@ import { Trophy, Zap, ChevronRight, Clock, ArrowLeft, Star } from "lucide-react"
 import { useState, useEffect } from "react";
 
 const MOCK = {
-  team1: { name: "Team Alpha", tag: "ALPH", color: "#7C3AED", seed: 1, wins: 6, losses: 0 },
+  team1: { name: "Team Alpha", tag: "ALPH", color: "#D4AF37", seed: 1, wins: 6, losses: 0 },
   team2: { name: "Team Nexus", tag: "NEX",  color: "#2563EB", seed: 2, wins: 5, losses: 1 },
   date: "July 28, 2025", time: "18:00 UTC", venue: "Online", bestOf: 7,
   tournament: "Champions Circuit Season 4", prizeWinner: "$5,000", prizeSub: "$2,500",

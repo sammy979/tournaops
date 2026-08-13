@@ -132,7 +132,7 @@ export default function TournamentInsightsPage() {
             <div className="flex gap-0 overflow-x-auto scrollbar-hide">
               {navTabs.map((tab) => (
                 <button key={tab.label} onClick={() => router.push(tab.href)}
-                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Insights" ? "border-violet-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
+                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Insights" ? "border-yellow-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
                   {tab.label}
                 </button>
               ))}
@@ -146,7 +146,7 @@ export default function TournamentInsightsPage() {
           <div className="flex gap-1 mb-6 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1 w-fit">
             {(["overview", "teams", "maps"] as const).map((t) => (
               <button key={t} onClick={() => setActiveTab(t)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${activeTab === t ? "bg-violet-600 text-white" : "text-slate-400 hover:text-slate-200"}`}>
+                className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${activeTab === t ? "bg-yellow-500 text-white" : "text-slate-400 hover:text-slate-200"}`}>
                 {t}
               </button>
             ))}
@@ -158,7 +158,7 @@ export default function TournamentInsightsPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <StatCard icon={Zap}   label="Total Matches"      value={ins.summary.totalMatches}     color="bg-amber-500/15 text-amber-400"   trend="up"   />
                 <StatCard icon={Clock} label="Avg Match Duration"  value={ins.summary.avgMatchDuration} color="bg-blue-500/15 text-blue-400"     trend="same" />
-                <StatCard icon={Map}   label="Total Maps Played"   value={ins.summary.totalMapsPlayed}  color="bg-violet-500/15 text-violet-400" trend="up"   />
+                <StatCard icon={Map}   label="Total Maps Played"   value={ins.summary.totalMapsPlayed}  color="bg-yellow-500/15 text-violet-400" trend="up"   />
                 <StatCard icon={Target}label="Upsets"              value={ins.summary.upsets}           sub="Underdog victories" color="bg-rose-500/15 text-rose-400" trend="same" />
               </div>
 
@@ -221,7 +221,7 @@ export default function TournamentInsightsPage() {
                   <span className="text-slate-600 text-sm font-bold">{i + 1}</span>
                   <span className="text-white text-sm font-semibold">{team.team}</span>
                   <div className="flex items-center gap-2">
-                    <MiniBar value={team.winRate} max={100} color="bg-violet-500" />
+                    <MiniBar value={team.winRate} max={100} color="bg-yellow-500" />
                     <span className="text-slate-300 text-sm w-10">{team.winRate}%</span>
                   </div>
                   <span className="text-slate-300 text-sm text-center">{team.avgMapScore}</span>
@@ -254,7 +254,7 @@ export default function TournamentInsightsPage() {
                     <span className="text-white text-sm font-semibold">{map.map}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <MiniBar value={map.played} max={14} color="bg-indigo-500" />
+                    <MiniBar value={map.played} max={14} color="bg-yellow-500" />
                     <span className="text-slate-300 text-sm">{map.played}x</span>
                   </div>
                   <div className="flex items-center gap-2">

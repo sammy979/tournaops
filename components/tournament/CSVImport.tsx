@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { X, Upload, Check, AlertCircle, FileText, Users, Clipboard, Download } from "lucide-react";
@@ -159,7 +159,7 @@ Storm Riders,Storm1,Storm2,Storm3,Storm4`;
               {parsed.map((team, i) => (
                 <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-white/4 border border-white/8">
                   <span className="text-gray-600 text-xs font-mono w-6 text-right">{i + 1}</span>
-                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center border border-white/10">
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500/20 to-yellow-500/20 flex items-center justify-center border border-white/10">
                     <span className="text-sm font-bold text-white">{team.name.charAt(0)}</span>
                   </div>
                   <div className="flex-1 min-w-0">

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useRef } from "react";
@@ -62,7 +62,7 @@ const THEMES: Record<Theme, {
   royal: {
     name: "Royal",
     bg: "linear-gradient(145deg, #14051f 0%, #240a35 50%, #14051f 100%)",
-    accent: "#a855f7",
+    accent: "#D4AF37",
     accentSoft: "rgba(168,85,247,0.15)",
     text: "#ffffff",
     sub: "#c4a3d9",
@@ -146,7 +146,7 @@ export default function BroadcastStudio({ tournament, onClose }: BroadcastStudio
         {/*  HEADER  */}
         <div className="max-w-[1600px] mx-auto flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-yellow-500 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { X, Send, Check, AlertCircle, MessageSquare, Zap, Bell, Trophy, Crosshair, ExternalLink } from "lucide-react";
@@ -252,7 +252,7 @@ export default function DiscordWebhook({
                     className={
                       "p-3 rounded-xl border text-center transition-all " +
                       (active
-                        ? "border-indigo-500 bg-indigo-500/15 text-indigo-300"
+                        ? "border-yellow-500 bg-yellow-500/15 text-indigo-300"
                         : "border-white/10 text-gray-500 hover:border-white/20 hover:text-gray-300")
                     }
                   >
@@ -274,7 +274,7 @@ export default function DiscordWebhook({
                 value={customMsg}
                 onChange={(e) => setCustomMsg(e.target.value)}
                 placeholder="Type your announcement..."
-                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white text-sm resize-none focus:outline-none focus:border-indigo-500 transition-colors"
+                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white text-sm resize-none focus:outline-none focus:border-yellow-500 transition-colors"
                 rows={4}
                 autoFocus
               />
@@ -287,17 +287,17 @@ export default function DiscordWebhook({
               Discord Preview
             </p>
             <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center flex-shrink-0">
                 <Zap className="w-4 h-4 text-white" />
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-white text-sm font-semibold">TournaOps</span>
-                  <span className="text-[10px] bg-indigo-500 text-white px-1.5 py-0.5 rounded font-medium">
+                  <span className="text-[10px] bg-yellow-500 text-white px-1.5 py-0.5 rounded font-medium">
                     BOT
                   </span>
                 </div>
-                <div className="bg-[#2f3136] rounded-lg p-3 border-l-4 border-indigo-500">
+                <div className="bg-[#2f3136] rounded-lg p-3 border-l-4 border-yellow-500">
 
                   {msgType === "standings" && (
                     <div>
@@ -389,8 +389,8 @@ export default function DiscordWebhook({
               (sent
                 ? "bg-green-500/20 text-green-400 border border-green-500/30"
                 : sending
-                ? "opacity-60 cursor-not-allowed bg-indigo-600 text-white"
-                : "bg-indigo-600 hover:bg-indigo-500 text-white")
+                ? "opacity-60 cursor-not-allowed bg-yellow-500 text-white"
+                : "bg-yellow-500 hover:bg-yellow-500 text-white")
             }
           >
             {sent ? (

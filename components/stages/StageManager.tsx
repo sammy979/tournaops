@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { useDialog } from "@/lib/use-confirm";
@@ -38,7 +38,7 @@ interface StageManagerProps {
 const STAGE_TYPES = [
   { value: "OPEN_QUALIFIER", label: "Open Qualifier", color: "text-blue-400" },
   { value: "CLOSED_QUALIFIER", label: "Closed Qualifier", color: "text-cyan-400" },
-  { value: "GROUP_STAGE", label: "Group Stage", color: "text-purple-400" },
+  { value: "GROUP_STAGE", label: "Group Stage", color: "text-yellow-500" },
   { value: "ROUND_OF_16", label: "Round of 16", color: "text-pink-400" },
   { value: "QUARTER_FINAL", label: "Quarter Final", color: "text-orange-400" },
   { value: "SEMI_FINAL", label: "Semi Final", color: "text-red-400" },
@@ -51,7 +51,7 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }>
   DRAFT: { bg: "bg-gray-500/20", text: "text-gray-400", label: "Draft" },
   REGISTRATION_OPEN: { bg: "bg-blue-500/20", text: "text-blue-400", label: "Reg Open" },
   REGISTRATION_CLOSED: { bg: "bg-cyan-500/20", text: "text-cyan-400", label: "Reg Closed" },
-  READY: { bg: "bg-purple-500/20", text: "text-purple-400", label: "Ready" },
+  READY: { bg: "bg-yellow-500/20", text: "text-yellow-500", label: "Ready" },
   LIVE: { bg: "bg-green-500/20", text: "text-green-400", label: " Live" },
   RESULTS_PENDING: { bg: "bg-yellow-500/20", text: "text-yellow-400", label: "Results Pending" },
   COMPLETED: { bg: "bg-emerald-500/20", text: "text-emerald-400", label: "Completed" },
@@ -128,7 +128,7 @@ export default function StageManager({ tournament, onStageChange }: StageManager
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Award className="w-6 h-6 text-purple-400" />
+            <Award className="w-6 h-6 text-yellow-500" />
             Tournament Stages
           </h2>
           <p className="text-gray-500 text-sm mt-1">
@@ -287,7 +287,7 @@ export default function StageManager({ tournament, onStageChange }: StageManager
                     {rule.wildcardCount && rule.wildcardCount > 0 && (
                       <>
                         <span className="text-gray-600"></span>
-                        <span className="text-purple-400 font-bold">+{rule.wildcardCount} wildcards</span>
+                        <span className="text-yellow-500 font-bold">+{rule.wildcardCount} wildcards</span>
                       </>
                     )}
                   </div>
@@ -313,7 +313,7 @@ export default function StageManager({ tournament, onStageChange }: StageManager
                   {canAdvance && !stage.isLocked && (
                     <button
                       onClick={() => setShowAdvance(stage)}
-                      className="flex items-center gap-1 px-4 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-bold shadow-lg shadow-blue-500/20 hover:opacity-90"
+                      className="flex items-center gap-1 px-4 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-yellow-500 text-white text-xs font-bold shadow-lg shadow-blue-500/20 hover:opacity-90"
                     >
                       <Zap className="w-3 h-3" />Advance Teams
                       <ArrowRight className="w-3 h-3" />
@@ -662,8 +662,8 @@ function AdvanceTeamsModal({ stage, nextStage, onClose, onAdvanced }: any) {
                   <div className="text-3xl font-black text-red-400">{preview.summary.totalEliminated}</div>
                   <div className="text-xs text-gray-500 mt-1">Eliminated</div>
                 </div>
-                <div className="text-center p-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
-                  <div className="text-3xl font-black text-purple-400">{preview.summary.totalWildcards}</div>
+                <div className="text-center p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+                  <div className="text-3xl font-black text-yellow-500">{preview.summary.totalWildcards}</div>
                   <div className="text-xs text-gray-500 mt-1">Wildcards</div>
                 </div>
               </div>
@@ -681,7 +681,7 @@ function AdvanceTeamsModal({ stage, nextStage, onClose, onAdvanced }: any) {
                         <span className="text-white font-medium">{t.teamName}</span>
                         <span className="text-xs text-gray-600">{t.groupName}</span>
                         {t.reason === "WILDCARD" && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400">WILDCARD</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-500">WILDCARD</span>
                         )}
                       </div>
                       <div className="flex items-center gap-3 text-xs">

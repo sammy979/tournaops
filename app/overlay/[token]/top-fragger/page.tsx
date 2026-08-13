@@ -6,7 +6,7 @@ import { Zap, Star } from "lucide-react";
 const MOCK = {
   player: "ShadowX", team: "Team Alpha", tag: "ALPH",
   kills: 24, deaths: 8, assists: 6, acs: 312, kd: "3.0",
-  agent: "Jett", headshots: "42%", color: "#7C3AED",
+  agent: "Jett", headshots: "42%", color: "#D4AF37",
 };
 
 export default function TopFraggerOverlay() {
@@ -17,7 +17,7 @@ export default function TopFraggerOverlay() {
     <div className="w-full h-screen bg-transparent flex items-end justify-start p-6">
       <div className={`transition-all duration-700 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
         {/* Card — 400×200 OBS source */}
-        <div className="w-[400px] bg-gradient-to-br from-black/95 to-[#0a0814]/95 border border-violet-500/40 rounded-2xl overflow-hidden backdrop-blur-sm shadow-2xl shadow-violet-500/20">
+        <div className="w-[400px] bg-gradient-to-br from-black/95 to-[#0a0814]/95 border border-yellow-500/40 rounded-2xl overflow-hidden backdrop-blur-sm shadow-2xl shadow-violet-500/20">
           {/* Header */}
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/[0.08]" style={{ background: `${MOCK.color}20` }}>
             <Star className="w-3.5 h-3.5 text-amber-400" />

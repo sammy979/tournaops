@@ -133,7 +133,7 @@ export default function QualifierLeaderboard({ stageId, onClose, onOverride, emb
                         {r.teamLogo ? (
                           <img src={r.teamLogo} alt="" className="w-6 h-6 rounded" />
                         ) : (
-                          <div className="w-6 h-6 rounded bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center text-white text-xs font-bold">
+                          <div className="w-6 h-6 rounded bg-gradient-to-br from-blue-500/30 to-yellow-500/30 flex items-center justify-center text-white text-xs font-bold">
                             {r.teamName.charAt(0)}
                           </div>
                         )}

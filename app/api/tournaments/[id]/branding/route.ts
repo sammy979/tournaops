@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { verifyTournamentOwnership } from "@/lib/authorization";
@@ -68,7 +68,7 @@ export async function PUT(
 
     const branding = {
       primaryColor: String(body.primaryColor || "#3b82f6").substring(0, 30),
-      accentColor: String(body.accentColor || "#8b5cf6").substring(0, 30),
+      accentColor: String(body.accentColor || "#D4AF37").substring(0, 30),
       orgName: String(body.orgName || "").substring(0, 100),
       orgLogo: String(body.orgLogo || "").substring(0, 500000),
       tagline: String(body.tagline || "").substring(0, 200),

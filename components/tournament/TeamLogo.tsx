@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 interface TeamLogoProps {
   name: string;
@@ -11,7 +11,7 @@ interface TeamLogoProps {
 function nameToColors(name: string): [string, string] {
   const colors = [
     ["#f59e0b", "#f97316"], ["#3b82f6", "#6366f1"],
-    ["#8b5cf6", "#a855f7"], ["#22c55e", "#10b981"],
+    ["#D4AF37", "#D4AF37"], ["#22c55e", "#10b981"],
     ["#ef4444", "#f43f5e"], ["#06b6d4", "#0ea5e9"],
     ["#eab308", "#facc15"], ["#ec4899", "#f472b6"],
     ["#14b8a6", "#0d9488"], ["#f97316", "#ea580c"],

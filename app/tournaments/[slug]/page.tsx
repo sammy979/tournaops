@@ -81,7 +81,7 @@ function StatusBadge({ status }: { status: string }) {
     live:      { label: "Live Now",  classes: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40", dot: "bg-emerald-400 animate-pulse" },
     upcoming:  { label: "Upcoming",  classes: "bg-blue-500/20 text-blue-300 border-blue-500/40",         dot: "bg-blue-400" },
     completed: { label: "Completed", classes: "bg-white/10 text-white/60 border-white/20",               dot: "bg-white/40" },
-    open:      { label: "Open",      classes: "bg-violet-500/20 text-violet-300 border-violet-500/40",   dot: "bg-violet-400" },
+    open:      { label: "Open",      classes: "bg-yellow-500/20 text-violet-300 border-yellow-500/40",   dot: "bg-violet-400" },
   };
   const cfg = map[status] ?? map.upcoming;
   return (
@@ -114,7 +114,7 @@ export default function PublicTournamentPage() {
             <button onClick={() => router.push("/tournaments")} className="text-slate-400 hover:text-white text-sm transition-colors">
               All Tournaments
             </button>
-            <button onClick={() => router.push("/login")} className="bg-violet-600 hover:bg-violet-500 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors">
+            <button onClick={() => router.push("/login")} className="bg-yellow-500 hover:bg-yellow-500 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors">
               Sign In
             </button>
           </div>
@@ -157,7 +157,7 @@ export default function PublicTournamentPage() {
               <div className="flex gap-3 mt-6 flex-wrap">
                 {t.registrationOpen ? (
                   <Link href={`/tournaments/${slug}/register`}
-                    className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-5 py-2.5 rounded-xl font-semibold transition-colors">
+                    className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-500 text-white px-5 py-2.5 rounded-xl font-semibold transition-colors">
                     Register Now <ArrowRight className="w-4 h-4" />
                   </Link>
                 ) : (
@@ -206,7 +206,7 @@ export default function PublicTournamentPage() {
               <button key={tab} onClick={() => setActiveTab(tab)}
                 className={`px-5 py-4 text-sm font-medium capitalize border-b-2 transition-colors ${
                   activeTab === tab
-                    ? "border-violet-500 text-violet-400"
+                    ? "border-yellow-500 text-violet-400"
                     : "border-transparent text-white/40 hover:text-white/70"
                 }`}>
                 {tab}
@@ -347,7 +347,7 @@ export default function PublicTournamentPage() {
             <h2 className="text-white text-xl font-bold mb-2">Interactive Bracket</h2>
             <p className="text-white/40 mb-6">View the full tournament bracket with live results</p>
             <Link href={`/bracket/${slug}`}
-              className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
+              className="inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-500 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
               Open Full Bracket <ExternalLink className="w-4 h-4" />
             </Link>
           </div>
@@ -398,7 +398,7 @@ export default function PublicTournamentPage() {
               <div className="space-y-3">
                 {t.rules.map((rule, i) => (
                   <div key={i} className="flex items-start gap-3 py-2 border-b border-white/[0.04] last:border-0">
-                    <div className="w-6 h-6 rounded-full bg-violet-500/15 border border-violet-500/20 flex items-center justify-center text-violet-400 text-xs font-bold flex-shrink-0 mt-0.5">
+                    <div className="w-6 h-6 rounded-full bg-yellow-500/15 border border-yellow-500/20 flex items-center justify-center text-violet-400 text-xs font-bold flex-shrink-0 mt-0.5">
                       {i + 1}
                     </div>
                     <p className="text-white/70 text-sm leading-relaxed">{rule}</p>

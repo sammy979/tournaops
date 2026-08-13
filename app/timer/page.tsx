@@ -57,7 +57,7 @@ export default function TimerPage() {
           <div className="flex bg-white/[0.04] border border-white/[0.08] rounded-xl p-1 mb-8 gap-1">
             {(["countdown","stopwatch"] as Mode[]).map(m=>(
               <button key={m} onClick={()=>{setMode(m);reset();}}
-                className={`flex-1 py-2 rounded-lg text-sm font-semibold capitalize transition-colors ${mode===m?"bg-violet-600 text-white":"text-white/40 hover:text-white"}`}>
+                className={`flex-1 py-2 rounded-lg text-sm font-semibold capitalize transition-colors ${mode===m?"bg-yellow-500 text-white":"text-white/40 hover:text-white"}`}>
                 {m}
               </button>
             ))}
@@ -70,7 +70,7 @@ export default function TimerPage() {
             </div>
             {mode==="countdown" && (
               <div className="mt-4 w-full bg-white/[0.06] rounded-full h-1.5">
-                <div className={`h-1.5 rounded-full transition-all duration-1000 ${urgent?"bg-rose-500":"bg-violet-500"}`} style={{width:`${pct}%`}} />
+                <div className={`h-1.5 rounded-full transition-all duration-1000 ${urgent?"bg-rose-500":"bg-yellow-500"}`} style={{width:`${pct}%`}} />
               </div>
             )}
             {mode==="stopwatch" && laps.length>0 && (
@@ -89,7 +89,7 @@ export default function TimerPage() {
             <div className="flex gap-2 justify-center mb-6 flex-wrap">
               {PRESETS.map(p=>(
                 <button key={p.v} onClick={()=>{setSecs(p.v);setInitial(p.v);}}
-                  className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-colors border ${secs===p.v?"bg-violet-600 text-white border-violet-500":"bg-white/[0.04] text-white/40 border-white/[0.08] hover:text-white/70"}`}>
+                  className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-colors border ${secs===p.v?"bg-yellow-500 text-white border-yellow-500":"bg-white/[0.04] text-white/40 border-white/[0.08] hover:text-white/70"}`}>
                   {p.l}
                 </button>
               ))}
@@ -102,7 +102,7 @@ export default function TimerPage() {
               {muted?<VolumeX className="w-4 h-4"/>:<Volume2 className="w-4 h-4"/>}
             </button>
             <button onClick={()=>setRunning(!running)}
-              className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-lg transition-all ${running?"bg-rose-600 hover:bg-rose-500 text-white":"bg-violet-600 hover:bg-violet-500 text-white hover:scale-105"}`}>
+              className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-lg transition-all ${running?"bg-rose-600 hover:bg-rose-500 text-white":"bg-yellow-500 hover:bg-yellow-500 text-white hover:scale-105"}`}>
               {running?<><Square className="w-5 h-5"/>Stop</>:<><Play className="w-5 h-5"/>Start</>}
             </button>
             <button onClick={reset} className="w-10 h-10 bg-white/[0.04] border border-white/[0.08] rounded-xl flex items-center justify-center text-white/40 hover:text-white transition-colors">

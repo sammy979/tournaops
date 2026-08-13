@@ -103,7 +103,7 @@ function SceneCard({ scene, onActivate }: { scene: StreamScene; onActivate: (id:
       onClick={() => onActivate(scene.id)}
       className={`relative w-full aspect-video rounded-lg border-2 overflow-hidden transition-all text-left ${
         scene.active
-          ? "border-violet-500 ring-2 ring-violet-500/30 bg-violet-500/10"
+          ? "border-yellow-500 ring-2 ring-violet-500/30 bg-yellow-500/10"
           : "border-white/[0.08] bg-white/[0.02] hover:border-white/[0.16]"
       }`}
     >
@@ -111,7 +111,7 @@ function SceneCard({ scene, onActivate }: { scene: StreamScene; onActivate: (id:
         <Monitor className={`w-8 h-8 ${scene.active ? "text-violet-400" : "text-slate-700"}`} />
       </div>
       {scene.active && (
-        <div className="absolute top-2 right-2 bg-violet-600 text-white text-xs font-bold px-2 py-0.5 rounded">
+        <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-0.5 rounded">
           ACTIVE
         </div>
       )}
@@ -146,7 +146,7 @@ function OverlayRow({ overlay, onToggle }: { overlay: BroadcastOverlay; onToggle
       </button>
       <button
         onClick={() => onToggle(overlay.id)}
-        className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${overlay.enabled ? "bg-violet-600" : "bg-white/[0.08]"}`}
+        className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${overlay.enabled ? "bg-yellow-500" : "bg-white/[0.08]"}`}
       >
         <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${overlay.enabled ? "left-5" : "left-0.5"}`} />
       </button>
@@ -223,7 +223,7 @@ export default function BroadcastPage() {
             <div className="flex gap-0 overflow-x-auto scrollbar-hide">
               {navTabs.map((tab) => (
                 <button key={tab.label} onClick={() => router.push(tab.href)}
-                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Broadcast" ? "border-violet-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
+                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Broadcast" ? "border-yellow-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
                   {tab.label}
                 </button>
               ))}

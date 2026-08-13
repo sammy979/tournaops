@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState } from "react";
 import { Calendar, X, Save, Plus, Trash2, Loader2, MapPin, Check, AlertCircle } from "lucide-react";
 
@@ -117,7 +117,7 @@ export default function DayConfigModal({
         {/* Header */}
         <div style={{ padding: "1.5rem", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <div style={{ width: "2.5rem", height: "2.5rem", borderRadius: "0.625rem", background: "linear-gradient(135deg, #8b5cf6, #6366f1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: "2.5rem", height: "2.5rem", borderRadius: "0.625rem", background: "linear-gradient(135deg, #D4AF37, #6366f1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Calendar style={{ width: "1.25rem", height: "1.25rem", color: "#fff" }} />
             </div>
             <div>
@@ -245,7 +245,7 @@ export default function DayConfigModal({
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <button onClick={onClose} style={{ padding: "0.625rem 1.25rem", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.625rem", color: "#9ca3af", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
             <button onClick={save} disabled={saving}
-              style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", background: "#8b5cf6", color: "#fff", padding: "0.625rem 1.25rem", borderRadius: "0.625rem", border: "none", fontSize: "0.85rem", fontWeight: 700, cursor: saving ? "wait" : "pointer" }}>
+              style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", background: "#D4AF37", color: "#fff", padding: "0.625rem 1.25rem", borderRadius: "0.625rem", border: "none", fontSize: "0.85rem", fontWeight: 700, cursor: saving ? "wait" : "pointer" }}>
               {saving ? <><Loader2 style={{ width: "0.875rem", height: "0.875rem", animation: "spin 0.8s linear infinite" }} />Saving...</> : <><Save style={{ width: "0.875rem", height: "0.875rem" }} />Save & Regenerate Matches</>}
             </button>
           </div>

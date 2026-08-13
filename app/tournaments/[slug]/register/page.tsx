@@ -112,7 +112,7 @@ export default function TournamentRegisterPage() {
           </div>
           <div className="flex flex-col gap-2">
             <Link href={`/tournaments/${slug}`}
-              className="bg-violet-600 hover:bg-violet-500 text-white px-6 py-3 rounded-xl font-semibold transition-colors text-center">
+              className="bg-yellow-500 hover:bg-yellow-500 text-white px-6 py-3 rounded-xl font-semibold transition-colors text-center">
               View Tournament
             </Link>
             <Link href="/dashboard"
@@ -159,7 +159,7 @@ export default function TournamentRegisterPage() {
               <div className="flex flex-col items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${
                   step > s.n  ? "bg-emerald-500 border-emerald-500 text-white" :
-                  step === s.n? "bg-violet-600 border-violet-500 text-white" :
+                  step === s.n? "bg-yellow-500 border-yellow-500 text-white" :
                   "bg-transparent border-white/[0.15] text-white/30"
                 }`}>
                   {step > s.n ? <CheckCircle2 className="w-4 h-4" /> : s.n}
@@ -179,29 +179,29 @@ export default function TournamentRegisterPage() {
               <div>
                 <label className="text-white/40 text-xs font-medium block mb-1.5">Team Name *</label>
                 <input value={teamName} onChange={e => setTeamName(e.target.value)} placeholder="e.g. Team Alpha"
-                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20" />
+                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-yellow-500/50 focus:ring-1 focus:ring-violet-500/20" />
               </div>
               <div>
                 <label className="text-white/40 text-xs font-medium block mb-1.5">Team Tag * (3-5 chars)</label>
                 <input value={teamTag} onChange={e => setTeamTag(e.target.value.toUpperCase().slice(0, 5))} placeholder="e.g. ALPH"
-                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-500/50 font-mono uppercase" />
+                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-yellow-500/50 font-mono uppercase" />
               </div>
               <div>
                 <label className="text-white/40 text-xs font-medium block mb-1.5">Captain Name *</label>
                 <input value={captainName} onChange={e => setCaptainName(e.target.value)} placeholder="Your name"
-                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-500/50" />
+                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-yellow-500/50" />
               </div>
               <div>
                 <label className="text-white/40 text-xs font-medium block mb-1.5">Contact Email *</label>
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="captain@email.com"
-                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-500/50" />
+                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-yellow-500/50" />
               </div>
               <div className="sm:col-span-2">
                 <label className="text-white/40 text-xs font-medium block mb-1.5">Region</label>
                 <div className="flex gap-2">
                   {["NA", "EU", "APAC", "LATAM"].map(r => (
                     <button key={r} onClick={() => setRegion(r)}
-                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${region === r ? "bg-violet-600 text-white" : "bg-white/[0.04] text-white/40 border border-white/[0.08] hover:text-white/70"}`}>
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${region === r ? "bg-yellow-500 text-white" : "bg-white/[0.04] text-white/40 border border-white/[0.08] hover:text-white/70"}`}>
                       {r}
                     </button>
                   ))}
@@ -212,7 +212,7 @@ export default function TournamentRegisterPage() {
               <button
                 onClick={() => setStep(2)}
                 disabled={!teamName || !teamTag || !captainName || !email}
-                className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-xl font-semibold transition-colors">
+                className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-500 disabled:opacity-40 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-xl font-semibold transition-colors">
                 Next: Roster <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -238,11 +238,11 @@ export default function TournamentRegisterPage() {
                 <div key={m.id} className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-3 items-center bg-white/[0.02] border border-white/[0.04] rounded-xl p-3">
                   <span className="text-white/20 text-sm font-bold w-5 text-center">{i + 1}</span>
                   <input value={m.name} onChange={e => updateMember(m.id, "name", e.target.value)} placeholder="Player name"
-                    className="bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-violet-500/40 min-w-0" />
+                    className="bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-yellow-500/40 min-w-0" />
                   <input value={m.ign} onChange={e => updateMember(m.id, "ign", e.target.value)} placeholder="IGN#0000"
-                    className="bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-violet-500/40 font-mono min-w-0" />
+                    className="bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-yellow-500/40 font-mono min-w-0" />
                   <select value={m.role} onChange={e => updateMember(m.id, "role", e.target.value)}
-                    className="bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-violet-500/40 min-w-0">
+                    className="bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-yellow-500/40 min-w-0">
                     {["IGL", "Duelist", "Initiator", "Sentinel", "Support", "Sub"].map(r => (
                       <option key={r} value={r} className="bg-[#0f1117]">{r}</option>
                     ))}
@@ -258,7 +258,7 @@ export default function TournamentRegisterPage() {
             <div className="mt-6 flex justify-between">
               <button onClick={() => setStep(1)} className="text-white/40 hover:text-white/70 text-sm transition-colors">â† Back</button>
               <button onClick={() => setStep(3)}
-                className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-6 py-2.5 rounded-xl font-semibold transition-colors">
+                className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-500 text-white px-6 py-2.5 rounded-xl font-semibold transition-colors">
                 Next: Confirm <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -306,7 +306,7 @@ export default function TournamentRegisterPage() {
               <label className="flex items-start gap-3 cursor-pointer">
                 <div
                   onClick={() => setAgreed(!agreed)}
-                  className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors ${agreed ? "bg-violet-600 border-violet-500" : "border-white/20 bg-transparent"}`}>
+                  className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors ${agreed ? "bg-yellow-500 border-yellow-500" : "border-white/20 bg-transparent"}`}>
                   {agreed && <CheckCircle2 className="w-3 h-3 text-white" />}
                 </div>
                 <span className="text-white/60 text-sm leading-relaxed">
@@ -318,7 +318,7 @@ export default function TournamentRegisterPage() {
             <div className="flex justify-between items-center">
               <button onClick={() => setStep(2)} className="text-white/40 hover:text-white/70 text-sm transition-colors">â† Back</button>
               <button onClick={handleSubmit} disabled={!agreed}
-                className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white px-8 py-3 rounded-xl font-bold text-base transition-colors">
+                className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-500 disabled:opacity-40 disabled:cursor-not-allowed text-white px-8 py-3 rounded-xl font-bold text-base transition-colors">
                 <Shield className="w-4 h-4" /> Submit Registration
               </button>
             </div>

@@ -50,7 +50,7 @@ interface ExportTemplate {
 const EXPORT_TEMPLATES: ExportTemplate[] = [
   {
     id: "t1", name: "Full Tournament Report", description: "Complete data export including all matches, results, and standings",
-    icon: Package, formats: ["pdf", "xlsx"], color: "bg-violet-500/15 text-violet-400 border-violet-500/20",
+    icon: Package, formats: ["pdf", "xlsx"], color: "bg-yellow-500/15 text-violet-400 border-yellow-500/20",
     includes: ["All matches", "Results", "Standings", "Team roster", "Stage breakdown"],
   },
   {
@@ -75,7 +75,7 @@ const EXPORT_TEMPLATES: ExportTemplate[] = [
   },
   {
     id: "t6", name: "Analytics Data", description: "Raw statistics for external analysis",
-    icon: BarChart2, formats: ["json", "csv"], color: "bg-indigo-500/15 text-indigo-400 border-indigo-500/20",
+    icon: BarChart2, formats: ["json", "csv"], color: "bg-yellow-500/15 text-indigo-400 border-yellow-500/20",
     includes: ["Win rates", "Map statistics", "Performance metrics", "Round data"],
   },
 ];
@@ -102,7 +102,7 @@ const FORMAT_COLORS: Record<ExportFormat, string> = {
   xlsx: "bg-blue-500/15 text-blue-400 border-blue-500/20",
   json: "bg-amber-500/15 text-amber-400 border-amber-500/20",
   pdf:  "bg-rose-500/15 text-rose-400 border-rose-500/20",
-  png:  "bg-violet-500/15 text-violet-400 border-violet-500/20",
+  png:  "bg-yellow-500/15 text-violet-400 border-yellow-500/20",
 };
 
 function ExportStatusIcon({ status }: { status: ExportStatus }) {
@@ -174,7 +174,7 @@ export default function ExportPage() {
             <div className="flex gap-0 overflow-x-auto scrollbar-hide">
               {navTabs.map((tab) => (
                 <button key={tab.label} onClick={() => router.push(tab.href)}
-                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Export" ? "border-violet-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
+                  className={`flex-shrink-0 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${tab.label === "Export" ? "border-yellow-500 text-violet-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
                   {tab.label}
                 </button>
               ))}
@@ -231,7 +231,7 @@ export default function ExportPage() {
                           })}
                         </div>
                         <button onClick={() => handleExport(template)}
-                          className="ml-auto flex items-center gap-1.5 bg-violet-600 hover:bg-violet-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
+                          className="ml-auto flex items-center gap-1.5 bg-yellow-500 hover:bg-yellow-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
                           <Download className="w-3.5 h-3.5" /> Export
                         </button>
                       </div>

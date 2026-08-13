@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useEffect, useCallback } from "react";
@@ -177,9 +177,9 @@ export default function GrandFinalDashboard({ stageId, onLock, onPublish }: Gran
         </div>
 
         {/* NEXT */}
-        <div className="glass-card rounded-2xl p-5 border border-purple-500/20 bg-purple-500/5">
+        <div className="glass-card rounded-2xl p-5 border border-yellow-500/20 bg-yellow-500/5">
           <div className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2 mb-3">
-            <Clock className="w-3 h-3 text-purple-400" />Next Match
+            <Clock className="w-3 h-3 text-yellow-500" />Next Match
           </div>
 
           {nextMatch ? (
@@ -373,7 +373,7 @@ export default function GrandFinalDashboard({ stageId, onLock, onPublish }: Gran
                       {r.teamLogo ? (
                         <img src={r.teamLogo} alt="" className="w-7 h-7 rounded" />
                       ) : (
-                        <div className="w-7 h-7 rounded bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center text-white text-xs font-bold">
+                        <div className="w-7 h-7 rounded bg-gradient-to-br from-blue-500/30 to-yellow-500/30 flex items-center justify-center text-white text-xs font-bold">
                           {r.teamName.charAt(0)}
                         </div>
                       )}

@@ -42,7 +42,7 @@ export default function ReportPage() {
             <CheckCircle2 className="w-14 h-14 text-emerald-400 mx-auto mb-4"/>
             <h2 className="text-white font-bold text-xl mb-2">Report Submitted</h2>
             <p className="text-white/40 mb-6">The tournament organizer will review your report within 24 hours.</p>
-            <button onClick={()=>router.push(`/tournaments/${slug}`)} className="bg-violet-600 hover:bg-violet-500 text-white px-6 py-2.5 rounded-xl font-semibold transition-colors">Back to Tournament</button>
+            <button onClick={()=>router.push(`/tournaments/${slug}`)} className="bg-yellow-500 hover:bg-yellow-500 text-white px-6 py-2.5 rounded-xl font-semibold transition-colors">Back to Tournament</button>
           </div>
         ) : (
           <>
@@ -55,24 +55,24 @@ export default function ReportPage() {
               <form onSubmit={submit} className="space-y-4">
                 <div>
                   <label className="text-white/40 text-xs font-medium block mb-1.5">Report Type</label>
-                  <select value={type} onChange={e=>setType(e.target.value)} className="w-full bg-[#0f1117] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-violet-500/50">
+                  <select value={type} onChange={e=>setType(e.target.value)} className="w-full bg-[#0f1117] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-yellow-500/50">
                     {REPORT_TYPES.map(t=><option key={t} value={t} className="bg-[#0f1117]">{t}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-white/40 text-xs font-medium block mb-1.5">Match Number (if applicable)</label>
                   <input value={match} onChange={e=>setMatch(e.target.value)} placeholder="e.g. Match #14 or leave blank"
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-500/50"/>
+                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-yellow-500/50"/>
                 </div>
                 <div>
                   <label className="text-white/40 text-xs font-medium block mb-1.5">Description *</label>
                   <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={5} placeholder="Describe the issue in detail. Include timestamps, player names, and what happened."
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-500/50 resize-none"/>
+                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-yellow-500/50 resize-none"/>
                 </div>
                 <div>
                   <label className="text-white/40 text-xs font-medium block mb-1.5">Evidence Links (screenshots, videos)</label>
                   <input value={evidence} onChange={e=>setEvidence(e.target.value)} placeholder="https://imgur.com/... or https://streamable.com/..."
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-500/50"/>
+                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-yellow-500/50"/>
                 </div>
                 <button type="submit" disabled={loading||!desc.trim()} className="w-full flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-500 disabled:opacity-40 text-white py-3 rounded-xl font-semibold transition-colors">
                   {loading?<><Loader2 className="w-4 h-4 animate-spin"/>Submittingâ€¦</>:<><Send className="w-4 h-4"/>Submit Report</>}

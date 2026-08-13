@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useRef } from "react";
@@ -324,8 +324,8 @@ export default function ScreenshotImporter({
             <h3 className="text-2xl font-bold text-white mb-2">AI Analyzing Screenshot...</h3>
             <p className="text-gray-500">Detecting team names, placements, and kills</p>
             <div className="flex items-center justify-center gap-2 mt-4">
-              <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
-              <span className="text-purple-400 text-sm font-medium">Powered by GPT-4 Vision</span>
+              <Sparkles className="w-4 h-4 text-yellow-500 animate-pulse" />
+              <span className="text-yellow-500 text-sm font-medium">Powered by GPT-4 Vision</span>
             </div>
           </div>
         )}
@@ -386,7 +386,7 @@ export default function ScreenshotImporter({
                 <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
                   <Zap className="w-3 h-3 text-blue-400" />
                   {method === "ai" ? "AI Extracted Results" : "Manual Entry"}
-                  <span className={`ml-auto px-2 py-0.5 rounded-full text-[9px] font-bold ${method === "ai" ? "bg-purple-500/20 text-purple-400" : "bg-gray-500/20 text-gray-400"}`}>
+                  <span className={`ml-auto px-2 py-0.5 rounded-full text-[9px] font-bold ${method === "ai" ? "bg-yellow-500/20 text-yellow-500" : "bg-gray-500/20 text-gray-400"}`}>
                     {method === "ai" ? "AI" : "MANUAL"}
                   </span>
                 </div>

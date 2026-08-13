@@ -69,13 +69,13 @@ export default function PlayerStats({ tournament, onClose }: PlayerStatsProps) {
             )}
 
             {DAMAGE_KING && (
-              <div className="p-5 rounded-xl bg-gradient-to-br from-purple-500/10 to-blue-500/5 border border-purple-500/20">
+              <div className="p-5 rounded-xl bg-gradient-to-br from-yellow-500/10 to-blue-500/5 border border-yellow-500/20">
                 <div className="flex items-center gap-2 mb-3">
-                  <Flame className="w-4 h-4 text-purple-400" />
-                  <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">Damage King</span>
+                  <Flame className="w-4 h-4 text-yellow-500" />
+                  <span className="text-xs font-bold text-yellow-500 uppercase tracking-wider">Damage King</span>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500/30 to-blue-500/20 flex items-center justify-center border border-purple-500/30 text-2xl font-bold text-white">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-500/30 to-blue-500/20 flex items-center justify-center border border-yellow-500/30 text-2xl font-bold text-white">
                     {DAMAGE_KING.playerName.charAt(0)}
                   </div>
                   <div className="flex-1">
@@ -83,7 +83,7 @@ export default function PlayerStats({ tournament, onClose }: PlayerStatsProps) {
                     <p className="text-gray-500 text-xs">{DAMAGE_KING.teamName}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-purple-400 text-3xl font-bold font-mono">{(DAMAGE_KING.damage / 1000).toFixed(1)}K</p>
+                    <p className="text-yellow-500 text-3xl font-bold font-mono">{(DAMAGE_KING.damage / 1000).toFixed(1)}K</p>
                     <p className="text-gray-600 text-xs">DAMAGE</p>
                   </div>
                 </div>
@@ -140,7 +140,7 @@ export default function PlayerStats({ tournament, onClose }: PlayerStatsProps) {
                     <span className="text-orange-400 font-bold font-mono">{p.kills}</span>
                   </div>
                   <div className="col-span-2 text-center">
-                    <span className="text-purple-400 font-mono text-sm">{p.damage?.toLocaleString()}</span>
+                    <span className="text-yellow-500 font-mono text-sm">{p.damage?.toLocaleString()}</span>
                   </div>
                 </div>
               ))}
@@ -164,7 +164,7 @@ export default function PlayerStats({ tournament, onClose }: PlayerStatsProps) {
               </div>
               {topDamage.map((p, i) => (
                 <div key={i} className={`grid grid-cols-12 gap-2 items-center p-3 rounded-xl transition-colors ${
-                  i < 3 ? "bg-purple-500/5 border border-purple-500/15" : "bg-white/3 border border-white/5"
+                  i < 3 ? "bg-yellow-500/5 border border-yellow-500/15" : "bg-white/3 border border-white/5"
                 }`}>
                   <div className="col-span-1">
                     <span className={`font-mono font-bold text-sm ${i === 0 ? "text-yellow-400" : i === 1 ? "text-gray-300" : i === 2 ? "text-amber-600" : "text-gray-600"}`}>
@@ -173,7 +173,7 @@ export default function PlayerStats({ tournament, onClose }: PlayerStatsProps) {
                   </div>
                   <div className="col-span-4 text-white font-semibold text-sm">{p.playerName}</div>
                   <div className="col-span-3 text-gray-500 text-sm">{p.teamName}</div>
-                  <div className="col-span-2 text-center text-purple-400 font-bold font-mono">{p.damage?.toLocaleString()}</div>
+                  <div className="col-span-2 text-center text-yellow-500 font-bold font-mono">{p.damage?.toLocaleString()}</div>
                   <div className="col-span-2 text-center text-orange-400 font-mono text-sm">{p.kills}</div>
                 </div>
               ))}
@@ -209,7 +209,7 @@ export default function PlayerStats({ tournament, onClose }: PlayerStatsProps) {
                   <div className="col-span-3 text-white font-semibold text-sm truncate">{e.teamName}</div>
                   <div className="col-span-1 text-center text-gray-500 text-sm">{e.matchesPlayed}</div>
                   <div className="col-span-2 text-center text-orange-400 font-bold font-mono">{e.totalKills}</div>
-                  <div className="col-span-2 text-center text-purple-400 font-mono text-sm">{e.totalDamage?.toLocaleString()}</div>
+                  <div className="col-span-2 text-center text-yellow-500 font-mono text-sm">{e.totalDamage?.toLocaleString()}</div>
                   <div className="col-span-1 text-center text-green-400 font-bold">{e.wwcds}</div>
                   <div className="col-span-2 text-center">
                     <span className={`font-mono font-bold ${e.rank <= 3 ? "text-yellow-400" : "text-white"}`}>{e.totalPoints}</span>

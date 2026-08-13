@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useDialog } from "@/lib/use-confirm";
 
 import { useState, useEffect } from "react";
@@ -19,7 +19,7 @@ const TIEBREAKER_OPTIONS = [
   { key: "points", label: "Total Points", icon: Trophy, color: "text-yellow-400", description: "Highest points wins" },
   { key: "wwcd", label: "WWCD Count", icon: Crown, color: "text-orange-400", description: "Most #1 finishes" },
   { key: "kills", label: "Total Eliminations", icon: Crosshair, color: "text-red-400", description: "Most kills across matches" },
-  { key: "damage", label: "Total Damage", icon: Zap, color: "text-purple-400", description: "Highest damage dealt" },
+  { key: "damage", label: "Total Damage", icon: Zap, color: "text-yellow-500", description: "Highest damage dealt" },
   { key: "best_match", label: "Best Single Match", icon: Star, color: "text-blue-400", description: "Highest single-match score" },
   { key: "best_placement", label: "Best Placement", icon: Award, color: "text-green-400", description: "Highest finishing position" },
 ];
@@ -135,7 +135,7 @@ export default function ScoringBuilder({ initialPreset, onSave, onClose, onApply
         <div className="flex items-center justify-between p-5 border-b border-white/10 sticky top-0 bg-[#0a0a0f]/95 backdrop-blur-xl z-10">
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-purple-400" />
+              <Sparkles className="w-5 h-5 text-yellow-500" />
               {initialPreset?.id ? "Edit Scoring System" : "Create Scoring System"}
             </h2>
             <p className="text-gray-500 text-sm mt-1">Configure custom points, bonuses, and tiebreakers</p>
@@ -288,9 +288,9 @@ export default function ScoringBuilder({ initialPreset, onSave, onClose, onApply
                   />
                 </div>
 
-                <div className="flex items-center justify-between p-3 rounded-lg bg-purple-500/5 border border-purple-500/20">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/20">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-purple-400" />
+                    <Sparkles className="w-4 h-4 text-yellow-500" />
                     <div>
                       <div className="text-white text-sm font-semibold">Perfect Match Bonus</div>
                       <div className="text-gray-600 text-[10px]">WWCD + 8+ kills</div>
@@ -373,7 +373,7 @@ export default function ScoringBuilder({ initialPreset, onSave, onClose, onApply
             </div>
 
             {/* Live Preview */}
-            <div className="glass-card rounded-xl p-4 border border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-purple-500/5">
+            <div className="glass-card rounded-xl p-4 border border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-yellow-500/5">
               <h3 className="text-white font-bold text-sm mb-3 flex items-center gap-2">
                 <Zap className="w-4 h-4 text-blue-400" />
                 Live Preview

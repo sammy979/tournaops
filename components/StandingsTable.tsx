@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import type { Standing } from "@/types/tournament";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
@@ -49,7 +49,7 @@ export default function StandingsTable({ standings }: StandingsTableProps) {
                   <span className="font-bold text-2xl text-red-400">{s.losses}</span>
                 </td>
                 <td className="px-4 py-4 text-center">
-                  <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/30">
+                  <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/30">
                     <span className="font-bold text-2xl text-cyan-400">{s.points}</span>
                   </div>
                 </td>
