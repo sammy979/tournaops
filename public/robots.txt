@@ -1,4 +1,14 @@
-﻿User-agent: *
+User-agent: *
 Allow: /
+Allow: /tournaments
+Allow: /pricing
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /api/
+Disallow: /overlay/
 
 Sitemap: https://www.tournaops.com/sitemap.xml
