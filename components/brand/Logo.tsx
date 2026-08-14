@@ -2,20 +2,29 @@ import Link from "next/link";
 import Image from "next/image";
 
 interface LogoProps {
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "sm" | "md" | "lg" | "xl" | "2xl";
   href?: string | null;
   showText?: boolean;
+  textColor?: string;
   className?: string;
 }
 
-export function Logo({ size = "md", href = "/", showText = true, className }: LogoProps) {
-  const sizes = {
-    sm: { icon: 32, textSize: "1rem" },
-    md: { icon: 44, textSize: "1.3rem" },
-    lg: { icon: 60, textSize: "1.75rem" },
-    xl: { icon: 80, textSize: "2.25rem" },
-  };
-  const s = sizes[size];
+const SIZES = {
+  sm:  { icon: 32,  textSize: "0.95rem",  gap: "0.5rem" },
+  md:  { icon: 44,  textSize: "1.2rem",   gap: "0.625rem" },
+  lg:  { icon: 60,  textSize: "1.6rem",   gap: "0.75rem" },
+  xl:  { icon: 80,  textSize: "2rem",     gap: "0.875rem" },
+  "2xl": { icon: 120, textSize: "3rem",   gap: "1rem" },
+};
+
+export function Logo({
+  size = "md",
+  href = "/",
+  showText = true,
+  textColor = "#ffffff",
+  className,
+}: LogoProps) {
+  const s = SIZES[size];
 
   const content = (
     <div
@@ -23,7 +32,7 @@ export function Logo({ size = "md", href = "/", showText = true, className }: Lo
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: "0.7rem",
+        gap: s.gap,
         textDecoration: "none",
       }}
     >
@@ -35,6 +44,7 @@ export function Logo({ size = "md", href = "/", showText = true, className }: Lo
         style={{
           objectFit: "contain",
           flexShrink: 0,
+          display: "block",
         }}
         priority
       />
@@ -45,9 +55,10 @@ export function Logo({ size = "md", href = "/", showText = true, className }: Lo
             fontSize: s.textSize,
             fontWeight: 900,
             letterSpacing: "0.05em",
-            color: "#ffffff",
+            color: textColor,
             lineHeight: 1,
             textTransform: "uppercase",
+            whiteSpace: "nowrap",
           }}
         >
           TOURNA<span style={{ color: "#D4AF37" }}>OPS</span>
@@ -65,3 +76,5 @@ export function Logo({ size = "md", href = "/", showText = true, className }: Lo
   }
   return content;
 }
+
+export default Logo;

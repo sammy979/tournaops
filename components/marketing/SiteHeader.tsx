@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Logo } from "@/components/brand/Logo";
 import { useState, useEffect } from "react";
 
 interface SiteHeaderProps {
