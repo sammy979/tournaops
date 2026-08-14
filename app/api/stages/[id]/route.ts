@@ -1,91 +1,89 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-
-async function verifyStageOwnership(stageId: string, userId: string) {
-  const stage = await prisma.stage.findUnique({
-    where: { id: stageId },
-    include: { tournament: { select: { userId: true } } },
-  });
-  if (!stage) return { stage: null, authorized: false };
-  return { stage, authorized: stage.tournament.userId === userId };
-}
+import { requireAuth } from "@/lib/auth";
 
 export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSession();
-    if (!session?.userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { stage, authorized } = await verifyStageOwnership(params.id, session.userId);
-    if (!stage || !authorized) {
-      return NextResponse.json({ error: "Stage not found or unauthorized" }, { status: 404 });
-    }
-
-    const fullStage = await prisma.stage.findUnique({
-      where: { id: params.id },
+    const { user, errorResponse } = requireAuth(request);
+    if (errorResponse || !user) return errorResponse ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { id } = await params;
+    const stage = await prisma.stage.findUnique({
+      where: { id },
       include: {
-        groups: {
-          include: {
-            teamProgressions: {
-              include: {
-                team: true,
-              },
-            },
-          },
-          orderBy: { name: "asc" },
-        },
-        matches: {
-          include: {
-            result: true,
-            results: true,
-          },
-          orderBy: [{ groupName: "asc" }, { matchNumber: "asc" }],
-        },
+        tournament: { select: { userId: true, name: true } },
+        groups: { orderBy: { order: "asc" } },
       },
     });
-
-    return NextResponse.json({ stage: fullStage });
+    if (!stage) return NextResponse.json({ error: "Stage not found" }, { status: 404 });
+    if (stage.tournament.userId !== user.id && !user.isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json({ stage });
   } catch (error) {
-    console.error("Stage fetch error:", error);
+    console.error("GET /api/stages/[id]:", error);
     return NextResponse.json({ error: "Failed to fetch stage" }, { status: 500 });
   }
 }
 
 export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSession();
-    if (!session?.userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { stage, authorized } = await verifyStageOwnership(params.id, session.userId);
-    if (!stage || !authorized) {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
-    }
-
-    const body = await req.json();
-    const allowedFields = ["name", "status", "teamsAdvancing", "groupCount", "teamsPerGroup"];
-    const updateData: Record<string, any> = {};
-    for (const field of allowedFields) {
-      if (field in body) updateData[field] = body[field];
-    }
-
-    const updated = await prisma.stage.update({
-      where: { id: params.id },
-      data: updateData,
+    const { user, errorResponse } = requireAuth(request);
+    if (errorResponse || !user) return errorResponse ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { id } = await params;
+    const body = await request.json();
+    const stage = await prisma.stage.findUnique({
+      where: { id },
+      include: { tournament: { select: { userId: true } } },
     });
-
+    if (!stage) return NextResponse.json({ error: "Stage not found" }, { status: 404 });
+    if (stage.tournament.userId !== user.id && !user.isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const {
+      name, status, startDate, endDate, scoringRule,
+      mapRotation, teamsAdvancing, description,
+    } = body;
+    const updated = await prisma.stage.update({
+      where: { id },
+      data: {
+        ...(name !== undefined && { name }),
+        ...(status !== undefined && { status }),
+        ...(startDate !== undefined && { startDate: startDate ? new Date(startDate) : null }),
+        ...(endDate !== undefined && { endDate: endDate ? new Date(endDate) : null }),
+        ...(scoringRule !== undefined && { scoringRule }),
+        ...(mapRotation !== undefined && { mapRotation }),
+        ...(teamsAdvancing !== undefined && { teamsAdvancing }),
+        ...(description !== undefined && { description }),
+        updatedAt: new Date(),
+      },
+    });
     return NextResponse.json({ stage: updated });
   } catch (error) {
-    console.error("Stage update error:", error);
+    console.error("PATCH /api/stages/[id]:", error);
     return NextResponse.json({ error: "Failed to update stage" }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { user, errorResponse } = requireAuth(request);
+    if (errorResponse || !user) return errorResponse ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { id } = await params;
+    const stage = await prisma.stage.findUnique({
+      where: { id },
+      include: { tournament: { select: { userId: true } } },
+    });
+    if (!stage) return NextResponse.json({ error: "Stage not found" }, { status: 404 });
+    if (stage.tournament.userId !== user.id && !user.isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    await prisma.stage.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("DELETE /api/stages/[id]:", error);
+    return NextResponse.json({ error: "Failed to delete stage" }, { status: 500 });
   }
 }

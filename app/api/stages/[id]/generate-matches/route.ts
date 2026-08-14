@@ -1,102 +1,53 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { z } from "zod";
-
-const GenerateMatchesSchema = z.object({
-  matchesPerGroup: z.number().int().min(1).max(30).default(6),
-  scheduledDates: z.array(z.string()).optional(),
-});
+import { requireAuth } from "@/lib/auth";
 
 export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSession();
-    if (!session?.userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+    const { user, errorResponse } = requireAuth(request);
+    if (errorResponse || !user) return errorResponse ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { id } = await params;
+    const body = await request.json();
+    const { matchesPerGroup, maps } = body;
     const stage = await prisma.stage.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
-        tournament: { select: { userId: true } },
-        groups: {
-          include: {
-            teamProgressions: {
-              include: { team: true },
-            },
-          },
-        },
-        _count: { select: { matches: true } },
+        tournament: { select: { userId: true, id: true } },
+        groups: true,
       },
     });
-
-    if (!stage) {
-      return NextResponse.json({ error: "Stage not found" }, { status: 404 });
-    }
-
-    if (stage.tournament.userId !== session.userId) {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
-    }
-
-    if (stage._count.matches > 0) {
-      return NextResponse.json(
-        { error: "Matches already generated for this stage. Delete existing matches first." },
-        { status: 409 }
-      );
-    }
-
-    if (stage.groups.length === 0) {
-      return NextResponse.json(
-        { error: "Generate groups before generating matches" },
-        { status: 400 }
-      );
-    }
-
-    const body = await req.json();
-    const parsed = GenerateMatchesSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid input" }, { status: 400 });
-    }
-
-    const { matchesPerGroup, scheduledDates } = parsed.data;
-
-    let globalMatchNumber = 1;
-    const createdMatches: any[] = [];
-
-    await prisma.$transaction(async (tx) => {
-      for (const group of stage.groups) {
-        for (let matchNum = 1; matchNum <= matchesPerGroup; matchNum++) {
-          const scheduledAt = scheduledDates?.[globalMatchNumber - 1]
-            ? new Date(scheduledDates[globalMatchNumber - 1])
-            : null;
-
-          const match = await tx.match.create({
-            data: {
-              stageId: params.id,
-              stageGroupId: group.id,
-              matchNumber: globalMatchNumber,
-              groupName: group.name,
-              status: "pending",
-              scheduledAt,
-            },
-          });
-
-          createdMatches.push(match);
-          globalMatchNumber++;
-        }
+    if (!stage) return NextResponse.json({ error: "Stage not found" }, { status: 404 });
+    if (stage.tournament.userId !== user.id && !user.isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const defaultMaps = ["Erangel", "Miramar", "Sanhok", "Vikendi"];
+    const mapList = maps && maps.length > 0 ? maps : defaultMaps;
+    const numMatches = matchesPerGroup || stage.matchesPerGroup || 4;
+    const createdMatches = [];
+    for (const group of stage.groups) {
+      const existingCount = await prisma.match.count({ where: { stageId: id, groupId: group.id } });
+      for (let i = 0; i < numMatches; i++) {
+        const matchNum = existingCount + i + 1;
+        const match = await prisma.match.create({
+          data: {
+            name: `${group.name} - Match ${matchNum}`,
+            tournamentId: stage.tournament.id,
+            stageId: id,
+            groupId: group.id,
+            roundId: id,
+            lobbyId: group.id,
+            map: mapList[i % mapList.length],
+            status: "pending",
+            matchNumber: matchNum,
+          },
+        });
+        createdMatches.push(match);
       }
-    });
-
-    return NextResponse.json({
-      success: true,
-      matchCount: createdMatches.length,
-      message: `Generated ${createdMatches.length} matches across ${stage.groups.length} groups`,
-    });
+    }
+    return NextResponse.json({ success: true, matches: createdMatches, count: createdMatches.length });
   } catch (error) {
-    console.error("Match generation error:", error);
+    console.error("POST /api/stages/[id]/generate-matches:", error);
     return NextResponse.json({ error: "Failed to generate matches" }, { status: 500 });
   }
 }
