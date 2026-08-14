@@ -5,190 +5,75 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Settings — TournaOps" };
-
 export default async function SettingsPage() {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/login?from=/dashboard/settings");
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
     select: {
-      email: true,
-      username: true,
-      displayName: true,
-      isPro: true,
-      proExpiresAt: true,
-      createdAt: true,
+      id: true, email: true, username: true, displayName: true,
+      avatar: true, isPro: true, role: true, createdAt: true,
+      organizerName: true, organizerBio: true, organizerLogo: true,
     },
   });
 
-  return (
-    <div style={{ minHeight: "100vh", background: "var(--black)" }}>
-      <div style={{
-        background: "var(--charcoal)",
-        borderBottom: "1px solid var(--border)",
-      }}>
-        <div className="container-ops" style={{ padding: "32px 24px" }}>
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            marginBottom: "12px",
-            fontFamily: "Barlow Condensed, sans-serif",
-            fontSize: "0.72rem",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-          }}>
-            <Link href="/dashboard" style={{ color: "var(--white-40)", textDecoration: "none" }}>Dashboard</Link>
-            <span style={{ color: "var(--white-20)" }}>→</span>
-            <span style={{ color: "var(--gold)" }}>Settings</span>
-          </div>
+  if (!user) redirect("/login");
 
-          <div className="section-label">Account</div>
-          <h1 style={{
-            fontFamily: "Barlow Condensed, sans-serif",
-            fontWeight: 900,
-            fontSize: "1.8rem",
-            color: "var(--white)",
-            textTransform: "uppercase",
-            letterSpacing: "0.02em",
-          }}>Settings</h1>
-        </div>
+  return (
+    <div style={{ maxWidth: "700px", margin: "0 auto" }}>
+      <div style={{ marginBottom: "1.5rem" }}>
+        <h1 style={{ fontSize: "clamp(1.5rem, 4vw, 2rem)", fontWeight: 900, color: "#fff", margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>SETTINGS</h1>
+        <p style={{ color: "#6b7280", fontSize: "0.875rem", margin: "0.25rem 0 0" }}>Manage your account and preferences</p>
       </div>
 
-      <div className="container-ops" style={{ padding: "32px 24px" }}>
-        {/* USER INFO */}
-        <div style={{
-          background: "var(--surface)",
-          border: "1px solid var(--border)",
-          padding: "24px",
-          marginBottom: "24px",
-        }}>
-          <div className="section-label" style={{ marginBottom: "12px" }}>Your Account</div>
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "20px",
-          }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+
+        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "1.5rem" }}>
+          <h2 style={{ margin: "0 0 1rem", fontSize: "0.875rem", fontWeight: 700, color: "#fff", textTransform: "uppercase", letterSpacing: "0.05em" }}>Account Info</h2>
+          <div style={{ display: "grid", gap: "0.75rem" }}>
             {[
-              { label: "Display Name", value: user?.displayName },
-              { label: "Username", value: `@${user?.username}` },
-              { label: "Email", value: user?.email },
-              { label: "Plan", value: user?.isPro ? "Pro" : "Free", accent: user?.isPro ? "var(--gold)" : "var(--white-40)" },
-            ].map((row) => (
-              <div key={row.label}>
-                <div style={{
-                  fontFamily: "Barlow Condensed, sans-serif",
-                  fontSize: "0.65rem",
-                  letterSpacing: "0.12em",
-                  color: "var(--white-40)",
-                  textTransform: "uppercase",
-                  marginBottom: "4px",
-                }}>{row.label}</div>
-                <div style={{
-                  fontFamily: "Barlow, sans-serif",
-                  fontWeight: 600,
-                  fontSize: "0.95rem",
-                  color: row.accent || "var(--white)",
-                }}>{row.value}</div>
+              { label: "Display Name", value: user.displayName },
+              { label: "Username",     value: user.username },
+              { label: "Email",        value: user.email },
+              { label: "Plan",         value: user.isPro ? "Pro ★" : "Free" },
+              { label: "Role",         value: user.role },
+              { label: "Member Since", value: new Date(user.createdAt).toLocaleDateString() },
+            ].map(f => (
+              <div key={f.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem", background: "rgba(255,255,255,0.02)", borderRadius: "0.375rem" }}>
+                <span style={{ fontSize: "0.8rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{f.label}</span>
+                <span style={{ fontSize: "0.875rem", color: f.label === "Plan" && user.isPro ? "#D4AF37" : "#fff", fontWeight: f.label === "Plan" ? 700 : 400 }}>{f.value}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* SETTINGS SECTIONS */}
-        <div className="section-label">Manage</div>
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-          gap: "1px",
-          background: "var(--border)",
-          border: "1px solid var(--border)",
-        }}>
-          {[
-            {
-              title: "Organizer Profile",
-              desc: "Manage your public identity on tournament pages",
-              href: "/dashboard/settings/organizer",
-              accent: true,
-            },
-            {
-              title: "Upgrade to Pro",
-              desc: user?.isPro ? "Manage your Pro subscription" : "Unlock advanced features",
-              href: "/dashboard/upgrade",
-            },
-            {
-              title: "Discord Integration",
-              desc: "Connect your Discord server",
-              href: "/dashboard/discord",
-            },
-            {
-              title: "Notifications",
-              desc: "Manage notification preferences",
-              href: "/dashboard/notifications",
-            },
-            {
-              title: "Overlay Settings",
-              desc: "Configure OBS broadcast overlays",
-              href: "/dashboard/overlay",
-            },
-            {
-              title: "Scoring Presets",
-              desc: "Create custom scoring rules",
-              href: "/dashboard/scoring",
-            },
-          ].map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              style={{
-                background: "var(--surface)",
-                padding: "20px 24px",
-                textDecoration: "none",
-                display: "flex",
-                flexDirection: "column",
-                borderLeft: item.accent ? "2px solid var(--gold)" : "2px solid transparent",
-                transition: "background 0.15s ease",
-              }}
-            >
-              <div style={{
-                fontFamily: "Barlow Condensed, sans-serif",
-                fontWeight: 800,
-                fontSize: "1rem",
-                color: "var(--white)",
-                textTransform: "uppercase",
-                letterSpacing: "0.04em",
-                marginBottom: "6px",
-              }}>{item.title}</div>
-              <div style={{ fontSize: "0.8rem", color: "var(--white-40)", lineHeight: 1.5 }}>
-                {item.desc}
-              </div>
-              <div style={{
-                marginTop: "12px",
-                fontFamily: "Barlow Condensed, sans-serif",
-                fontWeight: 700,
-                fontSize: "0.7rem",
-                letterSpacing: "0.1em",
-                color: "var(--gold)",
-                textTransform: "uppercase",
-              }}>Manage →</div>
-            </Link>
-          ))}
+        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "1.5rem" }}>
+          <h2 style={{ margin: "0 0 1rem", fontSize: "0.875rem", fontWeight: 700, color: "#fff", textTransform: "uppercase", letterSpacing: "0.05em" }}>Quick Links</h2>
+          <div style={{ display: "grid", gap: "0.5rem" }}>
+            {[
+              { label: "Organizer Profile", href: "/dashboard/settings/organizer" },
+              { label: "Upgrade to Pro",    href: "/dashboard/upgrade" },
+              { label: "View Public Site",  href: "/" },
+            ].map(l => (
+              <Link key={l.href} href={l.href} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.875rem 1rem", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "0.375rem", color: "#D4AF37", fontSize: "0.875rem", fontWeight: 600, textDecoration: "none", minHeight: "44px" }}>
+                <span>{l.label}</span>
+                <span>→</span>
+              </Link>
+            ))}
+          </div>
         </div>
 
-        {/* LOGOUT */}
-        <div style={{ marginTop: "32px" }}>
+        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "1.5rem" }}>
+          <h2 style={{ margin: "0 0 0.5rem", fontSize: "0.875rem", fontWeight: 700, color: "#fff", textTransform: "uppercase", letterSpacing: "0.05em" }}>Danger Zone</h2>
+          <p style={{ color: "#6b7280", fontSize: "0.8rem", margin: "0 0 1rem" }}>These actions cannot be undone.</p>
           <form action="/api/auth/logout" method="POST">
-            <button
-              type="submit"
-              className="btn-secondary"
-              style={{ padding: "8px 18px" }}
-            >
+            <button type="submit" style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "0.5rem", color: "#f87171", fontWeight: 700, fontSize: "0.875rem", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.05em", minHeight: "44px" }}>
               Sign Out
             </button>
           </form>
         </div>
+
       </div>
     </div>
   );
