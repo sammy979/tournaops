@@ -2,7 +2,6 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import DashboardShell from "@/components/ui/DashboardShell";
 import {
   BarChart2,
   ChevronRight,
@@ -112,7 +111,7 @@ export default function TournamentInsightsPage() {
   ];
 
   return (
-    <DashboardShell>
+    <>
       <div className="min-h-screen bg-[#080a0e] text-white">
 
         {/* Header */}
@@ -271,6 +270,6 @@ export default function TournamentInsightsPage() {
           )}
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }

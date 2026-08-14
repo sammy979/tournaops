@@ -2,7 +2,6 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import DashboardShell from "@/components/ui/DashboardShell";
 import {
   MessageSquare,
   ChevronRight,
@@ -124,7 +123,7 @@ export default function TournamentDiscordPage() {
   ];
 
   return (
-    <DashboardShell>
+    <>
       <div className="min-h-screen bg-[#080a0e] text-white">
 
         {/* Header */}
@@ -298,6 +297,6 @@ export default function TournamentDiscordPage() {
           </div>
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }

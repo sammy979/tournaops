@@ -2,7 +2,6 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import DashboardShell from "@/components/ui/DashboardShell";
 import {
   ClipboardList,
   ChevronRight,
@@ -262,7 +261,7 @@ export default function MatchResultsPage() {
   ];
 
   return (
-    <DashboardShell>
+    <>
       <div className="min-h-screen bg-[#080a0e] text-white">
         <div className="border-b border-white/[0.06] bg-[#0a0c10]">
           <div className="max-w-7xl mx-auto px-6 py-5">
@@ -338,6 +337,6 @@ export default function MatchResultsPage() {
           )}
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }

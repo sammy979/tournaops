@@ -2,7 +2,6 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import DashboardShell from "@/components/ui/DashboardShell";
 import {
   Download,
   ChevronRight,
@@ -154,7 +153,7 @@ export default function ExportPage() {
   ];
 
   return (
-    <DashboardShell>
+    <>
       <div className="min-h-screen bg-[#080a0e] text-white">
 
         {/* Header */}
@@ -275,6 +274,6 @@ export default function ExportPage() {
           </div>
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }

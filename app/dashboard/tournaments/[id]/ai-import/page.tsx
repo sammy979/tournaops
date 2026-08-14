@@ -2,7 +2,6 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import DashboardShell from "@/components/ui/DashboardShell";
 import {
   Bot,
   ChevronRight,
@@ -113,7 +112,7 @@ export default function AIImportPage() {
   ];
 
   return (
-    <DashboardShell>
+    <>
       <div className="min-h-screen bg-[#080a0e] text-white">
 
         {/* Header */}
@@ -416,6 +415,6 @@ export default function AIImportPage() {
           </div>
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }

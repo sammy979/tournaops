@@ -2,7 +2,6 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import DashboardShell from "@/components/ui/DashboardShell";
 import {
   Layers,
   Plus,
@@ -307,7 +306,7 @@ export default function TournamentStagesPage() {
   ];
 
   return (
-    <DashboardShell>
+    <>
       <div className="min-h-screen bg-[#080a0e] text-white">
 
         {/* Header */}
@@ -370,6 +369,6 @@ export default function TournamentStagesPage() {
           </div>
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }

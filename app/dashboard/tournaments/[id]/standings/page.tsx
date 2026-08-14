@@ -2,7 +2,6 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import DashboardShell from "@/components/ui/DashboardShell";
 import {
   Trophy,
   ChevronRight,
@@ -133,7 +132,7 @@ export default function TournamentStandingsPage() {
   );
 
   return (
-    <DashboardShell>
+    <>
       <div className="min-h-screen bg-[#080a0e] text-white">
         {/* Header */}
         <div className="border-b border-white/[0.06] bg-[#0a0c10]">
@@ -280,6 +279,6 @@ export default function TournamentStandingsPage() {
           </p>
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }

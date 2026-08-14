@@ -1,7 +1,6 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import DashboardShell from "@/components/ui/DashboardShell";
 import { ChevronRight, Palette } from "lucide-react";
 
 export default function TournamentBrandingPage() {
@@ -10,7 +9,7 @@ export default function TournamentBrandingPage() {
   const id     = params?.id as string;
 
   return (
-    <DashboardShell>
+    <>
       <div className="min-h-screen bg-[#080a0e] text-white">
         <div className="border-b border-white/[0.06] bg-[#0a0c10]">
           <div className="max-w-7xl mx-auto px-6 py-5">
@@ -30,6 +29,6 @@ export default function TournamentBrandingPage() {
           <p className="text-slate-600 text-sm mt-1">Customize logos, colors, and tournament assets</p>
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }

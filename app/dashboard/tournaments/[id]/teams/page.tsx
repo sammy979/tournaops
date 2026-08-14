@@ -2,7 +2,6 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import DashboardShell from "@/components/ui/DashboardShell";
 import {
   Users,
   Search,
@@ -193,7 +192,7 @@ export default function TournamentTeamsPage() {
   ];
 
   return (
-    <DashboardShell>
+    <>
       <div className="min-h-screen bg-[#080a0e] text-white">
 
         {/* ── Header ──────────────────────────────────────── */}
@@ -331,6 +330,6 @@ export default function TournamentTeamsPage() {
           </p>
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }

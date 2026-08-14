@@ -2,7 +2,6 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import DashboardShell from "@/components/ui/DashboardShell";
 import {
   Settings,
   ChevronRight,
@@ -153,7 +152,7 @@ export default function TournamentSettingsPage() {
   ];
 
   return (
-    <DashboardShell>
+    <>
       <div className="min-h-screen bg-[#080a0e] text-white">
 
         {/* Header */}
@@ -350,6 +349,6 @@ export default function TournamentSettingsPage() {
           </div>
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }
