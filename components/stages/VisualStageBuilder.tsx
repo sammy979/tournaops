@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useDialog } from "@/lib/use-confirm";
@@ -53,7 +53,7 @@ const STAGE_PRESETS = [
     label: "Group Stage",
     shortLabel: "Groups",
     icon: Users,
-    color: "purple",
+    color: "#D4AF37",
     gradient: "from-yellow-500 to-pink-500",
     description: "Multiple groups, top teams advance",
     defaults: { numGroups: 4, teamsPerGroup: 16, matchesPerGroup: 4, ruleType: "TOP_N_PER_GROUP", ruleCount: 8 },
@@ -63,7 +63,7 @@ const STAGE_PRESETS = [
     label: "Round of 16",
     shortLabel: "R16",
     icon: Award,
-    color: "indigo",
+    color: "#f59e0b",
     gradient: "from-yellow-500 to-yellow-500",
     description: "16 teams, single bracket",
     defaults: { numGroups: 1, teamsPerGroup: 16, matchesPerGroup: 4, ruleType: "TOP_N_OVERALL", ruleCount: 8 },

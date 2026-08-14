@@ -1,68 +1,68 @@
-"use client";
+﻿import React from "react";
 
-import { forwardRef } from "react";
-import { Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { cva, type VariantProps } from "class-variance-authority";
+type ButtonVariant = "primary" | "secondary" | "danger" | "ghost" | "outline";
+type ButtonSize = "sm" | "md" | "lg";
 
-const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 disabled:pointer-events-none disabled:opacity-50 active:scale-95",
-  {
-    variants: {
-      variant: {
-        primary: "bg-yellow-500 hover:bg-yellow-400 text-black shadow-lg shadow-yellow-500/20",
-        secondary: "bg-white/8 hover:bg-white/15 text-white border border-white/10 hover:border-white/20",
-        danger: "bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/20",
-        ghost: "hover:bg-white/8 text-gray-400 hover:text-white",
-        outline: "border border-white/15 hover:border-white/30 text-white hover:bg-white/5",
-        success: "bg-green-500/15 hover:bg-green-500/25 text-green-400 border border-green-500/20",
-        indigo: "bg-yellow-500 hover:bg-yellow-500 text-white shadow-lg shadow-yellow-500",
-      },
-      size: {
-        xs: "px-2.5 py-1 text-xs rounded-lg",
-        sm: "px-3.5 py-1.5 text-sm",
-        md: "px-4 py-2 text-sm",
-        lg: "px-5 py-2.5 text-base",
-        xl: "px-6 py-3 text-lg",
-        icon: "w-9 h-9 rounded-xl",
-      },
-    },
-    defaultVariants: {
-      variant: "primary",
-      size: "md",
-    },
-  }
-);
-
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
   loading?: boolean;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
+  children: React.ReactNode;
 }
 
-const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, loading, leftIcon, rightIcon, children, disabled, ...props }, ref) => {
-    return (
-      <button
-        ref={ref}
-        className={cn(buttonVariants({ variant, size }), className)}
-        disabled={disabled || loading}
-        {...props}
-      >
-        {loading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : leftIcon ? (
-          leftIcon
-        ) : null}
-        {children}
-        {!loading && rightIcon}
-      </button>
-    );
-  }
-);
+const variantStyles: Record<ButtonVariant, string> = {
+  primary: "bg-yellow-500 hover:bg-yellow-400 text-black font-semibold shadow-lg shadow-yellow-500/20",
+  secondary: "bg-white/10 hover:bg-white/15 text-white border border-white/10",
+  danger: "bg-red-600 hover:bg-red-500 text-white",
+  ghost: "bg-transparent hover:bg-white/05 text-gray-400 hover:text-white",
+  outline: "bg-transparent border border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10",
+};
 
-Button.displayName = "Button";
+const sizeStyles: Record<ButtonSize, string> = {
+  sm: "px-3 py-1.5 text-xs",
+  md: "px-4 py-2 text-sm",
+  lg: "px-6 py-3 text-base",
+};
 
-export { Button, buttonVariants };
+export function Button({
+  variant = "primary",
+  size = "md",
+  loading = false,
+  children,
+  className = "",
+  disabled,
+  ...props
+}: ButtonProps) {
+  return (
+    <button
+      {...props}
+      disabled={disabled || loading}
+      className={`
+        inline-flex items-center justify-center gap-2
+        transition-all duration-150
+        ${variantStyles[variant]}
+        ${sizeStyles[size]}
+        ${disabled || loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+        ${className}
+      `}
+      style={{ borderRadius: "0.375rem", minHeight: "44px", ...props.style }}
+    >
+      {loading && (
+        <span
+          style={{
+            width: "0.875rem",
+            height: "0.875rem",
+            border: "2px solid currentColor",
+            borderTopColor: "transparent",
+            borderRadius: "50%",
+            display: "inline-block",
+            animation: "spin 0.6s linear infinite",
+          }}
+        />
+      )}
+      {children}
+    </button>
+  );
+}
+
+export default Button;
